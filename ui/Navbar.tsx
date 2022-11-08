@@ -15,7 +15,11 @@ import Typography from '@mui/material/Typography';
 import { useSession, signIn, signOut } from 'next-auth/react';
 import { LangConfigs } from '../lib/types';
 
-const lang = process.env['APP_LANG'] ?? 'ch';
+/**
+ * Domain and language settings
+ */
+const domain = process.env.NEXT_PUBLIC_APP_DOMAIN;
+const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'ch';
 const langConfigs: LangConfigs = {
     signIn: {
         ch: '登入',
@@ -55,7 +59,7 @@ export default () => {
             <Container maxWidth={'xl'}>
                 <Toolbar disableGutters>
                     <Link href='/'>
-                        <Box component={'img'} src={'logo.png'} sx={{ height: '40px' }}></Box>
+                        <Box component={'img'} src={`${domain}/logo.png`} sx={{ height: '40px' }}></Box>
                     </Link>
                     <Box sx={{ flexGrow: 1 }}></Box>
                     {'authenticated' !== status && !session && (

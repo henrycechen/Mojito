@@ -9,7 +9,6 @@ import Copyright from '../ui/Copyright';
 
 import { LangConfigs } from '../lib/types';
 
-
 export async function getStaticProps() {
     return {
         props: {
@@ -27,11 +26,15 @@ export async function getStaticProps() {
     }
 }
 
-const lang = process.env['APP_LANG'] ?? 'ch';
+/**
+ * Domain and language settings
+ */
+const domain = process.env.NEXT_PUBLIC_APP_DOMAIN;
+const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'ch';
 const langConfigs: LangConfigs = {
     err: {
         ch: '出错啦',
-        en: 'Oooopppps'
+        en: 'Opps'
     },
     backToHome: {
         ch: '返回主页',
@@ -44,10 +47,7 @@ export default function About({ msg }: any) {
         <>
             <AppBar />
             <Stack
-                sx={{
-                    backgroundColor: '#2DAAE0',
-                    height: '100vh'
-                }}>
+                sx={{ backgroundColor: '#2DAAE0', height: '100vh' }}>
                 <Box sx={{ display: 'flex', justifyContent: 'center', mt: '10rem' }}>
                     <Typography
                         sx={{
@@ -69,23 +69,19 @@ export default function About({ msg }: any) {
                     }}>
                         ..
                     </Typography>
-
                 </Box>
                 <Box sx={{ color: 'white', textAlign: 'center', mt: '3rem', padding: 4 }}>
-
                     <Typography variant='h6' sx={{ color: 'white', textAlign: 'center' }}>
                         {msg[lang]}
-
                     </Typography>
                 </Box>
                 <Box sx={{ display: { xs: 'none', sm: 'flex' }, justifyContent: 'center', mt: 2 }}>
-
-                    <Link href='/' sx={{ color: 'white' }}>{langConfigs.backToHome[lang]}</Link>
+                    <Link href={domain} sx={{ color: 'white' }}>{langConfigs.backToHome[lang]}</Link>
                 </Box>
                 <Box sx={{ display: { xs: 'flex', sm: 'none' }, justifyContent: 'center', mt: 2, padding: 1 }}>
-
-                    <Button variant='contained' href='/' >{langConfigs.backToHome[lang]}</Button>
+                    <Button variant='contained' href={domain} >{langConfigs.backToHome[lang]}</Button>
                 </Box>
+                <Copyright sx={{ mt: '10rem', mb: 4, color: 'white' }} />
             </Stack>
         </>
     )

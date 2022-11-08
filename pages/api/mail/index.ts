@@ -11,8 +11,8 @@ export default async function mail(req: NextApiRequest, res: NextApiResponse) {
             const emailMessage = {
                 sender: "<donotreply@mojito.co.nz>",
                 content: {
-                  subject: "Welcome to Mojito New Zealand",
-                  plainText: "This is the first email send from mojito mail server. You're lucky one! Good night:)"
+                  subject: "Reset your password",
+                  plainText: "No need to worry, you can reset your Mojito account password by clicking the link below: http://localhost"
                 },
                 recipients: {
                   to: [

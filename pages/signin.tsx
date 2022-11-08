@@ -1,7 +1,6 @@
 import * as React from 'react';
 import Avatar from '@mui/material/Avatar';
 import Button from '@mui/material/Button';
-import CssBaseline from '@mui/material/CssBaseline';
 import TextField from '@mui/material/TextField';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Checkbox from '@mui/material/Checkbox';
@@ -21,7 +20,7 @@ import Divider from '@mui/material/Divider';
 
 import Alert from '@mui/material/Alert';
 import { NextPageContext } from 'next/types';
-
+import { LangConfigs } from '../lib/types';
 
 type SigninPageProps = {
     providers: Awaited<ReturnType<typeof getProviders>> | null;
@@ -39,8 +38,8 @@ export async function getServerSideProps(context: NextPageContext) {
 /**
  * Language settings
  */
-const lang = 'ch';
-const langConfig = {
+const lang = process.env['APP_LANG'] ?? 'ch';
+const langConfig: LangConfigs = {
     signin: {
         ch: '登入',
         en: 'Sign in'
@@ -89,8 +88,7 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
     if (session) {
         router.push('/');
     }
-
-
+    
     return (
         <Container component='main' maxWidth='xs'>
             <Stack sx={{ mt: '5rem' }}>
@@ -113,7 +111,6 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
                         margin="none"
                         required
                         fullWidth
-                        id="email"
                         label={langConfig.email[lang]}
                         name="email"
                         autoComplete="email"
@@ -126,7 +123,6 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
                         name="password"
                         label={langConfig.pwd[lang]}
                         type="password"
-                        id="password"
                         autoComplete="current-password"
                         //FIXME: only for testing here
                         value={'123...'}

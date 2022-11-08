@@ -7,7 +7,7 @@ import CredentialsProvider from "next-auth/providers/credentials"
 export default NextAuth({
   session: {
     strategy: 'jwt',
-    maxAge: 30 * 24 * 60 * 60, // 30 days
+    maxAge: 15 * 24 * 60 * 60, // 15 days
   },
   providers: [
     GithubProvider({
@@ -20,18 +20,18 @@ export default NextAuth({
     }),
     CredentialsProvider({
       // The name to display on the sign in form (e.g. 'Sign in with...')
-      name: 'Sign in with Mojito account',
+      name: 'Credentials',
       // The credentials is used to generate a suitable form on the sign in page.
       // You can specify whatever fields you are expecting to be submitted.
       // e.g. domain, username, password, 2FA token, etc.
       // You can pass any HTML attribute to the <input> tag through the object.
       credentials: {
-        username: { label: "Username", type: "text", placeholder: "" },
-        password: { label: "Password", type: "password" }
+        email: { label: "Email", type: "text", placeholder: "" },
+        password: { label: "Password", type: "password" },
+        tfakey: {}
+        // tfatoken: { label: "TFAToken", type: "text" },
       },
-      authorize(credentials, req) {
-        console.log(credentials);
-
+      async authorize(credentials, req) {
         // You need to provide your own logic here that takes the credentials
         // submitted and returns either a object representing a user or value
         // that is false/null if the credentials are invalid.
@@ -49,20 +49,17 @@ export default NextAuth({
     signOut: 'signout',
     error: '/error'
   },
-  // callbacks: {
-  //   async signIn({ user, account, profile, email, credentials }) {
-  //     const isAllowedToSignIn = !!user
-  //     if (isAllowedToSignIn) {
-  //       return true
-  //     } else {
-  //       // Return false to display a default error message
-  //       // return false
-  //       return false
-  //       // Or you can return a URL to redirect to:
-  //       // return '/unauthorized'
-  //     }
-  //   },
-  // }
+  callbacks: {
+    // async signIn({ user, account, profile, email, credentials }) {
+    async signIn({ user, account, credentials }) {
+      console.log(user, account, credentials);
+      return true
+    },
+    async jwt({ token, user, account, profile, isNewUser }) {
+        console.log(token);
+        return token
+      } 
+  }
 });
 
 function checkPwd(credentials) {
