@@ -20,7 +20,7 @@ import Copyright from '../../ui/Copyright';
 import BackToHomeButtonGroup from '../../ui/BackToHomeButtonGroup';
 
 const domain = process.env.NEXT_PUBLIC_APP_DOMAIN;
-const recaptchaClientKey = process.env.NEXT_PUBLIC_RECAPTCHA_KEY ?? '';
+const recaptchaClientKey = process.env.NEXT_PUBLIC_INVISIABLE_RECAPTCHA_SITE_KEY ?? '';
 const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'ch';
 const langConfigs: LangConfigs = {
     submit: {
@@ -28,15 +28,15 @@ const langConfigs: LangConfigs = {
         en: 'Confirm'
     },
     pleaseEnterEmailAddress: {
-        ch: '请输入注册 Mojito 账户时使用的邮箱地址',
+        ch: '请输入注册 Mojito 账户时使用的邮件地址',
         en: 'Please enter the email address you used to register your Mojito account'
     },
     emailAddress: {
-        ch: '邮箱地址',
+        ch: '邮件地址',
         en: 'Email address'
     },
     invalidEmailAddressError: {
-        ch: '无效的邮箱地址',
+        ch: '无效的邮件地址',
         en: 'Invalid email address'
     },
     recaptchaLang: {
@@ -67,133 +67,142 @@ const langConfigs: LangConfigs = {
 
 const Forgot = () => {
     let recaptcha: any;
+
+    // Declare process states
     const [processStates, setProcessStates] = React.useState({
         /**
          * component list:
          * - resetpasswordrequestform
-         * - resetpasswordresult
+         * - resetpasswordrequestresult
          */
         componentOnDisplay: 'resetpasswordrequestform',
         recaptchaResponse: '',
-        recaptchaVerified: false,
         errorContent: '',
         displayError: false,
         displayCircularProgress: false,
         resultContent: '',
     });
-    /**
-     * Handle email input
-     */
+
+    // Handle process states change
+    React.useEffect(() => { post() }, [processStates.recaptchaResponse]);
+    const post = async () => {
+        if ('' === processStates.recaptchaResponse) {
+            // ReCAPTCHA challenge is not ready
+            return;
+        }
+        if ('' !== emailAddress) {
+            const resp = await fetch(`/api/member/behaviour/resetpassword/request?emailAddress=${emailAddress}&recaptchaResponse=${processStates.recaptchaResponse}`, { method: 'POST' });
+            if (200 === resp.status) {
+                setProcessStates({
+                    ...processStates,
+                    componentOnDisplay: 'resetpasswordrequestresult',
+                    displayCircularProgress: false,
+                    resultContent: langConfigs.goodResult[lang]
+                });
+            } else if (404 === resp.status) {
+                // SignIn credential not found, reset ReCAPTCHA
+                recaptcha?.reset();
+                setProcessStates({
+                    ...processStates,
+                    errorContent: langConfigs.memberIdNotFoundError[lang],
+                    displayError: true,
+                    displayCircularProgress: false
+                })
+            } else {
+                // 500
+                setProcessStates({
+                    ...processStates,
+                    componentOnDisplay: 'resetpasswordrequestresult',
+                    displayCircularProgress: false,
+                    resultContent: langConfigs.badResult[lang]
+                })
+            }
+        }
+    }
+
+    // Declare email address state
     const [emailAddress, setEmailAddress] = React.useState('');
+
+    // Handle email address input
     const handleTextFieldChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         setEmailAddress(event.target.value);
     }
-    /**
-     * Handle ReCAPTCHA challenge
-     */
-    const handleRecaptchaChange = (value: any) => {
-        if (!!value) {
-            setProcessStates({ ...processStates, recaptchaResponse: value, recaptchaVerified: true })
-        } else {
-            setProcessStates({ ...processStates, recaptchaVerified: false })
-        }
-    }
-    const handleRecaptchaExpire = () => {
-        setProcessStates({ ...processStates, recaptchaVerified: false, errorContent: langConfigs.recaptchaNotVerifiedError[lang], displayError: true })
-    }
-    /**
-     * Handle Submit
-     */
+
+    // Handle reset password request form submit
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        // step #1 verify email address
         if (!verifyEmailAddress(emailAddress)) {
             setProcessStates({ ...processStates, errorContent: langConfigs.invalidEmailAddressError[lang], displayError: true });
             return;
         } else {
             setProcessStates({ ...processStates, displayError: false });
         }
-        // step #2 verify if it is not bot
-        if (!processStates.recaptchaVerified) {
-            setProcessStates({ ...processStates, errorContent: langConfigs.recaptchaNotVerifiedError[lang], displayError: true });
-            return;
-        } else {
-            setProcessStates({ ...processStates, displayError: false });
-        }
-        // step #3 post request with email address and recaptcha token
         setProcessStates({ ...processStates, displayCircularProgress: true });
-        // query => {emailAddress, recaptchaResponse}
-        const resp = await fetch(`/api/member/behaviour/resetpassword/request?emailAddress=${emailAddress}&recaptchaResponse=${processStates.recaptchaResponse}`, { method: 'POST' });
-        // step #4 display result
-        if (200 === resp.status) {
-            setProcessStates({ ...processStates, componentOnDisplay: 'resetpasswordresult', displayCircularProgress: false, resultContent: langConfigs.goodResult[lang] });
-        } else if (404 === resp.status) {
-            // reest ReCAPTCHA
-            recaptcha?.reset();
-            setProcessStates({
-                ...processStates,
-                recaptchaVerified: false,
-                errorContent: langConfigs.memberIdNotFoundError[lang],
-                displayError: true,
-                displayCircularProgress: false
-            })
+        recaptcha?.execute();
+    }
+
+    // Handle ReCAPTCHA challenge
+    const handleRecaptchaChange = (value: any) => {
+        if (!!value) {
+            setProcessStates({ ...processStates, recaptchaResponse: value })
         } else {
-            setProcessStates({ ...processStates, componentOnDisplay: 'resetpasswordresult', displayCircularProgress: false, resultContent: langConfigs.badResult[lang] })
+            setProcessStates({ ...processStates })
         }
     }
+
     return (
-        <Container component='main' maxWidth={'xs'} >
-            {/* resetpasswordrequestform */}
-            <Stack sx={{ mt: '5rem', paddingX: { xs: 3.4, sm: 5.8 }, display: 'resetpasswordrequestform' === processStates.componentOnDisplay ? 'block' : 'none' }}>
-                <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-                    <Link href="/">
-                        <Avatar src={`${domain}/favicon.ico`} sx={{ width: 56, height: 56 }} />
-                    </Link>
-                </Box>
-                <Typography component="h1" variant="h5" sx={{ mt: 2, textAlign: 'center' }}>
-                    {langConfigs.pleaseEnterEmailAddress[lang]}
-                </Typography>
-                <Stack component={'form'} spacing={2} sx={{ mt: 4 }} onSubmit={handleSubmit} >
-                    <Box sx={{ display: processStates.displayError ? 'block' : 'none' }}>
-                        <Alert severity='error' >
-                            <strong>{processStates.errorContent}</strong>
-                        </Alert>
+        <>
+            <Container component='main' maxWidth={'xs'} >
+                {/* resetpasswordrequestform */}
+                <Stack sx={{ mt: '5rem', display: 'resetpasswordrequestform' === processStates.componentOnDisplay ? 'block' : 'none' }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                        <Link href="/">
+                            <Avatar src={`${domain}/favicon.ico`} sx={{ width: 56, height: 56 }} />
+                        </Link>
                     </Box>
-                    <TextField
-                        required
-                        name='emailAddress'
-                        label={langConfigs.emailAddress[lang]}
-                        value={emailAddress}
-                        onChange={handleTextFieldChange}
-                    />
-                    <Box sx={{ display: 'flex', justifyContent: 'center' }} >
-                        <ReCAPTCHA
-                            hl={langConfigs.recaptchaLang[lang]}
-                            ref={(ref: any) => ref && (recaptcha = ref)}
-                            sitekey={recaptchaClientKey}
-                            onChange={handleRecaptchaChange}
-                            onExpired={handleRecaptchaExpire}
+                    <Typography component="h1" variant="h5" sx={{ mt: 2, textAlign: 'center' }}>
+                        {langConfigs.pleaseEnterEmailAddress[lang]}
+                    </Typography>
+                    <Stack component={'form'} spacing={2} sx={{ mt: 4 }} onSubmit={handleSubmit} >
+                        <Box sx={{ display: processStates.displayError ? 'block' : 'none' }}>
+                            <Alert severity='error' >
+                                <strong>{processStates.errorContent}</strong>
+                            </Alert>
+                        </Box>
+                        <TextField
+                            required
+                            name='emailAddress'
+                            label={langConfigs.emailAddress[lang]}
+                            value={emailAddress}
+                            onChange={handleTextFieldChange}
                         />
-                    </Box>
-                    <Box>
-                        <Button type='submit' fullWidth variant='contained'>
-                            <Typography sx={{ display: !processStates.displayCircularProgress ? 'block' : 'none' }}>
-                                {langConfigs.submit[lang]}
-                            </Typography>
-                            <CircularProgress sx={{ color: 'white', display: processStates.displayCircularProgress ? 'block' : 'none' }} />
-                        </Button>
-                    </Box>
+                        <Box>
+                            <Button type='submit' fullWidth variant='contained'>
+                                <Typography sx={{ display: !processStates.displayCircularProgress ? 'block' : 'none' }}>
+                                    {langConfigs.submit[lang]}
+                                </Typography>
+                                <CircularProgress sx={{ color: 'white', display: processStates.displayCircularProgress ? 'block' : 'none' }} />
+                            </Button>
+                        </Box>
+                    </Stack>
                 </Stack>
-            </Stack>
-            {/* resetpasswordresult */}
-            <Box sx={{ mt: '18rem', mb: '10rem', display: 'resetpasswordresult' === processStates.componentOnDisplay ? 'block' : 'none' }}>
-                <Typography textAlign={'center'}>
-                    {processStates.resultContent}
-                </Typography>
-                <BackToHomeButtonGroup />
-            </Box>
-            <Copyright sx={{ mt: 8, mb: 4 }} />
-        </Container>
+                {/* resetpasswordrequestresult */}
+                <Box sx={{ mt: '18rem', mb: '10rem', display: 'resetpasswordrequestresult' === processStates.componentOnDisplay ? 'block' : 'none' }}>
+                    <Typography textAlign={'center'}>
+                        {processStates.resultContent}
+                    </Typography>
+                    <BackToHomeButtonGroup />
+                </Box>
+                <Copyright sx={{ mt: 8, mb: 4 }} />
+            </Container>
+            <ReCAPTCHA
+                sitekey={recaptchaClientKey}
+                size={'invisible'}
+                hl={langConfigs.recaptchaLang[lang]}
+                ref={(ref: any) => ref && (recaptcha = ref)}
+                onChange={handleRecaptchaChange}
+            />
+        </>
     )
 }
 

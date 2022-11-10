@@ -1,19 +1,19 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import type { VerifyRecaptchaResult } from './types';
 
-export function getRandomHexStr(): string {
-    return Math.floor(Math.random() * Math.pow(10, 16)).toString(16).toUpperCase();
+type EnvironmentVariableObject = {
+    [key: string]: string;
 }
 
+// Create random string
 export function getRandomStr(): string {
     return Math.floor(Math.random() * Math.pow(10, 16)).toString(35).toUpperCase();
 }
 
-/**
- * 
- * @param timeStamp
- * @returns 
- */
+export function getRandomHexStr(): string {
+    return Math.floor(Math.random() * Math.pow(10, 16)).toString(16).toUpperCase();
+}
+
 export function timeStampToString(timeStamp: any): string {
     if (!timeStamp) {
         return '0分钟前';
@@ -29,21 +29,12 @@ export function timeStampToString(timeStamp: any): string {
     return `${(diff / 3600000).toFixed()}小时${(mins / 60000).toFixed()}分钟前`
 }
 
-/**
- * 
- * @param emailAddress
- * @returns 
- */
+// Verify
 export function verifyEmailAddress(emailAddress: string): boolean {
     const regex = new RegExp(/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/);
     return regex.test(emailAddress);
 }
 
-/**
- * 
- * @param password
- * @returns 
- */
 export function verifyPassword(password: string): boolean {
     const regex = new RegExp(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/);
     return regex.test(password);
@@ -84,6 +75,16 @@ export async function verifyRecaptchaResponse(recaptchaServerSecret: string, rec
     }
 }
 
+export function verifyEnvironmentVariable(obj: EnvironmentVariableObject): string | undefined {
+    for (const key in obj) {
+        if (Object.prototype.hasOwnProperty.call(obj, key) && '' === obj[key]) {
+            return key;
+        }
+    }
+    return undefined;
+}
+
+// Response
 export function response405(request: NextApiRequest, response: NextApiResponse) {
     const { url, method } = request;
     response.status(405).send(`${url}: ${method} is not allowed`);

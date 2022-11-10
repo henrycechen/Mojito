@@ -2,8 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { RestError } from '@azure/data-tables';
 import CryptoJS from 'crypto-js';
 
-import { ResetPasswordRequestInfo } from '../../../../../lib/types';
-import { response405, response500 } from '../../../../../lib/utils';
+import { verifyEnvironmentVariable, response405, response500 } from '../../../../../lib/utils';
 
 const appSecret = process.env.APP_AES_SECRET ?? '';
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
@@ -15,6 +14,12 @@ export default async function VerifyToken(req: NextApiRequest, res: NextApiRespo
         return;
     }
     try {
+        // Step #0 verify environment variables
+        const environmentVariable = verifyEnvironmentVariable({ appSecret, recaptchaServerSecret });
+        if (!!environmentVariable) {
+            response500(res, `${environmentVariable} not found`);
+            return;
+        }
         const { requestInfo, recaptchaResponse } = req.query;
         // step #1 verify if it is bot
         if ('string' !== typeof recaptchaResponse || '' === recaptchaResponse) {

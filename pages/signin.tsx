@@ -154,7 +154,7 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
                 </Stack>
                 <Grid container sx={{ mt: 3 }} >
                     <Grid item xs>
-                        <Link href="#" variant="body2">
+                        <Link href="/forgot" variant="body2">
                             {langConfig.forgetPwd[lang]}
                         </Link>
                     </Grid>

@@ -3,28 +3,28 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import CryptoJS from 'crypto-js';
 
 import AzureTableClient from '../../../../../modules/AzureTableClient';
-import { verifyRecaptchaResponse, response405, response500 } from '../../../../../lib/utils';
+import { verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500 } from '../../../../../lib/utils';
 import { ResetPasswordToken, PasswordHash } from '../../../../../lib/types';
 import { RestError } from '@azure/data-tables';
-
-/**
- * Type configs
- */
-
 
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
 const salt = process.env.APP_PASSWORD_SALT ?? '';
 
 export default async function ResetPassword(req: NextApiRequest, res: NextApiResponse) {
     const { method } = req;
-
     if ('POST' !== method) {
         response405(req, res);
         return;
     }
     try {
+        // Step #0 verify environment variables
+        const environmentVariable = verifyEnvironmentVariable({ recaptchaServerSecret, salt });
+        if (!!environmentVariable) {
+            response500(res, `${environmentVariable} not found`);
+            return;
+        }
         const { recaptchaResponse } = req.query;
-        // step #1 verify if it is bot
+        // Step #1 verify if it is bot
         const { status, msg } = await verifyRecaptchaResponse(recaptchaServerSecret, recaptchaResponse);
         if (200 !== status) {
             if (403 === status) {
@@ -33,11 +33,11 @@ export default async function ResetPassword(req: NextApiRequest, res: NextApiRes
             }
             if (500 === status) {
                 response500(res, msg);
-                return
+                return;
             }
         }
         const { memberId, resetPasswordToken, password } = JSON.parse(req.body);
-        // step #2 verify memberId and token
+        // Step #2 verify memberId and token
         if ('string' !== typeof resetPasswordToken || '' === resetPasswordToken) {
             res.status(403).send('Invalid reset password token');
             return;
@@ -64,10 +64,6 @@ export default async function ResetPassword(req: NextApiRequest, res: NextApiRes
             return;
         }
         // step #3 update DB
-        if ('' === salt) {
-            response500(res, 'Salt not found');
-            return;
-        }
         const passwordHash: PasswordHash = {
             partitionKey: memberId,
             rowKey: 'PasswordHash',
