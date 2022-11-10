@@ -99,7 +99,8 @@ const ResetPassword = () => {
     let recaptcha: any;
     const router = useRouter();
     const { requestInfo } = router.query;
-    if (!!requestInfo) { router.push('/') }
+    if (!requestInfo) { router.push('/') }
+    
     // Decalre process states
     const [processStates, setProcessStates] = React.useState({
         /**

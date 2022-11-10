@@ -63,19 +63,18 @@ export default async function ResetPassword(req: NextApiRequest, res: NextApiRes
             res.status(403).send('Reset password token has expired');
             return;
         }
-        // step #3 update DB
         const passwordHash: PasswordHash = {
             partitionKey: memberId,
             rowKey: 'PasswordHash',
             PasswordHashStr: CryptoJS.SHA256(password + salt).toString()
         }
-        // step #3.1 update PasswordHash
+        // Step #3.1 update PasswordHash
         const { clientRequestId } = await memeberLoginTableClient.upsertEntity(passwordHash, 'Replace');
         if (!clientRequestId) {
             response500(res, 'Was trying upserting passwordHash (Table Operation)');
         } else {
             res.status(200).send('Password upserted');
-            // step #3.2 update ResetPasswordToken
+            // Step #3.2 update ResetPasswordToken
             const resetPasswordToken: ResetPasswordToken = {
                 partitionKey: memberId,
                 rowKey: 'ResetPasswordToken',

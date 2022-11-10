@@ -34,7 +34,7 @@ export default async function Request(req: NextApiRequest, res: NextApiResponse)
             return;
         }
         const { recaptchaResponse } = req.query;
-        // step #1 check if it is requested by a bot
+        // Step #1 check if it is requested by a bot
         const { status, msg } = await verifyRecaptchaResponse(recaptchaServerSecret, recaptchaResponse);
         if (200 !== status) {
             if (403 === status) {
@@ -46,8 +46,8 @@ export default async function Request(req: NextApiRequest, res: NextApiResponse)
                 return;
             }
         }
+        // Step #2 find cooresponding memberId
         const { emailAddress } = req.query;
-        // step #2 find cooresponding memberId
         if ('string' !== typeof emailAddress || '' === emailAddress) {
             res.status(403).send('Invalid email address');
             return;
@@ -65,14 +65,14 @@ export default async function Request(req: NextApiRequest, res: NextApiResponse)
             response500(res, `Getting an invalid memberId`);
             return;
         }
-        // step #3 create token
+        // Step #3 create token
         const token = getRandomHexStr();
         const info: ResetPasswordRequestInfo = {
             memberId,
             resetPasswordToken: token,
             expireDate: new Date().getTime() + 15 * 60 * 1000 // set valid time for 15 minutes
         }
-        // step #4 componse and send email
+        // Step #4 componse and send email
         const emailMessage: EmailMessage = {
             sender: '<donotreply@mojito.co.nz>',
             content: {
@@ -85,7 +85,7 @@ export default async function Request(req: NextApiRequest, res: NextApiResponse)
         }
         const mailClient = AzureEmailCommunicationClient();
         const { messageId } = await mailClient.send(emailMessage);
-        // step #5 update DB
+        // Step #5 update DB
         const memeberLoginTableClient = AzureTableClient('MemberLogin');
         const resetPasswordToken: ResetPasswordToken = {
             partitionKey: memberId,
@@ -95,7 +95,7 @@ export default async function Request(req: NextApiRequest, res: NextApiResponse)
             EmailMessageId: messageId
         }
         const { clientRequestId } = await memeberLoginTableClient.upsertEntity(resetPasswordToken, 'Replace');
-        // step #6 send response
+        // Step #6 send response
         // here use clientRequestId to verify the table operation result
         if (!clientRequestId) {
             response500(res, 'Was trying creating resetPasswordToken (Table Operation)');

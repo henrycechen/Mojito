@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { RestError } from '@azure/data-tables';
 import CryptoJS from 'crypto-js';
 
-import { verifyEnvironmentVariable, response405, response500 } from '../../../../../lib/utils';
+import { verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500 } from '../../../../../lib/utils';
 
 const appSecret = process.env.APP_AES_SECRET ?? '';
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
@@ -21,23 +21,19 @@ export default async function VerifyToken(req: NextApiRequest, res: NextApiRespo
             return;
         }
         const { requestInfo, recaptchaResponse } = req.query;
-        // step #1 verify if it is bot
-        if ('string' !== typeof recaptchaResponse || '' === recaptchaResponse) {
-            res.status(403).send('Invalid ReCAPTCHA response');
-            return;
+        // Step #1 check if it is requested by a bot
+        const { status, msg } = await verifyRecaptchaResponse(recaptchaServerSecret, recaptchaResponse);
+        if (200 !== status) {
+            if (403 === status) {
+                res.status(403).send(msg);
+                return;
+            }
+            if (500 === status) {
+                response500(res, msg);
+                return;
+            }
         }
-        if ('' === recaptchaServerSecret) {
-            response500(res, 'ReCAPTCHA shared key not found');
-            return;
-        }
-        const recaptchaVerifyResp = await fetch(`https://www.google.com/recaptcha/api/siteverify?secret=${recaptchaServerSecret}&response=${recaptchaResponse}`, { method: 'POST' })
-        // [!] invoke of json() make the probability of causing TypeError
-        const { success } = await recaptchaVerifyResp.json();
-        if (!success) {
-            res.status(403).send('ReCAPTCHA failed');
-            return;
-        }
-        // step #2 verify request info
+        // Step #2 verify request info
         if ('string' !== typeof requestInfo || '' === requestInfo) {
             res.status(403).send('Invalid request info');
             return;
@@ -46,9 +42,9 @@ export default async function VerifyToken(req: NextApiRequest, res: NextApiRespo
             response500(res, 'App scret not found');
             return;
         }
-        // step #3.1 decode base64 string to cypher
+        // Step #3.1 decode base64 string to cypher
         const infoCypher = Buffer.from(requestInfo, 'base64').toString();
-        // step #3.2 decode cypher to json string
+        // Step #3.2 decode cypher to json string
         const infoJsonStr = CryptoJS.AES.decrypt(infoCypher, appSecret).toString(CryptoJS.enc.Utf8);
         if (infoJsonStr.length === 0) {
             res.status(400).send('Inappropriate request info');

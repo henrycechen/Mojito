@@ -1,37 +1,15 @@
 import * as React from 'react';
-import Avatar from '@mui/material/Avatar';
 import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
 import Container from '@mui/material/Container';
-import Link from '@mui/material/Link';
-import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-
-import IconButton from '@mui/material/IconButton';
-import InputLabel from '@mui/material/InputLabel';
-import InputAdornment from '@mui/material/InputAdornment';
-import OutlinedInput from '@mui/material/OutlinedInput';
-import FormControl from '@mui/material/FormControl';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
-
-import Alert from '@mui/material/Alert';
-import CircularProgress from '@mui/material/CircularProgress';
 
 import ReCAPTCHA from "react-google-recaptcha";
 
 import { useRouter } from 'next/router';
 import { LangConfigs } from '../../lib/types';
-import { verifyPassword } from '../../lib/utils';
 
 import Copyright from '../../ui/Copyright';
 import BackToHomeButtonGroup from '../../ui/BackToHomeButtonGroup';
-
-interface PasswordStates {
-    password: string;
-    repeatpassword: string;
-    showpassword: boolean;
-}
 
 const recaptchaClientKey = process.env.NEXT_PUBLIC_INVISIABLE_RECAPTCHA_SITE_KEY ?? '';
 const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'ch';
@@ -58,7 +36,7 @@ const VerifyAccount = () => {
     let recaptcha: any;
     const router = useRouter();
     const { requestInfo } = router.query;
-    // if (!!requestInfo) { router.push('/') }
+    if (!requestInfo) { router.push('/') }
 
     // Decalre process states
     const [processStates, setProcessStates] = React.useState({
