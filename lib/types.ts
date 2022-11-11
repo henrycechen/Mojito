@@ -2,7 +2,15 @@ export type LangConfigs = { [key: string]: any };
 
 export type VerifyRecaptchaResult = {
     status: number;
-    msg: string;
+    message: string;
+}
+
+// States
+export type SignInCredentialStates = {
+    emailAddress: string;
+    password: string;
+    repeatpassword: string;
+    showpassword: boolean;
 }
 
 // Mail
@@ -23,15 +31,14 @@ export type EmailRecipient = {
 }
 
 // Request Info
+export type VerifyAccountRequestInfo = {
+    memberId: string;
+}
+
 export type ResetPasswordRequestInfo = {
     memberId: string;
     resetPasswordToken: string;
     expireDate: number;
-}
-
-export type VerifyAccountInfo = {
-    memberId: string;
-    emailAddress: string;
 }
 
 // [Table] MemberInfo
@@ -55,6 +62,13 @@ export type ResetPasswordToken = {
     ResetPasswordTokenStr?: string;
     EmailMessageId?: string;
     IsActive?: boolean;
+}
+
+// [Table] MemberManagement
+export type MemberManagement = {
+    partitionKey: string;
+    rowKey: string;
+    [key: string]: any;
 }
 
 // [Table] LoginCredentialsMapping

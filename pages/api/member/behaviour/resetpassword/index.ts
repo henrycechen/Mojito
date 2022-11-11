@@ -25,14 +25,14 @@ export default async function ResetPassword(req: NextApiRequest, res: NextApiRes
         }
         const { recaptchaResponse } = req.query;
         // Step #1 verify if it is bot
-        const { status, msg } = await verifyRecaptchaResponse(recaptchaServerSecret, recaptchaResponse);
+        const { status, message } = await verifyRecaptchaResponse(recaptchaServerSecret, recaptchaResponse);
         if (200 !== status) {
             if (403 === status) {
-                res.status(403).send(msg);
+                res.status(403).send(message);
                 return;
             }
             if (500 === status) {
-                response500(res, msg);
+                response500(res, message);
                 return;
             }
         }
@@ -43,6 +43,7 @@ export default async function ResetPassword(req: NextApiRequest, res: NextApiRes
             return;
         }
         const memeberLoginTableClient = AzureTableClient('MemberLogin');
+        // Step #3.1 look up reset password token from [Table] MemberLogin
         const tokenQuery = memeberLoginTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${memberId}' and RowKey eq 'ResetPasswordToken'` } });
         // [!] attemp to reterieve entity makes the probability of causing RestError
         const tokenQueryResult = await tokenQuery.next();
@@ -51,12 +52,13 @@ export default async function ResetPassword(req: NextApiRequest, res: NextApiRes
             return;
         }
         const { Timestamp: timestamp, IsActive: isActive, ResetPasswordTokenStr: resetPasswordTokenReference } = tokenQueryResult.value;
+        // Step #3.2 match reset password tokens
         if (resetPasswordTokenReference !== resetPasswordToken) {
             res.status(403).send('Invalid reset password token (not match)');
             return;
         }
         if (!isActive) {
-            res.status(403).send('Current reset password token has been used');
+            res.status(403).send('Token has been used');
             return;
         }
         if (15 * 60 * 1000 < new Date().getTime() - new Date(timestamp).getTime()) {
@@ -68,23 +70,19 @@ export default async function ResetPassword(req: NextApiRequest, res: NextApiRes
             rowKey: 'PasswordHash',
             PasswordHashStr: CryptoJS.SHA256(password + salt).toString()
         }
-        // Step #3.1 update PasswordHash
-        const { clientRequestId } = await memeberLoginTableClient.upsertEntity(passwordHash, 'Replace');
-        if (!clientRequestId) {
-            response500(res, 'Was trying upserting passwordHash (Table Operation)');
-        } else {
-            res.status(200).send('Password upserted');
-            // Step #3.2 update ResetPasswordToken
-            const resetPasswordToken: ResetPasswordToken = {
-                partitionKey: memberId,
-                rowKey: 'ResetPasswordToken',
-                IsActive: false
-            }
-            await memeberLoginTableClient.upsertEntity(resetPasswordToken, 'Merge');
+        // Step #4.1 update PasswordHash to [Table] MemberLogin
+        await memeberLoginTableClient.upsertEntity(passwordHash, 'Replace');
+        res.status(200).send('Password upserted');
+        // Step #4.2 update ResetPasswordToken to [Table] MemberLogin
+        const resetPasswordTokenUpdate: ResetPasswordToken = {
+            partitionKey: memberId,
+            rowKey: 'ResetPasswordToken',
+            IsActive: false
         }
+        await memeberLoginTableClient.upsertEntity(resetPasswordTokenUpdate, 'Merge');
     } catch (e) {
         if (e instanceof RestError) {
-            response500(res, `Was trying querying entity. ${e}`);
+            response500(res, `Was trying communicating with db. ${e}`);
         }
         else {
             response500(res, `Uncategorized Error occurred. ${e}`);

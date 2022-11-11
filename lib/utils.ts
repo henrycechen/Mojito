@@ -45,13 +45,13 @@ export async function verifyRecaptchaResponse(recaptchaServerSecret: string, rec
         if ('string' !== typeof recaptchaResponse || '' === recaptchaResponse) {
             return {
                 status: 403,
-                msg: 'Invalid ReCAPTCHA response'
+                message: 'Invalid ReCAPTCHA response'
             }
         }
         if ('' === recaptchaServerSecret) {
             return {
                 status: 500,
-                msg: 'ReCAPTCHA shared key not found'
+                message: 'ReCAPTCHA shared key not found'
             }
         }
         const recaptchaVerifyResp = await fetch(`https://www.google.com/recaptcha/api/siteverify?secret=${recaptchaServerSecret}&response=${recaptchaResponse}`, { method: 'POST' })
@@ -60,17 +60,17 @@ export async function verifyRecaptchaResponse(recaptchaServerSecret: string, rec
         if (!success) {
             return {
                 status: 403,
-                msg: 'ReCAPTCHA either failed or expired'
+                message: 'ReCAPTCHA either failed or expired'
             }
         }
         return {
             status: 200,
-            msg: ''
+            message: ''
         }
     } catch (e) {
         return {
             status: 500,
-            msg: e instanceof TypeError ? `Was trying to reterieve info from ReCAPTCHA response. ${e}` : `Uncategorized Error occurred. ${e}`
+            message: e instanceof TypeError ? `Was trying to reterieve info from ReCAPTCHA response. ${e}` : `Uncategorized Error occurred. ${e}`
         }
     }
 }

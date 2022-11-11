@@ -4,7 +4,7 @@ import CryptoJS from 'crypto-js';
 
 import AzureTableClient from '../../../../../modules/AzureTableClient';
 import AzureEmailCommunicationClient from '../../../../../modules/AzureEmailCommunicationClient';
-import { LangConfigs, EmailMessage, MemberInfo, PasswordHash, LoginCredentialsMapping, VerifyAccountInfo } from '../../../../../lib/types';
+import { LangConfigs, EmailMessage, MemberInfo, MemberManagement, PasswordHash, LoginCredentialsMapping, VerifyAccountRequestInfo } from '../../../../../lib/types';
 import { getRandomStr, verifyEmailAddress, verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500 } from '../../../../../lib/utils';
 import { composeVerifyAccountEmail } from '../../../../../lib/email';
 
@@ -36,19 +36,19 @@ export default async function SignUp(req: NextApiRequest, res: NextApiResponse) 
         }
         const { recaptchaResponse } = req.query;
         // Step #1 verify if it is bot
-        const { status, msg } = await verifyRecaptchaResponse(recaptchaServerSecret, recaptchaResponse);
+        const { status, message } = await verifyRecaptchaResponse(recaptchaServerSecret, recaptchaResponse);
         if (200 !== status) {
             if (403 === status) {
-                res.status(403).send(msg);
+                res.status(403).send(message);
                 return;
             }
             if (500 === status) {
-                response500(res, msg);
+                response500(res, message);
                 return;
             }
         }
         const { emailAddress, password } = JSON.parse(req.body);
-        // Step #2 verify email address
+        // Step #2.1 verify email address
         if ('string' !== typeof emailAddress || '' === emailAddress) {
             res.status(403).send('Invalid email address');
             return;
@@ -57,6 +57,7 @@ export default async function SignUp(req: NextApiRequest, res: NextApiResponse) 
             res.status(403).send('Email address not satisfied');
             return;
         }
+        // Step #2.2 look up email address from [Table] LoginCredentialsMapping
         const loginCredentialsMappingTableClient = AzureTableClient('LoginCredentialsMapping');
         const mappingQuery = loginCredentialsMappingTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq 'EmailAddress' and RowKey eq '${emailAddress}'` } });
         // [!] attemp to reterieve entity makes the probability of causing RestError
@@ -67,15 +68,15 @@ export default async function SignUp(req: NextApiRequest, res: NextApiResponse) 
         }
         // Step #3.1 create a memberId
         const memberId = getRandomStr();
-        // Step #3.2 upsertEntity to table LoginCredentialsMapping
+        // Step #3.2 upsertEntity to [Table] LoginCredentialsMapping
         const loginCredentialsMapping: LoginCredentialsMapping = {
             partitionKey: 'EmailAddress',
-            rowKey: 'EmailAddressStr',
+            rowKey: emailAddress,
             MemberIdStr: memberId,
             IsActive: true
         }
         await loginCredentialsMappingTableClient.upsertEntity(loginCredentialsMapping, 'Replace');
-        // Step #3.3 createEntity to table MemberLogin
+        // Step #3.3 createEntity to [Table] MemberLogin
         const passwordHash: PasswordHash = {
             partitionKey: memberId,
             rowKey: 'PasswordHash',
@@ -83,24 +84,25 @@ export default async function SignUp(req: NextApiRequest, res: NextApiResponse) 
         }
         const memberLoginTableClient = AzureTableClient('MemberLogin');
         await memberLoginTableClient.createEntity(passwordHash);
-        // Step #3.4 createEntities to table MemberInfo
+        // Step #3.4 updateEntity to [Table] MemberInfo
         const memberInfoEmailAddress: MemberInfo = {
             partitionKey: memberId,
             rowKey: 'EmailAddress',
             EmailAddressStr: emailAddress
         }
-        const memberInfoAccountStatus: MemberInfo = {
+        const memberInfoTableClient = AzureTableClient('MemberInfo');
+        await memberInfoTableClient.createEntity(memberInfoEmailAddress);
+        // Step #3.4 updateEntity to [Table] MemberManagement
+        const memberManagementAccountStatus: MemberManagement = {
             partitionKey: memberId,
             rowKey: 'AccountStatus',
-            IsActive: false
+            AccountStatusValue: 0 // Established, email address not verified
         }
-        const memberInfoTableClient = AzureTableClient('MemberLogin');
-        await memberInfoTableClient.createEntity(memberInfoEmailAddress);
-        await memberInfoTableClient.createEntity(memberInfoAccountStatus);
+        const memberManagementTableClient = AzureTableClient('MemberManagement');
+        await memberManagementTableClient.createEntity(memberManagementAccountStatus);
         // Step #4 componse and send email
-        const info: VerifyAccountInfo = {
-            memberId,
-            emailAddress
+        const info: VerifyAccountRequestInfo = {
+            memberId
         }
         const emailMessage: EmailMessage = {
             sender: '<donotreply@mojito.co.nz>',
@@ -121,7 +123,7 @@ export default async function SignUp(req: NextApiRequest, res: NextApiResponse) 
         }
     } catch (e) {
         if (e instanceof RestError) {
-            response500(res, `Was trying operating table. ${e}`);
+            response500(res, `Was trying communicating with db. ${e}`);
         }
         else {
             response500(res, `Uncategorized Error occurred. ${e}`);

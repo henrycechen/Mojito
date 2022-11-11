@@ -35,14 +35,14 @@ export default async function Request(req: NextApiRequest, res: NextApiResponse)
         }
         const { recaptchaResponse } = req.query;
         // Step #1 check if it is requested by a bot
-        const { status, msg } = await verifyRecaptchaResponse(recaptchaServerSecret, recaptchaResponse);
+        const { status, message } = await verifyRecaptchaResponse(recaptchaServerSecret, recaptchaResponse);
         if (200 !== status) {
             if (403 === status) {
-                res.status(403).send(msg);
+                res.status(403).send(message);
                 return;
             }
             if (500 === status) {
-                response500(res, msg);
+                response500(res, message);
                 return;
             }
         }
@@ -85,8 +85,8 @@ export default async function Request(req: NextApiRequest, res: NextApiResponse)
         }
         const mailClient = AzureEmailCommunicationClient();
         const { messageId } = await mailClient.send(emailMessage);
-        // Step #5 update DB
-        const memeberLoginTableClient = AzureTableClient('MemberLogin');
+        // Step #5 upsert reset password token to [Table] MemberLogin
+        const memberLoginTableClient = AzureTableClient('MemberLogin');
         const resetPasswordToken: ResetPasswordToken = {
             partitionKey: memberId,
             rowKey: 'ResetPasswordToken',
@@ -94,20 +94,14 @@ export default async function Request(req: NextApiRequest, res: NextApiResponse)
             ResetPasswordTokenStr: token,
             EmailMessageId: messageId
         }
-        const { clientRequestId } = await memeberLoginTableClient.upsertEntity(resetPasswordToken, 'Replace');
-        // Step #6 send response
-        // here use clientRequestId to verify the table operation result
-        if (!clientRequestId) {
-            response500(res, 'Was trying creating resetPasswordToken (Table Operation)');
-        } else {
-            res.status(200).send('Email sent');
-        }
+        await memberLoginTableClient.upsertEntity(resetPasswordToken, 'Replace');
+        res.status(200).send('Email sent');
     } catch (e) {
         if (e instanceof TypeError) {
             response500(res, `Was trying decoding recaptcha verification response. ${e}`);
         }
         else if (e instanceof RestError) {
-            response500(res, `Was trying querying entity. ${e}`);
+            response500(res, `Was trying communicating with db. ${e}`);
         }
         else {
             response500(res, `Uncategorized Error occurred. ${e}`);

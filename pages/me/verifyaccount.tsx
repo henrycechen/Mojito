@@ -36,8 +36,7 @@ const VerifyAccount = () => {
     let recaptcha: any;
     const router = useRouter();
     const { requestInfo } = router.query;
-    if (!requestInfo) { router.push('/') }
-
+    
     // Decalre process states
     const [processStates, setProcessStates] = React.useState({
         /**
@@ -53,6 +52,10 @@ const VerifyAccount = () => {
     // Handle process states change
     React.useEffect(() => { post() }, [processStates.recaptchaResponse]);
     const post = async () => {
+        if(!requestInfo) {
+            router.push('/');
+            return;
+        }
         if ('accountverify' === processStates.componentOnDisplay && '' === processStates.recaptchaResponse) {
             recaptcha?.execute();
             return;
@@ -63,11 +66,10 @@ const VerifyAccount = () => {
         }
         const resp = await fetch(`/api/member/behaviour/signup/verify?requestInfo=${requestInfo}&recaptchaResponse=${processStates.recaptchaResponse}`, { method: 'POST' })
         if (200 === resp.status) {
-            setProcessStates({ ...processStates, componentOnDisplay: 'resetpasswordresult', resultContent: langConfigs.goodResult[lang] })
+            setProcessStates({ ...processStates, componentOnDisplay: 'accountverifyresult', resultContent: langConfigs.goodResult[lang] })
         } else {
-            setProcessStates({ ...processStates, componentOnDisplay: 'resetpasswordresult', resultContent: langConfigs.badResult[lang] })
+            setProcessStates({ ...processStates, componentOnDisplay: 'accountverifyresult', resultContent: langConfigs.badResult[lang] })
         }
-
     }
 
     // Handle ReCAPTCHA challenge

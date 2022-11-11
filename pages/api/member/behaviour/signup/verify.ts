@@ -3,7 +3,7 @@ import { RestError } from '@azure/data-tables';
 import CryptoJS from 'crypto-js';
 
 import AzureTableClient from '../../../../../modules/AzureTableClient';
-import { MemberInfo } from '../../../../../lib/types';
+import { MemberManagement } from '../../../../../lib/types';
 import { verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500 } from '../../../../../lib/utils';
 
 const appSecret = process.env.APP_AES_SECRET ?? '';
@@ -11,7 +11,7 @@ const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
 
 export default async function VerifyToken(req: NextApiRequest, res: NextApiResponse) {
     const { method } = req;
-    if ('GET' !== method) {
+    if ('POST' !== method) {
         response405(req, res);
         return;
     }
@@ -24,14 +24,14 @@ export default async function VerifyToken(req: NextApiRequest, res: NextApiRespo
         }
         const { recaptchaResponse } = req.query;
         // Step #1 verify if it is bot
-        const { status, msg } = await verifyRecaptchaResponse(recaptchaServerSecret, recaptchaResponse);
+        const { status, message } = await verifyRecaptchaResponse(recaptchaServerSecret, recaptchaResponse);
         if (200 !== status) {
             if (403 === status) {
-                res.status(403).send(msg);
+                res.status(403).send(message);
                 return;
             }
             if (500 === status) {
-                response500(res, msg);
+                response500(res, message);
                 return;
             }
         }
@@ -50,30 +50,32 @@ export default async function VerifyToken(req: NextApiRequest, res: NextApiRespo
             return;
         }
         // [!] attemp to parse info json string makes the probability of causing SyntaxError
-        const { memberId, emailAddress } = JSON.parse(infoJsonStr);
-        if (!memberId || !emailAddress) {
+        const { memberId } = JSON.parse(infoJsonStr);
+        if (!memberId) {
             res.status(400).send('Incomplete request info');
             return;
         }
-        const memberInfoTableClient = AzureTableClient('MemberInfo');
-        const infoQuery = memberInfoTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${memberId}' and RowKey eq 'EmailAddress'` } });
-        // [!] attemp to reterieve entity makes the probability of causing RestError
-        const tokenQueryResult = await infoQuery.next();
-        if (!tokenQueryResult.value) {
-            res.status(404).send('Member info not found');
+        // Step #4.1 look up account status from [Table] MemberManagement
+        const memberManagementTableClient = AzureTableClient('MemberManagement');
+        const accountStatusQuery = memberManagementTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${memberId}' and RowKey eq 'AccountStatus'` } });
+        const accountStatusQueryResult = await accountStatusQuery.next();
+        if (!accountStatusQueryResult.value) {
+            res.status(404).send('Account status not found');
             return;
         }
-        const { EmailAddressStr } = tokenQueryResult.value;
-        if (emailAddress !== EmailAddressStr) {
-            res.status(403).send('Email addresses (request info, member info) not match');
+        // Step #4.2 verify account status
+        const { AccountStatusValue: accountStatusValue } = accountStatusQueryResult.value;
+        if (0 !== accountStatusValue) {
+            res.status(400).send('Member is not activatable');
             return;
-        }
-        const memberInfoAccountStatus: MemberInfo = {
+        } 
+        // Step #3.4 updateEntity to [Table] MemberManagement
+        const accountStatus: MemberManagement = {
             partitionKey: memberId,
             rowKey: 'AccountStatus',
-            IsActive: false
+            AccountStatusValue: 200
         }
-        await memberInfoTableClient.upsertEntity(memberInfoAccountStatus, 'Merge');
+        await memberManagementTableClient.updateEntity(accountStatus, 'Merge');
         res.status(200).send('Account verified');
     } catch (e) {
         if (e instanceof SyntaxError) {
@@ -83,7 +85,7 @@ export default async function VerifyToken(req: NextApiRequest, res: NextApiRespo
             response500(res, `Was trying decoding recaptcha verification response. ${e}`);
         }
         else if (e instanceof RestError) {
-            response500(res, `Was trying querying entity. ${e}`);
+            response500(res, `Was trying communicating with db. ${e}`);
         }
         else {
             response500(res, `Uncategorized Error occurred. ${e}`);

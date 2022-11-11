@@ -1,18 +1,16 @@
 import * as React from 'react';
 import Avatar from '@mui/material/Avatar';
-import Button from '@mui/material/Button';
-import CssBaseline from '@mui/material/CssBaseline';
-import TextField from '@mui/material/TextField';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import Checkbox from '@mui/material/Checkbox';
-import Link from '@mui/material/Link';
-import Grid from '@mui/material/Grid';
 import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
+import Button from '@mui/material/Button';
 import Container from '@mui/material/Container';
+import Divider from '@mui/material/Divider';
+import Grid from '@mui/material/Grid';
+import Link from '@mui/material/Link';
+import Stack from '@mui/material/Stack';
+import TextField from '@mui/material/TextField';
+import Typography from '@mui/material/Typography';
 
-import { signIn, getProviders, getSession, getCsrfToken, useSession } from 'next-auth/react'
-
+import { signIn, getProviders, useSession } from 'next-auth/react'
 
 import IconButton from '@mui/material/IconButton';
 import InputLabel from '@mui/material/InputLabel';
@@ -22,28 +20,17 @@ import FormControl from '@mui/material/FormControl';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 
+import Alert from '@mui/material/Alert';
+import CircularProgress from '@mui/material/CircularProgress';
 
-
-import { useRouter } from 'next/router';
 import Copyright from '../ui/Copyright';
-import Stack from '@mui/material/Stack';
-import Divider from '@mui/material/Divider';
+import BackToHomeButtonGroup from '../ui/BackToHomeButtonGroup';
 
 import ReCAPTCHA from "react-google-recaptcha";
 
-import { LangConfigs } from '../lib/types';
+import { useRouter } from 'next/router';
+import { LangConfigs, SignInCredentialStates } from '../lib/types';
 import { verifyEmailAddress, verifyPassword } from '../lib/utils';
-import Alert from '@mui/material/Alert';
-import CircularProgress from '@mui/material/CircularProgress';
-import BackToHomeButtonGroup from '../ui/BackToHomeButtonGroup';
-
-
-type SignInCredentialStates = {
-    emailAddress: string;
-    password: string;
-    repeatpassword: string;
-    showpassword: boolean;
-}
 
 export async function getServerSideProps() {
     return {
@@ -52,7 +39,7 @@ export async function getServerSideProps() {
 }
 
 const recaptchaClientKey = process.env.NEXT_PUBLIC_INVISIABLE_RECAPTCHA_SITE_KEY ?? '';
-const lang = 'ch';
+const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'ch';
 const langConfigs: LangConfigs = {
     signUp: {
         ch: '注册',
@@ -157,12 +144,12 @@ const SignUp = ({ providers }: any) => {
             // ReCAPTCHA challenge not ready
             return;
         }
-        if ('' !== signInCredentials.emailAddress && '' !== signInCredentials.password) {
+        if ('' !== signInCredentialStates.emailAddress && '' !== signInCredentialStates.password) {
             const resp = await fetch(`/api/member/behaviour/signup?recaptchaResponse=${processStates.recaptchaResponse}`, {
                 method: 'POST',
                 body: JSON.stringify({
-                    emailAddress: signInCredentials.emailAddress,
-                    password: signInCredentials.password
+                    emailAddress: signInCredentialStates.emailAddress,
+                    password: signInCredentialStates.password
                 })
             });
             if (200 === resp.status) {
@@ -183,7 +170,7 @@ const SignUp = ({ providers }: any) => {
     }
 
     // Decalre signIn credential states
-    const [signInCredentials, setSignInCredentials] = React.useState({
+    const [signInCredentialStates, setSignInCredentialStates] = React.useState({
         emailAddress: '',
         password: '',
         repeatpassword: '',
@@ -192,10 +179,10 @@ const SignUp = ({ providers }: any) => {
 
     // Handle signIn credential states change
     const handleChange = (prop: keyof SignInCredentialStates) => (event: React.ChangeEvent<HTMLInputElement>) => {
-        setSignInCredentials({ ...signInCredentials, [prop]: event.target.value });
+        setSignInCredentialStates({ ...signInCredentialStates, [prop]: event.target.value });
     };
     const handleShowPassword = () => {
-        setSignInCredentials({ ...signInCredentials, showpassword: !signInCredentials.showpassword })
+        setSignInCredentialStates({ ...signInCredentialStates, showpassword: !signInCredentialStates.showpassword })
     }
     const handleMouseDownPassword = (event: React.MouseEvent<HTMLButtonElement>) => {
         event.preventDefault();
@@ -204,19 +191,19 @@ const SignUp = ({ providers }: any) => {
     // Handle signUp form submit
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        if (verifyEmailAddress(signInCredentials.emailAddress)) {
+        if (verifyEmailAddress(signInCredentialStates.emailAddress)) {
             setProcessStates({ ...processStates, displayError: false })
         } else {
             setProcessStates({ ...processStates, errorContent: langConfigs.emailAddressNotSatisfiedError[lang], displayError: true })
             return;
         }
-        if (signInCredentials.password !== signInCredentials.repeatpassword) {
+        if (signInCredentialStates.password !== signInCredentialStates.repeatpassword) {
             setProcessStates({ ...processStates, errorContent: langConfigs.passwordNotMatchError[lang], displayError: true })
             return;
         } else {
             setProcessStates({ ...processStates, displayError: false })
         }
-        if (!verifyPassword(signInCredentials.password)) {
+        if (!verifyPassword(signInCredentialStates.password)) {
             setProcessStates({ ...processStates, errorContent: langConfigs.passwordNotSatisfiedError[lang], displayError: true })
             return;
         } else {
@@ -268,13 +255,13 @@ const SignUp = ({ providers }: any) => {
                             autoComplete='email'
                         />
                         <FormControl variant='outlined'>
-                            <InputLabel htmlFor='outlined-adornment-new-password'>{langConfigs.password[lang]}</InputLabel>
+                            <InputLabel htmlFor='outlined-adornment-password'>{langConfigs.password[lang]}</InputLabel>
                             <OutlinedInput
                                 required
-                                id={'outlined-adornment-new-password'}
+                                id={'outlined-adornment-password'}
                                 label={langConfigs.password[lang]}
-                                type={signInCredentials.showpassword ? 'text' : 'password'}
-                                value={signInCredentials.password}
+                                type={signInCredentialStates.showpassword ? 'text' : 'password'}
+                                value={signInCredentialStates.password}
                                 onChange={handleChange('password')}
                                 endAdornment={
                                     <InputAdornment position="end">
@@ -284,7 +271,7 @@ const SignUp = ({ providers }: any) => {
                                             onMouseDown={handleMouseDownPassword}
                                             edge="end"
                                         >
-                                            {signInCredentials.showpassword ? <VisibilityIcon /> : <VisibilityOffIcon />}
+                                            {signInCredentialStates.showpassword ? <VisibilityIcon /> : <VisibilityOffIcon />}
                                         </IconButton>
                                     </InputAdornment>
                                 }
@@ -296,8 +283,8 @@ const SignUp = ({ providers }: any) => {
                                 required
                                 id={'outlined-adornment-repeat-password'}
                                 label={langConfigs.repeatPassword[lang]}
-                                type={signInCredentials.showpassword ? 'text' : 'password'}
-                                value={signInCredentials.repeatpassword}
+                                type={signInCredentialStates.showpassword ? 'text' : 'password'}
+                                value={signInCredentialStates.repeatpassword}
                                 onChange={handleChange('repeatpassword')}
                                 endAdornment={
                                     <InputAdornment position="end">
@@ -307,7 +294,7 @@ const SignUp = ({ providers }: any) => {
                                             onMouseDown={handleMouseDownPassword}
                                             edge="end"
                                         >
-                                            {signInCredentials.showpassword ? <VisibilityIcon /> : <VisibilityOffIcon />}
+                                            {signInCredentialStates.showpassword ? <VisibilityIcon /> : <VisibilityOffIcon />}
                                         </IconButton>
                                     </InputAdornment>
                                 }

@@ -21,15 +21,15 @@ export default async function VerifyToken(req: NextApiRequest, res: NextApiRespo
             return;
         }
         const { requestInfo, recaptchaResponse } = req.query;
-        // Step #1 check if it is requested by a bot
-        const { status, msg } = await verifyRecaptchaResponse(recaptchaServerSecret, recaptchaResponse);
+        // Step #1 verify if it is bot
+        const { status, message } = await verifyRecaptchaResponse(recaptchaServerSecret, recaptchaResponse);
         if (200 !== status) {
             if (403 === status) {
-                res.status(403).send(msg);
+                res.status(403).send(message);
                 return;
             }
             if (500 === status) {
-                response500(res, msg);
+                response500(res, message);
                 return;
             }
         }
@@ -60,7 +60,7 @@ export default async function VerifyToken(req: NextApiRequest, res: NextApiRespo
             res.status(403).send('Reset password token has expired');
             return;
         }
-        // pass
+        // Step #4 verification pass, send { memberId, resetPasswordToken } in plain text
         res.status(200).send({ memberId, resetPasswordToken });
     } catch (e) {
         if (e instanceof SyntaxError) {
@@ -70,7 +70,7 @@ export default async function VerifyToken(req: NextApiRequest, res: NextApiRespo
             response500(res, `Was trying decoding recaptcha verification response. ${e}`);
         }
         else if (e instanceof RestError) {
-            response500(res, `Was trying querying entity. ${e}`);
+            response500(res, `Was trying communicating with db. ${e}`);
         }
         else {
             response500(res, `Uncategorized Error occurred. ${e}`);

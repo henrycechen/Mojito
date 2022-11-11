@@ -99,7 +99,6 @@ const ResetPassword = () => {
     let recaptcha: any;
     const router = useRouter();
     const { requestInfo } = router.query;
-    if (!requestInfo) { router.push('/') }
     
     // Decalre process states
     const [processStates, setProcessStates] = React.useState({
@@ -122,6 +121,10 @@ const ResetPassword = () => {
     // Handle process states change
     React.useEffect(() => { post() }, [processStates.recaptchaResponse]);
     const post = async () => {
+        if(!requestInfo) {
+            router.push('/');
+            return;
+        }
         if ('tokencheck' === processStates.componentOnDisplay && '' === processStates.recaptchaResponse) {
             recaptcha?.execute();
             return;
@@ -238,10 +241,10 @@ const ResetPassword = () => {
                             </Alert>
                         </Box>
                         <FormControl variant='outlined'>
-                            <InputLabel htmlFor='outlined-adornment-new-password'>{langConfigs.password[lang]}</InputLabel>
+                            <InputLabel htmlFor='outlined-adornment-password'>{langConfigs.password[lang]}</InputLabel>
                             <OutlinedInput
                                 required
-                                id={'outlined-adornment-new-password'}
+                                id={'outlined-adornment-password'}
                                 label={langConfigs.password[lang]}
                                 type={passwordStates.showpassword ? 'text' : 'password'}
                                 value={passwordStates.password}
