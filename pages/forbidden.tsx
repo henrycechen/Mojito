@@ -1,4 +1,6 @@
 import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Link from '@mui/material/Link';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
@@ -8,36 +10,19 @@ import Copyright from '../ui/Copyright';
 import { LangConfigs } from '../lib/types';
 import BackToHomeButtonGroup from '../ui/BackToHomeButtonGroup';
 
-export async function getStaticProps() {
-    return {
-        props: {
-            errorMessage: {
-                ch: [
-                    '我们的服务器遇到了一些技术难题😟',
-                    '可能有些Bugs出现在了我们的服务器代码中🤯',
-                    '我们的服务器遭遇了某些不可抗力🥲',
-                    '我们的服务器刚刚开小差了😴',
-                    '我们的服务器正在和它的朋友们喝Mojito😳'
-                ][Math.floor(Math.random() * 5)],
-                en: 'Something went wrong in our server.'
-            }
-        },
-    }
-}
-
 const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'ch';
 const langConfigs: LangConfigs = {
-    err: {
-        ch: '出错啦',
-        en: 'Opps'
+    title: {
+        ch: '权限不足',
+        en: 'Forbidden'
     },
-    backToHome: {
-        ch: '返回主页',
-        en: 'Back to home'
+    requireSignUpOrSignIn: {
+        ch: '请先注册或登录后再重试🙂',
+        en: 'Please sign up or sign in before trying again🙂'
     }
 }
 
-export default function About({ errorMessage }: any) {
+export default function Forbidden() {
     return (
         <>
             <AppBar />
@@ -47,18 +32,18 @@ export default function About({ errorMessage }: any) {
                     <Typography
                         sx={{
                             color: 'white',
-                            fontSize: { xs: '5rem', sm: '7rem' },
+                            fontSize: { xs: '4rem', sm: '6rem' },
                             fontWeight: 1000,
                             letterSpacing: '.2rem',
                             maxWidth: 460,
                             ml: { xs: 'none', sm: '2.8rem' }
                         }}>
-                        {langConfigs.err[lang]}
+                        {langConfigs.title[lang]}
                     </Typography>
                     <Typography sx={{
                         display: { xs: 'none', sm: 'block' },
                         color: 'white',
-                        fontSize: '7rem',
+                        fontSize: '6rem',
                         fontWeight: 1000,
                         letterSpacing: '.2rem',
                     }}>
@@ -67,7 +52,7 @@ export default function About({ errorMessage }: any) {
                 </Box>
                 <Box sx={{ color: 'white', textAlign: 'center', mt: '3rem', padding: 4 }}>
                     <Typography variant='h6' sx={{ color: 'white', textAlign: 'center' }}>
-                        {errorMessage[lang]}
+                        {langConfigs.requireSignUpOrSignIn[lang]}
                     </Typography>
                 </Box>
                 <BackToHomeButtonGroup color={'white'} />

@@ -5,13 +5,18 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import CryptoJS from 'crypto-js';
 
 import AzureTableClient from '../../../modules/AzureTableClient';
-import { verifyRecaptchaResponse, verifyEnvironmentVariable } from '../../../lib/utils';
+import { verifyRecaptchaResponse, verifyEnvironmentVariable, getRandomStr } from '../../../lib/utils';
 import { User } from 'next-auth';
+import { LoginCredentialsMapping, MemberInfo, MemberManagement } from "../../../lib/types";
 
 type LoginCredentials = {
     recaptchaResponse: any;
     emailAddress: any;
     password: any;
+}
+
+type ProviderIdMapping = {
+    [key: string]: string
 }
 
 interface Member extends User {
@@ -23,6 +28,10 @@ interface Member extends User {
 
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
 const salt = process.env.APP_PASSWORD_SALT ?? '';
+const providerIdMapping: ProviderIdMapping = {
+    github: 'GitHubOAuth',
+    google: 'GoogleOAuth',
+}
 
 export default NextAuth({
     session: {
@@ -39,7 +48,7 @@ export default NextAuth({
             clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? ''
         }),
         CredentialsProvider({
-            name: 'Credentials',
+            id: 'mojito',
             credentials: {
                 recaptchaResponse: { label: "RecaptchaResponse", type: "text", placeholder: "" },
                 emailAddress: { label: "EmailAddress", type: "text", placeholder: "" },
@@ -59,6 +68,100 @@ export default NextAuth({
         error: '/error'
     },
     callbacks: {
+        async jwt({ token, user, account, profile }: any) {
+            const provider = account?.provider;
+            if (!provider) {
+                return token;
+            }
+            if ('mojito' === provider) {
+                return token;
+            }
+            try {
+                const { providerAccountId } = account;
+                const providerId = providerIdMapping[provider];
+                const loginCredentialsMappingTableClient = AzureTableClient('LoginCredentialsMapping');
+                const mappingQuery = loginCredentialsMappingTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${providerId}' and RowKey eq '${providerAccountId}'` } });
+                // [!] attemp to reterieve entity makes the probability of causing RestError
+                const mappingQueryResult = await mappingQuery.next();
+                // Step #2 look up login credential mapping in db
+                if (!mappingQueryResult.value) {
+                    throw new Error('Login credentials mapping not found');
+                } else {
+                    const { MemberIdStr: memberId } = mappingQueryResult.value;
+                    token.id = memberId;
+                }
+                return token;
+            } catch (e) {
+                throw e;
+            }
+        },
+        async signIn({ user, account, profile, email, credentials }: any) {
+            const provider = account?.provider;
+            if (!provider) {
+                return false;
+            }
+            // Step #1 verify if provider is Mojito account system
+            if ('mojito' === provider) {
+                return true;
+            }
+            try {
+                const { providerAccountId } = account;
+                const providerId = providerIdMapping[provider];
+                const loginCredentialsMappingTableClient = AzureTableClient('LoginCredentialsMapping');
+                const mappingQuery = loginCredentialsMappingTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${providerId}' and RowKey eq '${providerAccountId}'` } });
+                // [!] attemp to reterieve entity makes the probability of causing RestError
+                const mappingQueryResult = await mappingQuery.next();
+                // Step #2 look up login credential mapping in db
+                if (!mappingQueryResult.value) {
+                    // Step #3 mapping not found, create Mojito account
+                    const { email: emailAddress, name: nickName, image: avatarImageUrl } = user;
+                    const memberId = getRandomStr();
+                    // Step #3.1 create login credential mapping
+                    const loginCredentialsMapping: LoginCredentialsMapping = {
+                        partitionKey: providerId,
+                        rowKey: providerAccountId,
+                        MemberIdStr: memberId,
+                        IsActive: true
+                    }
+                    await loginCredentialsMappingTableClient.createEntity(loginCredentialsMapping);
+                    // Step #3.2 create member info
+                    const memberInfoEmailAddress: MemberInfo = {
+                        partitionKey: memberId,
+                        rowKey: 'EmailAddress',
+                        EmailAddressStr: emailAddress
+                    }
+                    const memberInfoNickname: MemberInfo = {
+                        partitionKey: memberId,
+                        rowKey: 'Nickname',
+                        NickNameStr: nickName
+                    }
+                    const memberInfoAvatarImageUrl: MemberInfo = {
+                        partitionKey: memberId,
+                        rowKey: 'AvatarImageUrl',
+                        AvatarImageUrlStr: avatarImageUrl
+                    }
+                    const memberInfoTableClient = AzureTableClient('MemberInfo');
+                    await memberInfoTableClient.createEntity(memberInfoEmailAddress);
+                    await memberInfoTableClient.createEntity(memberInfoNickname);
+                    await memberInfoTableClient.createEntity(memberInfoAvatarImageUrl);
+                    // Step #3.3 create member management
+                    const memberManagementAccountStatus: MemberManagement = {
+                        partitionKey: memberId,
+                        rowKey: 'AccountStatus',
+                        AccountStatusValue: 200 // Email address verified, normal
+                    }
+                    const memberManagementTableClient = AzureTableClient('MemberManagement');
+                    await memberManagementTableClient.createEntity(memberManagementAccountStatus);
+                }
+                return true;
+            } catch (e) {
+                return false;
+            }
+        },
+        async session({ session, user, token }: any) {
+            session.user.id = token.id;
+            return session;
+        }
     }
 })
 
@@ -102,8 +205,8 @@ async function verifyLoginCredentials(credentials: LoginCredentials): Promise<Me
             return null;
         }
         // Step #3.2 look up password hash (reference) from [Table] MemberLogin
-        const memeberLoginTableClient = AzureTableClient('MemberLogin');
-        const loginReferenceQuery = memeberLoginTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${memberId}' and RowKey eq 'PasswordHash'` } });
+        const memberLoginTableClient = AzureTableClient('MemberLogin');
+        const loginReferenceQuery = memberLoginTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${memberId}' and RowKey eq 'PasswordHash'` } });
         const loginReferenceQueryResult = await loginReferenceQuery.next();
         if (!loginReferenceQueryResult.value) {
             return null;
@@ -122,13 +225,12 @@ async function verifyLoginCredentials(credentials: LoginCredentials): Promise<Me
         const avatarImageUrlQueryResult = await avatarImageUrlQuery.next();
         return {
             id: memberId,
-            emailAddress: emailAddress,
-            nickname: !nicknameQueryResult.value ? '' : nicknameQueryResult.value.NicknameStr,
-            avatarImageUrl: !avatarImageUrlQueryResult.value ? '' : avatarImageUrlQueryResult.value.AvatarImgUrlStr,
+            email: emailAddress,
+            name: !nicknameQueryResult.value ? '' : nicknameQueryResult.value.NicknameStr,
+            image: !avatarImageUrlQueryResult.value ? '' : avatarImageUrlQueryResult.value.AvatarImgUrlStr,
         }
     } catch (e) {
         console.log(e);
         throw new Error('Error occurred when trying to signin');
-
     }
 }

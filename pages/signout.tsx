@@ -49,20 +49,20 @@ const langConfig = {
 
 }
 
-const SignIn = ({ providers, csrfToken }: any) => {
+const SignOut = () => {
     /**
      * Handle session
      */
     const { data: session, status } = useSession();
     const router = useRouter();
-    // if (!session) {
-    //     router.push('/');
-    // }
+    // React.useEffect(() => { if (!session) router.push('/') }, []);
+    console.log(session?.user);
+    
+
     const handleSubmit = (event: React.FormEvent) => {
         event.preventDefault();
         signOut();
     }
-
 
     return (
         <Container component='main' maxWidth='xs'>
@@ -75,16 +75,14 @@ const SignIn = ({ providers, csrfToken }: any) => {
                     {langConfig.appSignout[lang]}
                 </Typography>
                 <Stack component={'form'} spacing={2} sx={{ mt: 4 }} onSubmit={handleSubmit}>
-
                     <Button type='submit' fullWidth variant='contained'>
                         {langConfig.confirm[lang]}
                     </Button>
                 </Stack>
             </Stack>
-
             <Copyright sx={{ mt: 16, mb: 4 }} />
         </Container>
     )
 }
 
-export default SignIn;
+export default SignOut;

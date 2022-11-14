@@ -6,12 +6,16 @@ type EnvironmentVariableObject = {
 }
 
 // Create random string
-export function getRandomStr(): string {
-    return Math.floor(Math.random() * Math.pow(10, 16)).toString(35).toUpperCase();
+export function getRandomStr(): string { // Length of 10
+    return Math.floor(Math.random() * Math.pow(10, 15)).toString(35).toUpperCase();
 }
 
-export function getRandomHexStr(): string {
-    return Math.floor(Math.random() * Math.pow(10, 16)).toString(16).toUpperCase();
+export function getRandomLongStr(): string { // Length of 20
+    return Math.floor(Math.random() * Math.pow(10, 15)).toString(35).toUpperCase() + Math.floor(Math.random() * Math.pow(10, 15)).toString(35).toUpperCase();
+}
+
+export function getRandomHexStr(): string { // Length of 8
+    return Math.floor(Math.random() * Math.pow(10, 10)).toString(16).toUpperCase();
 }
 
 export function timeStampToString(timeStamp: any): string {

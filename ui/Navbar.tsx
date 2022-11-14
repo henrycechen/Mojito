@@ -14,6 +14,7 @@ import Typography from '@mui/material/Typography';
 
 import { useSession, signIn, signOut } from 'next-auth/react';
 import { LangConfigs } from '../lib/types';
+import { useRouter } from 'next/router';
 
 /**
  * Domain and language settings
@@ -36,6 +37,7 @@ export default () => {
      * Handle session
      */
     const { data: session, status } = useSession();
+    const router = useRouter();
     /**
      * Handle MemberMenu actions
      */
@@ -43,7 +45,7 @@ export default () => {
     const handleOpenMemberMenu = (event: React.MouseEvent<HTMLElement>) => { setAnchorEl(event.currentTarget) }
     const handleCloseMemberMenu = (actionIndex: number) => {
         setAnchorEl(null);
-        if (actionIndex === 0) { signOut() };
+        if (actionIndex === 0) { router.push('/me/createpost') };
         if (actionIndex === 1) { signOut() };
         if (actionIndex === 2) { signOut() };
     }

@@ -116,10 +116,9 @@ const langConfigs: LangConfigs = {
 const SignUp = ({ providers }: any) => {
     // Handle session
     const { data: session } = useSession();
-    if (session) {
-        const router = useRouter();
-        router.push('/');
-    }
+    const router = useRouter();
+    React.useEffect(() => { if (session) router.push('/') }, []);
+
     let recaptcha: any;
 
     // Declare process states
@@ -312,7 +311,7 @@ const SignUp = ({ providers }: any) => {
                     <Divider sx={{ mt: 2, mb: 2 }} />
                     <Stack spacing={1}>
                         {Object.keys(providers).map(p => {
-                            return ('credentials' !== providers[p].id) && (
+                            return ('credentials' !== providers[p].type) && (
                                 <Button
                                     variant='contained'
                                     fullWidth

@@ -1,6 +1,4 @@
 import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Link from '@mui/material/Link';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
@@ -8,10 +6,8 @@ import AppBar from '../ui/Navbar';
 import Copyright from '../ui/Copyright';
 
 import { LangConfigs } from '../lib/types';
+import BackToHomeButtonGroup from '../ui/BackToHomeButtonGroup';
 
-/**
- * Domain and language settings
- */
 const domain = process.env.NEXT_PUBLIC_APP_DOMAIN;
 const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'ch';
 const langConfigs: LangConfigs = {
@@ -43,13 +39,8 @@ export default () => {
                 <Typography variant='h6' color={'white'} textAlign={'center'}>
                     {langConfigs.msg[lang]}
                 </Typography>
-                <Box sx={{ display: { xs: 'none', sm: 'flex' }, justifyContent: 'center', mt: 2 }}>
-                    <Link href='/' sx={{ color: 'white' }}>{langConfigs.backToHome[lang]}</Link>
-                </Box>
-                <Box sx={{ display: { xs: 'flex', sm: 'none' }, justifyContent: 'center', mt: 2, padding: 1 }}>
-                    <Button variant='contained' href='/' >{langConfigs.backToHome[lang]}</Button>
-                </Box>
-                <Copyright sx={{ mt: '8rem', mb: 4, color: 'white' }} />
+                <BackToHomeButtonGroup color={'white'}/>
+                <Copyright sx={{ mt: '8rem', mb: 4, color: 'white' }} /> 
             </Stack>
         </>
     )

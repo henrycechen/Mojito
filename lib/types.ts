@@ -78,3 +78,12 @@ export type LoginCredentialsMapping = {
     MemberIdStr: string;
     IsActive: boolean;
 }
+
+// Post
+export type PostChannel = {
+    channelId: string;
+    channelName: {
+        [key: string]: string;
+    };
+    svgIconPath?: string;
+}

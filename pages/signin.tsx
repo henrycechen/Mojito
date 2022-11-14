@@ -108,7 +108,7 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
     }
     let recaptcha: any;
 
-    // Decalre
+    // Decalre process states
     const [processStates, setProcessStates] = React.useState({
         recaptchaResponse: '',
         errorContent: '',
@@ -124,10 +124,11 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
             return;
         }
         if ('' !== signInCredentialStates.emailAddress && '' !== signInCredentialStates.password) {
-            signIn('credentials', {
+            signIn('mojito', {
                 recaptchaResponse: processStates.recaptchaResponse,
                 emailAddress: signInCredentialStates.emailAddress,
-                password: signInCredentialStates.password
+                password: signInCredentialStates.password,
+                redirectUrl: router.query?.redirectUrl
             })
             setProcessStates({ ...processStates, displayCircularProgress: false });
         }
@@ -135,8 +136,8 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
 
     // Decalre signIn credential states
     const [signInCredentialStates, setSignInCredentialStates] = React.useState({
-        emailAddress: '',
-        password: '',
+        emailAddress: 'henrycechen@gmail.com',
+        password: '123@abcD',
         showpassword: false
     })
 
@@ -190,6 +191,7 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
                             required
                             id='emailAddress'
                             label={langConfigs.emailAddress[lang]}
+                            value={signInCredentialStates.emailAddress}
                             onChange={handleChange('emailAddress')}
                             autoComplete='email'
                         />
@@ -232,7 +234,7 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
                             </Alert>
                         </Box>
                         {providers && Object.keys(providers).map(p => {
-                            return ('credentials' !== providers[p].id) && (
+                            return ('credentials' !== providers[p].type) && (
                                 <Button
                                     variant='contained'
                                     fullWidth
