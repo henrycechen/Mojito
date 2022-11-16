@@ -5,6 +5,8 @@ import Typography from '@mui/material/Typography';
 import AppBar from '../ui/Navbar';
 import Copyright from '../ui/Copyright';
 
+import { useRouter } from 'next/router';
+
 import { LangConfigs } from '../lib/types';
 import BackToHomeButtonGroup from '../ui/BackToHomeButtonGroup';
 
@@ -27,9 +29,13 @@ export async function getStaticProps() {
 
 const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'ch';
 const langConfigs: LangConfigs = {
-    err: {
+    title: {
         ch: '出错啦',
         en: 'Opps'
+    },
+    accessDenniedError: {
+        ch: '您的账户需要验证或已被注销',
+        en: 'Your account needs verification or has been canceled'
     },
     backToHome: {
         ch: '返回主页',
@@ -38,6 +44,7 @@ const langConfigs: LangConfigs = {
 }
 
 export default function About({ errorMessage }: any) {
+    const router = useRouter();
     return (
         <>
             <AppBar />
@@ -53,7 +60,7 @@ export default function About({ errorMessage }: any) {
                             maxWidth: 460,
                             ml: { xs: 'none', sm: '2.8rem' }
                         }}>
-                        {langConfigs.err[lang]}
+                        {langConfigs.title[lang]}
                     </Typography>
                     <Typography sx={{
                         display: { xs: 'none', sm: 'block' },
@@ -66,9 +73,16 @@ export default function About({ errorMessage }: any) {
                     </Typography>
                 </Box>
                 <Box sx={{ color: 'white', textAlign: 'center', mt: '3rem', padding: 4 }}>
-                    <Typography variant='h6' sx={{ color: 'white', textAlign: 'center' }}>
-                        {errorMessage[lang]}
-                    </Typography>
+                    {!!router.query.error && 'AccessDenied' === router.query.error &&
+                        <Typography variant='h6' sx={{ color: 'white', textAlign: 'center' }}>
+                            {langConfigs.accessDenniedError[lang]}
+                        </Typography>
+                    }
+                    {!router.query.error &&
+                        <Typography variant='h6' sx={{ color: 'white', textAlign: 'center' }}>
+                            {errorMessage[lang]}
+                        </Typography>
+                    }
                 </Box>
                 <BackToHomeButtonGroup color={'white'} />
                 <Copyright sx={{ mt: '10rem', mb: 4, color: 'white' }} />

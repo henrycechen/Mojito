@@ -1,11 +1,7 @@
 import * as React from 'react';
-import Avatar from '@mui/material/Avatar';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import Container from '@mui/material/Container';
-import Divider from '@mui/material/Divider';
 import Grid from '@mui/material/Grid';
-import Link from '@mui/material/Link';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
@@ -24,29 +20,29 @@ import SvgIcon from '@mui/material/SvgIcon';
 
 import axios from 'axios';
 import Alert from '@mui/material/Alert';
-import AlertTitle from '@mui/material/AlertTitle';
-import CircularProgress, { CircularProgressProps, } from '@mui/material/CircularProgress';
-
+import CheckIcon from '@mui/icons-material/Check';
+import CircularProgress from '@mui/material/CircularProgress';
 
 import Navbar from '../../ui/Navbar';
 import Copyright from '../../ui/Copyright';
 
 import { useRouter } from 'next/router';
-import { LangConfigs, PostChannel } from '../../lib/types';
+import { LangConfigs, PostInfo, ChannelInfo, ChannelDictionary } from '../../lib/types';
+
 import Input from '@mui/material/Input';
-import Icon from '@mui/material/Icon';
 import ListItemText from '@mui/material/ListItemText';
-import { Backdrop, ListItemIcon, makeStyles } from '@mui/material';
-import { maxHeight } from '@mui/system';
-import { grey } from '@mui/material/colors';
+import ListItemIcon from '@mui/material/ListItemIcon';
 
 type Image = {
     url: string;
     whr: number; // width height ratio
 }
 
-type ChannelDict = {
-    [key: string]: PostChannel
+type ProcessStates = {
+    alertSeverity: 'error' | 'info' | 'success';
+    alertContent: string;
+    displayAlert: boolean;
+    submitting: boolean;
 }
 
 type PostState = {
@@ -97,62 +93,70 @@ const langConfigs: LangConfigs = {
         ch: '发布',
         en: 'Publish'
     },
-    imagesUploading:{
+    imagesUploading: {
         ch: '上传图片中，请勿关闭或离开页面😉',
         en: 'Uploading photos, please do not close or leave this page😉'
     },
-    imagesUploadSuccess:{
+    imagesUploadSuccess: {
         ch: '图片上传完成😄正在发布主题帖',
         en: 'Photo upload complete😄 Publishing your post'
     },
-    imagesUploadFailed:{
+    imagesUploadFailed: {
         ch: '图片上传失败😟请尝试重新发布主题帖',
         en: 'Photo upload failed😟 Please try to re-publish your post'
     },
-
+    postPublishSuccess: {
+        ch: '发布成功😄正在跳转到主题帖页面',
+        en: 'Publishing success😄 Redirecting to your post page'
+    },
+    postPublishFailed: {
+        ch: '主题帖发布失败😟请尝试重新发布主题帖',
+        en: 'Post publishing failed😟 Please try to re-publish your post'
+    }
 
 }
 
-const CreatePost = ({ }) => {
+const CreatePost = () => {
     // Handle session
     const router = useRouter();
-    // const { data: session } = useSession({
-    //     required: true,
-    //     onUnauthenticated() {
-    //         router.push('/signin');
-    //     }
-    // })
+    useSession({
+        required: true,
+        onUnauthenticated() {
+            router.push('/signin');
+        }
+    })
 
     // Decalre process states
-    const [processStates, setProcessStates] = React.useState({
-        errorContent: '',
-        displayError: false,
+    const [processStates, setProcessStates] = React.useState<ProcessStates>({
+        alertSeverity: 'info',
+        alertContent: '',
+        displayAlert: false,
         submitting: false
     })
 
-    // Declare post channel state
-    const [postChannelList, setPostChannelList] = React.useState<PostChannel[]>([]);
+    // Declare channel info state
+    const [channelInfoList, setChannelInfoList] = React.useState<ChannelInfo[]>([]);
     React.useEffect(() => {
         getPostChannelList();
     }, []);
+
+    // Initialize channel list
     const getPostChannelList = async () => {
-        const respOfDict = await fetch('/api/post/channel/getdict');
-        const respOfIndex = await fetch('/api/post/channel/getindex');
-        const channelDict = await respOfDict.json();
-        const channelList: PostChannel[] = [];
-        const referenceList = await respOfIndex.json();
-        referenceList.forEach((channel: keyof ChannelDict) => {
+        const channelDict = await fetch('/api/channel/getdictionary').then(resp => resp.json());
+        const referenceList = await fetch('/api/channel/getindex').then(resp => resp.json());
+        const channelList: ChannelInfo[] = [];
+        referenceList.forEach((channel: keyof ChannelDictionary) => {
             channelList.push(channelDict[channel])
         });
-        // setPostChannelList(await resp.json())
-        setPostChannelList(channelList)
+        setChannelInfoList(channelList.filter(ch => !!ch));
     }
-    // Decalre post states
+
+    // Decalre post info states
     const [postStates, setPostStates] = React.useState<PostState>({
-        title: '123',
+        title: '',
         content: '',
         channel: ''
-        // tags: []
+        // tags: [] // Not-in-use
 
     })
     // Handle post states change
@@ -167,6 +171,7 @@ const CreatePost = ({ }) => {
         onEnlargeImageUrl: '',
         displayDeleteIcon: true,
     })
+
     // Handle image states change
     const handleAddImage = async (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files?.length !== 0 && event.target.files !== null) {
@@ -177,7 +182,6 @@ const CreatePost = ({ }) => {
                     const img = new Image();
                     img.src = url;
                     img.onload = () => {
-                        console.log(url);
                         resolve({
                             url,
                             whr: img.width / img.height // width height ratio
@@ -193,6 +197,8 @@ const CreatePost = ({ }) => {
         }
         event.target.files = null;
     }
+
+    // Handle click on the image box
     const handleClick = (imageUrl: string) => () => {
         if (processStates.submitting) {
             return;
@@ -205,66 +211,96 @@ const CreatePost = ({ }) => {
             setImageStates({ ...imageStates, onEnlargeImageUrl: imageUrl, enlarge: true })
         }
     }
+
+    // Handle click on the remove icon
     const handleRemove = (imageIndex: number) => (event: React.MouseEvent) => {
-        const _urlList = [...imageList];
-        _urlList.splice(imageIndex, 1);
-        setImageList(_urlList);
+        if (!processStates.submitting) {
+            const imgList = [...imageList];
+            imgList.splice(imageIndex, 1);
+            setImageList(imgList);
+        }
     }
-    // // Declare upload states
+
+    // Declare upload states
     const [uploadStates, setUploadStates] = React.useState<UploadStates>({
         imageUrlOnUpload: '',
         uploadPrecent: 0
     });
+
+    const [uploadedImageIndexList, setUploadedImageIndexList] = React.useState<number[]>([]);
+
+    // Handle post form submit
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        // console.log(imageUrlList);
-
         // Step #1 Check requied fileds
-
-        // Step #? Upload image
+        if ('' === postStates.title || '' === postStates.channel) {
+            return;
+        }
+        // Step #2 Upload image
         const uploadList: Image[] = [...imageList];
         const imageUrlList: string[] = [];
-        for (let i = 0; i < imageList.length; i++) {
-            const img = uploadList[0];
-            if (img !== null && img?.url) {
-                setUploadStates({ ...uploadStates, imageUrlOnUpload: img?.url });
-                // Step #2.1 Create form data
-                let formData = new FormData();
-                const config = {
-                    headers: { 'Content-Type': 'multipart/form-data' },
-                    onUploadProgress: (event: any) => { /////////////////////////
-                        setUploadStates({ ...uploadStates, uploadPrecent: Math.round((event.loaded * 100) / event.total) });
-                        console.log(`Current progress:`, Math.round((event.loaded * 100) / event.total));
-                    },
-                };
-                formData.append('image', await fetch(img.url).then(r => r.blob()));
-                formData.append('title', 'postingTitle');
-                formData.append('content', 'postingContent');
-                const uploadResp = await axios.post('/api/image', formData, config);
-               
-                // if (uploadResp.status === 200) {
-                //     console.log(`success: ${img.url}`);
-
-                //     imageUrlList.push(uploadResp.data);
-                // } else {
-                //     // handle upload error
-                // }
+        if (uploadList.length !== 0) {
+            setProcessStates({ ...processStates, alertSeverity: 'info', alertContent: langConfigs.imagesUploading[lang], displayAlert: true, submitting: true });
+            for (let i = 0; i < imageList.length; i++) {
+                const img = uploadList[0];
+                console.log(`Uploading ${img.url}`);
+                if (img !== null && img.url) {
+                    setUploadStates({ ...uploadStates, imageUrlOnUpload: img?.url });
+                    // Step #2.1 Create form data
+                    let formData = new FormData();
+                    const config = {
+                        headers: { 'Content-Type': 'multipart/form-data' },
+                        onUploadProgress: (event: any) => {
+                            setUploadStates({ ...uploadStates, uploadPrecent: Math.round((event.loaded * 100) / event.total) });
+                            console.log(`Upload progress:`, Math.round((event.loaded * 100) / event.total));
+                        }
+                    };
+                    try {
+                        formData.append('image', await fetch(img.url).then(r => r.blob()));
+                        const uploadResp = await axios.post('/api/image', formData, config);
+                        imageUrlList.push(uploadResp.data);
+                        const uploadedList = uploadedImageIndexList;
+                        uploadedList.push(i)
+                        setUploadedImageIndexList(uploadedList);
+                    } catch (e) {
+                        console.log(`Was tring uploading ${img.url}. ${e}`);
+                        setProcessStates({ ...processStates, alertSeverity: 'error', alertContent: langConfigs.imagesUploadFailed[lang], displayAlert: true });
+                        return;
+                    }
+                }
             }
+        } else {
+            setProcessStates({ ...processStates, displayAlert: false, submitting: true });
         }
-
-
-
-
-        // setProcessStates({ ...processStates, displayCircularProgress: true, disableSubmitButton: true });
-        setProcessStates({ ...processStates, submitting: true });
-
-        // let formData = new FormData();
-        // Step #1.1 upload images
-
-        // Step #1.2 get iamge urls
-        // Step #2 upload {title, content, tags, imageUrls}
+        if (imageUrlList.length !== 0 && imageList.length !== imageUrlList.length) {
+            setProcessStates({ ...processStates, alertSeverity: 'error', alertContent: langConfigs.imagesUploadFailed[lang], displayAlert: true });
+            return;
+        } else {
+            setProcessStates({ ...processStates, alertSeverity: 'success', alertContent: langConfigs.imagesUploadSuccess[lang], displayAlert: true, submitting: true });
+        }
+        // Step #3 Publish post
+        const post: PostInfo = {
+            title: postStates.title,
+            content: postStates.content,
+            channel: postStates.channel,
+            imageUrlList: []
+        }
+        try {
+            const resp = await axios.post('/api/post/create', post);
+            const { data: postId } = resp;
+            if ('string' === typeof postId && '' !== postId) {
+                setProcessStates({ ...processStates, alertSeverity: 'success', alertContent: langConfigs.postPublishSuccess[lang], displayAlert: true });
+                setTimeout(() => router.push(`/post/${resp.data}`), 800);
+            } else {
+                setProcessStates({ ...processStates, alertSeverity: 'error', alertContent: langConfigs.postPublishFailed[lang], displayAlert: true });
+            }
+            return;
+        } catch (e) {
+            console.log(`Was tring publishing post. ${e}`);
+            setProcessStates({ ...processStates, alertSeverity: 'error', alertContent: langConfigs.postPublishFailed[lang], displayAlert: true });
+            return;
+        }
     }
-
 
     return (
         <>
@@ -278,7 +314,8 @@ const CreatePost = ({ }) => {
                         flexGrow: 1,
                         padding: 2,
                         borderRadius: 1,
-                        boxShadow: { xs: 0, sm: 1 }
+                        boxShadow: { xs: 0, sm: 1 },
+                        backgroundColor: 'background'
                     }}
                     onSubmit={handleSubmit}
                 >
@@ -306,7 +343,6 @@ const CreatePost = ({ }) => {
                             value={postStates.content}
                             onChange={handlePostStatesChange('content')}
                             disabled={processStates.submitting}
-
                         />
                         {/* image upload */}
                         <Typography>{langConfigs.uploadImage[lang]}</Typography>
@@ -315,6 +351,7 @@ const CreatePost = ({ }) => {
                                 {imageList.length !== 0 && (imageList.map((img, index) => {
                                     return (
                                         <Grid item key={img.url}>
+                                            {/* image wrapper */}
                                             <Box
                                                 sx={{
                                                     width: imageStates.enlarge && imageStates.onEnlargeImageUrl === img.url ? 320 : 100,
@@ -328,9 +365,9 @@ const CreatePost = ({ }) => {
                                                 }}
                                                 onClick={handleClick(img.url)}
                                             >
+                                                {/* remove icon */}
                                                 <Box sx={{
-                                                    // display: processStates.submitting ? 'none' : 'felx',
-                                                    display: 'none'
+                                                    display: processStates.submitting ? 'none' : 'flex',
                                                 }}>
                                                     <IconButton
                                                         sx={{
@@ -345,13 +382,33 @@ const CreatePost = ({ }) => {
                                                         <HighlightOffIcon />
                                                     </IconButton>
                                                 </Box>
+                                                {/* progress circular indeterminate */}
                                                 <Box
                                                     sx={{
-                                                        // display: processStates.submitting ? 'felx' : 'none',
+                                                        display: processStates.submitting && !uploadedImageIndexList.includes(index) ? 'flex' : 'none',
                                                         paddingTop: 3.8,
                                                         paddingLeft: 3.8
                                                     }}>
                                                     <CircularProgress />
+                                                </Box>
+                                                <Box
+                                                    sx={{
+                                                        display: processStates.submitting && uploadedImageIndexList.includes(index) ? 'flex' : 'none',
+                                                        paddingTop: 3,
+                                                        paddingLeft: 3
+                                                    }}
+                                                >
+                                                    <Box
+                                                        sx={{
+                                                            width: '52px',
+                                                            height: '52px',
+                                                            backgroundColor: 'white',
+                                                            borderRadius: '50%',
+                                                            padding: 1
+                                                        }}
+                                                    >
+                                                        <CheckIcon fontSize='large' color='success' />
+                                                    </Box>
                                                 </Box>
                                             </Box>
                                         </Grid>
@@ -377,7 +434,11 @@ const CreatePost = ({ }) => {
                         </Box>
                         {/* channel */}
                         <Typography>{langConfigs.choosePostChannel[lang]}</Typography>
-                        <FormControl fullWidth disabled={processStates.submitting} >
+                        <FormControl
+                            fullWidth
+                            disabled={processStates.submitting}
+                            required
+                        >
                             <InputLabel id='post-channel'>{langConfigs.postChannel[lang]}</InputLabel>
                             <Select
                                 labelId='post-channel'
@@ -387,9 +448,9 @@ const CreatePost = ({ }) => {
                                 SelectDisplayProps={{ style: { display: 'flex', alignItems: 'center' } }}
                                 MenuProps={{ style: { maxHeight: 240 } }}
                             >
-                                {postChannelList.map(channel => {
+                                {channelInfoList.map(channel => {
                                     return (
-                                        <MenuItem value={channel.channelId} key={channel.channelId} >
+                                        <MenuItem value={channel.id} key={channel.id} >
                                             <ListItemIcon sx={{ minWidth: '36px' }}>
                                                 <SvgIcon>
                                                     <path d={channel.svgIconPath} />
@@ -397,7 +458,7 @@ const CreatePost = ({ }) => {
                                             </ListItemIcon>
                                             <ListItemText >
                                                 <Typography sx={{ marginTop: '1px' }}>
-                                                    {channel.channelName[lang]}
+                                                    {channel.name[lang]}
                                                 </Typography>
                                             </ListItemText>
                                         </MenuItem>
@@ -405,10 +466,9 @@ const CreatePost = ({ }) => {
                                 })}
                             </Select>
                         </FormControl>
-                        <Box>
-                            <Alert security='warning'>
-                                <AlertTitle></AlertTitle>
-                                <Typography></Typography>
+                        <Box display={processStates.displayAlert ? 'block' : 'none'}>
+                            <Alert severity={processStates.alertSeverity}>
+                                <Typography>{processStates.alertContent}</Typography>
                             </Alert>
                         </Box>
                         {/* submit button */}

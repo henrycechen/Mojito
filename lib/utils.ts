@@ -1,21 +1,29 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import type { VerifyRecaptchaResult } from './types';
 
-type EnvironmentVariableObject = {
-    [key: string]: string;
-}
 
 // Create random string
-export function getRandomStr(): string { // Length of 10
-    return Math.floor(Math.random() * Math.pow(10, 15)).toString(35).toUpperCase();
+export function getRandomStr(useLowerCase: boolean = false): string { // Length of 10
+    if (useLowerCase) {
+        return Math.floor(Math.random() * Math.pow(10, 15)).toString(35);
+    } else {
+        return Math.floor(Math.random() * Math.pow(10, 15)).toString(35).toUpperCase();
+    }
 }
 
-export function getRandomLongStr(): string { // Length of 20
-    return Math.floor(Math.random() * Math.pow(10, 15)).toString(35).toUpperCase() + Math.floor(Math.random() * Math.pow(10, 15)).toString(35).toUpperCase();
+export function getRandomLongStr(useLowerCase: boolean = false): string { // Length of 20
+    if (useLowerCase) {
+        return Math.floor(Math.random() * Math.pow(10, 15)).toString(35) + Math.floor(Math.random() * Math.pow(10, 15)).toString(35);
+    } else {
+        return Math.floor(Math.random() * Math.pow(10, 15)).toString(35).toUpperCase() + Math.floor(Math.random() * Math.pow(10, 15)).toString(35).toUpperCase();
+    }
 }
 
-export function getRandomHexStr(): string { // Length of 8
-    return Math.floor(Math.random() * Math.pow(10, 10)).toString(16).toUpperCase();
+export function getRandomHexStr(useLowerCase: boolean = false): string { // Length of 8
+    if (useLowerCase) {
+        return Math.floor(Math.random() * Math.pow(10, 10)).toString(16);
+    } else {
+        return Math.floor(Math.random() * Math.pow(10, 10)).toString(16).toUpperCase();
+    }
 }
 
 export function timeStampToString(timeStamp: any): string {
@@ -33,7 +41,7 @@ export function timeStampToString(timeStamp: any): string {
     return `${(diff / 3600000).toFixed()}小时${(mins / 60000).toFixed()}分钟前`
 }
 
-// Verify
+// Verify infomation
 export function verifyEmailAddress(emailAddress: string): boolean {
     const regex = new RegExp(/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/);
     return regex.test(emailAddress);
@@ -42,6 +50,11 @@ export function verifyEmailAddress(emailAddress: string): boolean {
 export function verifyPassword(password: string): boolean {
     const regex = new RegExp(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/);
     return regex.test(password);
+}
+
+type VerifyRecaptchaResult = {
+    status: number;
+    message: string;
 }
 
 export async function verifyRecaptchaResponse(recaptchaServerSecret: string, recaptchaResponse: any): Promise<VerifyRecaptchaResult> {
@@ -79,6 +92,10 @@ export async function verifyRecaptchaResponse(recaptchaServerSecret: string, rec
     }
 }
 
+type EnvironmentVariableObject = {
+    [key: string]: string;
+}
+
 export function verifyEnvironmentVariable(obj: EnvironmentVariableObject): string | undefined {
     for (const key in obj) {
         if (Object.prototype.hasOwnProperty.call(obj, key) && '' === obj[key]) {
@@ -88,7 +105,7 @@ export function verifyEnvironmentVariable(obj: EnvironmentVariableObject): strin
     return undefined;
 }
 
-// Response
+// Make response
 export function response405(request: NextApiRequest, response: NextApiResponse) {
     const { url, method } = request;
     response.status(405).send(`${url}: ${method} is not allowed`);

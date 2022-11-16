@@ -1,10 +1,5 @@
 export type LangConfigs = { [key: string]: any };
 
-export type VerifyRecaptchaResult = {
-    status: number;
-    message: string;
-}
-
 // States
 export type SignInCredentialStates = {
     emailAddress: string;
@@ -30,7 +25,11 @@ export type EmailRecipient = {
     email: string;
 }
 
-// Request Info
+// Member
+export type MemberInfo = {
+    id?: string;
+}
+
 export type VerifyAccountRequestInfo = {
     memberId: string;
 }
@@ -41,22 +40,59 @@ export type ResetPasswordRequestInfo = {
     expireDate: number;
 }
 
-// [Table] MemberInfo
-export type MemberInfo = {
+// Post
+export type PostInfo = {
+    id?: string;
+    title: string;
+    content: string;
+    channel: string;
+    imageUrlList: string[];
+    viewedTimes?: number;
+    likedTimes?: number;
+    dislikedTimes?: number;
+    savedTimes?: number;
+    commentNumber?: number;
+}
+
+// Channel
+export type ChannelInfo = {
+    id: string;
+    name: {
+        [key: string]: string;
+    };
+    svgIconPath?: string;
+}
+
+export type ChannelDictionary = {
+    [key: string]: ChannelInfo
+}
+
+// Comment
+
+export type CommentInfo = {
+    id?: string;
+    memberId: string;
+    content: string;
+    likedTimes: number;
+    dislikedTimes: number;
+    commentStatus?: number;
+}
+
+// Azure Table Entity
+export interface AzureTableEntity {
     partitionKey: string;
     rowKey: string;
     [key: string]: any;
 }
 
-// [Table] MemberLogin
-export type PasswordHash = {
+export interface PasswordHash extends AzureTableEntity {
     partitionKey: string;
     rowKey: string;
     PasswordHashStr: string;
     IsActive?: boolean;
 }
 
-export type ResetPasswordToken = {
+export interface ResetPasswordToken extends AzureTableEntity {
     partitionKey: string;
     rowKey: 'ResetPasswordToken';
     ResetPasswordTokenStr?: string;
@@ -64,26 +100,10 @@ export type ResetPasswordToken = {
     IsActive?: boolean;
 }
 
-// [Table] MemberManagement
-export type MemberManagement = {
+export interface LoginCredentialsMapping extends AzureTableEntity {
     partitionKey: string;
     rowKey: string;
-    [key: string]: any;
-}
-
-// [Table] LoginCredentialsMapping
-export type LoginCredentialsMapping = {
-    partitionKey: string; // Category name, "EmailAddress" / "Nickname" (not yet supported)
-    rowKey: string; // Category name. "EmailAddressStr "/ "NicknameStr" (not yet supported)
     MemberIdStr: string;
     IsActive: boolean;
 }
 
-// Post
-export type PostChannel = {
-    channelId: string;
-    channelName: {
-        [key: string]: string;
-    };
-    svgIconPath?: string;
-}

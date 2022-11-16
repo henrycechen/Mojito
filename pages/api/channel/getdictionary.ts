@@ -1,9 +1,9 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getToken } from "next-auth/jwt"
 
-import AzureTableClient from '../../../../modules/AzureTableClient';
-import { PostChannel } from '../../../../lib/types';
-import { response405, response500 } from '../../../../lib/utils';
+import AzureTableClient from '../../../modules/AzureTableClient';
+import { ChannelInfo } from '../../../lib/types';
+import { response405, response500 } from '../../../lib/utils';
 
 
 export default async function GetList(req: NextApiRequest, res: NextApiResponse) {
@@ -20,33 +20,30 @@ export default async function GetList(req: NextApiRequest, res: NextApiResponse)
             return;
         }
         // Step #2 look up channels from [Table]
-        const loginCredentialsMappingTableClient = AzureTableClient('PostChannel');
-        const postChannelQuery = loginCredentialsMappingTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq 'PostChannel' and IsActive eq true` } });
+        const channelInfoTableClient = AzureTableClient('ChannelInfo');
+        const channelInfoQuery = channelInfoTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq 'ChannelInfo' and IsActive eq true` } });
         // [!] attemp to reterieve entity makes the probability of causing RestError
-        let postChannelQueryResult = await postChannelQuery.next();
-        if (!postChannelQueryResult.value) {
+        let channelInfoQueryResult = await channelInfoQuery.next();
+        if (!channelInfoQueryResult.value) {
             response500(res, 'No records of post channels');
             return;
         }
-        const postChannelDict: { [key: string]: PostChannel } = {};
+        const channelInfo: { [key: string]: ChannelInfo } = {};
         do {
-            const { rowKey, CH, EN, SvgIconPath } = postChannelQueryResult.value
-            postChannelDict[rowKey] = {
-                channelId: rowKey,
-                channelName: {
+            const { rowKey, CH, EN, SvgIconPath } = channelInfoQueryResult.value
+            channelInfo[rowKey] = {
+                id: rowKey,
+                name: {
                     ch: CH,
                     en: EN
                 },
                 svgIconPath: SvgIconPath
             }
-
-            postChannelQueryResult = await postChannelQuery.next();
-        } while (!postChannelQueryResult.done)
+            channelInfoQueryResult = await channelInfoQuery.next();
+        } while (!channelInfoQueryResult.done)
         // Step #3 response with post channel list
-        res.status(200).send(postChannelDict);
+        res.status(200).send(channelInfo);
     } catch (e) {
-        console.log(e);
-
         response500(res, `Uncategorized Error occurred. ${e}`);
         return;
     }

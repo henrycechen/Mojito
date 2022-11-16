@@ -136,7 +136,9 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
 
     // Decalre signIn credential states
     const [signInCredentialStates, setSignInCredentialStates] = React.useState({
+        // emailAddress: '',
         emailAddress: 'henrycechen@gmail.com',
+        // password: '',
         password: '123@abcD',
         showpassword: false
     })
@@ -238,7 +240,7 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
                                 <Button
                                     variant='contained'
                                     fullWidth
-                                    color={'inherit'}
+                                    color={'secondary'}
                                     onClick={() => { signIn(providers[p].id) }}
                                     key={providers[p].id}
                                 >

@@ -31,6 +31,7 @@ import ReCAPTCHA from "react-google-recaptcha";
 import { useRouter } from 'next/router';
 import { LangConfigs, SignInCredentialStates } from '../lib/types';
 import { verifyEmailAddress, verifyPassword } from '../lib/utils';
+import Consent from '../ui/Consent';
 
 export async function getServerSideProps() {
     return {
@@ -61,9 +62,9 @@ const langConfigs: LangConfigs = {
         ch: '没有Mojito账户？现在就注册吧',
         en: 'Don\' have a Mojito account? Sign up now'
     },
-    thirdPartySignin: {
-        ch: (partyName: string) => `使用${partyName}账户登录`,
-        en: (partyName: string) => `Use ${partyName} Account to sign in`,
+    thirdPartySignUp: {
+        ch: (partyName: string) => `使用 ${partyName} 账户注册`,
+        en: (partyName: string) => `Use ${partyName} Account to sign up`,
     },
     forgotPassword: {
         ch: '忘记密码了？',
@@ -307,6 +308,7 @@ const SignUp = ({ providers }: any) => {
                                 <CircularProgress sx={{ color: 'white', display: processStates.displayCircularProgress ? 'block' : 'none' }} />
                             </Button>
                         </Box>
+                        <Consent />
                     </Stack>
                     <Divider sx={{ mt: 2, mb: 2 }} />
                     <Stack spacing={1}>
@@ -319,7 +321,7 @@ const SignUp = ({ providers }: any) => {
                                     onClick={() => { signIn(providers[p].id) }}
                                     key={providers[p].id}
                                 >
-                                    使用{providers[p].name}账户登录
+                                    {langConfigs.thirdPartySignUp[lang](providers[p].name)}
                                 </Button>
                             )
                         })}

@@ -3,7 +3,7 @@ import { RestError } from '@azure/data-tables';
 import CryptoJS from 'crypto-js';
 
 import AzureTableClient from '../../../../../modules/AzureTableClient';
-import { MemberManagement } from '../../../../../lib/types';
+import { AzureTableEntity } from '../../../../../lib/types';
 import { verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500 } from '../../../../../lib/utils';
 
 const appSecret = process.env.APP_AES_SECRET ?? '';
@@ -57,25 +57,25 @@ export default async function VerifyToken(req: NextApiRequest, res: NextApiRespo
         }
         // Step #4.1 look up account status from [Table] MemberManagement
         const memberManagementTableClient = AzureTableClient('MemberManagement');
-        const accountStatusQuery = memberManagementTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${memberId}' and RowKey eq 'AccountStatus'` } });
-        const accountStatusQueryResult = await accountStatusQuery.next();
-        if (!accountStatusQueryResult.value) {
+        const memberStatusQuery = memberManagementTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${memberId}' and RowKey eq 'MemberStatus'` } });
+        const memberStatusQueryResult = await memberStatusQuery.next();
+        if (!memberStatusQueryResult.value) {
             res.status(404).send('Account status not found');
             return;
         }
         // Step #4.2 verify account status
-        const { AccountStatusValue: accountStatusValue } = accountStatusQueryResult.value;
-        if (0 !== accountStatusValue) {
+        const { MemberStatusValue: memberStatusValue } = memberStatusQueryResult.value;
+        if (0 !== memberStatusValue) {
             res.status(400).send('Member is not activatable');
             return;
-        } 
-        // Step #3.4 updateEntity to [Table] MemberManagement
-        const accountStatus: MemberManagement = {
-            partitionKey: memberId,
-            rowKey: 'AccountStatus',
-            AccountStatusValue: 200
         }
-        await memberManagementTableClient.updateEntity(accountStatus, 'Merge');
+        // Step #3.4 updateEntity to [Table] MemberManagement
+        const memberStatus: AzureTableEntity = {
+            partitionKey: memberId,
+            rowKey: 'MemberStatus',
+            MemberStatusValue: 200
+        }
+        await memberManagementTableClient.updateEntity(memberStatus, 'Merge');
         res.status(200).send('Account verified');
     } catch (e) {
         if (e instanceof SyntaxError) {

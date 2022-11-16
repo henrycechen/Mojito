@@ -121,10 +121,6 @@ const ResetPassword = () => {
     // Handle process states change
     React.useEffect(() => { post() }, [processStates.recaptchaResponse]);
     const post = async () => {
-        if(!requestInfo) {
-            router.push('/');
-            return;
-        }
         if ('tokencheck' === processStates.componentOnDisplay && '' === processStates.recaptchaResponse) {
             recaptcha?.execute();
             return;

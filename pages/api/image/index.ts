@@ -4,7 +4,7 @@ import busboy from 'busboy';
 
 import AzureBlobClient from '../../../modules/AzureBlobClient';
 
-import { response405 } from '../../../lib/utils';
+import { response405, response500 } from '../../../lib/utils';
 import { getRandomLongStr } from '../../../lib/utils';
 
 export const config = {
@@ -15,57 +15,50 @@ export const config = {
 
 export default async function Image(req: NextApiRequest, res: NextApiResponse) {
     const { method } = req;
-    if ('GET' === method) {
+    if ('POST' !== method) {
+        response405(req, res);
         return;
     }
-    if ('POST' === method) {
-        // const token = await getToken({ req });
-        // // Step #0 verify session
-        // if (!token) {
-        //     res.status(401).send('Unauthorized');
-        //     return;
-        // }
 
-        const imageName = getRandomLongStr();
+    //////////////////// fake image upload ///////////////// 
+    setTimeout(() => {
+
+        res.status(200).send('fake-upload-image-name.jpeg');
+
+    }, 1000)
+    return;
+
+    // Step #0 verify session
+    const token = await getToken({ req });
+    if (!token) {
+        res.status(401).send('Unauthorized');
+        return;
+    }
+    // Step #1 upload image
+    try {
+        let imageName = getRandomLongStr(true);
         const contianerClient = AzureBlobClient('image');
         const bb = busboy({ headers: req.headers });
         bb.on('file', async (name, file, info) => {
-            // TODO: 
-            // 1. create a new file name for photo
-            // 2. record encoding info
-            // 3. record mimeType for display photo
-            const { filename, encoding, mimeType } = info;
-            console.log(
-                `File [${name}]: filename: %j, encoding: %j, mimeType: %j`,
-                filename,
-                encoding,
-                mimeType
-            );
+            const { mimeType } = info;
             let buf = Array<any>();
-            const imageExtension = mimeType.split('/').pop();
+            imageName = `${imageName}.${mimeType.split('/').pop()}`;
             file
                 .on('data', (data) => {
                     buf.push(data);
                 })
                 .on('close', async () => {
-                    const blockClient = contianerClient.getBlockBlobClient(`${imageName}.${imageExtension}`);
+                    const blockClient = contianerClient.getBlockBlobClient(imageName);
                     const id = await blockClient.uploadData(Buffer.concat(buf));
-                    console.log(`File [${name}] done`);
-                    console.log(`Upload-Id: ${id}`);
                 });
         });
-        bb.on('field', (name, val, info) => {
-            console.log(`Field [${name}]: value: %j`, val);
-        });
-
         bb.on('close', () => {
-            console.log('Done parsing form!');
-            // res.writeHead(303, { Connection: 'close', Location: '/' });
-            // res.end();
             res.status(200).send(imageName);
+            return;
         });
         req.pipe(bb);
+    } catch (e) {
+        response500(res, `Was try uploading blob (image) ${e}`);
         return;
     }
-    response405(req, res);
 }
