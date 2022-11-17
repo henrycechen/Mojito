@@ -1,4 +1,5 @@
 import * as React from 'react';
+// import 
 import Avatar from '@mui/material/Avatar';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -24,6 +25,9 @@ import FaceIcon from '@mui/icons-material/Face';
 import StarIcon from '@mui/icons-material/Star';
 import ReplyIcon from '@mui/icons-material/Reply';
 
+
+import { ResponsiveCard, CenterlizedBox } from '../../ui/Styled';
+
 import Popover from '@mui/material/Popover';
 
 
@@ -44,6 +48,22 @@ import Divider from '@mui/material/Divider';
 import { Style } from '@mui/icons-material';
 import Container from '@mui/material/Container';
 
+
+
+
+import Accordion from '@mui/material/Accordion';
+import AccordionDetails from '@mui/material/AccordionDetails';
+import AccordionSummary from '@mui/material/AccordionSummary';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import Chip from '@mui/material/Chip';
+
+
+
+
+
+
+
+
 type ProcessStates = {
     displayEditor: boolean;
     editorEnchorElement: any;
@@ -61,7 +81,25 @@ type CommentState = {
     commentEditorAnchorElement: any
 }
 
+
+
 const Post = () => {
+
+
+    const [expanded, setExpanded] = React.useState<boolean>(false);
+
+    const handleChange = () => {
+        setExpanded(!expanded)
+    }
+
+
+
+
+
+
+
+
+
     const { data: session, status } = useSession();
     // - 'unauthenticated'
     // - 'authenticated'
@@ -165,180 +203,356 @@ const Post = () => {
             <Container
                 disableGutters
             >
-                {/* row */}
-                <Grid container
-                //  columns={{ xs: 1, sm: 3 }}
-
-                spacing={0}
-
-                // sx={{ maxWidth: 'md' }}
-                >
-                    {/* left column */}
-                    <Grid item 
-                    
-                    xs={0} sm={2} md={2} lg={2}
-                    
-                    // display={{ xs: 'none', sm: 'block' }}
-                    
-                    ></Grid>
+                <Grid container >
+                    {/* left column (placeholder) */}
+                    <Grid item xs={0} sm={2} />
 
                     {/* middle column */}
-                    <Grid item flexGrow={1} 
-                    
-                    xs={12} sm={7} md={7}
-                    
-                    > 
-                        {/* stack */}
+                    <Grid item xs={12} sm={8} md={6} >
 
-                        <Stack maxWidth={800}>
-                            <Box sx={{ padding: { xs: 2, sm: 4 }, borderRadius: 1, boxShadow: { xs: 0, sm: 1 } }}>
-                                <Typography variant="h5" component="div">
-                                    {'title'}
-                                </Typography>
-                                <Typography variant="body2">
-                                    {'contentProps.TextContent'}
-                                </Typography>
-
-
-
-
-
-
-                                {/* image list */}
-                                <Box maxWidth={500}>
-                                    <Swiper pagination={true} modules={[Pagination]} className="hello">
-                                        <SwiperSlide>
-                                            <Box sx={{ height: 400, backgroundColor: 'pink' }}>
-
-                                            </Box>
-                                        </SwiperSlide>
-                                        <SwiperSlide>
-                                            <Box sx={{ height: 400, backgroundColor: 'darkorange' }}>
-
-                                            </Box>
-                                        </SwiperSlide>
-
-
-                                    </Swiper>
+                        {/* middle card-stack */}
+                        <Stack maxWidth={800} spacing={{ xs: 1, sm: 2 }}>
+                            {/* the post */}
+                            <ResponsiveCard sx={{ padding: { sm: 4 }, boxShadow: { sm: 1 } }}>
+                                {/* post-title: desktop style */}
+                                <Box display={{ xs: 'none', sm: 'block' }}>
+                                    <Typography variant={'subtitle1'} fontWeight={400} color={'grey'}>
+                                        {'兴趣'}
+                                    </Typography>
+                                    <Typography variant={'h6'} fontWeight={700}>
+                                        {'做了一个简单壁纸小玩具，欢迎大家体验'}
+                                    </Typography>
+                                    <Stack mt={1} direction={'row'} spacing={1}>
+                                        <Typography variant='body2'>
+                                            WebMaster
+                                        </Typography>
+                                        <Typography variant='body2'>
+                                            {2} 分钟前
+                                        </Typography>
+                                    </Stack>
                                 </Box>
 
+                                {/* post-title: mobile style */}
+                                <Stack mt={0.5} direction={'row'} sx={{ display: { xs: 'flex', sm: 'none' } }}>
+                                    <Avatar sx={{ width: 38, height: 38, bgcolor: 'grey' }}>{'W'}</Avatar>
+                                    <Grid container ml={1}>
+                                        <Grid item flexGrow={1}>
+
+                                            <Typography variant='body2' marginTop={0.1}>
+                                                {'WebMaster'}
+                                            </Typography>
+                                            <Typography variant='body2' fontSize={{ xs: 12 }}>
+                                                {'2 分钟前'}
+                                            </Typography>
+                                        </Grid>
+                                        <Grid item>
+                                            <Chip label={'关注'} sx={{ paddingX: 1 }} color={true ? 'primary' : 'default'} onClick={() => { }} />
+                                        </Grid>
+                                    </Grid>
+                                </Stack>
 
 
+                                {/* image list (conditional rendering)*/}
+                                {true && <Box mt={{ xs: 1.5, sm: 2 }} >
+                                    <Swiper modules={[Pagination]} pagination={true}>
+                                        {['pink', '#1976d2', 'darkorange', '#01ced1'].map(imgUrl =>
+                                            <SwiperSlide>
+                                                <Box sx={{ minHeight: 400, backgroundColor: imgUrl }}></Box>
+                                            </SwiperSlide>
+                                        )}
+                                    </Swiper>
+                                </Box>}
 
 
-
-                                <Box padding={1}>
-                                    <Typography variant={'body2'} fontSize={{ sm: 16 }} >
-                                        {'国庆节以来大修改了一次，主要体现天气场景功能。现在有上班族、钓鱼、旅游旅行场景，后续增加更多。如果你有兴趣可以试一下，有好的建议可以邮箱联系我（ 18873700176@163.com ）。另外寻找志同道合的设计师（跨平台设计，动画动效等），分享这个项目收益利润的百分之二十和其他，联系工作微信（ lzh2021hero ）。暂时只有 iOS 版本，Android 版本还没有开放（ flutter 跨平台）'}
+                                {/* title */}
+                                <Box mt={2} display={{ xs: 'flex', sm: 'none' }}>
+                                    <Typography variant={'subtitle1'} fontWeight={700}>
+                                        {'做了一个简单壁纸小玩具，欢迎大家体验'}
                                     </Typography>
                                 </Box>
+                                {/* content (conditional rendering)*/}
+                                {true && <Box mt={{ xs: 1, sm: 2 }}>
+                                    <Typography variant={'body1'} >
+                                        {'国庆节以来大修改了一次，主要体现天气场景功能。现在有上班族、钓鱼、旅游旅行场景，后续增加更多。如果你有兴趣可以试一下，有好的建议可以邮箱联系我（ xxxxxxxxxxxxx@163.com ）。另外寻找志同道合的设计师（跨平台设计，动画动效等），分享这个项目收益利润的百分之二十和其他，联系工作微信（ xxxxxxxx ）'}
+                                    </Typography>
+                                </Box>}
 
                                 {/* member behaviours */}
-                                <Grid container sx={{ alignItems: 'start' }}>
+                                <Grid container mt={1}>
                                     {/* like */}
                                     <Grid item sx={{ display: 'flex', flexDirection: 'row' }}>
                                         <IconButton aria-label='like' onClick={handleBehaviourOnPost}>
                                             <ThumbUpIcon color={memberBehaviour.liked ? 'primary' : 'inherit'} fontSize='small' />
                                         </IconButton>
-                                        <Typography variant='body2' sx={{ marginTop: 1 }}>{postInfo.likedTimes}</Typography>
+                                        <Typography variant='body2' sx={{ marginTop: 1.1 }}>{postInfo.likedTimes}</Typography>
                                     </Grid>
                                     {/* dislike */}
                                     <Grid item sx={{ ml: 1 }}>
                                         <IconButton aria-label='dislike' onClick={handleBehaviourOnPost}>
                                             <ThumbDownIcon color={memberBehaviour.disliked ? 'error' : 'inherit'} fontSize='small' />
-                                            {/* <Typography>{postInfo.dislikedTimes}</Typography> */}
                                         </IconButton>
                                     </Grid>
                                     {/* save */}
-                                    <Grid item>
+                                    <Grid item sx={{ display: 'flex', flexDirection: 'row' }}>
                                         <IconButton aria-label='save' onClick={handleBehaviourOnPost}>
                                             <StarIcon color={memberBehaviour.saved ? 'warning' : 'inherit'} fontSize='small' />
-                                            <Typography>{postInfo.savedTimes}</Typography>
                                         </IconButton>
+                                        <Typography variant='body2' sx={{ marginTop: 1.1 }}>{16}</Typography>
                                     </Grid>
                                     {/* comment */}
-                                    <Grid item>
+                                    <Grid item sx={{ display: 'flex', flexDirection: 'row' }}>
                                         <IconButton aria-label='comment' onClick={handleEditorOpen}>
                                             <ChatBubbleIcon fontSize='small' />
-                                            {/* <Typography>{contentProps.Comment}</Typography> */}
                                         </IconButton>
+                                        <Typography variant='body2' sx={{ marginTop: 1.1 }}>{3}</Typography>
                                     </Grid>
-
-
-
-                                    {/* <IconButton aria-label='viewed times'>
-                                    <FaceIcon />
-                                    <Typography>{postInfo.viewedTimes}</Typography>
-                                </IconButton> */}
                                 </Grid>
-                            </Box>
-                        </Stack>
+                            </ResponsiveCard>
 
+
+                            {/* the comments (conditional rendering)*/}
+                            {true &&
+                                [0, 1, 2, 3].map(comment => {
+                                    return (
+                                        <>
+                                            <Divider sx={{ display: { xs: 'block', sm: 'none' } }} />
+                                            <Box sx={{ padding: { xs: 2, sm: 4 }, borderRadius: 1, boxShadow: { xs: 0, sm: 1 } }}>
+                                                {/* member info */}
+                                                <Stack direction={'row'}>
+                                                    <Avatar sx={{ width: 38, height: 38, bgcolor: 'grey' }}>{'W'}</Avatar>
+                                                    <Box ml={1}>
+                                                        <Typography variant='body2' marginTop={0.1}>
+                                                            WebMaster
+                                                        </Typography>
+                                                        <Typography variant='body2' fontSize={{ xs: 12 }}>
+                                                            {2} 分钟前
+                                                        </Typography>
+                                                    </Box>
+                                                </Stack>
+                                                {/* comment content */}
+                                                <Box paddingTop={{ xs: 1, sm: 1.5 }} paddingX={0.5}>
+                                                    <Typography variant={'body1'} >{'随风天气提供全球实况格点天气和个性化场景天气，根据天气影响比较多的行业、职业、风土人情等结合出来的方式（上班族，钓鱼，旅游旅行等）。'}</Typography>
+                                                </Box>
+                                                {/* member behaviours */}
+                                                <Grid container mt={{ xs: 0.5, sm: 1 }}>
+                                                    {/* like */}
+                                                    <Grid item sx={{ display: 'flex', flexDirection: 'row' }}>
+                                                        <IconButton aria-label='like' onClick={handleBehaviourOnPost}>
+                                                            <ThumbUpIcon color={memberBehaviour.liked ? 'primary' : 'inherit'} fontSize='small' />
+                                                        </IconButton>
+                                                        <Typography variant='body2' sx={{ marginTop: 1.1 }}>{postInfo.likedTimes}</Typography>
+                                                    </Grid>
+                                                    {/* dislike */}
+                                                    <Grid item sx={{ ml: 1 }}>
+                                                        <IconButton aria-label='dislike' onClick={handleBehaviourOnPost}>
+                                                            <ThumbDownIcon color={memberBehaviour.disliked ? 'error' : 'inherit'} fontSize='small' />
+                                                        </IconButton>
+                                                    </Grid>
+                                                    {/* comment */}
+                                                    <Grid item sx={{ display: 'flex', flexDirection: 'row' }}>
+                                                        <IconButton aria-label='comment' onClick={handleEditorOpen}>
+                                                            <ReplyIcon fontSize='small' />
+                                                        </IconButton>
+                                                        <Typography variant='body2' sx={{ marginTop: 1.1 }}>{3}</Typography>
+                                                    </Grid>
+                                                </Grid>
+
+
+                                                <Button variant='text' sx={{ display: expanded ? 'none' : 'block' }} onClick={handleChange} >{'展开评论'}</Button>
+
+                                                {/* subcomment stack (conditional rendering)*/}
+                                                <Stack marginTop={{ xs: 1.5, sm: 2 }} paddingLeft={3} sx={{ display: expanded ? 'block' : 'none' }}>
+                                                    {/* subcomment */}
+                                                    <Box>
+                                                        {/* member info */}
+                                                        <Stack direction={'row'}>
+                                                            <Avatar sx={{ width: 38, height: 38, bgcolor: 'grey' }}>{'W'}</Avatar>
+                                                            <Box ml={1}>
+                                                                <Typography variant='body2' marginTop={0.1}>
+                                                                    WebMaster
+                                                                </Typography>
+                                                                <Typography variant='body2' fontSize={{ xs: 12 }}>
+                                                                    {2} 分钟前
+                                                                </Typography>
+                                                            </Box>
+                                                        </Stack>
+                                                        {/* comment content */}
+                                                        <Box sx={{ paddingTop: 1, paddingX: 1 / 2 }}>
+                                                            <Typography variant={'body2'} fontSize={{ sm: 16 }}>{'@WebMaster 随风天气提供全球实况格点天气和个性化场景天气，根据天气影响比较多的行业、职业、风土人情等结合出来的方式（上班族，钓鱼，旅游旅行等）。'}</Typography>
+                                                        </Box>
+                                                        {/* member behaviours */}
+                                                        <Grid container>
+                                                            {/* like */}
+                                                            <Grid item sx={{ display: 'flex', flexDirection: 'row' }}>
+                                                                <IconButton aria-label='like' onClick={handleBehaviourOnPost}>
+                                                                    <ThumbUpIcon color={memberBehaviour.liked ? 'primary' : 'inherit'} fontSize='small' />
+                                                                </IconButton>
+                                                                <Typography variant='body2' sx={{ marginTop: 1.1 }}>{postInfo.likedTimes}</Typography>
+                                                            </Grid>
+                                                            {/* dislike */}
+                                                            <Grid item sx={{ ml: 1 }}>
+                                                                <IconButton aria-label='dislike' onClick={handleBehaviourOnPost}>
+                                                                    <ThumbDownIcon color={memberBehaviour.disliked ? 'error' : 'inherit'} fontSize='small' />
+                                                                </IconButton>
+                                                            </Grid>
+                                                            {/* reply */}
+                                                            <Grid item sx={{ display: 'flex', flexDirection: 'row' }}>
+                                                                <IconButton aria-label='comment' onClick={handleEditorOpen}>
+                                                                    <ReplyIcon fontSize='small' />
+                                                                </IconButton>
+                                                            </Grid>
+                                                        </Grid>
+                                                    </Box>
+                                                    <Button variant='text' onClick={handleChange} >{'折叠评论'}</Button>
+                                                </Stack>
+
+                                            </Box>
+                                        </>
+                                    )
+                                })
+                            }
+
+                        </Stack>
                     </Grid>
-                    
+
                     {/* right column*/}
-                    <Grid item 
-                    
-                    xs={0} sm={3} md={3}
-                        sx={{
-                            // ml: 2,
-                            display: { xs: 'none', sm: 'none', md: 'none', lg: 'block' }
-                        }}
-                    >
-                        <Stack spacing={1} minWidth={200}>
-                            {/* membwe info card */}
-                            <Box
-                                sx={{
-                                    // minWidth: '300',
-                                    padding: 1,
-                                    borderRadius: 1,
-                                    boxShadow: { xs: 0, sm: 1 }
-                                }}
-                            >
+                    <Grid item xs={0} sm={2} md={4} >
+                        {/* right card-stack */}
+                        <Stack spacing={1} sx={{ ml: 2, maxWidth: 320, display: { xs: 'none', sm: 'none', md: 'block', lg: 'block' } }} >
 
-                                <Typography variant="h5" component="div">
-                                    {'title'}
-                                </Typography>
+                            {/* member info card */}
+                            <ResponsiveCard sx={{ paddingY: 3 }}>
+                                <Stack spacing={1}>
 
-                            </Box>
+                                    {/* avatar */}
+                                    <CenterlizedBox >
+                                        <Avatar sx={{ width: 48, height: 48, bgcolor: 'grey' }}>{'W'}</Avatar>
+                                    </CenterlizedBox>
+                                    {/* nickname */}
+                                    <CenterlizedBox  >
+                                        <Typography variant='body1'>
+                                            {'WebMaster'}
+                                        </Typography>
+                                    </CenterlizedBox>
+                                    {/* follow button (conditional rendering) */}
+                                    <CenterlizedBox >
+                                        {/* logic: bgcolor='inherit' === followed */}
+                                        <Chip label={'关注'} sx={{ paddingX: 1 }} color={true ? 'primary' : 'default'} onClick={() => { }} />
+                                        {/* <Button variant='contained' sx={{ paddingY: 0, borderRadius: 4 }} disabled>{'已关注'}</Button> */}
+                                    </CenterlizedBox>
+                                    {/* info */}
+                                    <CenterlizedBox  >
+                                        {/* left column */}
+                                        <Box>
+                                            <CenterlizedBox>
+                                                <Typography variant='body1'>
+                                                    {'发帖'}
+                                                </Typography>
+                                            </CenterlizedBox>
+                                            <CenterlizedBox>
+                                                <Typography variant='body1'>
+                                                    {10}
+                                                </Typography>
+                                            </CenterlizedBox>
+                                        </Box>
+                                        {/* middle column */}
+                                        <Box marginX={4}>
+                                            <CenterlizedBox>
+                                                <Typography variant='body1' >
+                                                    {'粉丝'}
+                                                </Typography>
+                                            </CenterlizedBox>
+                                            <CenterlizedBox>
+                                                <Typography variant='body1'>
+                                                    {10}
+                                                </Typography>
+                                            </CenterlizedBox>
+                                        </Box>
+                                        {/* right column */}
+                                        <Box>
+                                            <CenterlizedBox>
+                                                <Typography variant='body1'>
+                                                    {'获赞'}
+                                                </Typography>
+                                            </CenterlizedBox>
+                                            <CenterlizedBox>
+                                                <Typography variant='body1'>
+                                                    {10}
+                                                </Typography>
+                                            </CenterlizedBox>
+                                        </Box>
+
+
+
+                                    </CenterlizedBox>
+                                </Stack>
+                            </ResponsiveCard>
+
+                            {/* other post recommend in this channel */}
+                            <ResponsiveCard sx={{ padding: 3 }}>
+                                <Box>
+                                    <Typography>{'本区其他热帖'}</Typography>
+                                </Box>
+                                <Stack mt={1} spacing={1}>
+                                    {true && [{ title: '#初秋专属氛围感#', imgUrl: 'pink' }, { title: '今天就需要衛衣加持', imgUrl: '#1976d2' }, { title: '星期一的咖啡時光～', imgUrl: 'darkorange' }].map(po => <Grid container>
+                                        <Grid item>
+                                            <Box sx={{ width: 48, height: 48, backgroundColor: po.imgUrl }}></Box>
+                                        </Grid>
+                                        <Grid item flexGrow={1}>
+                                            <Box ml={1}>
+                                                <Typography variant='body1' marginTop={0.1} textOverflow={'ellipsis'} noWrap maxWidth={200}>{po.title}</Typography>
+                                                <Typography variant='body2' fontSize={{ xs: 12 }}>
+                                                    {'100 浏览'}
+                                                </Typography>
+                                            </Box>
+                                        </Grid>
+                                    </Grid>)}
+                                </Stack>
+                            </ResponsiveCard>
                         </Stack>
-
                     </Grid>
                 </Grid>
 
 
-
-
-
-
-
-
-
-
-
-            </Container>
+            </Container >
             {/* pop up editor */}
-            <Popover
-                // id={id}
+            < Popover
                 open={processStates.displayEditor}
-                anchorReference="anchorPosition"
-                // anchorEl={processStates.editorEnchorElement}
+                anchorReference='anchorPosition'
                 onClose={handleEditorClose}
-                anchorPosition={{ top: 1000, left: 0 }}
+                anchorPosition={{ top: 1000, left: 1000 }}
                 anchorOrigin={{
                     vertical: 'bottom',
                     horizontal: 'center',
                 }}
             >
                 <Box sx={{
-                    minWidth: 370,
-                    minHeight: 240
+                    minWidth: 350,
+                    minHeight: 200,
+                    borderRadius: 2,
+                    padding: 2
+
                 }}>
 
-                    <Typography sx={{ p: 2 }}>The content of the Popover.</Typography>
-                    <TextField></TextField>
+                    <Typography>{'回复 @WebMaster'}</Typography>
+                    <TextField
+
+                        id="outlined-basic"
+                        variant="outlined"
+                        rows={4}
+                        multiline
+                        fullWidth
+                        placeholder={'@WebMaster'}
+                        // value={'@WebMaster'}
+                        // onChange={handlePostStatesChange('content')}
+                        // disabled={processStates.submitting}
+                        sx={{ marginTop: 1 }}
+                    />
+                    <Box mt={2} display={'flex'} justifyContent={'end'}>
+                        <Button variant='contained'>{'提交'}</Button>
+                    </Box>
                 </Box>
-            </Popover>
+            </Popover >
         </>
     )
 }

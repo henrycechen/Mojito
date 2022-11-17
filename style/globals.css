@@ -1,0 +1,9 @@
+.swiper-pagination-bullet-active {
+    background-color: #fff !important;
+}
+
+@media (prefers-color-scheme: dark) {
+    .swiper-pagination-bullet-active {
+        background-color: #01ced1 !important;
+    }
+}

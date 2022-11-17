@@ -1,7 +1,7 @@
 import * as React from 'react';
+
 import type { AppProps } from 'next/app'
 import Head from 'next/head';
-
 
 import createTheme from '@mui/material/styles/createTheme';
 import ThemeProvider from '@mui/material/styles/ThemeProvider';
@@ -12,6 +12,8 @@ import { Session } from 'next-auth';
 import { PaletteMode } from '@mui/material';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { ColorModeContext, getDesignTokens } from '../ui/Theme';
+
+
 
 
 export default ({ Component, pageProps: { session, ...pageProps } }: AppProps<{ session: Session }>) => {
@@ -33,11 +35,17 @@ export default ({ Component, pageProps: { session, ...pageProps } }: AppProps<{ 
       <ThemeProvider theme={theme}>
         <ColorModeContext.Provider value={{ mode, setMode }}>
           <CssBaseline />
-          {/* <Head>
-            <meta name="theme-color" content="#ecd96f" media="(prefers-color-scheme: light)" />
-            <meta name="theme-color" content="#0b3e05" media="(prefers-color-scheme: dark)" />
-          </Head> */}
+          <Head>
+            <meta name='theme-color' content='#535353' media='(prefers-color-scheme: dark)' />
+          </Head>
           <Component {...pageProps} />
+          <style jsx global>
+            {`
+              .swiper-pagination-bullet-active {
+                background-color: ${'dark' === mode ? '#01ced1 ' : '#fff'} !important;
+              }
+          `}
+          </style>
         </ColorModeContext.Provider>
       </ThemeProvider>
     </SessionProvider >
