@@ -8,6 +8,14 @@ export type SignInCredentialStates = {
     showpassword: boolean;
 }
 
+export interface ProcessStates {
+    [key: string]: any
+}
+
+export type Helper = {
+    memorizeViewPortPositionY: number | undefined; // help scroll to memorized browsing position on viewport.width <= md
+}
+
 // Mail
 export type EmailMessage = {
     sender: '<donotreply@mojito.co.nz>';

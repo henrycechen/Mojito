@@ -1,4 +1,6 @@
 import * as React from 'react';
+
+import Avatar from '@mui/material/Avatar';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Grid from '@mui/material/Grid';
@@ -17,6 +19,11 @@ import Select, { SelectChangeEvent } from '@mui/material/Select';
 import HighlightOffIcon from '@mui/icons-material/HighlightOff';
 
 import SvgIcon from '@mui/material/SvgIcon';
+
+import Modal from '@mui/material/Modal';
+
+import { DragDropContext } from 'react-beautiful-dnd';
+import { Droppable, Draggable } from 'react-beautiful-dnd';
 
 import axios from 'axios';
 import Alert from '@mui/material/Alert';
@@ -41,7 +48,9 @@ type Image = {
 type ProcessStates = {
     alertSeverity: 'error' | 'info' | 'success';
     alertContent: string;
+    displayModal: boolean;
     displayAlert: boolean;
+    disableAddButton: boolean;
     submitting: boolean;
 }
 
@@ -49,7 +58,6 @@ type PostState = {
     title: string;
     content: string;
     channel: string;
-    tags?: string[];
 }
 
 type ImageStates = {
@@ -65,34 +73,18 @@ type UploadStates = {
 
 const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'ch';
 const langConfigs: LangConfigs = {
-    title: {
-        ch: '撰写新主题',
-        en: 'Create a new post'
-    },
-    titlePlaceholder: {
-        ch: '标题',
-        en: 'Title'
-    },
-    contentPlaceholder: {
-        ch: '写点什么吧~',
-        en: 'What\'s on your mind?'
-    },
-    uploadImage: {
-        ch: '添加图片',
-        en: 'Add photos'
-    },
-    postChannel: {
-        ch: '频道',
-        en: 'Choose a channel'
-    },
-    choosePostChannel: {
-        ch: '选择一个频道',
-        en: 'Choose a channel'
-    },
-    submit: {
-        ch: '发布',
-        en: 'Publish'
-    },
+    title: { ch: '撰写新主题', en: 'Create a new post' },
+    titlePlaceholder: { ch: '标题', en: 'Title' },
+    contentPlaceholder: { ch: '写点什么吧~', en: 'What\'s on your mind?' },
+    addATopic: { ch: '添加一个话题 #', en: 'Add a topic #' },
+    cueAMember: { ch: '提及一位会员 @', en: 'Cue a member @' },
+    cueAMemberTitle: { ch: '选择你想 Cue 的会员', en: 'Choose a member' },
+    cueAMemberSelect: { ch: '会员', en: 'Member' },
+    addMember: { ch: '添加', en: 'Add' },
+    uploadImage: { ch: '添加图片', en: 'Add photos' },
+    postChannel: { ch: '频道', en: 'Choose a channel' },
+    choosePostChannel: { ch: '选择一个频道', en: 'Choose a channel' },
+    submit: { ch: '发布', en: 'Publish' },
     imagesUploading: {
         ch: '上传图片中，请勿关闭或离开页面😉',
         en: 'Uploading photos, please do not close or leave this page😉'
@@ -130,7 +122,9 @@ const CreatePost = () => {
     const [processStates, setProcessStates] = React.useState<ProcessStates>({
         alertSeverity: 'info',
         alertContent: '',
+        displayModal: false,
         displayAlert: false,
+        disableAddButton: false,
         submitting: false
     })
 
@@ -159,10 +153,76 @@ const CreatePost = () => {
         // tags: [] // Not-in-use
 
     })
+
     // Handle post states change
     const handlePostStatesChange = (prop: keyof PostState) => (event: React.ChangeEvent<HTMLInputElement>) => {
         setPostStates({ ...postStates, [prop]: event.target.value });
     };
+
+    // Define member info type
+    type MemberInfo = {
+        id: string;
+        nickname: string;
+        avatarImageUrl: string | undefined;
+    }
+
+    // Define cue-member-helper type
+    type CueMemberHelper = {
+        memberInfoList: MemberInfo[];
+        selectedNicknameList: string[];
+    }
+    // Declare cue member helper
+    const [cueMemberHelper, setCuedMemberHelper] = React.useState<CueMemberHelper>({
+        memberInfoList: [],
+        selectedNicknameList: []
+    });
+    React.useEffect(() => { getFollowingMembers() }, []);
+    const getFollowingMembers = async () => {
+        const resp = await fetch('/api/member/behaviour/followmember');
+        const list = await resp.json();
+        if ('object' === typeof list && 0 !== list.length) {
+            setCuedMemberHelper({ ...cueMemberHelper, memberInfoList: list });
+        }
+    }
+
+    // Handle modal open
+    const handleModalOpen = async () => {
+        if (0 === cueMemberHelper.memberInfoList.length) {
+            return;
+        }
+        setProcessStates({ ...processStates, displayModal: true });
+    };
+
+    // Handle modal close
+    const handleModalClose = () => {
+        // Step #1 reset selectedNicknameList
+        setCuedMemberHelper({ ...cueMemberHelper, selectedNicknameList: [] });
+        // Step #2 close modal
+        setProcessStates({ ...processStates, displayModal: false })
+    };
+
+    // Handle nickname select change
+    const handleNicknameSelectChange = (event: SelectChangeEvent<typeof cueMemberHelper.selectedNicknameList>) => {
+        const { target: { value } } = event;
+        setCuedMemberHelper({
+            ...cueMemberHelper,
+            selectedNicknameList: typeof value === 'string' ? value.split(',') : value,
+        });
+    };
+
+    // Handle nickname select submit
+    const handleNicknameSelectSubmit = () => {
+        // console.log(cueMemberHelper.selectedNicknameList);
+        let nicknameStr = '';
+        cueMemberHelper.selectedNicknameList.forEach(name => nicknameStr += `@${name} `);
+        setPostStates({ ...postStates, content: `${postStates.content} ${nicknameStr}` })
+        setProcessStates({ ...processStates, displayModal: false });
+    }
+
+    // Handle add a topic
+    const handleAddTopic = () => {
+        setPostStates({ ...postStates, content: `${postStates.content} #` });
+    }
 
     // Declare image states
     const [imageList, setImageList] = React.useState<Image[]>([]);
@@ -219,6 +279,20 @@ const CreatePost = () => {
             imgList.splice(imageIndex, 1);
             setImageList(imgList);
         }
+    }
+
+    // Handle drag start
+    const handleDragStart = () => {
+        setProcessStates({ ...processStates, disableAddButton: true })
+    }
+
+    // Handle drag end
+    const handleDragEnd = (result: any) => {
+        setProcessStates({ ...processStates, disableAddButton: false })
+        const list = Array.from(imageList);
+        const [movedImage] = list.splice(result?.source?.index, 1);
+        list.splice(result?.destination.index, 0, movedImage);
+        setImageList(list);
     }
 
     // Declare upload states
@@ -307,18 +381,7 @@ const CreatePost = () => {
             <Navbar />
             {/* post composer */}
             <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-                <Box
-                    component={'form'}
-                    sx={{
-                        maxWidth: 600,
-                        flexGrow: 1,
-                        padding: 2,
-                        borderRadius: 1,
-                        boxShadow: { xs: 0, sm: 1 },
-                        backgroundColor: 'background'
-                    }}
-                    onSubmit={handleSubmit}
-                >
+                <Box component={'form'} sx={{ maxWidth: 600, flexGrow: 1, padding: 2, borderRadius: 1, boxShadow: { xs: 0, sm: 1 }, backgroundColor: 'background' }} onSubmit={handleSubmit}>
                     <Stack spacing={2}>
                         <Typography>{langConfigs.title[lang]}</Typography>
                         {/* title */}
@@ -344,93 +407,95 @@ const CreatePost = () => {
                             onChange={handlePostStatesChange('content')}
                             disabled={processStates.submitting}
                         />
+                        {/* topic & cue button */}
+                        <Stack direction={'row'} spacing={1}>
+                            <Button variant='contained' sx={{ padding: 0.2, paddingX: 1 }} onClick={handleAddTopic}><Typography variant='body2'>{langConfigs.addATopic[lang]}</Typography></Button>
+                            <Button variant='contained' sx={{ padding: 0.2, paddingX: 1 }} onClick={handleModalOpen}><Typography variant='body2'>{langConfigs.cueAMember[lang]}</Typography></Button>
+                        </Stack>
                         {/* image upload */}
                         <Typography>{langConfigs.uploadImage[lang]}</Typography>
-                        <Box sx={{ border: 1, borderRadius: 1, borderColor: 'grey.300', minHeight: 120 }}>
-                            <Grid container spacing={1} sx={{ width: 'inherit', padding: 1 }}>
-                                {imageList.length !== 0 && (imageList.map((img, index) => {
-                                    return (
-                                        <Grid item key={img.url}>
-                                            {/* image wrapper */}
-                                            <Box
-                                                sx={{
-                                                    width: imageStates.enlarge && imageStates.onEnlargeImageUrl === img.url ? 320 : 100,
-                                                    height: imageStates.enlarge && imageStates.onEnlargeImageUrl === img.url ? Math.floor(320 / img.whr) : 100,
-                                                    borderRadius: "10px",
-                                                    backgroundSize: "cover",
-                                                    backgroundPosition: "center",
-                                                    backgroundImage: `url(${img.url})`,
-                                                    backdropFilter: 'blur(14px)',
-                                                    // backgroundColor: 'grey.300'
-                                                }}
-                                                onClick={handleClick(img.url)}
-                                            >
-                                                {/* remove icon */}
-                                                <Box sx={{
-                                                    display: processStates.submitting ? 'none' : 'flex',
-                                                }}>
-                                                    <IconButton
-                                                        sx={{
-                                                            display: imageStates.enlarge && imageStates.onEnlargeImageUrl === img.url ? 'none' : 'felx',
-                                                            backgroundColor: 'white',
-                                                            '&:hover': { backgroundColor: 'white' },
-                                                        }}
-                                                        size='small'
-                                                        color='primary'
-                                                        onClick={handleRemove(index)}
-                                                    >
-                                                        <HighlightOffIcon />
-                                                    </IconButton>
-                                                </Box>
-                                                {/* progress circular indeterminate */}
-                                                <Box
+                        <Box sx={{ padding: 1, border: 1, borderRadius: 1, borderColor: 'grey.300' }}>
+                            <DragDropContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+                                <Droppable droppableId={'uploadImages'} direction='horizontal'>
+                                    {(provided) =>
+                                        <Stack
+                                            spacing={1}
+                                            direction={'row'}
+                                            className='uploadImages'
+                                            ref={provided.innerRef}
+                                            sx={{ maxWidth: 'calc(100vw - 3rem)', overflow: 'scroll' }}
+                                            {...provided.droppableProps}
+                                        >
+                                            {imageList.length !== 0 && (imageList.map((img, index) => {
+                                                return (
+                                                    <Draggable key={img.url} draggableId={img.url} index={index}>
+                                                        {(provided) =>
+                                                            <Grid item {...provided.draggableProps} {...provided.dragHandleProps} ref={provided.innerRef}>
+                                                                {/* image wrapper */}
+                                                                <Box
+                                                                    sx={{
+                                                                        width: imageStates.enlarge && imageStates.onEnlargeImageUrl === img.url ? 320 : 100,
+                                                                        height: imageStates.enlarge && imageStates.onEnlargeImageUrl === img.url ? Math.floor(320 / img.whr) : 100,
+                                                                        borderRadius: "10px",
+                                                                        backgroundSize: "cover",
+                                                                        backgroundPosition: "center",
+                                                                        backgroundImage: `url(${img.url})`,
+                                                                        backdropFilter: 'blur(14px)',
+                                                                    }}
+                                                                    onClick={handleClick(img.url)}
+                                                                >
+                                                                    {/* remove icon */}
+                                                                    <Box sx={{ display: processStates.submitting ? 'none' : 'flex' }}>
+                                                                        <IconButton
+                                                                            sx={{
+                                                                                display: imageStates.enlarge && imageStates.onEnlargeImageUrl === img.url ? 'none' : 'felx',
+                                                                                backgroundColor: 'white',
+                                                                                '&:hover': { backgroundColor: 'white' },
+                                                                            }}
+                                                                            size='small'
+                                                                            color='primary'
+                                                                            onClick={handleRemove(index)}
+                                                                        >
+                                                                            <HighlightOffIcon />
+                                                                        </IconButton>
+                                                                    </Box>
+                                                                    {/* progress circular indeterminate */}
+                                                                    <Box sx={{ display: processStates.submitting && !uploadedImageIndexList.includes(index) ? 'flex' : 'none', paddingTop: 3.8, paddingLeft: 3.8 }}>
+                                                                        <CircularProgress />
+                                                                    </Box>
+                                                                    {/* progress complete sign */}
+                                                                    <Box sx={{ display: processStates.submitting && uploadedImageIndexList.includes(index) ? 'flex' : 'none', paddingTop: 3, paddingLeft: 3 }}>
+                                                                        <Box sx={{ width: '52px', height: '52px', backgroundColor: 'white', borderRadius: '50%', padding: 1 }}>
+                                                                            <CheckIcon fontSize='large' color='success' />
+                                                                        </Box>
+                                                                    </Box>
+                                                                </Box>
+                                                            </Grid>
+                                                        }
+                                                    </Draggable>
+                                                )
+                                            }))}
+                                            {/* the 'add' button */}
+                                            <Box display={processStates.disableAddButton || processStates.submitting ? 'none' : ''}>
+                                                <IconButton
                                                     sx={{
-                                                        display: processStates.submitting && !uploadedImageIndexList.includes(index) ? 'flex' : 'none',
-                                                        paddingTop: 3.8,
-                                                        paddingLeft: 3.8
-                                                    }}>
-                                                    <CircularProgress />
-                                                </Box>
-                                                <Box
-                                                    sx={{
-                                                        display: processStates.submitting && uploadedImageIndexList.includes(index) ? 'flex' : 'none',
-                                                        paddingTop: 3,
-                                                        paddingLeft: 3
+                                                        width: 100,
+                                                        height: 100,
+                                                        borderRadius: '10px',
+                                                        border: 1,
+                                                        borderColor: 'grey.300',
                                                     }}
+                                                    aria-label="upload picture" component="label"
                                                 >
-                                                    <Box
-                                                        sx={{
-                                                            width: '52px',
-                                                            height: '52px',
-                                                            backgroundColor: 'white',
-                                                            borderRadius: '50%',
-                                                            padding: 1
-                                                        }}
-                                                    >
-                                                        <CheckIcon fontSize='large' color='success' />
-                                                    </Box>
-                                                </Box>
+                                                    <Input sx={{ display: 'none' }} inputProps={{ accept: 'image/*', type: 'file', multiple: true }} onChange={handleAddImage} disabled={processStates.submitting} />
+                                                    <AddIcon fontSize="large" />
+                                                </IconButton>
                                             </Box>
-                                        </Grid>
-                                    )
-                                }))}
-                                {/* the 'add' button */}
-                                <Grid item display={processStates.submitting ? 'none' : ''}>
-                                    <IconButton
-                                        sx={{
-                                            width: 100,
-                                            height: 100,
-                                            borderRadius: '10px',
-                                            border: 1,
-                                            borderColor: 'grey.300',
-                                        }}
-                                        aria-label="upload picture" component="label"
-                                    >
-                                        <Input sx={{ display: 'none' }} inputProps={{ accept: 'image/*', type: 'file', multiple: true }} onChange={handleAddImage} disabled={processStates.submitting} />
-                                        <AddIcon fontSize="large" />
-                                    </IconButton>
-                                </Grid>
-                            </Grid>
+                                            {provided.placeholder}
+                                        </Stack>
+                                    }
+                                </Droppable>
+                            </DragDropContext >
                         </Box>
                         {/* channel */}
                         <Typography>{langConfigs.choosePostChannel[lang]}</Typography>
@@ -439,9 +504,9 @@ const CreatePost = () => {
                             disabled={processStates.submitting}
                             required
                         >
-                            <InputLabel id='post-channel'>{langConfigs.postChannel[lang]}</InputLabel>
+                            <InputLabel id='channel'>{langConfigs.postChannel[lang]}</InputLabel>
                             <Select
-                                labelId='post-channel'
+                                labelId='channel'
                                 value={postStates.channel}
                                 label={langConfigs.postChannel[lang]}
                                 onChange={(event: SelectChangeEvent) => { setPostStates({ ...postStates, channel: event.target.value as string }) }}
@@ -484,6 +549,47 @@ const CreatePost = () => {
                     <Copyright sx={{ mt: { xs: 8, sm: 8 }, mb: 4 }} />
                 </Box>
             </Box>
+            <Modal
+                open={processStates.displayModal}
+                onClose={handleModalClose}
+                aria-labelledby="modal-modal-title"
+                aria-describedby="modal-modal-description"
+            >
+                <Stack spacing={1} sx={{
+                    position: 'absolute' as 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    width: 400,
+                    bgcolor: 'background.paper',
+                    borderRadius: 2,
+                    boxShadow: 24,
+                    p: 4,
+                }}>
+                    <Typography>{langConfigs.cueAMemberTitle[lang]}</Typography>
+                    <FormControl fullWidth >
+                        <InputLabel id='member-info-list'>{langConfigs.cueAMemberSelect[lang]}</InputLabel>
+                        <Select
+                            labelId='member-info-list'
+                            value={cueMemberHelper.selectedNicknameList}
+                            label={langConfigs.postChannel[lang]}
+                            onChange={handleNicknameSelectChange}
+                            SelectDisplayProps={{ style: { display: 'flex', alignItems: 'center' } }}
+                            MenuProps={{ style: { maxHeight: 240 } }}
+                            multiple={true}
+                        >
+                            {cueMemberHelper.memberInfoList.map(member => {
+                                return (
+                                    <MenuItem value={member.nickname} key={member.id} >
+                                        {member.nickname}
+                                    </MenuItem>
+                                )
+                            })}
+                        </Select>
+                    </FormControl>
+                    <Button variant='contained' onClick={handleNicknameSelectSubmit}>{langConfigs.addMember[lang]}</Button>
+                </Stack>
+            </Modal>
         </>
     )
 }

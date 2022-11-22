@@ -26,38 +26,28 @@ import { ResponsiveCard, CenterlizedBox, TextButton } from '../../ui/Styled';
 
 import Popover from '@mui/material/Popover';
 
-
-
-
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Pagination } from "swiper";
 import "swiper/css";
 import "swiper/css/pagination";
-
-
 
 import Navbar from '../../ui/Navbar';
 
 import { PostInfo } from '../../lib/types';
 import { getRandomLongStr } from '../../lib/utils';
 import Divider from '@mui/material/Divider';
-import { Style } from '@mui/icons-material';
 import Container from '@mui/material/Container';
 
 
-
-
-import Accordion from '@mui/material/Accordion';
-import AccordionDetails from '@mui/material/AccordionDetails';
-import AccordionSummary from '@mui/material/AccordionSummary';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import Chip from '@mui/material/Chip';
 
+import { NextPageContext } from 'next/types';
+import { useRouter } from 'next/router';
 
 
-
-
-
+type PostPageProps = {
+    postInfo_preGet: PostInfo;
+}
 
 
 type ProcessStates = {
@@ -77,10 +67,40 @@ type CommentState = {
     commentEditorAnchorElement: any
 }
 
+const domain = process.env.NEXT_PUBLIC_APP_DOMAIN;
+
+// get post info server-side
+export async function getServerSideProps(context: NextPageContext) {
+    try {
+        const { id } = context.query;
+        
+        console.log(id);
+        const resp = await fetch(''); // fetch post info
+        if (200 !== resp.status) {
+            return {
+                props: {
+                    postInfo_preGet: null
+                }
+            }
+        }
+        return {
+            props: {
+                postInfo_preGet: await resp.json()
+            }
+        }
+    } catch (e) {
+        console.log(`Was trying retrieving post info. ${e}`);
+        return {
+            props: {
+                postInfo_preGet: null
+            }
+        }
+    }
+}
 
 
-const Post = () => {
-
+const Post = ({ postInfo_preGet }: PostPageProps) => {
+    const router = useRouter();
 
     const [expanded, setExpanded] = React.useState<boolean>(false);
 
@@ -104,6 +124,9 @@ const Post = () => {
         setProcessStates({ ...processStates, displayEditor: false })
     }
 
+    // Declare &
+
+    // Declare & initiate image url list
     const [imageUrlList, setImageUrlList] = React.useState<string[]>([
         'https://images.unsplash.com/photo-1551963831-b3b1ca40c98e',
         'https://images.unsplash.com/photo-1551782450-a2132b4ba21d',
@@ -113,6 +136,7 @@ const Post = () => {
         'https://images.unsplash.com/photo-1558642452-9d2a7deb7f62',
         'https://images.unsplash.com/photo-1516802273409-68526ee1bdd6',
     ]);
+    React.useEffect(() => { }, []);
 
     // Declare post info states
     const [postInfo, setPostInfo] = React.useState<PostInfo>({
@@ -417,7 +441,7 @@ const Post = () => {
                         <Stack spacing={1} sx={{ ml: 2, maxWidth: 320, display: { xs: 'none', sm: 'none', md: 'block', lg: 'block' } }} >
 
                             {/* member info card */}
-                            <ResponsiveCard sx={{ paddingY: 3 }}>
+                            <ResponsiveCard sx={{ paddingY: 2 }}>
                                 <Stack>
                                     {/* avatar */}
                                     <CenterlizedBox mt={1}>
@@ -481,7 +505,7 @@ const Post = () => {
 
                             </ResponsiveCard>
                             {/* other post recommend in this channel */}
-                            <ResponsiveCard sx={{ padding: 3 }}>
+                            <ResponsiveCard sx={{ padding: 2 }}>
                                 <Box>
                                     <Typography>{'本区其他热帖'}</Typography>
                                 </Box>

@@ -156,7 +156,7 @@ export default NextAuth({
                         const memberInfoNickname: AzureTableEntity = {
                             partitionKey: memberId,
                             rowKey: 'Nickname',
-                            NickNameStr: nickName
+                            NicknameStr: nickName
                         }
                         const memberInfoAvatarImageUrl: AzureTableEntity = {
                             partitionKey: memberId,

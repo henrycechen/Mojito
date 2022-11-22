@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-
+import { ProcessStates } from './types';
 
 // Create random string
 export function getRandomStr(useLowerCase: boolean = false): string { // Length of 10
@@ -39,6 +39,25 @@ export function timeStampToString(timeStamp: any): string {
         return `${(mins / 60000).toFixed()}分钟前`
     }
     return `${(diff / 3600000).toFixed()}小时${(mins / 60000).toFixed()}分钟前`
+}
+
+// Deal with cache
+export function updateLocalStorage(storageName: string) {
+    const update = (processStates: ProcessStates) => {
+        const states: ProcessStates = { ...processStates };
+        window.localStorage.setItem(storageName, JSON.stringify(states))
+    }
+    return update;
+}
+
+export function restoreFromLocalStorage(storageName: string) {
+    const restore = (setProcessStates: Function) => {
+        const prevStates: ProcessStates = JSON.parse(window.localStorage.getItem(storageName) ?? '{}')
+        if (prevStates !== null && Object.keys(prevStates).length !== 0) {
+            setProcessStates(prevStates);
+        }
+    }
+    return restore;
 }
 
 // Verify infomation

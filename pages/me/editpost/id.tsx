@@ -18,6 +18,9 @@ import HighlightOffIcon from '@mui/icons-material/HighlightOff';
 
 import SvgIcon from '@mui/material/SvgIcon';
 
+import { DragDropContext } from 'react-beautiful-dnd';
+import { Droppable, Draggable } from 'react-beautiful-dnd';
+
 import axios from 'axios';
 import Alert from '@mui/material/Alert';
 import CheckIcon from '@mui/icons-material/Check';
@@ -32,11 +35,6 @@ import { LangConfigs, PostInfo, ChannelInfo, ChannelDictionary } from '../../../
 import Input from '@mui/material/Input';
 import ListItemText from '@mui/material/ListItemText';
 import ListItemIcon from '@mui/material/ListItemIcon';
-
-
-import { DragDropContext } from 'react-beautiful-dnd';
-import { Droppable, Draggable } from 'react-beautiful-dnd';
-
 
 type Image = {
     url: string;
@@ -170,12 +168,11 @@ const EditPost = () => {
         setPostStates({ ...postStates, [prop]: event.target.value });
     };
 
-
-
-    // work here
+    // Handle drag behaviour
     const handleDragStart = () => {
         setProcessStates({ ...processStates, disableAddButton: true })
     }
+    // Handle drag behaviour
     const handleDragEnd = (result: any) => {
         setProcessStates({ ...processStates, disableAddButton: false })
         const list = Array.from(imageList);
@@ -183,7 +180,6 @@ const EditPost = () => {
         list.splice(result?.destination.index, 0, movedImage);
         setImageList(list);
     }
-
 
     // Declare image states
     const [imageList, setImageList] = React.useState<Image[]>([]);
@@ -394,14 +390,11 @@ const EditPost = () => {
                                                                         backgroundPosition: "center",
                                                                         backgroundImage: `url(${img.url})`,
                                                                         backdropFilter: 'blur(14px)',
-                                                                        // backgroundColor: 'grey.300'
                                                                     }}
                                                                     onClick={handleClick(img.url)}
                                                                 >
                                                                     {/* remove icon */}
-                                                                    <Box sx={{
-                                                                        display: processStates.submitting ? 'none' : 'flex',
-                                                                    }}>
+                                                                    <Box sx={{ display: processStates.submitting ? 'none' : 'flex' }}>
                                                                         <IconButton
                                                                             sx={{
                                                                                 display: imageStates.enlarge && imageStates.onEnlargeImageUrl === img.url ? 'none' : 'felx',
@@ -416,30 +409,12 @@ const EditPost = () => {
                                                                         </IconButton>
                                                                     </Box>
                                                                     {/* progress circular indeterminate */}
-                                                                    <Box
-                                                                        sx={{
-                                                                            display: processStates.submitting && !uploadedImageIndexList.includes(index) ? 'flex' : 'none',
-                                                                            paddingTop: 3.8,
-                                                                            paddingLeft: 3.8
-                                                                        }}>
+                                                                    <Box sx={{ display: processStates.submitting && !uploadedImageIndexList.includes(index) ? 'flex' : 'none', paddingTop: 3.8, paddingLeft: 3.8 }}>
                                                                         <CircularProgress />
                                                                     </Box>
-                                                                    <Box
-                                                                        sx={{
-                                                                            display: processStates.submitting && uploadedImageIndexList.includes(index) ? 'flex' : 'none',
-                                                                            paddingTop: 3,
-                                                                            paddingLeft: 3
-                                                                        }}
-                                                                    >
-                                                                        <Box
-                                                                            sx={{
-                                                                                width: '52px',
-                                                                                height: '52px',
-                                                                                backgroundColor: 'white',
-                                                                                borderRadius: '50%',
-                                                                                padding: 1
-                                                                            }}
-                                                                        >
+                                                                    {/* progress complete sign */}
+                                                                    <Box sx={{ display: processStates.submitting && uploadedImageIndexList.includes(index) ? 'flex' : 'none', paddingTop: 3, paddingLeft: 3 }}>
+                                                                        <Box sx={{ width: '52px', height: '52px', backgroundColor: 'white', borderRadius: '50%', padding: 1 }}>
                                                                             <CheckIcon fontSize='large' color='success' />
                                                                         </Box>
                                                                     </Box>
@@ -477,8 +452,6 @@ const EditPost = () => {
 
 
                         </Box>
-
-
                         {/* channel */}
                         <Typography>{langConfigs.choosePostChannel[lang]}</Typography>
                         <FormControl

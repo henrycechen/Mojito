@@ -1,12 +1,8 @@
 import * as React from 'react';
-import { WheelEvent } from 'react';
 
 import Avatar from '@mui/material/Avatar';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
-import CardActions from '@mui/material/CardActions';
 import Grid from '@mui/material/Grid';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
@@ -17,7 +13,6 @@ import { useSession } from 'next-auth/react'
 import SvgIcon from '@mui/material/SvgIcon';
 
 import FormControl from '@mui/material/FormControl';
-import AddIcon from '@mui/icons-material/Add';
 import IconButton from '@mui/material/IconButton';
 import InputLabel from '@mui/material/InputLabel';
 
@@ -28,55 +23,30 @@ import OpacityIcon from '@mui/icons-material/Opacity';
 import BubbleChartIcon from '@mui/icons-material/BubbleChart';
 import InterestsIcon from '@mui/icons-material/Interests';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
-import ThumbDownIcon from '@mui/icons-material/ThumbDown';
 import ChatBubbleIcon from '@mui/icons-material/ChatBubble';
-import FaceIcon from '@mui/icons-material/Face';
 import CreateIcon from '@mui/icons-material/Create';
 import StarIcon from '@mui/icons-material/Star';
 import DeleteIcon from '@mui/icons-material/Delete';
-import ReplyIcon from '@mui/icons-material/Reply';
 import CakeIcon from '@mui/icons-material/Cake';
-import PanoramaIcon from '@mui/icons-material/Panorama';
 import InfoIcon from '@mui/icons-material/Info';
 import PhotoCamera from '@mui/icons-material/PhotoCamera';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 
-
 import Masonry from '@mui/lab/Masonry';
-
-import { CenterlizedBox, ResponsiveCard, StyledSwitch, TextButton } from '../../ui/Styled';
-// import { useTheme } from "@material-ui/core/styles";
 
 import dayjs, { Dayjs } from 'dayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { TimePicker } from '@mui/x-date-pickers/TimePicker';
-import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
-import { DesktopDatePicker } from '@mui/x-date-pickers/DesktopDatePicker';
 import { MobileDatePicker } from '@mui/x-date-pickers/MobileDatePicker';
 
 import FormControlLabel from '@mui/material/FormControlLabel';
 import InputAdornment from '@mui/material/InputAdornment';
-import Menu from '@mui/material/Menu';
 import OutlinedInput from '@mui/material/OutlinedInput';
 import Paper from '@mui/material/Paper';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
-import Switch from '@mui/material/Switch';
 
-import { Swiper, SwiperSlide } from "swiper/react";
-import { Pagination } from "swiper";
-import "swiper/css";
-import "swiper/css/pagination";
-
-
-
-import Navbar from '../../ui/Navbar';
-
-import { ChannelDictionary, ChannelInfo, LangConfigs } from '../../lib/types';
-import { getRandomLongStr } from '../../lib/utils';
 import Divider from '@mui/material/Divider';
-import Link from '@mui/material/Link';
 import Container from '@mui/material/Container';
 import MenuList from '@mui/material/MenuList';
 import MenuItem from '@mui/material/MenuItem';
@@ -84,16 +54,21 @@ import ListItemText from '@mui/material/ListItemText';
 import ListItemIcon from '@mui/material/ListItemIcon';
 
 
-import Drawer from '@mui/material/Drawer';
-import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
-import ListItemButton from '@mui/material/ListItemButton';
-import InboxIcon from '@mui/icons-material/MoveToInbox';
-import MailIcon from '@mui/icons-material/Mail';
 import { useTheme } from '@emotion/react';
 import { useRouter } from 'next/router';
 
-type ProcessStates = {
+import { ProcessStates, Helper, ChannelDictionary, ChannelInfo, LangConfigs } from '../../lib/types';
+import { getRandomLongStr, updateLocalStorage, restoreFromLocalStorage } from '../../lib/utils';
+import { CenterlizedBox, ResponsiveCard, StyledSwitch, TextButton } from '../../ui/Styled';
+import Navbar from '../../ui/Navbar';
+
+
+const storageName = 'MemberPageProcessStates';
+const updateProcessStates = updateLocalStorage(storageName);
+const restoreProcessStates = restoreFromLocalStorage(storageName);
+
+// Decalre process state type of this page
+interface MemberPageProcessStates extends ProcessStates {
     /**
      * 0 - message - MessageLayout
      * 1 - posts - PostLayout
@@ -107,13 +82,10 @@ type ProcessStates = {
     selectedHotPosts: boolean;
     selectedChannelId: string;
     selectedSettingId: number;
-    memoryChannelBarPositionX: number | undefined;
-    memoryLastViewedPostId: string | undefined;
+    memorizeChannelBarPositionX: number | undefined;
+    memorizeViewPortPositionY: number | undefined;
+    memorizeLastViewedPostId: string | undefined;
     wasRedirected: boolean;
-}
-
-type PostLayoutcomponentProps = {
-    categoryId: number;
 }
 
 type PostInfo = {
@@ -123,7 +95,6 @@ type PostInfo = {
     imgUrl: string;
     timestamp: string;
 }
-
 
 const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'ch';
 const langConfigs: LangConfigs = {
@@ -150,7 +121,6 @@ const langConfigs: LangConfigs = {
     settings_registerDate: { ch: '注册时间', en: 'Register date' },
 }
 
-
 const Member = () => {
     const { data: session, status } = useSession();
     // logic: 
@@ -162,25 +132,30 @@ const Member = () => {
     const theme: any = useTheme();
 
     // Declare process states
-    const [processStates, setProcessStates] = React.useState<ProcessStates>({
+    const [processStates, setProcessStates] = React.useState<MemberPageProcessStates>({
         selectedCategoryId: 0, // default
         selectedLayout: 'messagelayout', // default
         selectedHotPosts: false,
         selectedChannelId: 'all', // default
         selectedSettingId: 0,
-        memoryChannelBarPositionX: undefined,
-        memoryLastViewedPostId: undefined,
+        memorizeChannelBarPositionX: undefined,
+        memorizeViewPortPositionY: undefined,
+        memorizeLastViewedPostId: undefined,
         wasRedirected: false,
     })
-
-    // Restore page process states (On page re-load)
+    // Restore page process states on page re-load
     React.useEffect(() => {
-        restoreProcessStatesFromCache(setProcessStates);
+        restoreProcessStates(setProcessStates);
     }, []);
+
+    // Declare helper
+    const [helper, setHelper] = React.useState<Helper>({
+        memorizeViewPortPositionY: undefined, // reset scroll-help on handleChannelSelect, handleSwitchChange, ~~handlePostCardClick~~
+    })
 
     // Handle muti-display category select and update process state cache
     const handleSelectCategory = (categoryId: number) => (event: React.MouseEvent<HTMLButtonElement>) => {
-        let states: ProcessStates = { ...processStates };
+        let states: MemberPageProcessStates = { ...processStates };
         if (0 === categoryId) {
             states.selectedCategoryId = 0;
             states.selectedLayout = 'messagelayout';
@@ -201,53 +176,13 @@ const Member = () => {
             states.selectedCategoryId = 4;
             states.selectedLayout = 'settingslayout';
         }
+        states.memorizeViewPortPositionY = window.scrollY;
         setProcessStates(states);
-        updateProcessStatesCache(states);
+        updateProcessStates(states);
         return;
     }
 
-
-
-    // Declare & initialize channel states
-    const [channelInfoList, setChannelInfoList] = React.useState<ChannelInfo[]>([]);
-    React.useEffect(() => {
-        getPostChannelList();
-    }, []);
-    const getPostChannelList = async () => {
-        const channelDict = await fetch('/api/channel/getdictionary').then(resp => resp.json());
-        const referenceList = await fetch('/api/channel/getindex').then(resp => resp.json());
-        const channelList: ChannelInfo[] = [];
-        referenceList.forEach((channel: keyof ChannelDictionary) => {
-            channelList.push(channelDict[channel])
-        });
-        setChannelInfoList(channelList.filter(channel => !!channel));
-    }
-
-    React.useEffect(() => {
-        if (!!processStates.memoryChannelBarPositionX) {
-            document.getElementById('channel-bar')?.scrollBy(processStates.memoryChannelBarPositionX ?? 0, 0);
-        }
-    }, [channelInfoList])
-
-    // Handle channel select
-    const handleSelectChannel = (channelId: string) => (event: React.MouseEvent<HTMLButtonElement> | React.SyntheticEvent) => {
-        let state: ProcessStates = { ...processStates };
-        state.selectedChannelId = channelId;
-        state.memoryChannelBarPositionX = document.getElementById('channel-bar')?.scrollLeft;
-        // Step #1 update process states
-        setProcessStates(state);
-        // Step #2 update process states cache
-        updateProcessStatesCache(state);
-    }
-
-    // Handle setting select
-    const handleSettingSelect = (settingId: number) => (event: React.SyntheticEvent) => {
-        setProcessStates({ ...processStates, selectedSettingId: settingId });
-    }
-
-    /**
-     * Message layout
-     */
+    //////// Message layout ////////
 
     // Define message layout states
     type MessageLayoutStates = {
@@ -334,18 +269,60 @@ const Member = () => {
         )
     }
 
-    /**
-     * Post layout
-     */
+    //////// Post layout ////////
 
     // Define post layout states
     type PostLayoutStates = {
-
     }
 
-    // Deeclare post layout states
-    const [postLayoutStates, setPostLayoutStates] = React.useState<PostLayoutStates>();
+    // Declare post layout states
+    const [postLayoutStates, setPostLayoutStates] = React.useState<PostLayoutStates>({
+    });
 
+    // Declare & initialize channel states
+    const [channelInfoList, setChannelInfoList] = React.useState<ChannelInfo[]>([]);
+    React.useEffect(() => {
+        getPostChannelList();
+    }, []);
+    const getPostChannelList = async () => {
+        const channelDict = await fetch('/api/channel/getdictionary').then(resp => resp.json());
+        const referenceList = await fetch('/api/channel/getindex').then(resp => resp.json());
+        const channelList: ChannelInfo[] = [];
+        referenceList.forEach((channel: keyof ChannelDictionary) => {
+            channelList.push(channelDict[channel])
+        });
+        setChannelInfoList(channelList.filter(channel => !!channel));
+    }
+    // Restore channel bar position
+    React.useEffect(() => {
+        if (!!processStates.memorizeChannelBarPositionX) {
+            document.getElementById('channel-bar')?.scrollBy(processStates.memorizeChannelBarPositionX ?? 0, 0);
+        }
+    }, [channelInfoList]);
+
+    // Handle channel select
+    const handleChannelSelect = (channelId: string) => (event: React.MouseEvent<HTMLButtonElement> | React.SyntheticEvent) => {
+        let states: MemberPageProcessStates = { ...processStates };
+        states.selectedChannelId = channelId;
+        states.memorizeChannelBarPositionX = document.getElementById('channel-bar')?.scrollLeft;
+        // Step #1 update process states
+        setProcessStates(states);
+        // Step #2 update process states cache
+        updateProcessStates(states);
+        // Step #3 reset helper
+        setHelper({ ...helper, memorizeViewPortPositionY: undefined });
+    }
+
+    // Handle newest/hotest switch change
+    const handleSwitchChange = () => {
+        let states: MemberPageProcessStates = { ...processStates, selectedHotPosts: !processStates.selectedHotPosts }
+        // Step #1 update process states
+        setProcessStates(states);
+        // Step #2 update process states cache
+        updateProcessStates(states);
+        // Step #3 reset helper
+        setHelper({ ...helper, memorizeViewPortPositionY: undefined });
+    }
 
     // Declare & initialize post lists
     const [postList, setPostList] = React.useState<PostInfo[]>([])
@@ -361,37 +338,37 @@ const Member = () => {
         setPostList(list);
     }
 
-    // Restore browsing after getting posts
+    // Restore browsing after loading posts
     React.useEffect(() => {
         if (processStates.selectedLayout === 'postlayout' && processStates.wasRedirected) {
-            const postId = processStates.memoryLastViewedPostId;
+            const postId = processStates.memorizeLastViewedPostId;
             // Step #1 restore browsing position
-            if (!postId) { return }
-            document.getElementById(postId)?.scrollIntoView();
-            let states: ProcessStates = { ...processStates, memoryLastViewedPostId: undefined, wasRedirected: false };
+            if (!postId) {
+                return;
+            } else if (600 > window.innerWidth) { // 0 ~ 599
+                setHelper({ ...helper, memorizeViewPortPositionY: (document.getElementById(postId)?.offsetTop ?? 0) / 2 - 200 });
+            } else { // 600 ~ ∞
+                setHelper({ ...helper, memorizeViewPortPositionY: processStates.memorizeViewPortPositionY });
+            }
+            let states: MemberPageProcessStates = { ...processStates, memorizeLastViewedPostId: undefined, memorizeViewPortPositionY: undefined, wasRedirected: false };
             // Step #2 update process states
             setProcessStates(states);
             // Step #3 update process state cache
-            updateProcessStatesCache(states);
+            updateProcessStates(states);
         }
     }, [postList]);
-
-    // Handle newest/hotest switch change
-    const handleSwitchChange = () => {
-        let states: ProcessStates = { ...processStates, selectedHotPosts: !processStates.selectedHotPosts }
-        // Step #1 update process states
-        setProcessStates(states);
-        // Step #2 update process states cache
-        updateProcessStatesCache(states);
+    if (!!helper.memorizeViewPortPositionY) {
+        window.scrollTo(0, helper.memorizeViewPortPositionY ?? 0);
     }
 
     // Handle click on post card
     const handlePostCardClick = (postId: string) => (event: React.MouseEvent) => {
         // Step #1 update process state cache
-        updateProcessStatesCache({ ...processStates, memoryLastViewedPostId: postId, wasRedirected: true });
+        updateProcessStates({ ...processStates, memorizeLastViewedPostId: postId, memorizeViewPortPositionY: window.scrollY, wasRedirected: true });
         // Step #2 jump
-        router.push('/post/id');
+        router.push(`/post/${postId}`);
     }
+
     // Handle click on Avatar / Nickname
     const handleIconButtonClick = () => {
         router.push('/me/id');
@@ -413,9 +390,7 @@ const Member = () => {
         }
     }
 
-    /**
-     * Settings layout
-     */
+    //////// Settings layout ////////
 
     // Define settings layout states
     type SettingsLayoutStates = {
@@ -444,6 +419,11 @@ const Member = () => {
         memberId: '6TTK1WH0OD',
         registerDate: '2022-11-10T22:44:24.373372Z'
     });
+
+    // Handle setting select
+    const handleSettingSelect = (settingId: number) => (event: React.SyntheticEvent) => {
+        setProcessStates({ ...processStates, selectedSettingId: settingId });
+    }
 
     // Ui-component: Settings layout
     const SettingsLayout = () => {
@@ -903,7 +883,7 @@ const Member = () => {
                             <MenuList>
                                 {/* the "all" menu item */}
                                 <MenuItem
-                                    onClick={handleSelectChannel('all')}
+                                    onClick={handleChannelSelect('all')}
                                     selected={processStates.selectedChannelId === 'all'}
                                 >
                                     <ListItemIcon >
@@ -919,7 +899,7 @@ const Member = () => {
                                 {channelInfoList.map(channel => {
                                     return (
                                         <MenuItem key={channel.id} id={channel.id}
-                                            onClick={handleSelectChannel(channel.id)}
+                                            onClick={handleChannelSelect(channel.id)}
                                             selected={processStates.selectedChannelId === channel.id}
                                         >
                                             <ListItemIcon >
@@ -966,7 +946,7 @@ const Member = () => {
                             />
                         </Box>
                         {/* the "all" button */}
-                        <Button variant={'all' === processStates.selectedChannelId ? 'contained' : 'text'} size='small' onClick={handleSelectChannel('all')}>
+                        <Button variant={'all' === processStates.selectedChannelId ? 'contained' : 'text'} size='small' onClick={handleChannelSelect('all')}>
                             <Typography variant='body2' color={'all' === processStates.selectedChannelId ? 'white' : "text.secondary"} sx={{ backgroundColor: 'primary' }}>
                                 {'全部'}
                             </Typography>
@@ -974,7 +954,7 @@ const Member = () => {
                         {/* other channels */}
                         {channelInfoList.map(channel => {
                             return (
-                                <Button variant={channel.id === processStates.selectedChannelId ? 'contained' : 'text'} key={channel.id} size='small' onClick={handleSelectChannel(channel.id)}>
+                                <Button variant={channel.id === processStates.selectedChannelId ? 'contained' : 'text'} key={channel.id} size='small' onClick={handleChannelSelect(channel.id)}>
                                     <Typography variant="body2" color={channel.id === processStates.selectedChannelId ? 'white' : "text.secondary"} sx={{ backgroundColor: 'primary' }}>
                                         {channel.name[lang]}
                                     </Typography>
@@ -1026,26 +1006,6 @@ const Member = () => {
             </Grid>
         </>
     )
-}
-
-function getPreservedProcessStates(): ProcessStates | undefined {
-    const prevStates: ProcessStates = JSON.parse(window.localStorage.getItem('MemberInfoProcessStates') ?? '{}')
-    if (prevStates !== null && Object.keys(prevStates).length !== 0) {
-        return prevStates;
-    }
-    return undefined;
-}
-
-function updateProcessStatesCache(processStates: ProcessStates) {
-    const memberInfoPageStates: ProcessStates = { ...processStates };
-    window.localStorage.setItem('MemberInfoProcessStates', JSON.stringify(memberInfoPageStates))
-}
-
-function restoreProcessStatesFromCache(setProcessStates: Function) {
-    const prevStates: ProcessStates = JSON.parse(window.localStorage.getItem('MemberInfoProcessStates') ?? '{}')
-    if (prevStates !== null && Object.keys(prevStates).length !== 0) {
-        setProcessStates(prevStates);
-    }
 }
 
 export default Member;
