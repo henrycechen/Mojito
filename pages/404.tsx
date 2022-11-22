@@ -21,7 +21,7 @@ const langConfigs: LangConfigs = {
     }
 }
 
-export default () => {
+const PageNotFound = () => {
     return (
         <>
             <AppBar />
@@ -39,9 +39,11 @@ export default () => {
                 <Typography variant='h6' color={'white'} textAlign={'center'}>
                     {langConfigs.msg[lang]}
                 </Typography>
-                <BackToHomeButtonGroup color={'white'}/>
-                <Copyright sx={{ mt: '8rem', mb: 4, color: 'white' }} /> 
+                <BackToHomeButtonGroup color={'white'} />
+                <Copyright sx={{ mt: '8rem', mb: 4, color: 'white' }} />
             </Stack>
         </>
     )
 }
+
+export default PageNotFound;

@@ -17,6 +17,7 @@ import ListItemText from '@mui/material/ListItemText';
 
 import CreateIcon from '@mui/icons-material/Create';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import EmailIcon from '@mui/icons-material/Email';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
@@ -26,7 +27,6 @@ import useTheme from '@mui/material/styles/useTheme';
 import { useSession, signIn, signOut } from 'next-auth/react';
 import { LangConfigs } from '../lib/types';
 import { useRouter } from 'next/router';
-import { Margin } from '@mui/icons-material';
 
 import { ColorModeContext } from './Theme';
 
@@ -40,6 +40,10 @@ const langConfigs: LangConfigs = {
     createPost: {
         ch: '发帖',
         en: 'Create post'
+    },
+    message: {
+        ch: '消息',
+        en: 'Message'
     },
     member: {
         ch: '账户',
@@ -67,8 +71,9 @@ export default () => {
     const handleClick = (actionIndex: number) => {
         setAnchorEl(null);
         if (actionIndex === 0) { router.push('/me/createpost') };
-        if (actionIndex === 1) { router.push('/me') };
-        if (actionIndex === 2) { signOut() };
+        if (actionIndex === 1) { router.push('/me/id?c=message') };
+        if (actionIndex === 2) { router.push('/me/id?c=post') };
+        if (actionIndex === 3) { signOut() };
     }
 
     const handleSignIn = (event: React.MouseEvent<HTMLElement>) => {
@@ -123,13 +128,21 @@ export default () => {
                                 </MenuItem>
                                 <MenuItem onClick={() => handleClick(1)} >
                                     <ListItemIcon>
+                                        <EmailIcon />
+                                    </ListItemIcon>
+                                    <ListItemText>
+                                        {langConfigs.message[lang]}
+                                    </ListItemText>
+                                </MenuItem>
+                                <MenuItem onClick={() => handleClick(2)} >
+                                    <ListItemIcon>
                                         <AccountCircleIcon />
                                     </ListItemIcon>
                                     <ListItemText>
                                         {langConfigs.member[lang]}
                                     </ListItemText>
                                 </MenuItem>
-                                <MenuItem onClick={() => handleClick(2)} >
+                                <MenuItem onClick={() => handleClick(3)} >
                                     <ListItemIcon>
                                         <ExitToAppIcon />
                                     </ListItemIcon>

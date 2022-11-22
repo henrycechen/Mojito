@@ -18,7 +18,7 @@ export default (props: any) => {
     return (
         <Typography variant="body2" color="text.secondary" align="center" {...props}>
             {'Copyright © '}
-            <Link color="inherit" href="/" underline={'none'}>
+            <Link color='inherit' href="/" underline={'none'}>
                 {appName}
             </Link>
             {' '}

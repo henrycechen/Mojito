@@ -3,9 +3,6 @@ import * as React from 'react';
 import Avatar from '@mui/material/Avatar';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
-import CardActions from '@mui/material/CardActions';
 import Grid from '@mui/material/Grid';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
@@ -21,12 +18,11 @@ import InputLabel from '@mui/material/InputLabel';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import ThumbDownIcon from '@mui/icons-material/ThumbDown';
 import ChatBubbleIcon from '@mui/icons-material/ChatBubble';
-import FaceIcon from '@mui/icons-material/Face';
 import StarIcon from '@mui/icons-material/Star';
 import ReplyIcon from '@mui/icons-material/Reply';
 
 
-import { ResponsiveCard, CenterlizedBox } from '../../ui/Styled';
+import { ResponsiveCard, CenterlizedBox, TextButton } from '../../ui/Styled';
 
 import Popover from '@mui/material/Popover';
 
@@ -91,14 +87,6 @@ const Post = () => {
     const handleChange = () => {
         setExpanded(!expanded)
     }
-
-
-
-
-
-
-
-
 
     const { data: session, status } = useSession();
     // - 'unauthenticated'
@@ -200,15 +188,14 @@ const Post = () => {
         <>
             <Navbar />
             {/* post component */}
-            <Container
-                disableGutters
-            >
+            <Container disableGutters >
                 <Grid container >
+
                     {/* left column (placeholder) */}
-                    <Grid item xs={0} sm={2} />
+                    <Grid item xs={0} sm={1} md={1} />
 
                     {/* middle column */}
-                    <Grid item xs={12} sm={8} md={6} >
+                    <Grid item xs={12} sm={10} md={7} >
 
                         {/* middle card-stack */}
                         <Stack maxWidth={800} spacing={{ xs: 1, sm: 2 }}>
@@ -219,31 +206,33 @@ const Post = () => {
                                     <Typography variant={'subtitle1'} fontWeight={400} color={'grey'}>
                                         {'兴趣'}
                                     </Typography>
-                                    <Typography variant={'h6'} fontWeight={700}>
-                                        {'做了一个简单壁纸小玩具，欢迎大家体验'}
-                                    </Typography>
-                                    <Stack mt={1} direction={'row'} spacing={1}>
-                                        <Typography variant='body2'>
-                                            WebMaster
+                                    <Stack direction={'row'}>
+                                        <Typography variant={'h6'} fontWeight={700}>
+                                            {'做了一个简单壁纸小玩具，欢迎大家体验'}
                                         </Typography>
-                                        <Typography variant='body2'>
-                                            {2} 分钟前
-                                        </Typography>
+                                        <Button variant='text'>{'编辑帖子'}</Button>
                                     </Stack>
+                                    <TextButton color='inherit' sx={{ flexDirection: 'row', marginTop: 1 }}>
+                                        <Typography variant='body2'>
+                                            {'WebMaster 2 分钟前'}
+                                        </Typography>
+                                    </TextButton>
                                 </Box>
-
                                 {/* post-title: mobile style */}
                                 <Stack mt={0.5} direction={'row'} sx={{ display: { xs: 'flex', sm: 'none' } }}>
-                                    <Avatar sx={{ width: 38, height: 38, bgcolor: 'grey' }}>{'W'}</Avatar>
+                                    <IconButton sx={{ padding: 0 }}>
+                                        <Avatar sx={{ width: 38, height: 38, bgcolor: 'grey' }}>{'W'}</Avatar>
+                                    </IconButton>
                                     <Grid container ml={1}>
                                         <Grid item flexGrow={1}>
-
-                                            <Typography variant='body2' marginTop={0.1}>
-                                                {'WebMaster'}
-                                            </Typography>
-                                            <Typography variant='body2' fontSize={{ xs: 12 }}>
-                                                {'2 分钟前'}
-                                            </Typography>
+                                            <TextButton color='inherit'>
+                                                <Typography variant='body2' >
+                                                    {'WebMaster'}
+                                                </Typography>
+                                                <Typography variant='body2' fontSize={{ xs: 12 }} >
+                                                    {'2 分钟前'}
+                                                </Typography>
+                                            </TextButton>
                                         </Grid>
                                         <Grid item>
                                             <Chip label={'关注'} sx={{ paddingX: 1 }} color={true ? 'primary' : 'default'} onClick={() => { }} />
@@ -256,7 +245,7 @@ const Post = () => {
                                 {true && <Box mt={{ xs: 1.5, sm: 2 }} >
                                     <Swiper modules={[Pagination]} pagination={true}>
                                         {['pink', '#1976d2', 'darkorange', '#01ced1'].map(imgUrl =>
-                                            <SwiperSlide>
+                                            <SwiperSlide key={imgUrl}>
                                                 <Box sx={{ minHeight: 400, backgroundColor: imgUrl }}></Box>
                                             </SwiperSlide>
                                         )}
@@ -314,19 +303,23 @@ const Post = () => {
                             {true &&
                                 [0, 1, 2, 3].map(comment => {
                                     return (
-                                        <>
+                                        <Box key={comment}>
                                             <Divider sx={{ display: { xs: 'block', sm: 'none' } }} />
                                             <Box sx={{ padding: { xs: 2, sm: 4 }, borderRadius: 1, boxShadow: { xs: 0, sm: 1 } }}>
                                                 {/* member info */}
                                                 <Stack direction={'row'}>
-                                                    <Avatar sx={{ width: 38, height: 38, bgcolor: 'grey' }}>{'W'}</Avatar>
+                                                    <IconButton sx={{ padding: 0 }}>
+                                                        <Avatar sx={{ width: 38, height: 38, bgcolor: 'grey' }}>{'W'}</Avatar>
+                                                    </IconButton>
                                                     <Box ml={1}>
-                                                        <Typography variant='body2' marginTop={0.1}>
-                                                            WebMaster
-                                                        </Typography>
-                                                        <Typography variant='body2' fontSize={{ xs: 12 }}>
-                                                            {2} 分钟前
-                                                        </Typography>
+                                                        <TextButton color='inherit'>
+                                                            <Typography variant='body2' >
+                                                                {'WebMaster'}
+                                                            </Typography>
+                                                            <Typography variant='body2' fontSize={{ xs: 12 }} >
+                                                                {'2 分钟前'}
+                                                            </Typography>
+                                                        </TextButton>
                                                     </Box>
                                                 </Stack>
                                                 {/* comment content */}
@@ -366,14 +359,18 @@ const Post = () => {
                                                     <Box>
                                                         {/* member info */}
                                                         <Stack direction={'row'}>
-                                                            <Avatar sx={{ width: 38, height: 38, bgcolor: 'grey' }}>{'W'}</Avatar>
+                                                            <IconButton sx={{ padding: 0 }}>
+                                                                <Avatar sx={{ width: 38, height: 38, bgcolor: 'grey' }}>{'W'}</Avatar>
+                                                            </IconButton>
                                                             <Box ml={1}>
-                                                                <Typography variant='body2' marginTop={0.1}>
-                                                                    WebMaster
-                                                                </Typography>
-                                                                <Typography variant='body2' fontSize={{ xs: 12 }}>
-                                                                    {2} 分钟前
-                                                                </Typography>
+                                                                <TextButton color='inherit'>
+                                                                    <Typography variant='body2' >
+                                                                        {'WebMaster'}
+                                                                    </Typography>
+                                                                    <Typography variant='body2' fontSize={{ xs: 12 }} >
+                                                                        {'2 分钟前'}
+                                                                    </Typography>
+                                                                </TextButton>
                                                             </Box>
                                                         </Stack>
                                                         {/* comment content */}
@@ -405,9 +402,8 @@ const Post = () => {
                                                     </Box>
                                                     <Button variant='text' onClick={handleChange} >{'折叠评论'}</Button>
                                                 </Stack>
-
                                             </Box>
-                                        </>
+                                        </Box>
                                     )
                                 })
                             }
@@ -416,32 +412,31 @@ const Post = () => {
                     </Grid>
 
                     {/* right column*/}
-                    <Grid item xs={0} sm={2} md={4} >
+                    <Grid item xs={0} sm={1} md={4} >
                         {/* right card-stack */}
                         <Stack spacing={1} sx={{ ml: 2, maxWidth: 320, display: { xs: 'none', sm: 'none', md: 'block', lg: 'block' } }} >
 
                             {/* member info card */}
                             <ResponsiveCard sx={{ paddingY: 3 }}>
-                                <Stack spacing={1}>
-
+                                <Stack>
                                     {/* avatar */}
-                                    <CenterlizedBox >
+                                    <CenterlizedBox mt={1}>
                                         <Avatar sx={{ width: 48, height: 48, bgcolor: 'grey' }}>{'W'}</Avatar>
                                     </CenterlizedBox>
                                     {/* nickname */}
-                                    <CenterlizedBox  >
+                                    <CenterlizedBox mt={1} >
                                         <Typography variant='body1'>
                                             {'WebMaster'}
                                         </Typography>
                                     </CenterlizedBox>
-                                    {/* follow button (conditional rendering) */}
                                     <CenterlizedBox >
-                                        {/* logic: bgcolor='inherit' === followed */}
-                                        <Chip label={'关注'} sx={{ paddingX: 1 }} color={true ? 'primary' : 'default'} onClick={() => { }} />
-                                        {/* <Button variant='contained' sx={{ paddingY: 0, borderRadius: 4 }} disabled>{'已关注'}</Button> */}
+                                        <Button variant='text' sx={{ paddingY: 0.1, borderRadius: 4, fontSize: 13 }} disabled={true}>{true ? '已关注' : '关注'}</Button>
                                     </CenterlizedBox>
+
+                                    <Box mt={1}><Divider /></Box>
+
                                     {/* info */}
-                                    <CenterlizedBox  >
+                                    <CenterlizedBox mt={2} >
                                         {/* left column */}
                                         <Box>
                                             <CenterlizedBox>
@@ -481,39 +476,38 @@ const Post = () => {
                                                 </Typography>
                                             </CenterlizedBox>
                                         </Box>
-
-
-
                                     </CenterlizedBox>
                                 </Stack>
-                            </ResponsiveCard>
 
+                            </ResponsiveCard>
                             {/* other post recommend in this channel */}
                             <ResponsiveCard sx={{ padding: 3 }}>
                                 <Box>
                                     <Typography>{'本区其他热帖'}</Typography>
                                 </Box>
                                 <Stack mt={1} spacing={1}>
-                                    {true && [{ title: '#初秋专属氛围感#', imgUrl: 'pink' }, { title: '今天就需要衛衣加持', imgUrl: '#1976d2' }, { title: '星期一的咖啡時光～', imgUrl: 'darkorange' }].map(po => <Grid container>
-                                        <Grid item>
-                                            <Box sx={{ width: 48, height: 48, backgroundColor: po.imgUrl }}></Box>
-                                        </Grid>
-                                        <Grid item flexGrow={1}>
-                                            <Box ml={1}>
-                                                <Typography variant='body1' marginTop={0.1} textOverflow={'ellipsis'} noWrap maxWidth={200}>{po.title}</Typography>
-                                                <Typography variant='body2' fontSize={{ xs: 12 }}>
-                                                    {'100 浏览'}
-                                                </Typography>
-                                            </Box>
-                                        </Grid>
-                                    </Grid>)}
+                                    {true && [{ title: '#初秋专属氛围感#', imgUrl: 'pink' }, { title: '今天就需要衛衣加持', imgUrl: '#1976d2' }, { title: '星期一的咖啡時光～', imgUrl: 'darkorange' }].map(po =>
+                                        <Grid container key={po.imgUrl}>
+                                            <Grid item>
+                                                <Box sx={{ width: 48, height: 48, backgroundColor: po.imgUrl }}></Box>
+                                            </Grid>
+                                            <Grid item flexGrow={1}>
+                                                <Box ml={1}>
+                                                    <TextButton color='inherit'>
+                                                        <Typography variant='body1' marginTop={0.1} textOverflow={'ellipsis'} noWrap maxWidth={200}>{po.title}</Typography>
+                                                        <Typography variant='body2' fontSize={{ xs: 12 }}>
+                                                            {'100 浏览'}
+                                                        </Typography>
+                                                    </TextButton>
+                                                </Box>
+                                            </Grid>
+                                        </Grid>)}
                                 </Stack>
                             </ResponsiveCard>
                         </Stack>
                     </Grid>
+
                 </Grid>
-
-
             </Container >
             {/* pop up editor */}
             < Popover
@@ -556,4 +550,5 @@ const Post = () => {
         </>
     )
 }
+
 export default Post

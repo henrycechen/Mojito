@@ -14,9 +14,7 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import { ColorModeContext, getDesignTokens } from '../ui/Theme';
 
 
-
-
-export default ({ Component, pageProps: { session, ...pageProps } }: AppProps<{ session: Session }>) => {
+const App = ({ Component, pageProps: { session, ...pageProps } }: AppProps<{ session: Session }>) => {
   const [mode, setMode] = React.useState<PaletteMode>('light');
   const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
   React.useEffect(() => {
@@ -51,3 +49,5 @@ export default ({ Component, pageProps: { session, ...pageProps } }: AppProps<{ 
     </SessionProvider >
   )
 }
+
+export default App;

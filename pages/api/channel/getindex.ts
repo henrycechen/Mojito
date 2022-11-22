@@ -11,12 +11,12 @@ export default async function GetIndex(req: NextApiRequest, res: NextApiResponse
         return;
     }
     try {
-        const token = await getToken({ req });
-        // Step #0 verify session
-        if (!token) {
-            res.status(401).send('Unauthorized');
-            return;
-        }
+        // const token = await getToken({ req });
+        // // Step #0 verify session
+        // if (!token) {
+        //     res.status(401).send('Unauthorized');
+        //     return;
+        // }
         // Step #2 look up channels from [Table]
         const channelInfoTableClient = AzureTableClient('ChannelInfo');
         const channelIndexQuery = channelInfoTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq 'ChannelIndex' and RowKey eq 'default'` } });

@@ -13,12 +13,12 @@ export default async function GetList(req: NextApiRequest, res: NextApiResponse)
         return;
     }
     try {
-        const token = await getToken({ req });
-        // Step #0 verify session
-        if (!token) {
-            res.status(401).send('Unauthorized');
-            return;
-        }
+        // const token = await getToken({ req });
+        // // Step #0 verify session
+        // if (!token) {
+        //     res.status(401).send('Unauthorized');
+        //     return;
+        // }
         // Step #2 look up channels from [Table]
         const channelInfoTableClient = AzureTableClient('ChannelInfo');
         const channelInfoQuery = channelInfoTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq 'ChannelInfo' and IsActive eq true` } });

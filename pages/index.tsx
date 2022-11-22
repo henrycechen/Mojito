@@ -1,22 +1,21 @@
 import * as React from 'react';
+import { WheelEvent } from 'react';
+
 import Avatar from '@mui/material/Avatar';
-import Box  from '@mui/material/Box';
+import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
-import CardActions from '@mui/material/CardActions';
 import Grid from '@mui/material/Grid';
 import Stack from '@mui/material/Stack';
-import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 
 import { useSession } from 'next-auth/react'
 
-import FormControl from '@mui/material/FormControl';
-import AddIcon from '@mui/icons-material/Add';
-import IconButton from '@mui/material/IconButton';
-import InputLabel from '@mui/material/InputLabel';
+import SvgIcon from '@mui/material/SvgIcon';
 
+import IconButton from '@mui/material/IconButton';
+
+import EmailIcon from '@mui/icons-material/Email';
+import BubbleChartIcon from '@mui/icons-material/BubbleChart';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import ThumbDownIcon from '@mui/icons-material/ThumbDown';
 import ChatBubbleIcon from '@mui/icons-material/ChatBubble';
@@ -24,13 +23,16 @@ import FaceIcon from '@mui/icons-material/Face';
 import StarIcon from '@mui/icons-material/Star';
 import ReplyIcon from '@mui/icons-material/Reply';
 
+import Masonry from '@mui/lab/Masonry';
 
-import { ResponsiveCard } from '../ui/Styled';
+import { CenterlizedBox, ResponsiveCard, TextButton, StyledSwitch } from '../ui/Styled';
 
 import Popover from '@mui/material/Popover';
 
+import Paper from '@mui/material/Paper';
 
-
+import { FormControlLabel, styled } from '@mui/material';
+import Switch from '@mui/material/Switch';
 
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Pagination } from "swiper";
@@ -41,15 +43,19 @@ import "swiper/css/pagination";
 
 import Navbar from '../ui/Navbar';
 
-import { PostInfo } from '../lib/types';
+import { ChannelDictionary, ChannelInfo } from '../lib/types';
 import { getRandomLongStr } from '../lib/utils';
 import Divider from '@mui/material/Divider';
-import { Style } from '@mui/icons-material';
+import Link from '@mui/material/Link';
 import Container from '@mui/material/Container';
+import MenuList from '@mui/material/MenuList';
+import MenuItem from '@mui/material/MenuItem';
+import ListItemText from '@mui/material/ListItemText';
+import ListItemIcon from '@mui/material/ListItemIcon';
 
 type ProcessStates = {
-    displayEditor: boolean;
-    editorEnchorElement: any;
+    selectedChannelId: string;
+    selectedHotPosts: boolean;
 }
 
 type MemberBehaviourStates = {
@@ -58,53 +64,63 @@ type MemberBehaviourStates = {
     saved: boolean;
 }
 
-type CommentState = {
-
-    displayCommentEditor: boolean;
-    commentEditorAnchorElement: any
+type PostInfo = {
+    id: string;
+    memberId: string;
+    title: string;
+    imgUrl: string;
+    timestamp: string;
 }
 
+const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'ch';
 
-
-const Post = () => {
+const Home = () => {
     const { data: session, status } = useSession();
     // - 'unauthenticated'
     // - 'authenticated'
 
     // Declare process states
     const [processStates, setProcessStates] = React.useState<ProcessStates>({
-        displayEditor: false,
-        editorEnchorElement: null
+        selectedChannelId: '',
+        selectedHotPosts: false,
     })
-    const handleEditorOpen = () => {
-        setProcessStates({ ...processStates, displayEditor: true })
-    }
-    const handleEditorClose = () => {
-        setProcessStates({ ...processStates, displayEditor: false })
+
+    // Decalre & initialize channel states
+    const [channelInfoList, setChannelInfoList] = React.useState<ChannelInfo[]>([]);
+    React.useEffect(() => {
+        getPostChannelList();
+    }, []);
+    const getPostChannelList = async () => {
+        const channelDict = await fetch('/api/channel/getdictionary').then(resp => resp.json());
+        const referenceList = await fetch('/api/channel/getindex').then(resp => resp.json());
+        const channelList: ChannelInfo[] = [];
+        referenceList.forEach((channel: keyof ChannelDictionary) => {
+            channelList.push(channelDict[channel])
+        });
+        setChannelInfoList(channelList.filter(channel => !!channel));
     }
 
-    const [imageUrlList, setImageUrlList] = React.useState<string[]>([
-        'https://images.unsplash.com/photo-1551963831-b3b1ca40c98e',
-        'https://images.unsplash.com/photo-1551782450-a2132b4ba21d',
-        'https://images.unsplash.com/photo-1522770179533-24471fcdba45',
-        'https://images.unsplash.com/photo-1444418776041-9c7e33cc5a9c',
-        'https://images.unsplash.com/photo-1533827432537-70133748f5c8',
-        'https://images.unsplash.com/photo-1558642452-9d2a7deb7f62',
-        'https://images.unsplash.com/photo-1516802273409-68526ee1bdd6',
-    ]);
+    // Handle channel select
+    const handleSelectChannel = (channelId: string) => (event: React.MouseEvent<HTMLButtonElement> | React.SyntheticEvent) => {
+        setProcessStates({ ...processStates, selectedChannelId: channelId })
+    }
+
+    // Handle hotest / newest posts switch
+    const handleSwitchChange = () => {
+        setProcessStates({ ...processStates, selectedHotPosts: !processStates.selectedHotPosts });
+    }
 
     // Declare post info states
-    const [postInfo, setPostInfo] = React.useState<PostInfo>({
-        title: '',
-        content: '',
-        imageUrlList: [],
-        channel: '',
-        likedTimes: 55,
-        dislikedTimes: 0
-    })
-    // const handlePostStatesChange = (prop: keyof PostState) => (event: React.ChangeEvent<HTMLInputElement>) => {
-    //     setPostStates({ ...postStates, [prop]: event.target.value });
-    // };
+    const [postList, setPostList] = React.useState<PostInfo[]>([])
+    // Initialize post list
+    React.useEffect(() => {
+        getPosts();
+    }, [processStates])
+    const getPosts = async () => {
+        const resp = await fetch(`/api/post?ranking=${processStates.selectedHotPosts ? 'hotest' : 'newest'}`);
+        const _postList = await resp.json();
+        setPostList(_postList);
+    }
 
     // Decalre member behaviour? like-post dislike-comment follow-member save-post ...
     // 
@@ -122,17 +138,6 @@ const Post = () => {
     // Declare member info
     // 
 
-    // Declare comment info
-    const [commentInfo, setCommentInfo] = React.useState();
-    const [commentList, setCommentList] = React.useState<any>([
-        {
-            id: '1',
-            memberId: '55',
-            content: 'hahaha',
-            likedTimes: 12,
-            dislikedTimes: 3,
-        }
-    ]);
 
     // Declare subcomment info
     //
@@ -149,180 +154,282 @@ const Post = () => {
 
     }
 
-    const getCommentInfo = async () => {
-
-    }
-
     const getMemberInfo = async () => {
 
     }
-
-    const getSubcommentInfo = async () => {
-
-    }
-
-
 
     return (
         <>
             <Navbar />
             {/* post component */}
-            <Container
-                disableGutters
-            >
-                <Grid container >
-                    {/* left column (placeholder) */}
-                    <Grid item xs={0} sm={2} />
-                    
-                    {/* middle column */}
-                    <Grid item xs={12} sm={8} md={6} >
-                        {/* middle card-stack */}
-                        <Stack maxWidth={800}>
-                            {/* padding: { xs: 2, sm: 4 } */}
-                            <ResponsiveCard sx={{ padding: {sm: 4 }, boxShadow: { sm: 1 } }}>
-                                {/* title: desktop style */}
-                                {/* title: mobile style */}
-                                <Typography variant="h5" component="div">
-                                    {'title'}
-                                </Typography>
-                                <Typography variant="body2">
-                                    {'contentProps.TextContent'}
-                                </Typography>
+            <Grid container>
 
-                                {/* image list */}
-                                <Box
-
-                                // maxWidth={500}
-
+                {/* left column */}
+                <Grid item xs={0} sm={0} md={2}>
+                    <Stack spacing={1} sx={{ marginX: 1, display: { xs: 'none', sm: 'none', md: 'block' } }} >
+                        {/* the channel menu (desktop mode) */}
+                        <ResponsiveCard sx={{ padding: 1 }}>
+                            <MenuList>
+                                {/* the "all" menu item */}
+                                <MenuItem
+                                    onClick={handleSelectChannel('all')}
+                                    selected={processStates.selectedChannelId === 'all'}
                                 >
-                                    <Swiper pagination={true} modules={[Pagination]} className="hello">
-                                        <SwiperSlide>
-                                            <Box sx={{ height: 400, backgroundColor: 'pink' }}>
-
-                                            </Box>
-                                        </SwiperSlide>
-                                        <SwiperSlide>
-                                            <Box sx={{ height: 400, backgroundColor: 'darkorange' }}>
-
-                                            </Box>
-                                        </SwiperSlide>
-
-
-                                    </Swiper>
-                                </Box>
-
-
-
-
-
-
-                                <Box padding={1}>
-                                    <Typography variant={'body2'} fontSize={{ sm: 16 }} >
-                                        {'国庆节以来大修改了一次，主要体现天气场景功能。现在有上班族、钓鱼、旅游旅行场景，后续增加更多。如果你有兴趣可以试一下，有好的建议可以邮箱联系我（ 18873700176@163.com ）。另外寻找志同道合的设计师（跨平台设计，动画动效等），分享这个项目收益利润的百分之二十和其他，联系工作微信（ lzh2021hero ）。暂时只有 iOS 版本，Android 版本还没有开放（ flutter 跨平台）'}
-                                    </Typography>
-                                </Box>
-
-                                {/* member behaviours */}
-                                <Grid container sx={{ alignItems: 'start' }}>
-                                    {/* like */}
-                                    <Grid item sx={{ display: 'flex', flexDirection: 'row' }}>
-                                        <IconButton aria-label='like' onClick={handleBehaviourOnPost}>
-                                            <ThumbUpIcon color={memberBehaviour.liked ? 'primary' : 'inherit'} fontSize='small' />
-                                        </IconButton>
-                                        <Typography variant='body2' sx={{ marginTop: 1 }}>{postInfo.likedTimes}</Typography>
-                                    </Grid>
-                                    {/* dislike */}
-                                    <Grid item sx={{ ml: 1 }}>
-                                        <IconButton aria-label='dislike' onClick={handleBehaviourOnPost}>
-                                            <ThumbDownIcon color={memberBehaviour.disliked ? 'error' : 'inherit'} fontSize='small' />
-                                            {/* <Typography>{postInfo.dislikedTimes}</Typography> */}
-                                        </IconButton>
-                                    </Grid>
-                                    {/* save */}
-                                    <Grid item>
-                                        <IconButton aria-label='save' onClick={handleBehaviourOnPost}>
-                                            <StarIcon color={memberBehaviour.saved ? 'warning' : 'inherit'} fontSize='small' />
-                                            <Typography>{postInfo.savedTimes}</Typography>
-                                        </IconButton>
-                                    </Grid>
-                                    {/* comment */}
-                                    <Grid item>
-                                        <IconButton aria-label='comment' onClick={handleEditorOpen}>
-                                            <ChatBubbleIcon fontSize='small' />
-                                            {/* <Typography>{contentProps.Comment}</Typography> */}
-                                        </IconButton>
-                                    </Grid>
-
-
-
-                                    {/* <IconButton aria-label='viewed times'>
-                                    <FaceIcon />
-                                    <Typography>{postInfo.viewedTimes}</Typography>
-                                </IconButton> */}
-                                </Grid>
-                            </ResponsiveCard>
-                        </Stack>
-                    </Grid>
-
-                    {/* right column*/}
-                    <Grid item xs={0} sm={2} md={4} >
-                        {/* right card-stack */}
-                        <Stack spacing={1} sx={{ ml: 2, maxWidth: 300, display: { xs: 'none', sm: 'none', md: 'block', lg: 'block' } }} >
-                            {/* member info card */}
-                            <ResponsiveCard
-                               
-                            >
-
-                                <Typography variant="h5" component="div">
-                                    {'title'}
-                                </Typography>
-
-                            </ResponsiveCard>
-                            {/* member other post recommend */}
-                            <ResponsiveCard>
-                                <Typography variant="h5" component="div">
-                                    {'title'}
-                                </Typography>
-                            </ResponsiveCard>
-                        </Stack>
-
-                    </Grid>
+                                    <ListItemIcon >
+                                        <BubbleChartIcon />
+                                    </ListItemIcon>
+                                    <ListItemText>
+                                        <Typography>
+                                            {'全部'}
+                                        </Typography>
+                                    </ListItemText>
+                                </MenuItem>
+                                {/* other channels */}
+                                {channelInfoList.map(channel => {
+                                    return (
+                                        <MenuItem key={channel.id}
+                                            onClick={handleSelectChannel(channel.id)}
+                                            selected={processStates.selectedChannelId === channel.id}
+                                        >
+                                            <ListItemIcon >
+                                                <SvgIcon>
+                                                    <path d={channel.svgIconPath} />
+                                                </SvgIcon>
+                                            </ListItemIcon>
+                                            <ListItemText>
+                                                <Typography sx={{ marginTop: '1px' }}>
+                                                    {channel.name[lang]}
+                                                </Typography>
+                                            </ListItemText>
+                                        </MenuItem>
+                                    )
+                                })}
+                            </MenuList>
+                        </ResponsiveCard>
+                        {/* hotest / newest switch */}
+                        <ResponsiveCard >
+                            <FormControlLabel
+                                control={<StyledSwitch sx={{ ml: 1 }} checked={processStates.selectedHotPosts} />}
+                                label={processStates.selectedHotPosts ? '最热' : '最新'}
+                                onChange={handleSwitchChange}
+                            />
+                        </ResponsiveCard>
+                    </Stack>
                 </Grid>
 
+                {/* middle column */}
+                <Grid item xs={12} sm >
+                    {/* #1 the channel bar (mobile mode) */}
+                    <Stack direction={'row'}
+                        sx={{
+                            padding: 1,
+                            overflow: 'auto',
+                            display: { sm: 'flex', md: 'none' }
+                        }}
+                    >
+                        {/* hotest / newest switch */}
+                        <Box minWidth={110}>
+                            <FormControlLabel
+                                control={<StyledSwitch sx={{ ml: 1 }} checked={processStates.selectedHotPosts} />}
+                                label={processStates.selectedHotPosts ? '最热' : '最新'}
+                                onChange={handleSwitchChange}
+                            />
+                        </Box>
+                        {/* the "all" button */}
+                        <Button variant={'all' === processStates.selectedChannelId ? 'contained' : 'text'} size='small' onClick={handleSelectChannel('all')}>
+                            <Typography variant='body2' color={'all' === processStates.selectedChannelId ? 'white' : "text.secondary"} sx={{ backgroundColor: 'primary' }}>
+                                {'全部'}
+                            </Typography>
+                        </Button>
+                        {/* other channels */}
+                        {channelInfoList.map(channel => {
+                            return (
+                                <Button variant={channel.id === processStates.selectedChannelId ? 'contained' : 'text'} key={channel.id} size='small' onClick={handleSelectChannel(channel.id)}>
+                                    <Typography variant="body2" color={channel.id === processStates.selectedChannelId ? 'white' : "text.secondary"} sx={{ backgroundColor: 'primary' }}>
+                                        {channel.name[lang]}
+                                    </Typography>
+                                </Button>
+                            )
+                        })}
+                    </Stack>
+
+                    {/* #2 the post mansoy */}
+                    <Box ml={1}>
+                        <Masonry columns={{ xs: 2, sm: 3, md: 3, lg: 3, xl: 4 }}>
+                            {postList.length !== 0 && postList.map(post => {
+                                return (
+                                    <Paper key={post.id} sx={{ maxWidth: 300 }}>
+                                        <Stack>
+                                            {/* image */}
+                                            {/* <Box sx={{
+                                                minHeight: 100,
+                                                backgroundImage: `url(${post.imgUrl})`
+                                            }}></Box> */}
+                                            <Box component={'img'} src={post.imgUrl}></Box>
+                                            {/* title */}
+                                            <Box paddingTop={2} paddingX={2}>
+                                                <Typography variant='body1'>{post.title}</Typography>
+                                            </Box>
+                                            {/* member info & member behaviour */}
+                                            <Box paddingTop={1}>
+                                                <Grid container>
+                                                    <Grid item flexGrow={1}>
+                                                        <Box display={'flex'} flexDirection={'row'}>
+                                                            <IconButton>
+                                                                <Avatar sx={{ bgcolor: 'grey', width: 25, height: 25, fontSize: 12 }}>
+                                                                    {'W'}
+                                                                </Avatar>
+                                                            </IconButton>
+                                                            <Button variant='text' color='inherit' sx={{ textTransform: 'none' }}>
+                                                                <Typography variant='body2'>{'WebMaster'}</Typography>
+                                                            </Button>
+                                                        </Box>
+                                                    </Grid>
+                                                    <Grid item>
+                                                        <IconButton aria-label='like' >
+                                                            <ThumbUpIcon color={true ? 'primary' : 'inherit'} />
+                                                        </IconButton>
+                                                    </Grid>
+                                                </Grid>
+                                            </Box>
+                                        </Stack>
+                                    </Paper>
+                                )
+                            })}
+                        </Masonry>
+                    </Box>
+                </Grid>
+
+                {/* right column */}
+                <Grid item xs={0} sm={0} md={3} lg={3} xl={3}>
+                    <Stack spacing={1} sx={{ marginX: 1, display: { xs: 'none', sm: 'none', md: 'flex' } }} >
+                        {/* member info card */}
+                        <ResponsiveCard sx={{ paddingY: 3 }}>
+                            <Stack>
+                                {/* nickname */}
+                                <CenterlizedBox mt={1} >
+                                    <Typography variant='body1'>
+                                        {'WebMaster'}
+                                    </Typography>
+                                </CenterlizedBox>
+                                <Box mt={1}><Divider /></Box>
+                                {/* info */}
+                                <CenterlizedBox mt={2} >
+                                    {/* left column */}
+                                    <Box>
+                                        <CenterlizedBox>
+                                            <Typography variant='body1'>
+                                                {'发帖'}
+                                            </Typography>
+                                        </CenterlizedBox>
+                                        <CenterlizedBox>
+                                            <Typography variant='body1'>
+                                                {10}
+                                            </Typography>
+                                        </CenterlizedBox>
+                                    </Box>
+                                    {/* middle column */}
+                                    <Box marginX={4}>
+                                        <CenterlizedBox>
+                                            <Typography variant='body1' >
+                                                {'粉丝'}
+                                            </Typography>
+                                        </CenterlizedBox>
+                                        <CenterlizedBox>
+                                            <Typography variant='body1'>
+                                                {10}
+                                            </Typography>
+                                        </CenterlizedBox>
+                                    </Box>
+                                    {/* right column */}
+                                    <Box>
+                                        <CenterlizedBox>
+                                            <Typography variant='body1'>
+                                                {'获赞'}
+                                            </Typography>
+                                        </CenterlizedBox>
+                                        <CenterlizedBox>
+                                            <Typography variant='body1'>
+                                                {10}
+                                            </Typography>
+                                        </CenterlizedBox>
+                                    </Box>
 
 
 
+                                </CenterlizedBox>
+                            </Stack>
+                        </ResponsiveCard>
+                        {/* unread message card */}
+                        <ResponsiveCard sx={{ paddingY: 3 }}>
+                            <CenterlizedBox>
+                                <IconButton>
+                                    <EmailIcon />
+                                </IconButton>
+                                <Button variant='text' color='inherit'>
+                                    <Typography variant='body1' sx={{ marginTop: 0.1 }}>
+                                        {'0 条未读提醒'}
+                                    </Typography>
+                                </Button>
+                            </CenterlizedBox>
 
+                        </ResponsiveCard>
+                        {/* 24 hour hot */}
+                        <ResponsiveCard sx={{ padding: 3 }}>
+                            <Box>
+                                <Typography>{'24小时热帖'}</Typography>
+                            </Box>
+                            <Stack mt={1} spacing={1}>
+                                {true && [{ title: '#初秋专属氛围感#', imgUrl: 'pink' }, { title: '今天就需要衛衣加持', imgUrl: '#1976d2' }, { title: '星期一的咖啡時光～', imgUrl: 'darkorange' }].map(po =>
+                                    <Grid container key={po.title}>
+                                        <Grid item display={{ md: 'none', lg: 'block' }}>
+                                            <Box sx={{ width: 48, height: 48, backgroundColor: po.imgUrl }}></Box>
+                                        </Grid>
+                                        <Grid item flexGrow={1}>
+                                            <Box ml={1}>
+                                                <Typography variant='body1' marginTop={0.1} textOverflow={'ellipsis'} maxWidth={180} noWrap>{po.title}</Typography>
+                                                <Typography variant='body2' fontSize={{ xs: 12 }}>
+                                                    {'100 浏览'}
+                                                </Typography>
+                                            </Box>
+                                        </Grid>
+                                    </Grid>
+                                )}
+                            </Stack>
+                        </ResponsiveCard>
+                        {/* 7 days hot */}
+                        <ResponsiveCard sx={{ padding: 3 }}>
+                            <Box>
+                                <Typography>{'本周热帖'}</Typography>
+                            </Box>
+                            <Stack mt={1} spacing={1}>
+                                {true && [{ title: '第一次海淘，寻求建议', imgUrl: '#D6D5B3' }, { title: '送女友家人，有红酒推荐吗', imgUrl: '#F92A82' }, { title: '大家平时都喝什么咖啡？', imgUrl: '#806443' }].map(po =>
+                                    <Grid container key={po.title}>
+                                        <Grid item display={{ md: 'none', lg: 'block' }}>
+                                            <Box sx={{ width: 48, height: 48, backgroundColor: po.imgUrl }}></Box>
+                                        </Grid>
+                                        <Grid item flexGrow={1}>
+                                            <Box ml={1}>
+                                                <TextButton>
 
+                                                    <Typography variant='body1' marginTop={0.1} textOverflow={'ellipsis'} maxWidth={180} noWrap>{po.title}</Typography>
+                                                    <Typography variant='body2' fontSize={{ xs: 12 }}>
+                                                        {'100 浏览'}
+                                                    </Typography>
+                                                </TextButton>
+                                            </Box>
+                                        </Grid>
+                                    </Grid>
+                                )}
+                            </Stack>
+                        </ResponsiveCard>
+                    </Stack>
 
+                </Grid>
 
-
-
-
-            </Container>
-            {/* pop up editor */}
-            <Popover
-                // id={id}
-                open={processStates.displayEditor}
-                anchorReference="anchorPosition"
-                // anchorEl={processStates.editorEnchorElement}
-                onClose={handleEditorClose}
-                anchorPosition={{ top: 1000, left: 0 }}
-                anchorOrigin={{
-                    vertical: 'bottom',
-                    horizontal: 'center',
-                }}
-            >
-                <Box sx={{
-                    minWidth: 370,
-                    minHeight: 240
-                }}>
-
-                    <Typography sx={{ p: 2 }}>The content of the Popover.</Typography>
-                    <TextField></TextField>
-                </Box>
-            </Popover>
+            </Grid>
         </>
     )
 }
-export default Post
+
+export default Home
