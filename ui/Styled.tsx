@@ -27,16 +27,16 @@ export const TextButton = styled(Button)<ButtonProps>(({ theme }) => ({
 }))
 
 export const StyledSwitch = styled(Switch)(({ theme }) => ({
-    width: 60,
+    width: 54,
     height: 32,
     padding: 7,
     '& .MuiSwitch-switchBase': {
-        margin: 1,
+        margin: 2,
         padding: 0,
-        transform: 'translateX(6px)',
+        transform: 'translateX(4px)',
         '&.Mui-checked': {
             color: '#fff',
-            transform: 'translateX(22px)',
+            transform: 'translateX(18px)',
             '& .MuiSwitch-thumb:before': {
                 backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" height="20" width="20" viewBox="0 0 22 22"><path fill="${encodeURIComponent(
                     '#fff',
@@ -50,8 +50,8 @@ export const StyledSwitch = styled(Switch)(({ theme }) => ({
     },
     '& .MuiSwitch-thumb': {
         backgroundColor: theme.palette.mode === 'dark' ? '#003892' : '#001e3c',
-        width: 30,
-        height: 30,
+        width: 28,
+        height: 28,
         '&:before': {
             content: "''",
             position: 'absolute',

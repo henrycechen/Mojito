@@ -13,7 +13,8 @@ export default async function Channel(req: NextApiRequest, res: NextApiResponse)
     if ('POST' !== method) {
         response405(req, res);
         return;
-    } try {
+    }
+    try {
         // Step #0 verify token (session)
         const token = await getToken({ req });
         if (!token) {
@@ -26,7 +27,7 @@ export default async function Channel(req: NextApiRequest, res: NextApiResponse)
             return;
         }
         // Step #1 verify post integrity
-        const { title, content, channel, imageUrlList }: PostInfo = req.body;
+        const { title, content, channelId: channel, imageUrlList }: PostInfo = req.body;
         if ('string' !== typeof title || '' === title) {
             res.status(400).send('Improper post title');
             return;

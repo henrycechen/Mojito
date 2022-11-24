@@ -299,7 +299,7 @@ const EditPost = () => {
         const post: PostInfo = {
             title: postStates.title,
             content: postStates.content,
-            channel: postStates.channel,
+            channelId: postStates.channel,
             imageUrlList: []
         }
         try {

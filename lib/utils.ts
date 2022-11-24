@@ -1,7 +1,20 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { ProcessStates } from './types';
 
-// Create random string
+//////// Create random string ////////
+//
+//  Rules of create random strings
+//
+//  IDs
+//  - Member ID : 10 characters, uppercase
+//  - Post ID : 10 characters, uppercase
+//  - Topic ID : 10 characters, lowercase
+//  - Comment ID : 10 characters, lowercase
+//  - Subcomment ID : 10 characters, lowercase
+//
+//  Names
+//  - Image Filename : 20 characters, lowercase
+//
 export function getRandomStr(useLowerCase: boolean = false): string { // Length of 10
     if (useLowerCase) {
         return Math.floor(Math.random() * Math.pow(10, 15)).toString(35);
@@ -41,7 +54,7 @@ export function timeStampToString(timeStamp: any): string {
     return `${(diff / 3600000).toFixed()}小时${(mins / 60000).toFixed()}分钟前`
 }
 
-// Deal with cache
+//////// Utilize local storage ////////
 export function updateLocalStorage(storageName: string) {
     const update = (processStates: ProcessStates) => {
         const states: ProcessStates = { ...processStates };
@@ -60,7 +73,7 @@ export function restoreFromLocalStorage(storageName: string) {
     return restore;
 }
 
-// Verify infomation
+//////// Verify infomation ////////
 export function verifyEmailAddress(emailAddress: string): boolean {
     const regex = new RegExp(/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/);
     return regex.test(emailAddress);
@@ -124,13 +137,13 @@ export function verifyEnvironmentVariable(obj: EnvironmentVariableObject): strin
     return undefined;
 }
 
-// Make response
+//////// Compose response ////////
 export function response405(request: NextApiRequest, response: NextApiResponse) {
     const { url, method } = request;
     response.status(405).send(`${url}: ${method} is not allowed`);
 }
 
 export function response500(response: NextApiResponse, msg: string) {
-    response.status(500).send(msg);
-    // response.status(500).send('development' === process.env.NODE_ENV ? msg : 'Internal Server Error');
+    // response.status(500).send(msg);
+    response.status(500).send('development' === process.env.NODE_ENV ? msg : 'Internal Server Error');
 }

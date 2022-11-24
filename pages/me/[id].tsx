@@ -652,8 +652,8 @@ const Member = () => {
                 {/* left column (placeholder) */}
                 <Grid item xs={0} sm={1} md={2} lg={3} xl={3}></Grid>
                 {/* middle-left column */}
-                <Grid item xs={4} sm={3} md={2} lg={2} xl={2}>
-                    <Box sx={{ borderRadius: 1, boxShadow: { xs: 0, sm: 2 }, padding: 0, marginRight: 1, minHeight: 400 }}>
+                <Grid item xs={4} sm={3} md={2} lg={2} xl={1}>
+                    <Box sx={{ borderRadius: 1, boxShadow: { xs: 0, sm: 2 }, padding: { xs: 0, sm: 1 }, marginRight: 1, minHeight: 400 }}>
                         <MenuList>
                             {/* avatar */}
                             <MenuItem onClick={handleSettingSelect(0)} selected={0 === processStates.selectedSettingId} >
@@ -736,7 +736,7 @@ const Member = () => {
                     </Box>
                 </Grid>
                 {/* middle-right column */}
-                <Grid item xs={8} sm={7} md={6} lg={4} xl={4}>
+                <Grid item xs={8} sm={7} md={6} lg={4} xl={5}>
                     {/* multi-display */}
                     <Box sx={{ borderRadius: 1, boxShadow: { xs: 0, sm: 2 }, minHeight: 400 }}>
                         {0 === processStates.selectedSettingId && <AvataSetting />}

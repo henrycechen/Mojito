@@ -36,6 +36,18 @@ export type EmailRecipient = {
 // Member
 export type MemberInfo = {
     id?: string;
+    nickname?: string;
+    avatarImageUrl?: string | undefined;
+    briefIntro?: string | undefined;
+    gender?: -1 | 0 | 1;
+    birthday?: string | undefined;
+    postCounts?: number;
+    commentCounts?: number;
+    followingCounts?: number;
+    followedByCounts?: number;
+    savedCounts?: number;
+    likedCounts?: number;
+    dislikedCounts?: number;
 }
 
 export type VerifyAccountRequestInfo = {
@@ -51,10 +63,15 @@ export type ResetPasswordRequestInfo = {
 // Post
 export type PostInfo = {
     id?: string;
+    memberId?: string;
+    timeStamp?: string;
     title: string;
     content: string;
-    channel: string;
+    contentParagraphsArray?: string[];
     imageUrlList: string[];
+    channelId?: string;
+    topicList?: TopicInfo[]; // string => => [type] topic
+    cuedMemberList?: string[]; // string => => [type] member
     viewedTimes?: number;
     likedTimes?: number;
     dislikedTimes?: number;
@@ -73,6 +90,13 @@ export type ChannelInfo = {
 
 export type ChannelDictionary = {
     [key: string]: ChannelInfo
+}
+
+// Topic
+export type TopicInfo = {
+    id: string;
+    channelId: string;
+    name: string;
 }
 
 // Comment

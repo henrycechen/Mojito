@@ -55,15 +55,12 @@ const langConfigs: LangConfigs = {
     }
 }
 
-// const ColorModeContext = React.createContext({ toggleColorMode: () => { } })
-
 export default () => {
     const { data: session, status } = useSession();
     const router = useRouter();
 
     const theme = useTheme();
     const colorMode = React.useContext(ColorModeContext);
-
 
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
     const handleOpenMemberMenu = (event: React.MouseEvent<HTMLElement>) => { setAnchorEl(event.currentTarget) }
@@ -80,12 +77,21 @@ export default () => {
         event.preventDefault();
         signIn();
     }
+
+    const handleColorModeSelect = () => {
+        const preferredColorMode = colorMode.mode === 'dark' ? 'light' : 'dark'
+        colorMode.setMode(preferredColorMode);
+        document.cookie = `PreferredColorMode=${preferredColorMode}`
+    }
+
     return (
         <AppBar position='sticky'>
             <Container maxWidth={'xl'}>
                 <Toolbar disableGutters>
                     <Link href='/' mt={1}>
+                        {/* <Box component={'img'} src={`${domain}/logo${'dark' === colorMode.mode ? '-dark' : ''}.png`} sx={{ height: '2.5rem' }} /> */}
                         <Box component={'img'} src={`${domain}/logo${'dark' === theme.palette.mode ? '-dark' : ''}.png`} sx={{ height: '2.5rem' }} />
+                        {/* <Box component={'img'} src={`${domain}/logo.png`} sx={{ height: '2.5rem' }} /> */}
                     </Link>
                     <Box sx={{ flexGrow: 1 }}></Box>
                     {'authenticated' !== status && !session && (
@@ -112,11 +118,7 @@ export default () => {
                                 }}
                                 open={Boolean(anchorEl)}
                                 onClose={handleCloseMemberMenu}
-                                MenuListProps={{
-                                    style: {
-                                        // minWidth: 100
-                                    }
-                                }}
+                                MenuListProps={{}}
                             >
                                 <MenuItem onClick={() => handleClick(0)} >
                                     <ListItemIcon>
@@ -151,7 +153,7 @@ export default () => {
                                     </ListItemText>
                                 </MenuItem>
                                 <Divider />
-                                <MenuItem onClick={() => colorMode.setMode(colorMode.mode === 'dark' ? 'light' : 'dark')} >
+                                <MenuItem onClick={handleColorModeSelect} >
                                     <ListItemIcon>
                                         {theme.palette.mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
                                     </ListItemIcon>

@@ -78,7 +78,14 @@ const Home = () => {
     // - 'authenticated'
     const router = useRouter();
 
-    // Declare process states
+    //////// Declare masonry ref ////////
+    const masonryWrapper = React.useRef<any>();
+    const [width, setWidth] = React.useState(636);
+    React.useEffect(() => {
+        setWidth(masonryWrapper?.current?.offsetWidth)
+    }, [])
+
+    //////// Declare process states ////////
     const [processStates, setProcessStates] = React.useState<HomePageProcessStates>({
         selectedChannelId: '',
         selectedHotPosts: false,
@@ -261,7 +268,7 @@ const Home = () => {
                                                 </SvgIcon>
                                             </ListItemIcon>
                                             <ListItemText>
-                                                <Typography sx={{ marginTop: '1px' }}>
+                                                <Typography>
                                                     {channel.name[lang]}
                                                 </Typography>
                                             </ListItemText>
@@ -271,11 +278,12 @@ const Home = () => {
                             </MenuList>
                         </ResponsiveCard>
                         {/* hotest / newest switch */}
-                        <ResponsiveCard >
+                        <ResponsiveCard sx={{ padding: 0, paddingY: 2, paddingLeft: 2 }}>
                             <FormControlLabel
                                 control={<StyledSwitch sx={{ ml: 1 }} checked={processStates.selectedHotPosts} />}
                                 label={processStates.selectedHotPosts ? '最热' : '最新'}
                                 onChange={handleSwitchChange}
+                                sx={{ marginRight: 0 }}
                             />
                         </ResponsiveCard>
                     </Stack>
@@ -317,17 +325,14 @@ const Home = () => {
                         })}
                     </Stack>
                     {/* #2 the post mansoy */}
-                    <Box ml={1}>
+                    <Box ml={1} ref={masonryWrapper}>
                         <Masonry columns={{ xs: 2, sm: 3, md: 3, lg: 3, xl: 4 }}>
                             {postList.length !== 0 && postList.map(post =>
                                 <Paper id={post.id} key={post.id} sx={{ maxWidth: 300, '&:hover': { cursor: 'pointer' } }} onClick={handlePostCardClick(post.id)}>
                                     <Stack>
                                         {/* image */}
-                                        {/* <Box sx={{
-                                                minHeight: 100,
-                                                backgroundImage: `url(${post.imgUrl})`
-                                            }}></Box> */}
-                                        <Box component={'img'} src={post.imgUrl}></Box>
+                                        <Box component={'img'} src={post.imgUrl} maxWidth={{ xs: width / 2, sm: 300 }} height={'auto'} sx={{ borderTopLeftRadius: 4, borderTopRightRadius: 4 }}></Box>
+
                                         {/* title */}
                                         <Box paddingTop={2} paddingX={2}>
                                             <Typography variant='body1'>{post.title}</Typography>
@@ -436,7 +441,7 @@ const Home = () => {
 
                         </ResponsiveCard>
                         {/* 24 hour hot */}
-                        <ResponsiveCard sx={{ padding: 2 }}>
+                        <ResponsiveCard sx={{ padding: { lg: 3, xl: 2 } }}>
                             <Box>
                                 <Typography>{'24小时热帖'}</Typography>
                             </Box>
@@ -461,7 +466,7 @@ const Home = () => {
                             </Stack>
                         </ResponsiveCard>
                         {/* 7 days hot */}
-                        <ResponsiveCard sx={{ padding: 2 }}>
+                        <ResponsiveCard sx={{ padding: { lg: 3, xl: 2 } }}>
                             <Box>
                                 <Typography>{'本周热帖'}</Typography>
                             </Box>
@@ -474,7 +479,7 @@ const Home = () => {
                                         <Grid item flexGrow={1}>
                                             <Box ml={1}>
                                                 <TextButton sx={{ color: 'inherit' }}>
-                                                    <Typography variant='body1' marginTop={0.1} textOverflow={'ellipsis'} maxWidth={{ lg: 200, xl: 150 }} noWrap>{po.title}</Typography>
+                                                    <Typography variant='body1' marginTop={0.1} textOverflow={'ellipsis'} maxWidth={{ lg: 180, xl: 150 }} noWrap>{po.title}</Typography>
                                                     <Typography variant='body2' fontSize={{ xs: 12 }}>
                                                         {'100 浏览'}
                                                     </Typography>

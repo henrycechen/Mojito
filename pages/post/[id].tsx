@@ -33,8 +33,8 @@ import "swiper/css/pagination";
 
 import Navbar from '../../ui/Navbar';
 
-import { PostInfo } from '../../lib/types';
-import { getRandomLongStr } from '../../lib/utils';
+import { ProcessStates, ChannelDictionary, ChannelInfo, LangConfigs, PostInfo, MemberInfo } from '../../lib/types';
+import { getRandomHexStr, getRandomLongStr, timeStampToString } from '../../lib/utils';
 import Divider from '@mui/material/Divider';
 import Container from '@mui/material/Container';
 
@@ -43,14 +43,16 @@ import Chip from '@mui/material/Chip';
 
 import { NextPageContext } from 'next/types';
 import { useRouter } from 'next/router';
+import { Awaitable } from 'next-auth';
 
 
 type PostPageProps = {
-    postInfo_preGet: PostInfo;
+    postInfo_serverSide?: PostInfo;
+    channelInfo_serverSide?: ChannelInfo;
+    memberInfo_serverSide?: MemberInfo;
 }
 
-
-type ProcessStates = {
+interface PostPageProcessStates extends ProcessStates {
     displayEditor: boolean;
     editorEnchorElement: any;
 }
@@ -68,51 +70,95 @@ type CommentState = {
 }
 
 const domain = process.env.NEXT_PUBLIC_APP_DOMAIN;
+const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'ch';
+const langConfigs: LangConfigs = {
+    title: { ch: '撰写新主题', en: 'Create a new post' },
+    editPost: { ch: '编辑帖子', en: '' },
+    follow: { ch: '关注', en: 'Follow' },
+    hotPostRecommend: { ch: '的热门帖子', en: '' }
+}
 
 // get post info server-side
-export async function getServerSideProps(context: NextPageContext) {
+export async function getServerSideProps(context: NextPageContext): Promise<{ props: PostPageProps }> {
     try {
         const { id } = context.query;
-        
-        console.log(id);
-        const resp = await fetch(''); // fetch post info
-        if (200 !== resp.status) {
+        if ('string' !== typeof id) {
+            throw new Error('Improper post id');
+        }
+        const postInfo_resp = await fetch(`${domain}/api/post/info/${id}`); // fetch post info
+        if (200 !== postInfo_resp.status) {
+            return {
+                props: {}
+            }
+        }
+        const postInfo = await postInfo_resp.json();
+        const channelInfo_resp = await fetch(`${domain}/api/channel/info/${postInfo.channelId}`); // fetch channel info
+        if (200 !== channelInfo_resp.status) {
             return {
                 props: {
-                    postInfo_preGet: null
+                    postInfo_serverSide: postInfo
                 }
             }
         }
+        const channelInfo = await channelInfo_resp.json();
+        const memberInfo_resp = await fetch(`${domain}/api/member/info/${postInfo.memberId}`); // fetch member info
+        if (200 !== memberInfo_resp.status) {
+            return {
+                props: {
+                    postInfo_serverSide: postInfo,
+                    channelInfo_serverSide: channelInfo
+                }
+            }
+        }
+        const memberInfo = await memberInfo_resp.json();
         return {
             props: {
-                postInfo_preGet: await resp.json()
+                postInfo_serverSide: postInfo,
+                channelInfo_serverSide: channelInfo,
+                memberInfo_serverSide: memberInfo,
             }
         }
     } catch (e) {
-        console.log(`Was trying retrieving post info. ${e}`);
+        console.log(`Was trying retrieving info. ${e}`);
         return {
-            props: {
-                postInfo_preGet: null
-            }
+            props: {}
         }
     }
 }
 
 
-const Post = ({ postInfo_preGet }: PostPageProps) => {
+const Post = ({ postInfo_serverSide, channelInfo_serverSide, memberInfo_serverSide }: PostPageProps) => {
     const router = useRouter();
-
-    const [expanded, setExpanded] = React.useState<boolean>(false);
-
-    const handleChange = () => {
-        setExpanded(!expanded)
-    }
-
     const { data: session, status } = useSession();
     // - 'unauthenticated'
     // - 'authenticated'
 
-    // Declare process states
+    React.useEffect(() => {
+        if (!postInfo_serverSide) {
+            router.push('/404');
+        }
+    }, [])
+
+    const [expanded, setExpanded] = React.useState<boolean>(false);
+    const handleChange = () => {
+        setExpanded(!expanded)
+    }
+
+
+    //////// Declare swipper dimensions ////////
+    const [swiperWrapperHeight, setSwiperWrapperHeight] = React.useState(1);
+    // Logic:
+    // swiperWrapperHeight is designed for adjust Box (swiperslide wrapper) height
+    // Initial value set to 1 leads to Box-height having been set to 100% on initializing
+    // If there is ultra-high photo in the swiperslide array
+    // Then adujust all the Box-height to the swiper (top-level) wrapper height
+    // Which makes all the photo aligned center (horizontally)
+    React.useEffect(() => {
+        const wrapper: HTMLElement | null = document.getElementById('image-swiper-wrapper');
+        setSwiperWrapperHeight(wrapper?.offsetHeight ?? 1);
+    }, [])
+
+    //////// Declare process states ////////
     const [processStates, setProcessStates] = React.useState<ProcessStates>({
         displayEditor: false,
         editorEnchorElement: null
@@ -124,48 +170,38 @@ const Post = ({ postInfo_preGet }: PostPageProps) => {
         setProcessStates({ ...processStates, displayEditor: false })
     }
 
-    // Declare &
-
-    // Declare & initiate image url list
-    const [imageUrlList, setImageUrlList] = React.useState<string[]>([
-        'https://images.unsplash.com/photo-1551963831-b3b1ca40c98e',
-        'https://images.unsplash.com/photo-1551782450-a2132b4ba21d',
-        'https://images.unsplash.com/photo-1522770179533-24471fcdba45',
-        'https://images.unsplash.com/photo-1444418776041-9c7e33cc5a9c',
-        'https://images.unsplash.com/photo-1533827432537-70133748f5c8',
-        'https://images.unsplash.com/photo-1558642452-9d2a7deb7f62',
-        'https://images.unsplash.com/photo-1516802273409-68526ee1bdd6',
-    ]);
-    React.useEffect(() => { }, []);
-
-    // Declare post info states
-    const [postInfo, setPostInfo] = React.useState<PostInfo>({
+    //////// Declare post info states ////////
+    const [postInfo, setPostInfo] = React.useState<PostInfo>(postInfo_serverSide ?? {
         title: '',
         content: '',
-        imageUrlList: [],
-        channel: '',
-        likedTimes: 55,
-        dislikedTimes: 0
-    })
-    // const handlePostStatesChange = (prop: keyof PostState) => (event: React.ChangeEvent<HTMLInputElement>) => {
-    //     setPostStates({ ...postStates, [prop]: event.target.value });
-    // };
+        imageUrlList: []
+    });
+    const handlePostStatesChange = () => (event: React.ChangeEvent<HTMLInputElement>) => {
+
+    };
+
+    //////// Decalre member info state ////////
+    const [memberInfo, setMemberInfo] = React.useState<MemberInfo>({ ...memberInfo_serverSide, avatarImageUrl: session?.user?.image ?? '' });
+
 
     // Decalre member behaviour? like-post dislike-comment follow-member save-post ...
     // 
     const [memberBehaviour, handleMemberBehaviour] = React.useState<MemberBehaviourStates>({
-        liked: false,
+        liked: false, // liked coment / subcomment id list
         disliked: false,
         saved: false
     });
+
     // Handle member behaviour
     // like, dislike, save ...
     const handleBehaviourOnPost = () => {
 
     }
 
-    // Declare member info
-    // 
+    //////// Handle member behaviours ////////
+    const handleEditPost = () => {
+        router.push(`/me/editpost/${postInfo.id}`);
+    }
 
     // Declare comment info
     const [commentInfo, setCommentInfo] = React.useState();
@@ -184,7 +220,7 @@ const Post = ({ postInfo_preGet }: PostPageProps) => {
 
     // Handle post states change
     React.useEffect(() => {
-        // initialize post
+        getMemberInfo()
     }, [])
     const getPostInfo = async () => {
 
@@ -199,7 +235,7 @@ const Post = ({ postInfo_preGet }: PostPageProps) => {
     }
 
     const getMemberInfo = async () => {
-
+        const resp = await fetch(`/api/member/info/${memberInfo_serverSide?.id}?p=nickname+gender+birthday`);
     }
 
     const getSubcommentInfo = async () => {
@@ -227,67 +263,59 @@ const Post = ({ postInfo_preGet }: PostPageProps) => {
                             <ResponsiveCard sx={{ padding: { sm: 4 }, boxShadow: { sm: 1 } }}>
                                 {/* post-title: desktop style */}
                                 <Box display={{ xs: 'none', sm: 'block' }}>
-                                    <Typography variant={'subtitle1'} fontWeight={400} color={'grey'}>
-                                        {'兴趣'}
-                                    </Typography>
-                                    <Stack direction={'row'}>
-                                        <Typography variant={'h6'} fontWeight={700}>
-                                            {'做了一个简单壁纸小玩具，欢迎大家体验'}
-                                        </Typography>
-                                        <Button variant='text'>{'编辑帖子'}</Button>
-                                    </Stack>
+                                    {/* channel name */}
+                                    {channelInfo_serverSide && <Typography variant={'subtitle1'} fontWeight={400} color={'grey'}>{channelInfo_serverSide.name[lang]}</Typography>}
+                                    {/* title */}
+                                    <Typography variant={'h6'} fontWeight={700}>{postInfo.title}</Typography>
+                                    {/* member info & timestamp */}
                                     <TextButton color='inherit' sx={{ flexDirection: 'row', marginTop: 1 }}>
-                                        <Typography variant='body2'>
-                                            {'WebMaster 2 分钟前'}
-                                        </Typography>
+                                        <Typography variant='body2'>{`${memberInfo.nickname} ${timeStampToString(postInfo.timeStamp)}`}</Typography>
                                     </TextButton>
                                 </Box>
                                 {/* post-title: mobile style */}
                                 <Stack mt={0.5} direction={'row'} sx={{ display: { xs: 'flex', sm: 'none' } }}>
                                     <IconButton sx={{ padding: 0 }}>
-                                        <Avatar sx={{ width: 38, height: 38, bgcolor: 'grey' }}>{'W'}</Avatar>
+                                        <Avatar sx={{ width: 38, height: 38, bgcolor: 'grey' }}>{memberInfo.nickname?.charAt(0).toUpperCase()}</Avatar>
                                     </IconButton>
                                     <Grid container ml={1}>
-                                        <Grid item flexGrow={1}>
+                                        <Grid item >
                                             <TextButton color='inherit'>
                                                 <Typography variant='body2' >
-                                                    {'WebMaster'}
+                                                    {memberInfo.nickname}
                                                 </Typography>
                                                 <Typography variant='body2' fontSize={{ xs: 12 }} >
-                                                    {'2 分钟前'}
+                                                    {timeStampToString(postInfo.timeStamp)}
                                                 </Typography>
                                             </TextButton>
                                         </Grid>
+                                        <Grid item flexGrow={1}></Grid>
                                         <Grid item>
-                                            <Chip label={'关注'} sx={{ paddingX: 1 }} color={true ? 'primary' : 'default'} onClick={() => { }} />
+                                            <Chip label={langConfigs.follow[lang]} sx={{ paddingX: 1 }} color={true ? 'primary' : 'default'} onClick={() => { }} />
                                         </Grid>
                                     </Grid>
                                 </Stack>
 
-
                                 {/* image list (conditional rendering)*/}
-                                {true && <Box mt={{ xs: 1.5, sm: 2 }} >
-                                    <Swiper modules={[Pagination]} pagination={true}>
-                                        {['pink', '#1976d2', 'darkorange', '#01ced1'].map(imgUrl =>
-                                            <SwiperSlide key={imgUrl}>
-                                                <Box sx={{ minHeight: 400, backgroundColor: imgUrl }}></Box>
+                                {true && <Box id='image-swiper-wrapper' mt={{ xs: 1.5, sm: 2 }} >
+                                    <Swiper modules={[Pagination]} pagination={true} >
+                                        {postInfo.imageUrlList.map(imgUrl =>
+                                            <SwiperSlide key={getRandomHexStr(true)}>
+                                                {/* swiper slide wrapper */}
+                                                <Box sx={{ display: 'flex', justifyContent: 'center', alignContent: 'center', height: swiperWrapperHeight }} >
+                                                    <Box component={'img'} src={imgUrl} maxWidth={1} maxHeight={500} sx={{ objectFit: 'contain' }}></Box>
+                                                </Box>
                                             </SwiperSlide>
                                         )}
                                     </Swiper>
                                 </Box>}
 
-
                                 {/* title */}
                                 <Box mt={2} display={{ xs: 'flex', sm: 'none' }}>
-                                    <Typography variant={'subtitle1'} fontWeight={700}>
-                                        {'做了一个简单壁纸小玩具，欢迎大家体验'}
-                                    </Typography>
+                                    <Typography variant={'subtitle1'} fontWeight={700}>{postInfo.title}</Typography>
                                 </Box>
                                 {/* content (conditional rendering)*/}
-                                {true && <Box mt={{ xs: 1, sm: 2 }}>
-                                    <Typography variant={'body1'} >
-                                        {'国庆节以来大修改了一次，主要体现天气场景功能。现在有上班族、钓鱼、旅游旅行场景，后续增加更多。如果你有兴趣可以试一下，有好的建议可以邮箱联系我（ xxxxxxxxxxxxx@163.com ）。另外寻找志同道合的设计师（跨平台设计，动画动效等），分享这个项目收益利润的百分之二十和其他，联系工作微信（ xxxxxxxx ）'}
-                                    </Typography>
+                                {0 !== postInfo.contentParagraphsArray?.length && <Box mt={{ xs: 1, sm: 2 }}>
+                                    {postInfo.contentParagraphsArray?.map(p => <Typography variant={'body1'} mt={1} key={getRandomHexStr(true)}>{p}</Typography>)}
                                 </Box>}
 
                                 {/* member behaviours */}
@@ -318,6 +346,10 @@ const Post = ({ postInfo_preGet }: PostPageProps) => {
                                             <ChatBubbleIcon fontSize='small' />
                                         </IconButton>
                                         <Typography variant='body2' sx={{ marginTop: 1.1 }}>{3}</Typography>
+                                    </Grid>
+                                    <Grid item flexGrow={1}></Grid>
+                                    <Grid item sx={{ display: 'flex', flexDirection: 'row' }}>
+                                        {postInfo.memberId === memberInfo.id && <Button variant='text' sx={{ ml: 1, padding: 0 }} onClick={handleEditPost}>{langConfigs.editPost[lang]}</Button>}
                                     </Grid>
                                 </Grid>
                             </ResponsiveCard>
@@ -439,20 +471,17 @@ const Post = ({ postInfo_preGet }: PostPageProps) => {
                     <Grid item xs={0} sm={1} md={4} >
                         {/* right card-stack */}
                         <Stack spacing={1} sx={{ ml: 2, maxWidth: 320, display: { xs: 'none', sm: 'none', md: 'block', lg: 'block' } }} >
-
                             {/* member info card */}
                             <ResponsiveCard sx={{ paddingY: 2 }}>
                                 <Stack>
                                     {/* avatar */}
                                     <CenterlizedBox mt={1}>
-                                        <Avatar sx={{ width: 48, height: 48, bgcolor: 'grey' }}>{'W'}</Avatar>
+                                        <Avatar sx={{ width: 48, height: 48, bgcolor: 'grey' }}>{memberInfo.nickname?.charAt(0).toUpperCase()}</Avatar>
                                     </CenterlizedBox>
                                     {/* nickname */}
-                                    <CenterlizedBox mt={1} >
-                                        <Typography variant='body1'>
-                                            {'WebMaster'}
-                                        </Typography>
-                                    </CenterlizedBox>
+                                    <CenterlizedBox mt={1}><Typography variant='body1'>{memberInfo.nickname}</Typography></CenterlizedBox>
+
+
                                     <CenterlizedBox >
                                         <Button variant='text' sx={{ paddingY: 0.1, borderRadius: 4, fontSize: 13 }} disabled={true}>{true ? '已关注' : '关注'}</Button>
                                     </CenterlizedBox>
@@ -502,12 +531,11 @@ const Post = ({ postInfo_preGet }: PostPageProps) => {
                                         </Box>
                                     </CenterlizedBox>
                                 </Stack>
-
                             </ResponsiveCard>
                             {/* other post recommend in this channel */}
-                            <ResponsiveCard sx={{ padding: 2 }}>
+                            <ResponsiveCard sx={{ padding: 3 }}>
                                 <Box>
-                                    <Typography>{'本区其他热帖'}</Typography>
+                                    <Typography>{memberInfo.nickname} {langConfigs.hotPostRecommend[lang]}</Typography>
                                 </Box>
                                 <Stack mt={1} spacing={1}>
                                     {true && [{ title: '#初秋专属氛围感#', imgUrl: 'pink' }, { title: '今天就需要衛衣加持', imgUrl: '#1976d2' }, { title: '星期一的咖啡時光～', imgUrl: 'darkorange' }].map(po =>

@@ -1,6 +1,5 @@
 import * as React from 'react';
 
-import Avatar from '@mui/material/Avatar';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Grid from '@mui/material/Grid';
@@ -356,7 +355,7 @@ const CreatePost = () => {
         const post: PostInfo = {
             title: postStates.title,
             content: postStates.content,
-            channel: postStates.channel,
+            channelId: postStates.channel,
             imageUrlList: []
         }
         try {

@@ -1,4 +1,5 @@
 import * as React from 'react';
+// import { useCookies } from 'react-cookie';
 
 import type { AppProps } from 'next/app'
 import Head from 'next/head';
@@ -12,21 +13,43 @@ import { Session } from 'next-auth';
 import { PaletteMode } from '@mui/material';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { ColorModeContext, getDesignTokens } from '../ui/Theme';
+import Cookie from 'js-cookie';
 
 
 const App = ({ Component, pageProps: { session, ...pageProps } }: AppProps<{ session: Session }>) => {
+  // Update 24/11/2022
+  // Due to _app.tsx does not have the access to request.cookie
+  // The flashing issue can not be fixed on dark mode (os/user-choice)
   const [mode, setMode] = React.useState<PaletteMode>('light');
-  const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
+  // Step #1 get user choice on color mode
+  let preferredDarkMode: boolean = Cookie.get('PreferredColorMode') === 'dark';
   React.useEffect(() => {
-    setMode(prefersDarkMode ? 'dark' : 'light');
-  }, [prefersDarkMode]);
-
-  const theme = React.useMemo(() => createTheme(getDesignTokens(mode)), [mode]);
-  const colorMode = React.useMemo(() => {
-    toggleColorMode: () => {
-      setMode((prevMode: PaletteMode) => prevMode === 'light' ? 'dark' : 'light')
+    if (preferredDarkMode) {
+      setMode('dark');
     }
-  }, []);
+  });
+  // Step #2 get OS color mode
+  const systemOnDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
+  React.useEffect(() => {
+    // Only turn light on user preferred light (or undefined) and OS is on light as well
+    if (!preferredDarkMode && !systemOnDarkMode) {
+      setMode('light');
+    }
+  }, [systemOnDarkMode]);
+  // Step #3 create theme
+  const theme = React.useMemo(() => {
+    return createTheme(getDesignTokens(mode))
+  }, [mode]);
+
+  // const colorMode = React.useMemo(() => {
+  //   // toggleColorMode: () => setMode((prevMode: PaletteMode) => prevMode === 'light' ? 'dark' : 'light')
+  //   toggleColorMode: () => {
+  //     console.log('Toggle color mode');
+
+  //     setMode((prevMode: PaletteMode) => prevMode === 'light' ? 'dark' : 'light')
+  //   }
+  //   // toggleColorMode: () => setMode(mode === 'light' ? 'dark' : 'light')
+  // }, []);
 
   return (
     < SessionProvider session={session} >
