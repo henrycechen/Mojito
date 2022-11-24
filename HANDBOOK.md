@@ -209,19 +209,18 @@ type ResetPasswordRequestInfo = {
 
 ### · · [Design]
 
-| Behaviour                                                    | Affected table                             | Property of table |
-| ------------------------------------------------------------ | ------------------------------------------ | ----------------- |
-| Follow a member                                              | FollowingMemberIdList 🆕                    | RL                |
-| Be followed by a number                                      | FollowedByMemberIdList 🆕                   | PRL               |
-| ~~Subscribe a member~~ <br />***Update 23/11/2022 ⚠️ deprecated*** | ~~SubscribedMemberIdList~~                 | ~~RL~~            |
-| Block a member 🆕                                             | BlockedMemberIdList                        | RL                |
-| Create a post                                                | PostInfo, PostMapping                      | D, RL             |
-| Edit a post                                                  | PostInfo                                   | D                 |
-| View a post                                                  | ~~ViewedPostIdList~~<br />➡️ HistoryMapping | RL                |
-| ~~Like a post~~<br />***Update 25/11/2022 ⚠️ deprecated***    | ~~LikedPostMapping~~                       | ~~RL~~            |
-|                                                              |                                            |                   |
-| Save a post                                                  | SavedPost                                  | RL                |
-| Make / Accept a PM                                           | PmIdListStr (Not-in-use)                   | RL                |
+| Behaviour          | Affected table                                  | Property of table |
+| ------------------ | ----------------------------------------------- | ----------------- |
+| Follow a member    | FollowingMemberMapping, FollowedByMemberMapping | RL, **PRL**       |
+| Block a member 🆕   | BlockedMemberMapping                            | RL                |
+| View a post        | HistoryMapping                                  | RL                |
+| Create a post      | PostInfo, CreationsMapping                      | D, RL             |
+| Edit a post        | PostInfo                                        | D                 |
+| Save a post        | SavedMapping                                    | RL                |
+|                    |                                                 |                   |
+|                    |                                                 | ~~RL~~            |
+|                    |                                                 |                   |
+| Make / Accept a PM | PmIdListStr (Not-in-use)                        | RL                |
 
 \* Terms:
 
@@ -229,66 +228,93 @@ type ResetPasswordRequestInfo = {
 - RL: Relation record table
 - PRL: Passive Relation record table (affected by operations on the corresponding RL table)
 
-### · · [Table-RL] \<Member\> FollowingMemberMapping
-
-\* This table records the following memberId list of the partition key owner (memberId)
-
-| Key          | Type   | Desc                 |
-| ------------ | ------ | -------------------- |
-| PartitionKey | string | MemberIdStr          |
-| RowKey       | string | FollowingMemberIdStr |
-| IsActive     | bool   |                      |
 
 
+### · · [RL] \<Member\> 
 
-### · · [Table-RL-P] \<Member\> FollowedByMemberMapping
+\* This table records the following memberIds of the partition key owner (memberId)
 
-\* This table records the subscribed memberId list of the partition key owner (memberId)
-
-| Key          | Type   | Desc                  |
-| ------------ | ------ | --------------------- |
-| PartitionKey | string | MemberIdStr           |
-| RowKey       | string | FollowedByMemberIdStr |
-| IsActive     | bool   |                       |
+| Key          | Type    | Desc                 |
+| ------------ | ------- | -------------------- |
+| PartitionKey | string  | MemberIdStr          |
+| RowKey       | string  | FollowingMemberIdStr |
+| IsActive     | boolean | Default `true`       |
 
 
 
-### · · [Table-RL] \<Member\> BlockedMemberMapping
+### · · [PRL] \<Member\> FollowedByMemberMapping
 
-\* This table records the subscribed memberId list of the partition key owner (memberId)
+\* This table records the memberIds of who have been following the partition key owner (memberId)
 
-| Key          | Type   | Desc               |
-| ------------ | ------ | ------------------ |
-| PartitionKey | string | MemberIdStr        |
-| RowKey       | string | BlockedMemberIdStr |
-| IsActive     | bool   |                    |
+| Key          | Type    | Desc                  |
+| ------------ | ------- | --------------------- |
+| PartitionKey | string  | MemberIdStr           |
+| RowKey       | string  | FollowedByMemberIdStr |
+| IsActive     | boolean | Default `true`        |
 
 
 
-### · · [Table-RL] \<Post\> PostMapping
+### · · [RL] \<Member\> BlockedMemberMapping
+
+\* This table records the memberIds blocked by the partition key owner (memberId)
+
+| Key          | Type    | Desc               |
+| ------------ | ------- | ------------------ |
+| PartitionKey | string  | MemberIdStr        |
+| RowKey       | string  | BlockedMemberIdStr |
+| IsActive     | boolean | Default `true`     |
+
+
+
+### · · [PRL] \<Member\> BlockedByMemberMapping
+
+\* This table records the memberIds of whom have blocked the partition key owner (memberId)
+
+| Key          | Type    | Desc                 |
+| ------------ | ------- | -------------------- |
+| PartitionKey | string  | MemberIdStr          |
+| RowKey       | string  | BlockedByMemberIdStr |
+| IsActive     | boolean | Default `true`       |
+
+
+
+### · · [RL] \<Post\> HistoryMapping
 
 \* This table records the posts published by the partition key owner (memberId)
 
-| Key          | Type   | Desc        |
-| ------------ | ------ | ----------- |
-| PartitionKey | string | MemberIdStr |
-| RowKey       | string | PostIdStr   |
+| Key          | Type    | Desc           |
+| ------------ | ------- | -------------- |
+| PartitionKey | string  | MemberIdStr    |
+| RowKey       | string  | PostIdStr      |
+| IsActive     | boolean | Default `true` |
 
 
 
-### · · [Table-RL] \<Post\> HistoryMapping
+### · · [RL] \<Post\> CreationsMapping 🆕
 
 \* This table records the posts published by the partition key owner (memberId)
 
-| Key          | Type    | Desc            |
-| ------------ | ------- | --------------- |
-| PartitionKey | string  | MemberIdStr     |
-| RowKey       | string  | PostIdStr       |
-| IsActive     | boolean | Default, `true` |
+| Key          | Type    | Desc           |
+| ------------ | ------- | -------------- |
+| PartitionKey | string  | MemberIdStr    |
+| RowKey       | string  | PostIdStr      |
+| IsActive     | boolean | Default `true` |
 
 
 
-### · · [Table-RL] \<Post\> AttitudePostMapping 🆕
+### · · [RL] \<Post\> SavedPostMapping
+
+| Key          | Type    | Desc           |
+| ------------ | ------- | -------------- |
+| PartitionKey | string  | MemberIdStr    |
+| RowKey       | string  | PostIdStr      |
+| IsActive     | boolean | Default `true` |
+
+
+
+
+
+### · · [RL] \<Post\> AttitudePostMapping 🆕
 
 \* Update on this table will also affect this table
 
@@ -300,7 +326,7 @@ type ResetPasswordRequestInfo = {
 
 
 
-### · · [Table-RL] \<Comment\> AttitudeCommentMapping 🆕
+### · · [RL] \<Comment\> AttitudeCommentMapping 🆕
 
 \* Update on this table will also affect this table
 
@@ -326,21 +352,9 @@ type ResetPasswordRequestInfo = {
 
 
 
-### ~~· · [Table-RL] \<Post\> LikedPostMapping~~ ⚠️ deprecated
+### 
 
 
-
-### ~~· · [Table-RL] \<Post\> DislikedPostMapping~~ ⚠️ deprecated
-
-
-
-### · · [Table-RL] \<Post\> SavedPostMapping
-
-| Key          | Type   | Desc        |
-| ------------ | ------ | ----------- |
-| PartitionKey | string | MemberIdStr |
-| RowKey       | string | PostId      |
-| IsActive     | bool   |             |
 
 
 
