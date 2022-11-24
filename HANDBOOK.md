@@ -205,20 +205,29 @@ type ResetPasswordRequestInfo = {
 
 *12/10/2022: MemberBehaviour to be disassembled to separated tables*
 
-| Behaviour                                                    | TableName                  | Desc           |
-| ------------------------------------------------------------ | -------------------------- | -------------- |
-| Follow a member                                              | FollowingMemberIdList      | Table-RL       |
-| Be followed by a number (**Passive**)                        | FollowedByMemberIdList     | Table-RL-**P** |
-| ~~Subscribe a member~~ <br />***Update 23/11/2022 ⚠️ deprecated*** | ~~SubscribedMemberIdList~~ | ~~Table-RL~~   |
-| Block a member<br />***Update 5/11/2022***                   | BlockedMemberIdList        | Table-RL       |
-| Make a post                                                  | PostMapping                | Table-RL       |
-| View a post                                                  | ViewedPostIdList           | Table-RL       |
-| ~~Like a post~~<br />***Update 25/11/2022 ⚠️ deprecated***    | ~~LikedPostMapping~~       | ~~Table-RL~~   |
-|                                                              |                            |                |
-| Save a post                                                  | SavedPost                  | Table-RL       |
-| Make / Accept a PM                                           | PmIdListStr (Not-in-use)   | Table-RL       |
 
 
+### · · [Design]
+
+| Behaviour                                                    | Affected table                             | Property of table |
+| ------------------------------------------------------------ | ------------------------------------------ | ----------------- |
+| Follow a member                                              | FollowingMemberIdList 🆕                    | RL                |
+| Be followed by a number                                      | FollowedByMemberIdList 🆕                   | PRL               |
+| ~~Subscribe a member~~ <br />***Update 23/11/2022 ⚠️ deprecated*** | ~~SubscribedMemberIdList~~                 | ~~RL~~            |
+| Block a member 🆕                                             | BlockedMemberIdList                        | RL                |
+| Create a post                                                | PostInfo, PostMapping                      | D, RL             |
+| Edit a post                                                  | PostInfo                                   | D                 |
+| View a post                                                  | ~~ViewedPostIdList~~<br />➡️ HistoryMapping | RL                |
+| ~~Like a post~~<br />***Update 25/11/2022 ⚠️ deprecated***    | ~~LikedPostMapping~~                       | ~~RL~~            |
+|                                                              |                                            |                   |
+| Save a post                                                  | SavedPost                                  | RL                |
+| Make / Accept a PM                                           | PmIdListStr (Not-in-use)                   | RL                |
+
+\* Terms:
+
+- O: Ordinary record table
+- RL: Relation record table
+- PRL: Passive Relation record table (affected by operations on the corresponding RL table)
 
 ### · · [Table-RL] \<Member\> FollowingMemberMapping
 
@@ -279,7 +288,7 @@ type ResetPasswordRequestInfo = {
 
 
 
-### · · [Table-RL] \<Post\> AttitudePostMapping
+### · · [Table-RL] \<Post\> AttitudePostMapping 🆕
 
 \* Update on this table will also affect this table
 
@@ -291,7 +300,7 @@ type ResetPasswordRequestInfo = {
 
 
 
-### · · [Table-RL] \<Comment\> AttitudeCommentMapping
+### · · [Table-RL] \<Comment\> AttitudeCommentMapping 🆕
 
 \* Update on this table will also affect this table
 
@@ -303,7 +312,7 @@ type ResetPasswordRequestInfo = {
 
 
 
-### · · [Table-RL] \<Subcomment\> AttitudeSubcommentMapping
+### · · [Table-RL] \<Subcomment\> AttitudeSubcommentMapping 🆕
 
 \* Update on this table will also affect this table
 
@@ -335,15 +344,13 @@ type ResetPasswordRequestInfo = {
 
 
 
-### · · [Table-RL] \<Comment\> LikedCommentMapping
+### ~~· · [Table-RL] \<Comment\> LikedCommentMapping~~ ⚠️ deprecated
 
-### · · [Table-RL] \<Comment\> DislikedCommentMapping
+### ~~· · [Table-RL] \<Comment\> DislikedCommentMapping~~ ⚠️ deprecated
 
+### ~~· · [Table-RL] \<Subcomment\> LikedSubcommentMapping~~ ⚠️ deprecated
 
-
-### · · [Table-RL] \<Subcomment\> LikedSubcommentMapping
-
-### · · [Table-RL] \<Subcomment\> DislikedSubcommentMapping
+### ~~· · [Table-RL] \<Subcomment\> DislikedSubcommentMapping~~ ⚠️ deprecated
 
 
 
