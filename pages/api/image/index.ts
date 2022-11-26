@@ -5,7 +5,7 @@ import busboy from 'busboy';
 import AzureBlobClient from '../../../modules/AzureBlobClient';
 
 import { response405, response500 } from '../../../lib/utils';
-import { getRandomLongStr } from '../../../lib/utils';
+import { getRandomStr } from '../../../lib/utils';
 
 export const config = {
     api: {
@@ -36,7 +36,7 @@ export default async function Image(req: NextApiRequest, res: NextApiResponse) {
     }
     // Step #1 upload image
     try {
-        let imageName = getRandomLongStr(true);
+        let imageName = getRandomStr();
         const contianerClient = AzureBlobClient('image');
         const bb = busboy({ headers: req.headers });
         bb.on('file', async (name, file, info) => {

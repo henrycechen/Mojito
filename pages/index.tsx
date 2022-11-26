@@ -105,25 +105,25 @@ const Home = () => {
     })
 
     // Decalre & initialize channel states
-    const [channelInfoList, setChannelInfoList] = React.useState<ChannelInfo[]>([]);
+    const [channelInfoArr, setChannelInfoArr] = React.useState<ChannelInfo[]>([]);
     React.useEffect(() => {
-        getPostChannelList();
+        getPostChannelArr();
     }, []);
-    const getPostChannelList = async () => {
+    const getPostChannelArr = async () => {
         const channelDict = await fetch('/api/channel/getdictionary').then(resp => resp.json());
-        const referenceList = await fetch('/api/channel/getindex').then(resp => resp.json());
-        const channelList: ChannelInfo[] = [];
-        referenceList.forEach((channel: keyof ChannelDictionary) => {
-            channelList.push(channelDict[channel])
+        const referenceArr = await fetch('/api/channel/getindex').then(resp => resp.json());
+        const channelArr: ChannelInfo[] = [];
+        referenceArr.forEach((channel: keyof ChannelDictionary) => {
+            channelArr.push(channelDict[channel])
         });
-        setChannelInfoList(channelList.filter(channel => !!channel));
+        setChannelInfoArr(channelArr.filter(channel => !!channel));
     }
     // Restore channel bar position
     React.useEffect(() => {
         if (!!processStates.memorizeChannelBarPositionX) {
             document.getElementById('channel-bar')?.scrollBy(processStates.memorizeChannelBarPositionX ?? 0, 0);
         }
-    }, [channelInfoList]);
+    }, [channelInfoArr]);
 
     // Handle channel select
     const handleChannelSelect = (channelId: string) => (event: React.MouseEvent<HTMLButtonElement> | React.SyntheticEvent) => {
@@ -256,7 +256,7 @@ const Home = () => {
                                     </ListItemText>
                                 </MenuItem>
                                 {/* other channels */}
-                                {channelInfoList.map(channel => {
+                                {channelInfoArr.map(channel => {
                                     return (
                                         <MenuItem key={channel.id}
                                             onClick={handleChannelSelect(channel.id)}
@@ -314,7 +314,7 @@ const Home = () => {
                             </Typography>
                         </Button>
                         {/* other channels */}
-                        {channelInfoList.map(channel => {
+                        {channelInfoArr.map(channel => {
                             return (
                                 <Button variant={channel.id === processStates.selectedChannelId ? 'contained' : 'text'} key={channel.id} size='small' onClick={handleChannelSelect(channel.id)}>
                                     <Typography variant="body2" color={channel.id === processStates.selectedChannelId ? 'white' : "text.secondary"} sx={{ backgroundColor: 'primary' }}>

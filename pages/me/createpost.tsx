@@ -311,7 +311,7 @@ const CreatePost = () => {
         }
         // Step #2 Upload image
         const uploadList: Image[] = [...imageList];
-        const imageUrlList: string[] = [];
+        const imageUrlArr: string[] = [];
         if (uploadList.length !== 0) {
             setProcessStates({ ...processStates, alertSeverity: 'info', alertContent: langConfigs.imagesUploading[lang], displayAlert: true, submitting: true });
             for (let i = 0; i < imageList.length; i++) {
@@ -331,7 +331,7 @@ const CreatePost = () => {
                     try {
                         formData.append('image', await fetch(img.url).then(r => r.blob()));
                         const uploadResp = await axios.post('/api/image', formData, config);
-                        imageUrlList.push(uploadResp.data);
+                        imageUrlArr.push(uploadResp.data);
                         const uploadedList = uploadedImageIndexList;
                         uploadedList.push(i)
                         setUploadedImageIndexList(uploadedList);
@@ -345,7 +345,7 @@ const CreatePost = () => {
         } else {
             setProcessStates({ ...processStates, displayAlert: false, submitting: true });
         }
-        if (imageUrlList.length !== 0 && imageList.length !== imageUrlList.length) {
+        if (imageUrlArr.length !== 0 && imageList.length !== imageUrlArr.length) {
             setProcessStates({ ...processStates, alertSeverity: 'error', alertContent: langConfigs.imagesUploadFailed[lang], displayAlert: true });
             return;
         } else {
@@ -356,7 +356,7 @@ const CreatePost = () => {
             title: postStates.title,
             content: postStates.content,
             channelId: postStates.channel,
-            imageUrlList: []
+            imageUrlArr: []
         }
         try {
             const resp = await axios.post('/api/post/create', post);

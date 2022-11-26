@@ -1,5 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 
+// This endpoint has been depreacted
+
 export default async function FollowMember(req: NextApiRequest, res: NextApiResponse) {
     res.send([
 

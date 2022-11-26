@@ -3,39 +3,47 @@ import { ProcessStates } from './types';
 
 //////// Create random string ////////
 //
-//  Rules of create random strings
+//  Rules of creating random IDs / names
 //
 //  IDs
-//  - Member ID : 10 characters, uppercase
-//  - Post ID : 10 characters, uppercase
+//  - Member ID : 10 characters, UPPERCASE
+//  - Post ID : 10 characters, UPPERCASE
 //  - Topic ID : 10 characters, lowercase
-//  - Comment ID : 10 characters, lowercase
-//  - Subcomment ID : 10 characters, lowercase
+//  - Comment ID : 16 characters, lowercase
+//  - Subcomment ID : 16 characters, lowercase
 //
 //  Names
-//  - Image Filename : 20 characters, lowercase
+//  - Image Filename : 10 characters, lowercase
 //
-export function getRandomStr(useLowerCase: boolean = false): string { // Length of 10
-    if (useLowerCase) {
-        return Math.floor(Math.random() * Math.pow(10, 15)).toString(35);
-    } else {
+export function getRandomStr(useUpperCase: boolean = false): string { // Length of 10
+    if (useUpperCase) {
         return Math.floor(Math.random() * Math.pow(10, 15)).toString(35).toUpperCase();
+    } else {
+        return Math.floor(Math.random() * Math.pow(10, 15)).toString(35);
     }
 }
 
-export function getRandomLongStr(useLowerCase: boolean = false): string { // Length of 20
-    if (useLowerCase) {
-        return Math.floor(Math.random() * Math.pow(10, 15)).toString(35) + Math.floor(Math.random() * Math.pow(10, 15)).toString(35);
+export function getRandomMediumStr(useUpperCase: boolean = false): string { // Length of 16
+    if (useUpperCase) {
+        return Math.floor(Math.random() * Math.pow(10, 12)).toString(35).toUpperCase() + Math.floor(Math.random() * Math.pow(10, 12)).toString(35).toUpperCase();
     } else {
+        return Math.floor(Math.random() * Math.pow(10, 12)).toString(35) + Math.floor(Math.random() * Math.pow(10, 12)).toString(35);
+    }
+}
+
+export function getRandomLongStr(useUpperCase: boolean = false): string { // Length of 20
+    if (useUpperCase) {
         return Math.floor(Math.random() * Math.pow(10, 15)).toString(35).toUpperCase() + Math.floor(Math.random() * Math.pow(10, 15)).toString(35).toUpperCase();
+    } else {
+        return Math.floor(Math.random() * Math.pow(10, 15)).toString(35) + Math.floor(Math.random() * Math.pow(10, 15)).toString(35);
     }
 }
 
-export function getRandomHexStr(useLowerCase: boolean = false): string { // Length of 8
-    if (useLowerCase) {
-        return Math.floor(Math.random() * Math.pow(10, 10)).toString(16);
-    } else {
+export function getRandomHexStr(useUpperCase: boolean = false): string { // Length of 8 (Hex)
+    if (useUpperCase) {
         return Math.floor(Math.random() * Math.pow(10, 10)).toString(16).toUpperCase();
+    } else {
+        return Math.floor(Math.random() * Math.pow(10, 10)).toString(16);
     }
 }
 

@@ -30,6 +30,7 @@ import ReCAPTCHA from "react-google-recaptcha";
 import { useRouter } from 'next/router';
 import { NextPageContext } from 'next/types';
 import { LangConfigs, SignInCredentialStates } from '../lib/types';
+import About from '../ui/About';
 
 type SigninPageProps = {
     providers: Awaited<ReturnType<typeof getProviders>> | null;
@@ -262,7 +263,8 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
                         </Grid>
                     </Grid>
                 </Stack>
-                <Copyright sx={{ mt: 8, mb: 4 }} />
+                <Copyright sx={{ mt: 8 }} />
+                <About sx={{  mb: 8 }} />
             </Container>
             <ReCAPTCHA
                 hl={langConfigs.recaptchaLang[lang]}

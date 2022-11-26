@@ -5,7 +5,7 @@ import { MemberInfo } from '../../../../../lib/types';
 import { response405, response500 } from '../../../../../lib/utils';
 
 
-export default async function Like(req: NextApiRequest, res: NextApiResponse) {
+export default async function Attitude(req: NextApiRequest, res: NextApiResponse) {
     const { method } = req;
     // POST - Like request - upsert - rl-table
     // PUT - Unlike request - upsert - rl-table

@@ -67,7 +67,7 @@ export default async function SignUp(req: NextApiRequest, res: NextApiResponse) 
             return;
         }
         // Step #3.1 create a memberId
-        const memberId = getRandomStr();
+        const memberId = getRandomStr(true); // use UPPERCASE
         // Step #3.2 upsertEntity to [Table] LoginCredentialsMapping
         const loginCredentialsMapping: LoginCredentialsMapping = {
             partitionKey: 'EmailAddress',

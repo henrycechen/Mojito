@@ -27,7 +27,7 @@ export default async function Channel(req: NextApiRequest, res: NextApiResponse)
             return;
         }
         // Step #1 verify post integrity
-        const { title, content, channelId: channel, imageUrlList }: PostInfo = req.body;
+        const { title, content, channelId: channel, imageUrlArr }: PostInfo = req.body;
         if ('string' !== typeof title || '' === title) {
             res.status(400).send('Improper post title');
             return;
@@ -40,12 +40,12 @@ export default async function Channel(req: NextApiRequest, res: NextApiResponse)
             res.status(400).send('Improper post channel');
             return;
         }
-        if ('object' !== typeof imageUrlList) {
-            res.status(400).send('Improper post image url list');
+        if ('object' !== typeof imageUrlArr) {
+            res.status(400).send('Improper post image url array');
             return;
         }
         // Step #2.1 create a postId
-        const postId = getRandomStr();
+        const postId = getRandomStr(true); // use UPPERCASE
         // Step #2.2 loop up postId from [Table] PostManagement
         const PostManagementTableClient = AzureTableClient('PostManagement');
         const mappingQuery = PostManagementTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${postId}' and RowKey eq 'PostStatus'` } });
@@ -64,12 +64,12 @@ export default async function Channel(req: NextApiRequest, res: NextApiResponse)
         }
         await postInfoTableClient.upsertEntity(postInfoMemberId, 'Replace');
         // Step #3.2 upsertEntity image url list to [Table] PostInfo
-        const postInfoImageUrlList: AzureTableEntity = {
+        const postInfoImageUrlArr: AzureTableEntity = {
             partitionKey: postId,
-            rowKey: 'ImageUrlList',
-            ImageUrlListStr: JSON.stringify(imageUrlList)
+            rowKey: 'ImageUrlArr',
+            ImageUrlArrStr: JSON.stringify(imageUrlArr)
         }
-        await postInfoTableClient.upsertEntity(postInfoImageUrlList, 'Replace');
+        await postInfoTableClient.upsertEntity(postInfoImageUrlArr, 'Replace');
         // Step #3.3 upsertEntity title to [Table] PostInfo
         const postInfoTitle: AzureTableEntity = {
             partitionKey: postId,

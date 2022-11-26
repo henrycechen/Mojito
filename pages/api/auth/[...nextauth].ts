@@ -8,7 +8,6 @@ import AzureTableClient from '../../../modules/AzureTableClient';
 import { verifyRecaptchaResponse, verifyEnvironmentVariable, getRandomStr } from '../../../lib/utils';
 import { User } from 'next-auth';
 import { LoginCredentialsMapping, AzureTableEntity } from "../../../lib/types";
-import { redirect } from "next/dist/server/api-utils";
 import { RestError } from "@azure/storage-blob";
 
 type LoginCredentials = {
@@ -138,7 +137,7 @@ export default NextAuth({
                     if (!mappingQueryResult.value) {
                         // Step #3 mapping not found, create Mojito account
                         const { email: emailAddress, name: nickName, image: avatarImageUrl } = user;
-                        const memberId = getRandomStr();
+                        const memberId = getRandomStr(true); // use UPPERCASE
                         // Step #3.1 create login credential mapping
                         const loginCredentialsMapping: LoginCredentialsMapping = {
                             partitionKey: providerId,

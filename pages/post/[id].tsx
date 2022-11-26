@@ -10,10 +10,7 @@ import Typography from '@mui/material/Typography';
 
 import { useSession } from 'next-auth/react'
 
-import FormControl from '@mui/material/FormControl';
-import AddIcon from '@mui/icons-material/Add';
 import IconButton from '@mui/material/IconButton';
-import InputLabel from '@mui/material/InputLabel';
 
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import ThumbDownIcon from '@mui/icons-material/ThumbDown';
@@ -25,6 +22,7 @@ import ReplyIcon from '@mui/icons-material/Reply';
 import { ResponsiveCard, CenterlizedBox, TextButton } from '../../ui/Styled';
 
 import Popover from '@mui/material/Popover';
+import Backdrop from '@mui/material/Backdrop';
 
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Pagination } from "swiper";
@@ -34,7 +32,7 @@ import "swiper/css/pagination";
 import Navbar from '../../ui/Navbar';
 
 import { ProcessStates, ChannelDictionary, ChannelInfo, LangConfigs, PostInfo, MemberInfo } from '../../lib/types';
-import { getRandomHexStr, getRandomLongStr, timeStampToString } from '../../lib/utils';
+import { getRandomHexStr, timeStampToString } from '../../lib/utils';
 import Divider from '@mui/material/Divider';
 import Container from '@mui/material/Container';
 
@@ -44,6 +42,7 @@ import Chip from '@mui/material/Chip';
 import { NextPageContext } from 'next/types';
 import { useRouter } from 'next/router';
 import { Awaitable } from 'next-auth';
+import Copyright from '../../ui/Copyright';
 
 
 type PostPageProps = {
@@ -55,6 +54,8 @@ type PostPageProps = {
 interface PostPageProcessStates extends ProcessStates {
     displayEditor: boolean;
     editorEnchorElement: any;
+    displayBackdrop: boolean;
+    backdropOnDisplayImageUrl: string | undefined;
 }
 
 type MemberBehaviourStates = {
@@ -159,22 +160,30 @@ const Post = ({ postInfo_serverSide, channelInfo_serverSide, memberInfo_serverSi
     }, [])
 
     //////// Declare process states ////////
-    const [processStates, setProcessStates] = React.useState<ProcessStates>({
+    const [processStates, setProcessStates] = React.useState<PostPageProcessStates>({
         displayEditor: false,
+        displayBackdrop: false,
+        backdropOnDisplayImageUrl: undefined,
         editorEnchorElement: null
-    })
+    });
     const handleEditorOpen = () => {
         setProcessStates({ ...processStates, displayEditor: true })
-    }
+    };
     const handleEditorClose = () => {
         setProcessStates({ ...processStates, displayEditor: false })
-    }
+    };
+    const handleBackdropOpen = (imageUrl: string) => (event: React.MouseEvent) => {
+        setProcessStates({ ...processStates, displayBackdrop: true, backdropOnDisplayImageUrl: imageUrl });
+    };
+    const handleBackdropClose = () => {
+        setProcessStates({ ...processStates, displayBackdrop: false, backdropOnDisplayImageUrl: undefined });
+    };
 
     //////// Declare post info states ////////
     const [postInfo, setPostInfo] = React.useState<PostInfo>(postInfo_serverSide ?? {
         title: '',
         content: '',
-        imageUrlList: []
+        imageUrlArr: []
     });
     const handlePostStatesChange = () => (event: React.ChangeEvent<HTMLInputElement>) => {
 
@@ -298,8 +307,8 @@ const Post = ({ postInfo_serverSide, channelInfo_serverSide, memberInfo_serverSi
                                 {/* image list (conditional rendering)*/}
                                 {true && <Box id='image-swiper-wrapper' mt={{ xs: 1.5, sm: 2 }} >
                                     <Swiper modules={[Pagination]} pagination={true} >
-                                        {postInfo.imageUrlList.map(imgUrl =>
-                                            <SwiperSlide key={getRandomHexStr(true)}>
+                                        {postInfo.imageUrlArr && postInfo.imageUrlArr.map(imgUrl =>
+                                            <SwiperSlide key={getRandomHexStr()} onClick={handleBackdropOpen(imgUrl)}>
                                                 {/* swiper slide wrapper */}
                                                 <Box sx={{ display: 'flex', justifyContent: 'center', alignContent: 'center', height: swiperWrapperHeight }} >
                                                     <Box component={'img'} src={imgUrl} maxWidth={1} maxHeight={500} sx={{ objectFit: 'contain' }}></Box>
@@ -315,7 +324,7 @@ const Post = ({ postInfo_serverSide, channelInfo_serverSide, memberInfo_serverSi
                                 </Box>
                                 {/* content (conditional rendering)*/}
                                 {0 !== postInfo.contentParagraphsArray?.length && <Box mt={{ xs: 1, sm: 2 }}>
-                                    {postInfo.contentParagraphsArray?.map(p => <Typography variant={'body1'} mt={1} key={getRandomHexStr(true)}>{p}</Typography>)}
+                                    {postInfo.contentParagraphsArray?.map(p => <Typography variant={'body1'} mt={1} key={getRandomHexStr()}>{p}</Typography>)}
                                 </Box>}
 
                                 {/* member behaviours */}
@@ -558,7 +567,6 @@ const Post = ({ postInfo_serverSide, channelInfo_serverSide, memberInfo_serverSi
                             </ResponsiveCard>
                         </Stack>
                     </Grid>
-
                 </Grid>
             </Container >
             {/* pop up editor */}
@@ -599,6 +607,17 @@ const Post = ({ postInfo_serverSide, channelInfo_serverSide, memberInfo_serverSi
                     </Box>
                 </Box>
             </Popover >
+            {/* backdrop */}
+            <Backdrop
+                sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}
+                open={processStates.displayBackdrop}
+                onClick={handleBackdropClose}
+            >
+                <Box>
+                    {processStates.backdropOnDisplayImageUrl && <Box component={'img'} src={processStates.backdropOnDisplayImageUrl} maxWidth={window.innerWidth}></Box>}
+                </Box>
+            </Backdrop>
+            <Copyright sx={{ mt: { xs: 8, sm: 8 }, mb: 4 }} />
         </>
     )
 }

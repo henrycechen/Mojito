@@ -66,7 +66,7 @@ export default async function Request(req: NextApiRequest, res: NextApiResponse)
             return;
         }
         // Step #3 create token
-        const token = getRandomHexStr();
+        const token = getRandomHexStr(true); // use UPPERCASE
         const info: ResetPasswordRequestInfo = {
             memberId,
             resetPasswordToken: token,

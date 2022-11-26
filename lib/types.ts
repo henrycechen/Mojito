@@ -66,9 +66,9 @@ export type PostInfo = {
     memberId?: string;
     timeStamp?: string;
     title: string;
-    content: string;
+    content: string; // depreacted
     contentParagraphsArray?: string[];
-    imageUrlList: string[];
+    imageUrlArr?: string[];
     channelId?: string;
     topicList?: TopicInfo[]; // string => => [type] topic
     cuedMemberList?: string[]; // string => => [type] member
@@ -110,13 +110,14 @@ export type CommentInfo = {
     commentStatus?: number;
 }
 
-// Azure Table Entity
+//////// Azure Table Entity ////////
 export interface AzureTableEntity {
     partitionKey: string;
     rowKey: string;
     [key: string]: any;
 }
 
+// MemberLogin
 export interface PasswordHash extends AzureTableEntity {
     partitionKey: string;
     rowKey: string;
@@ -139,3 +140,9 @@ export interface LoginCredentialsMapping extends AzureTableEntity {
     IsActive: boolean;
 }
 
+// MemberStatistics
+export interface MemberIdIndex extends AzureTableEntity {
+    partitionKey: 'MemberIdIndex';
+    rowKey: string;
+    MemberIdIndexValue: number;
+}

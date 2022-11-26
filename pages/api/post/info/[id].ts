@@ -26,7 +26,7 @@ export default async function Index(req: NextApiRequest, res: NextApiResponse) {
                 'Typescript 这里的 function 是 function component ',
                 '在写前端时遇到的疑惑，感谢！我能想到的就只有作用域的区别了。',
             ],
-            imageUrlList: [
+            imageUrlArr: [
                 
                 'https://images.unsplash.com/photo-1553095066-5014bc7b7f2d?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1171&q=80',
                 'https://images.pexels.com/photos/259915/pexels-photo-259915.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',

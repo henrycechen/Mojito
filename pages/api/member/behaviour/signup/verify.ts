@@ -3,7 +3,7 @@ import { RestError } from '@azure/data-tables';
 import CryptoJS from 'crypto-js';
 
 import AzureTableClient from '../../../../../modules/AzureTableClient';
-import { AzureTableEntity } from '../../../../../lib/types';
+import { AzureTableEntity, MemberIdIndex } from '../../../../../lib/types';
 import { verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500 } from '../../../../../lib/utils';
 
 const appSecret = process.env.APP_AES_SECRET ?? '';
@@ -77,6 +77,29 @@ export default async function VerifyToken(req: NextApiRequest, res: NextApiRespo
         }
         await memberManagementTableClient.updateEntity(memberStatus, 'Merge');
         res.status(200).send('Account verified');
+        // FIXME: statistic moved to MongoDB Atlas collections
+
+        // // Step #4.1 createEntity to [Table] MemberStatistics
+        // const memberStatisticsTableClient = AzureTableClient('MemberStatistics');
+        // const memberIdIndex: MemberIdIndex = {
+        //     partitionKey: 'MemberIdIndex',
+        //     rowKey: memberId,
+        //     MemberIdIndexValue: 0
+        // }
+        // await memberStatisticsTableClient.createEntity(memberIdIndex);
+        // // Step #4.2 get member id index
+        // const memberIdIndexQuery = memberStatisticsTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq 'MemberIdIndex' and RowKey eq '${memberId}'` } });
+        // let i: number = 0;
+        // for await (const memberIdIndexEntity of memberIdIndexQuery) {
+        //     if (memberId === memberIdIndexEntity.rowKey) {
+        //         memberIdIndex.MemberIdIndexValue = i;
+        //         return;
+        //     } else {
+        //         i++;
+        //     }
+        // }
+        // // Step #4.3 updateEntity to [Table] MemberStatistics
+        // await memberStatisticsTableClient.updateEntity(memberIdIndex, 'Merge');
     } catch (e) {
         if (e instanceof SyntaxError) {
             res.status(400).send('Improperly normalized request info');
