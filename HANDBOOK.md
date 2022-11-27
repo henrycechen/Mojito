@@ -723,9 +723,11 @@ Only allow updating other info after 30 seconds since last update
 
 # Collections (Atlas)
 
+```shell
+mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statistics-dev" --apiVersion 1 --username dbmaster
 ```
-mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statistics-dev" --apiVersion 1 --username dbmaster --password kZeWlRnW0wmMDkkD
-```
+
+
 
 ## · Notification🆕
 
