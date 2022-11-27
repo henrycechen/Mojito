@@ -23,8 +23,6 @@
 
 # Management
 
-
-
 ## · Admin email
 
 webmaster.mojito@gmail.com
@@ -67,7 +65,10 @@ Azure Web App / [Vercel](https://vercel.com/pricing)
 
 #### · · · Statistics data
 
-
+| Mode       | Cluster           | Hourly rate |
+| ---------- | ----------------- | ----------- |
+| Dev&Test   | Free **Shared**   | N/A         |
+| Production | **Dedicated** M10 | $0.12       |
 
 
 
@@ -94,15 +95,17 @@ Azure Web App / [Vercel](https://vercel.com/pricing)
 
 
 
-# Entities
+
+
+# Interfaces & Types
+
+Specifiy a type as a rule when communicating between components, APIs and DBs.
 
 
 
 ## · MemberBehaviour
 
-
-
-### · · [Entity] VerifyAccountRequestInfo
+### · · VerifyAccountRequestInfo
 
 ```typescript
 type VerifyAccountRequestInfo = {
@@ -110,9 +113,7 @@ type VerifyAccountRequestInfo = {
 }
 ```
 
-
-
-### · · [Entity] ResetPasswordRequestInfo
+### · · ResetPasswordRequestInfo
 
 ```typescript
 type ResetPasswordRequestInfo = {
@@ -134,59 +135,56 @@ type ResetPasswordRequestInfo = {
 
 \* Terms:
 
-- O: Ordinary record table
+- C: Collection
+- T: Table
 - RL: Relation record table
 - PRL: Passive Relation record table (affected by operations on the corresponding RL table)
-
-
-
-## · [Class] System (🚫Not-in-use)
-
+- T&PRL: Some entities will be affect by changes in other table / collections
 
 
 
 
 
+## · System (🚫Not-in-use)
 
-## · [Class] MemberInfo
 
-### 💡[Design] Member info
+
+
+
+## · MemberInfo
 
 | Property | Type   | Desc                                    |
 | -------- | ------ | --------------------------------------- |
 | MemberId | string | Random string, 10 characters, UPPERCASE |
 
-### · · [D&PRL] MemberInfo 🆙
+### · · [T&PRL] MemberInfo
 
-| Key          | Type   | Desc                               |
-| ------------ | ------ | ---------------------------------- |
-| PartitionKey | string | MemberIdStr                        |
-| RowKey       | string | Category name, e.g. "EmailAddress" |
-| *            |        |                                    |
+| Key          | Type   | Desc                                  |
+| ------------ | ------ | ------------------------------------- |
+| PartitionKey | string | MemberIdStr                           |
+| RowKey       | string | Category name, e.g., `"EmailAddress"` |
+| *            |        |                                       |
 
 \* Column key varies with RowKey.
 
-| RowKey                                                       | Corresponding Column Key  | Type / Value                            |      |      |
-| ------------------------------------------------------------ | ------------------------- | --------------------------------------- | ---- | ---- |
-| EmailAddress                                                 | EmailAddressStr           | string                                  |      |      |
-| Nickname                                                     | NicknameStr               | string                                  |      |      |
-| AvatarImageUrl                                               | AvatarImageUrlStr         | string                                  |      |      |
-| ~~BackgroundImageUrl~~ ***⚠️ Deprecated***                    | ~~BackgroundImageUrlStr~~ | ~~string~~                              |      |      |
-| BriefIntro                                                   | BriefIntroStr             | string                                  |      |      |
-| Gender                                                       | GenderValue               | `0 | 1 | -1`, default `-1`              |      |      |
-| Birthday                                                     | BirthdayValue             | string                                  |      |      |
-| MemberCategory                                               | value                     | string                                  |      |      |
-| ~~LoginProviderId~~ ***⚠️ Moved to [RL] LoginCredentialsMapping*** | ~~LoginProviderIdStr~~    | ~~string,  e.g. `'mojito' / 'github'`~~ |      |      |
+| RowKey                                    | Corresponding Column Key  | Type / Value               |
+| ----------------------------------------- | ------------------------- | -------------------------- |
+| EmailAddress                              | EmailAddressStr           | string                     |
+| Nickname                                  | NicknameStr               | string                     |
+| AvatarImageUrl                            | AvatarImageUrlStr         | string                     |
+| ~~BackgroundImageUrl~~ ⚠️ ***Deprecated*** | ~~BackgroundImageUrlStr~~ | ~~string~~                 |
+| BriefIntro                                | BriefIntroStr             | string                     |
+| Gender                                    | GenderValue               | `0 | 1 | -1`, default `-1` |
+| Birthday                                  | BirthdayValue             | string                     |
+| MemberCategory                            | value                     | string                     |
 
 
 
 
 
+## · MemberLogin
 
-
-## · [Class] MemberLogin 🆕
-
-### · · [D] MemberLogin
+### · · [T] MemberLogin
 
 | Key          | Type   | Desc                                  |
 | ------------ | ------ | ------------------------------------- |
@@ -214,22 +212,19 @@ type ResetPasswordRequestInfo = {
 
 ### · · [PRL] NicknameMapping
 
-| Key          | Type        | Desc                               |
-| ------------ | ----------- | ---------------------------------- |
-| PartitionKey | string      | Category name, `"Nickname"`        |
-| RowKey       | string      | NicknameStr, e.g., `"henrycechen"` |
-| MemberIdStr  | string      |                                    |
-| ~~IsActive~~ | ~~boolean~~ |                                    |
+\* An update on [D&PRL] MemberInfo will also update this table.
+
+| Key          | Type   | Desc                               |
+| ------------ | ------ | ---------------------------------- |
+| PartitionKey | string | `"Nickname"`                       |
+| RowKey       | string | NicknameStr, e.g., `"henrycechen"` |
+| MemberIdStr  | string |                                    |
 
 
 
 
 
-
-
-## · [Class] MemberBehaviour ▶️ MemberLogin
-
-### 💡[Design] Member behaviours on their Mojito Account
+## · MemberBehaviour ▶️ MemberLogin
 
 | Behaviour            | Affected table                                               |
 | -------------------- | ------------------------------------------------------------ |
@@ -243,30 +238,36 @@ type ResetPasswordRequestInfo = {
 | Update Gender        | **[D&PRL]** MemberInfo                                       |
 | Update Birthday      | **[D&PRL]** MemberInfo                                       |
 
-### 💡[Design] Forbid Members update their avatar image
+### 💡Forbid Members updating their avatar image
 
-- Only allow updating avatar image after 7 days since last update
+Only allow updating avatar image after 7 days since last update.
 
-### 💡[Design] Forbid Members update their nicknames
+```typescript
+const {Timestamp: lastModifiedTime} = MemberInfoQueryResult.value;
+const diff:number = new Date().getTime() - new Date(lastModifiedTime).getTime();
+if (diff < 604800000) {
+    // allow updating avatar image
+}
+```
 
-- Only allow updating nickname after 7 days since last update
+### 💡Forbid Members updating their nicknames
+
+Only allow updating nickname after 7 days since last update
+
+```typescript
+// Same as above
+```
 
 
 
 
 
+## · MemberBehaviour ▶️ Members
 
-
-## · [Class] MemberBehaviour ▶️ Member
-
-*12/10/2022: MemberBehaviour to be disassembled to separated tables*
-
-### 💡[Design] Member Behaviours
-
-| Behaviour                       | Affected table                                               |
-| ------------------------------- | ------------------------------------------------------------ |
-| Follow<br />/ Unfollow a member | **[RL]** FollowingMemberMapping, **[PRL]** FollowedByMemberMapping |
-| Block a member 🆕                | **[RL]** BlockedMemberMapping, **[PRL]** BLockedByMemberMapping |
+| Behaviour                  | Affected table                                               |
+| -------------------------- | ------------------------------------------------------------ |
+| Follow / Unfollow a member | **[RL]** FollowingMemberMapping, **[PRL]** FollowedByMemberMapping, **[C]** MemberStatistics |
+| Block a member 🆕           | **[RL]** BlockedMemberMapping, **[PRL]** BLockedByMemberMapping, **[C]** MemberStatistics |
 
 ### · · [RL] FollowingMemberMapping
 
@@ -312,11 +313,7 @@ type ResetPasswordRequestInfo = {
 
 
 
-
-
-## · [Class] MemberManagement ⚙️
-
-### 💡[Design] Member Managements
+## · MemberManagement ⚙️
 
 | Management                           | Affected table           |
 | ------------------------------------ | ------------------------ |
@@ -324,7 +321,7 @@ type ResetPasswordRequestInfo = {
 | Allow<br />/ Forbid posting          | **[D]** MemberManagement |
 | Allow<br />/ Forbid commenting       | **[D]** MemberManagement |
 
-### · · [D] MemberManagement
+### · · [T] MemberManagement
 
 | Key          | Type   | Desc                                  |
 | ------------ | ------ | ------------------------------------- |
@@ -341,7 +338,7 @@ type ResetPasswordRequestInfo = {
 | AllowCommenting                   | AllowCommentingValue     | bool, default `true`                    |
 | PostDowngraded<br />(🚫Not-in-use) | PostDowngradedValue      | bool, default `false`                   |
 
-### 💡[Design] MemberStatus Codes
+### 💡MemberStatus Codes
 
 | Code    | Explanation                                             |
 | ------- | ------------------------------------------------------- |
@@ -350,11 +347,11 @@ type ResetPasswordRequestInfo = {
 | **200** | **Email address verified or third party login, normal** |
 | 400     | Restricted to certain content or behaviour              |
 
-### 💡[Design] Post Downgrade (🚫Not-in-use)
+### 💡Post Downgrade (🚫Not-in-use)
 
 - If a member has got a compromised reputation, his/her posting will be downgraded by the system.
 
-### · · [D] MemberPrestige (🚫Not-in-use)
+### · · [T] MemberPrestige (🚫Not-in-use)
 
 | Key          | Type   | Desc                                   |
 | ------------ | ------ | -------------------------------------- |
@@ -372,13 +369,9 @@ type ResetPasswordRequestInfo = {
 
 
 
+## · PrivateMessage (🚫Not-in-use)
 
-
-
-
-## · [Class] PrivateMessage (🚫Not-in-use)
-
-### · · [D] PrivateMessage (🚫Not-in-use)
+### · · [T] PrivateMessage (🚫Not-in-use)
 
 | Key          | Type   | Desc                             |
 | ------------ | ------ | -------------------------------- |
@@ -406,17 +399,13 @@ type ResetPasswordRequestInfo = {
 
 
 
-
-
-## · [Class] CommentInfo
-
-### 💡[Design] Comment Info
+## · CommentInfo
 
 | Property  | Type   | Desc                                    |
 | --------- | ------ | --------------------------------------- |
 | CommentId | string | Random string, 16 characters, lowercase |
 
-### · · [D&PRL] CommentInfo
+### · · [T&PRL] CommentInfo
 
 | Key          | Type   | Desc                         |
 | ------------ | ------ | ---------------------------- |
@@ -425,15 +414,26 @@ type ResetPasswordRequestInfo = {
 
 \* Column key varies with RowKey.
 
-| RowKey                  | Corresponding Column Key | Type / Value |
-| ----------------------- | ------------------------ | ------------ |
-| MemberId                | MemberIdStr              | string       |
-| Content                 | ContentStr               | string       |
-| LikedTimes (**P**) 🆕    | LikedTimesValue          | number       |
-| DislikedTimes (**P**) 🆕 | DislikedTimesValue       | number       |
-| CommentStatus (**P**) 🆕 | CommentStatusValue       | number       |
+| RowKey                                                       | Corresponding Column Key | Type / Value |
+| ------------------------------------------------------------ | ------------------------ | ------------ |
+| MemberId                                                     | MemberIdStr              | string       |
+| Content                                                      | ContentStr               | string       |
+| ~~LikedTimes (**P**)~~ ⚠️ ***Moved to [C] commentStatistics*** | ~~LikedTimesValue~~      | ~~number~~   |
+| ~~DislikedTimes (**P**)~~ ⚠️ ***Moved to [C] commentStatistics*** | ~~DislikedTimesValue~~   | ~~number~~   |
+| ~~CommentStatus (**P**)~~ ⚠️ ***Moved to [T] CommentManagement*** | ~~CommentStatusValue~~   | ~~number~~   |
 
 
+
+
+
+## · MemberBehaviour ▶️ Comment
+
+| Behaviour                                             | Affected table                                           |
+| ----------------------------------------------------- | -------------------------------------------------------- |
+| Create<br /> / Reply to a comment<br />(Cue a member) | **[T&PRL]** CommentInfo, **[RL]** PostCommentMapping     |
+| Edit a comment                                        | **[T&PRL]** CommentInfo                                  |
+| Delete a comment                                      | **[T&PRL]** CommentInfo                                  |
+| Like / Dislike a comment                              | **[T&PRL]** CommentInfo, **[RL]** AttitudeCommentMapping |
 
 ### · · [RL] PostCommentMapping
 
@@ -441,24 +441,8 @@ type ResetPasswordRequestInfo = {
 | ------------ | ------ | ------------ |
 | PartitionKey | string | PostIdStr    |
 | RowKey       | string | CommentIdStr |
-| IsActive     | bool   |              |
 
-
-
-
-
-## · [Class] MemberBehaviour ▶️ Comment
-
-### 💡[Design] Member Behaviours on Comments
-
-| Behaviour                         | Affected table                                             |
-| --------------------------------- | ---------------------------------------------------------- |
-| Create<br /> / Reply to a comment | **[D&PRL]** CommentInfo                                    |
-| Edit a comment                    | **[D&PRL]** CommentInfo                                    |
-| Delete a comment                  | **[D&PRL]** CommentInfo                                    |
-| Like / Dislike a comment          | **[D&PRL]** CommentInfo, **[RL]** AttitudeCommentMapping 🆕 |
-
-### · · [RL] AttitudeCommentMapping 🆕
+### · · [RL] AttitudeCommentMapping
 
 \* This table records the attitude towards to certain commentIds taken by the partition key owner (memberId)
 
@@ -472,15 +456,13 @@ type ResetPasswordRequestInfo = {
 
 
 
-## · [Class] CommentManagement ⚙️
-
-### · · [Design]💡Comment Managements
+## · CommentManagement ⚙️
 
 | Management                            | Affected table            |
 | ------------------------------------- | ------------------------- |
 | Activate <br />/ Deactivate a comment | **[D]** CommentManagement |
 
-### · · [D] CommentManagement
+### · · [T] CommentManagement
 
 | Key          | Type   | Desc                                   |
 | ------------ | ------ | -------------------------------------- |
@@ -496,11 +478,11 @@ type ResetPasswordRequestInfo = {
 
 ### 💡[Design] CommentStatus Code
 
-| Code    | Explanation                                             |
-| ------- | ------------------------------------------------------- |
-| -1      | Deactivated                                             |
-| **200** | **Email address verified or third party login, normal** |
-| 400     | Restricted to certain behaviour                         |
+| Code    | Explanation                     |
+| ------- | ------------------------------- |
+| -1      | Deactivated                     |
+| **200** | **Normal**                      |
+| 400     | Restricted to certain behaviour |
 
 
 
@@ -926,18 +908,41 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 
 ## · [C] MemberStatistics 🆕
 
-### 💡[Design] 
-
-***\* Apply to collection "memberStatistics"***
+### 💡"memberStatistics" collection basic type
 
 ```json
 {
     _id: ObjectId; // mongodb obejct id
     memberId: string; // member id
     memberIdIndex: number; // calculated member id index
-    
+    followingCount: number;
+    followedByCount: number;
+    blockedCount: number;
 }
 ```
+
+
+
+
+
+
+
+## · [C] CommentStatistics 🆕
+
+### 💡"commentStatistics" collection basic type
+
+```json
+{
+    _id: ObjectId; // mongodb obejct id
+    commentId: string; // comment id
+    likedCount: number;
+    dislikedCount: number;
+    blockedCount: number;
+    subcommentCount: number;
+}
+```
+
+
 
 
 
