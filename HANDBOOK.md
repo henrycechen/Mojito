@@ -197,6 +197,10 @@ type ResetPasswordRequestInfo = {
 | PasswordHash       | PasswordHashStr          | string, `"HASH_HASH_HASH=="` |
 | ResetPasswordToken | ResetPasswordTokenStr    | string, `"ABC123"`           |
 
+| RowKey   | LastLoginIPAddress | LastLoginTimestamp |
+| -------- | ------------------ | ------------------ |
+| `"Info"` | string             | string             |
+
 ### [RL] LoginCredentialsMapping
 
 | Key          | Type    | Desc                             |
@@ -1010,6 +1014,16 @@ $$
 
 # APIs
 
+## Member SignUp
+
+### POST|`/api/member/behaviour/signup/index`
+
+| Behaviour | Affected table                                               |
+| --------- | ------------------------------------------------------------ |
+| Signup    | [T] LoginCredentialsMapping,<br />[T] MemberLogin,<br />[T] MemberComprehensive |
+
+
+
 ## Member Login
 
 ### POST|`/api/auth/[...nextauth]`
@@ -1136,7 +1150,7 @@ $$
 
 ### GET| `/api/topic/[id]`
 
-### GET| `/api/topic/of/[id]`
+### GET| `/api/topic/of/channel/[id]`
 
 ### POST| `/api/topic/index`
 
