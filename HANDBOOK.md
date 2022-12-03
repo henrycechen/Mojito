@@ -23,7 +23,7 @@
 
 # Management
 
-## · Admin email
+## Admin email
 
 webmaster.mojito@gmail.com
 
@@ -37,7 +37,7 @@ webmaster.mojito@gmail.com
 
 # Architecture
 
-## · Host
+## Host
 
 Azure Web App / [Vercel](https://vercel.com/pricing)
 
@@ -45,7 +45,7 @@ Azure Web App / [Vercel](https://vercel.com/pricing)
 
 
 
-## · DB
+## DB
 
 ### 💡[Design] 
 
@@ -54,16 +54,16 @@ Azure Web App / [Vercel](https://vercel.com/pricing)
 | Content data    | Member info, post info, comment info, etc.           | Azure Table Storage |
 | Statistics data | Member statistics, post statistics, topic statistics | MongoDB  Atlas      |
 
-### · · Cost Management
+### Cost Management
 
-#### · · · Content data
+#### Content data
 
 | Mode       | Access Tier      | Storage (Storage in GB / month) | 10K Write | 10K Read | 10K Scan | 10K List |
 | ---------- | ---------------- | ------------------------------- | --------- | -------- | -------- | -------- |
 | Dev&Test   | **LRS**          | $0.0847 per GB                  | $0.0599   | $0.0120  | $0.2155  | $0.2155  |
 | Production | **GRS** (RA-GRS) | $0.1059 per GB ($0.1377 per GB) | $0.1197   | $0.0120  | $0.2155  | $0.2155  |
 
-#### · · · Statistics data
+#### Statistics data
 
 | Mode       | Cluster           | Hourly rate |
 | ---------- | ----------------- | ----------- |
@@ -74,7 +74,7 @@ Azure Web App / [Vercel](https://vercel.com/pricing)
 
 
 
-## · File Storage
+## File Storage
 
 ### 💡[Design] 
 
@@ -82,7 +82,7 @@ Azure Web App / [Vercel](https://vercel.com/pricing)
 | --------- | -------------------- | ------------------ |
 | Images    | Avatars, post images | Azure Blob Storage |
 
-### · · Cost Management
+### Cost Management
 
 | Mode       | Access Tier | Storage (50 TB / month) | 10K Write | 10K Read |
 | ---------- | ----------- | ----------------------- | --------- | -------- |
@@ -103,9 +103,9 @@ Specifiy a type as a rule when communicating between components, APIs and DBs.
 
 
 
-## · MemberBehaviour
+## MemberBehaviour
 
-### · · VerifyAccountRequestInfo
+### VerifyAccountRequestInfo
 
 ```typescript
 type VerifyAccountRequestInfo = {
@@ -113,7 +113,7 @@ type VerifyAccountRequestInfo = {
 }
 ```
 
-### · · ResetPasswordRequestInfo
+### ResetPasswordRequestInfo
 
 ```typescript
 type ResetPasswordRequestInfo = {
@@ -145,19 +145,19 @@ type ResetPasswordRequestInfo = {
 
 
 
-## · System (🚫Not-in-use)
+## System (🚫Not-in-use)
+
+(🚫Not-in-use)
 
 
 
-
-
-## · Member✅
+## Member✅
 
 | Property | Type   | Desc                                    |
 | -------- | ------ | --------------------------------------- |
 | MemberId | string | Random string, 10 characters, UPPERCASE |
 
-### · · [T] MemberComprehensive
+### [T] MemberComprehensive
 
 | Key          | Type   | Desc                                          |
 | ------------ | ------ | --------------------------------------------- |
@@ -182,7 +182,7 @@ type ResetPasswordRequestInfo = {
 | **200** | **Email address verified or third party login, normal** |
 | 400     | Restricted to certain content or behaviour              |
 
-### · · [T] MemberLogin
+### [T] MemberLogin
 
 | Key          | Type   | Desc                                  |
 | ------------ | ------ | ------------------------------------- |
@@ -197,7 +197,7 @@ type ResetPasswordRequestInfo = {
 | PasswordHash       | PasswordHashStr          | string, `"HASH_HASH_HASH=="` |
 | ResetPasswordToken | ResetPasswordTokenStr    | string, `"ABC123"`           |
 
-### · · [RL] LoginCredentialsMapping
+### [RL] LoginCredentialsMapping
 
 | Key          | Type    | Desc                             |
 | ------------ | ------- | -------------------------------- |
@@ -208,7 +208,7 @@ type ResetPasswordRequestInfo = {
 
 **\* 31/10/2022** There will not be an `IsActive` column for this table, an delete request will result in removing process.
 
-### · · [PRL] NicknameMapping
+### [PRL] NicknameMapping
 
 \* An update on [D&PRL] MemberInfo will also update this table.
 
@@ -267,7 +267,7 @@ Only allow updating other info after 30 seconds since last update
 | Follow / Unfollow a member | **[RL]** FollowingMemberMapping,<br />**[PRL]** FollowedByMemberMapping,<br />**[PRL]** NotifyFollowed,<br />**[C]** Notification ***(accumulate)***,<br />**[C]** MemberStatistics ***(accumulate)*** |
 | Block a member 🆕           | **[RL]** BlockedMemberMapping,<br />**[PRL]** BLockedByMemberMapping,<br />**[C]** MemberStatistics ***(accumulate)*** |
 
-### · · [RL] FollowingMemberMapping
+### [RL] FollowingMemberMapping
 
 \* This table records the following memberIds of the partition key owner (memberId)
 
@@ -277,7 +277,7 @@ Only allow updating other info after 30 seconds since last update
 | RowKey       | string  | FollowingMemberIdStr |
 | IsActive     | boolean | Default `true`       |
 
-### · · [PRL] FollowedByMemberMapping
+### [PRL] FollowedByMemberMapping
 
 \* This table records the memberIds of who have been following the partition key owner (memberId)
 
@@ -287,7 +287,7 @@ Only allow updating other info after 30 seconds since last update
 | RowKey       | string  | FollowedByMemberIdStr |
 | IsActive     | boolean | Default `true`        |
 
-### · · [RL] BlockedMemberMapping
+### [RL] BlockedMemberMapping
 
 \* This table records the memberIds blocked by the partition key owner (memberId)
 
@@ -297,7 +297,7 @@ Only allow updating other info after 30 seconds since last update
 | RowKey       | string  | BlockedMemberIdStr |
 | IsActive     | boolean | Default `true`     |
 
-### · · [PRL] BlockedByMemberMapping
+### [PRL] BlockedByMemberMapping
 
 \* This table records the memberIds of whom have blocked the partition key owner (memberId)
 
@@ -319,9 +319,9 @@ Only allow updating other info after 30 seconds since last update
 
 
 
-## · PrivateMessage (🚫Not-in-use)
+## PrivateMessage (🚫Not-in-use)
 
-### · · [T] PrivateMessage (🚫Not-in-use)
+### [T] PrivateMessage (🚫Not-in-use)
 
 | Key          | Type   | Desc                             |
 | ------------ | ------ | -------------------------------- |
@@ -341,13 +341,13 @@ Only allow updating other info after 30 seconds since last update
 
 
 
-## · Comment✅
+## Comment✅
 
 | Property  | Type   | Desc                                    |
 | --------- | ------ | --------------------------------------- |
 | CommentId | string | Random string, 16 characters, lowercase |
 
-### · · [T] PostCommentMappingComprehensive
+### [T] PostCommentMappingComprehensive
 
 | Key          | Type   | Desc         |
 | ------------ | ------ | ------------ |
@@ -371,12 +371,12 @@ Only allow updating other info after 30 seconds since last update
 
 | Behaviour                                             | Affected table                                               |
 | ----------------------------------------------------- | ------------------------------------------------------------ |
-| Create<br /> / Reply to a comment<br />(Cue a member) | **[T]** PostCommentMappingComprehensive,<br />**[PRL]** NotifyReplied,<br />**[C]** Notification ***(accumulate)***,<br />**[C]** CommentStatistics ***(accumulate)***,<br />**[C]** PostStatistics ***(accumulate)***,<br />**[C]** TopicStatistics ***(accumulate)***,<br />**[C]** ChannelStatistics ***(accumulate)***, |
+| Create<br /> / Reply to a comment<br />(Cue a member) | **[T]** PostCommentMappingComprehensive,<br />**[PRL]** NotifyReplied,<br />**[C]** Notification ***(accumulate)***,<br />**[C]** CommentStatistics ***(accumulate)***,<br />**[C]** PostStatistics ***(accumulate)***,<br />**[C]** TopicStatistics ***(accumulate)***,<br />**[C]** ChannelStatistics ***(accumulate)*** |
 | Edit a comment                                        | **[T]** PostCommentMappingComprehensive                      |
 | Delete a comment                                      | **[T]** PostCommentMappingComprehensive                      |
 | Like / Dislike a comment                              | **[PRL]** AttitudeCommentMapping,<br />**[PRL]** NotifyLiked,<br />**[C]** Notification ***(accumulate)***,<br />**[C]** CommentStatistics ***(accumulate)*** |
 
-### · · [PRL] AttitudeCommentMapping
+### [PRL] AttitudeCommentMapping
 
 \* This table records the attitude towards to certain commentIds taken by the partition key owner (memberId)
 
@@ -403,7 +403,7 @@ Only allow updating other info after 30 seconds since last update
 | ------------ | ------ | --------------------------------------- |
 | SubcommentId | string | Random string, 16 characters, lowercase |
 
-### · · [T] CommentSubcommentMappingComprehensive
+### [T] CommentSubcommentMappingComprehensive
 
 | Key          | Type   | Desc            |
 | ------------ | ------ | --------------- |
@@ -430,7 +430,7 @@ Only allow updating other info after 30 seconds since last update
 | Delete a comment                                         | **[T]** CommentSubcommentMappingComprehensive                |
 | Like / Dislike a comment                                 | **[PRL]** AttitudeSubcommentMapping,<br />**[PRL]** NotifyLiked,<br />**[C]** Notification ***(accumulate)***,<br />**[C]** SubcommentStatistics ***(accumulate)*** |
 
-### · · [PRL] AttitudeSubcommentMapping
+### [PRL] AttitudeSubcommentMapping
 
 \* This table records the attitude towards to certain commentIds taken by the partition key owner (memberId)
 
@@ -444,9 +444,9 @@ Only allow updating other info after 30 seconds since last update
 
 
 
-## · Notification✅
+## Notification✅
 
-### · · [PRL] NotifyCued
+### [PRL] NotifyCued
 
 | PartitionKey        | RowKey       | Initiate    | Nickname | PostId | PostBrief |
 | ------------------- | ------------ | ----------- | -------- | ------ | --------- |
@@ -456,7 +456,7 @@ Only allow updating other info after 30 seconds since last update
 - WebMaster在帖子“WebMaster在Mojito发的第一篇帖子”中提到了您
 ```
 
-### · · [PRL] NotifyReplied
+### [PRL] NotifyReplied
 
 | PartitionKey        | RowKey       | Initiate    | Nickname | PostId | PostBrief | CommentId? | CommentBrief? |
 | ------------------- | ------------ | ----------- | -------- | ------ | --------- | ---------- | ------------- |
@@ -467,7 +467,7 @@ Only allow updating other info after 30 seconds since last update
 - WebMaster在帖子“WebMaster在Mojito发的第一篇帖子”中回复了您的评论“可喜可贺可惜可...”
 ```
 
-### · · [PRL] NotifyLiked
+### [PRL] NotifyLiked
 
 | PartitionKey        | RowKey       | Initiate    | Nickname | PostId | PostBrief | CommentId? | CommentBrief? |
 | ------------------- | ------------ | ----------- | -------- | ------ | --------- | ---------- | ------------- |
@@ -478,7 +478,7 @@ Only allow updating other info after 30 seconds since last update
 - WebMaster喜欢了您在“WebMaster在Mojito发的第一篇帖子”中发表的评论“可喜可贺可惜可...”
 ```
 
-### · · [PRL] NotifySaved
+### [PRL] NotifySaved
 
 | PartitionKey        | RowKey       | Initiate    | Nickname | PostId | PostBrief |
 | ------------------- | ------------ | ----------- | -------- | ------ | --------- |
@@ -488,7 +488,7 @@ Only allow updating other info after 30 seconds since last update
 - WebMaster收藏了“WebMaster在Mojito发的第一篇帖子”中提到了您
 ```
 
-### · · [PRL] NotifyFollowed
+### [PRL] NotifyFollowed
 
 | PartitionKey        | RowKey       | Initiate    | Nickname |
 | ------------------- | ------------ | ----------- | -------- |
@@ -498,7 +498,7 @@ Only allow updating other info after 30 seconds since last update
 - WebMaster关注了您
 ```
 
-### · · [PRL] NotifyPrivateMessaged (🚫Not-in-use)
+### [PRL] NotifyPrivateMessaged (🚫Not-in-use)
 
 | PartitionKey        | RowKey       | Initiate    | ...  |      |      |
 | ------------------- | ------------ | ----------- | ---- | ---- | ---- |
@@ -508,7 +508,7 @@ Only allow updating other info after 30 seconds since last update
 
 
 
-## · Channel✅
+## Channel✅
 
 | ChannelId                    | ChannelNameStr | 中文   | Svg Icon Reference |
 | ---------------------------- | -------------- | ------ | ------------------ |
@@ -527,7 +527,7 @@ Only allow updating other info after 30 seconds since last update
 | invest                       | Invest         | 投资   | MonetizationOnIcon |
 | event                        | Event          | 时事   | NewspaperIcon      |
 
-### · · [T] ChannelInfo - ChannelInfo
+### [T] ChannelInfo - ChannelInfo
 
 | Key          | Type   | Desc                    |
 | ------------ | ------ | ----------------------- |
@@ -537,7 +537,7 @@ Only allow updating other info after 30 seconds since last update
 | EN           | string | Channel name in English |
 | SvgIconPath  | string | string, svg icon path   |
 
-### · · [T] ChannelInfo - ChannelIdIndex
+### [T] ChannelInfo - ChannelIdIndex
 
 | Key                 | Type   | Desc                      |
 | ------------------- | ------ | ------------------------- |
@@ -545,7 +545,7 @@ Only allow updating other info after 30 seconds since last update
 | RowKey              | string | `"default"`               |
 | ChannelIdIndexValue | string | string, stringified array |
 
-### · · [RL] ChannelPostMapping
+### [RL] ChannelPostMapping
 
 | Key          | Type    | Desc         |
 | ------------ | ------- | ------------ |
@@ -553,7 +553,7 @@ Only allow updating other info after 30 seconds since last update
 | RowKey       | string  | PostIdStr    |
 | IsActive     | boolean |              |
 
-### · · [RL] ChannelTopicMapping
+### [RL] ChannelTopicMapping
 
 | Key          | Type    | Desc         |
 | ------------ | ------- | ------------ |
@@ -565,13 +565,13 @@ Only allow updating other info after 30 seconds since last update
 
 
 
-## · Topic✅
+## Topic✅
 
 | Property | Type   | Desc                                    |
 | -------- | ------ | --------------------------------------- |
 | TopictId | string | Random string, 10 characters, lowercase |
 
-### · · [T] TopicComprehensive
+### [T] TopicComprehensive
 
 | Key          | Type   | Desc                                          |
 | ------------ | ------ | --------------------------------------------- |
@@ -593,7 +593,7 @@ Only allow updating other info after 30 seconds since last update
 | -1      | Deactivated / Removed |
 | **200** | **Normal**            |
 
-### · · [RL] TopicPostMapping
+### [RL] TopicPostMapping
 
 | Key          | Type    | Desc       |
 | ------------ | ------- | ---------- |
@@ -617,14 +617,14 @@ Only allow updating other info after 30 seconds since last update
 
 
 
-## · Post✅
+## Post✅
 
 | Property | Type   | Desc                                    |
 | -------- | ------ | --------------------------------------- |
 | PostId   | string | Random string, 10 characters, UPPERCASE |
 
 
-### · · [T] PostComprehensive
+### [T] PostComprehensive
 
 | Key          | Type   | Desc                                  |
 | ------------ | ------ | ------------------------------------- |
@@ -650,16 +650,17 @@ Only allow updating other info after 30 seconds since last update
 
 ### ▶️MemberBehaviour.Post
 
-| Behaviour             | Affected table                                               |
-| --------------------- | ------------------------------------------------------------ |
-| View a post           | **[RL]** HistoryMapping,<br />**[C]** PostStatistics ***(accumulate)***,<br />**[C]** TopicStatistics ***(accumulate)***,<br />**[C]** ChannelStatistics ***(accumulate)***, |
-| Create a post         | **[T]** PostComprehensive,<br />**[RL]** CreationsMapping,<br />**[C]** PostStatistics ***(establish)***,<br />**[C]** TopicStatistics ***(accumulate)***,<br />**[C]** ChannelStatistics ***(accumulate)***, |
-| Edit a post           | **[T]** PostComprehensive                                    |
-| Delete a post         | **[T]** PostComprehensive,<br />**[RL]** CreationsMapping ***(cleanup)*** |
-| Save a post           | **[RL]** SavedMapping,<br />**[PRL]** NotifySaved,<br />**[C]** Notification ***(accumulate)***,<br />**[C]** PostStatistics ***(accumulate)***,<br />**[C]** TopicStatistics ***(accumulate)***,<br />**[C]** ChannelStatistics ***(accumulate)***, |
-| Like / Dislike a post | **[PRL]** PostAttitudeMapping,<br />**[PRL]** NotifyLiked,<br />**[C]** Notification ***(accumulate)***,<br />**[C]** PostStatistics ***(accumulate)***,<br />**[C]** TopicStatistics ***(accumulate)***,<br />**[C]** ChannelStatistics ***(accumulate)***, |
+| Behaviour                       | Affected table                                               |
+| ------------------------------- | ------------------------------------------------------------ |
+| View a post                     | **[RL]** HistoryMapping,<br />**[C]** PostStatistics ***(accumulate)***,<br />**[C]** TopicStatistics ***(accumulate)***,<br />**[C]** ChannelStatistics ***(accumulate)***, |
+| Create a post                   | **[T]** PostComprehensive,<br />**[RL]** CreationsMapping,<br />**[C]** PostStatistics ***(establish)***,<br />**[C]** TopicStatistics ***(accumulate)***,<br />**[C]** ChannelStatistics ***(accumulate)*** |
+| Edit a post                     | **[T]** PostComprehensive                                    |
+| Delete a post                   | **[T]** PostComprehensive,<br />**[RL]** CreationsMapping ***(cleanup)*** |
+| Save a post                     | **[RL]** SavedMapping,<br />**[PRL]** NotifySaved,<br />**[C]** Notification ***(accumulate)***,<br />**[C]** PostStatistics ***(accumulate)***,<br />**[C]** TopicStatistics ***(accumulate)***,<br />**[C]** ChannelStatistics ***(accumulate)***, |
+| Like / Dislike a post           | **[PRL]** PostAttitudeMapping,<br />**[PRL]** NotifyLiked,<br />**[C]** Notification ***(accumulate)***,<br />**[C]** PostStatistics ***(accumulate)***,<br />**[C]** TopicStatistics ***(accumulate)***,<br />**[C]** ChannelStatistics ***(accumulate)*** |
+| Share a post<br />(🚫Not-in-use) |                                                              |
 
-### · · [RL] HistoryMapping
+### [RL] HistoryMapping
 
 \* This table records the postIds viewed by the partition key owner (memberId)
 
@@ -669,7 +670,7 @@ Only allow updating other info after 30 seconds since last update
 | RowKey       | string  | PostIdStr      |
 | IsActive     | boolean | Default `true` |
 
-### · · [RL] CreationsMapping 🆕
+### [RL] CreationsMapping 🆕
 
 \* This table records the postIds published by the partition key owner (memberId)
 
@@ -679,7 +680,7 @@ Only allow updating other info after 30 seconds since last update
 | RowKey       | string  | PostIdStr      |
 | IsActive     | boolean | Default `true` |
 
-### · · [RL] SavedMapping
+### [RL] SavedMapping
 
 \* This table records the postIds saved by the partition key owner (memberId)
 
@@ -689,7 +690,7 @@ Only allow updating other info after 30 seconds since last update
 | RowKey       | string  | PostIdStr      |
 | IsActive     | boolean | Default `true` |
 
-### · · [PRL] PostAttitudeMapping
+### [PRL] PostAttitudeMapping
 
 \* This table records the attitude towards to certain postIds taken by the partition key owner (memberId)
 
@@ -727,9 +728,7 @@ Only allow updating other info after 30 seconds since last update
 mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statistics-dev" --apiVersion 1 --username dbmaster
 ```
 
-
-
-## · Notification🆕
+## Notification🆕
 
 ### 💡"notification" collection basic type
 
@@ -753,7 +752,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 
 
 
-## · MemberStatistics
+## MemberStatistics
 
 ### 💡"memberStatistics" collection basic type
 
@@ -774,7 +773,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 
 
 
-## · CommentStatistics
+## CommentStatistics
 
 ### 💡"commentStatistics" collection basic type
 
@@ -792,7 +791,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 
 
 
-## · SubcommentStatistics 🆕
+## SubcommentStatistics 🆕
 
 ### 💡"subcommentStatistics" collection basic type
 
@@ -811,7 +810,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 
 
 
-## · ChannelStatistics 🆕
+## ChannelStatistics 🆕
 
 ### 💡"channelStatistics" collection basic type
 
@@ -841,7 +840,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 
 
 
-## · TopicStatistics 🆕
+## TopicStatistics 🆕
 
 ### 💡"topicStatistics" collection basic type
 
@@ -881,7 +880,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 
 
 
-## · PostStatistics
+## PostStatistics
 
 ### 💡"postStatistics" collection basic type
 
@@ -939,7 +938,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 
 
 
-## · Member System
+## Member System
 
 - MemberInfo
 - MemberSettings
@@ -947,18 +946,18 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 - MemberBehaviour
 - MemberMessage
 
-### ·· Member Prestige System
+### ·Member Prestige System
 
 - Reputation
 - Coin
 
-### ·· *\*Design-Unfinished\** Algorithm
+### ·*\*Design-Unfinished\** Algorithm
 
 $$
 Initial\ Posting\ Weight = 100 \times MemberReputation\ Weight
 $$
 
-### ·· Universal Ranking Map
+### ·Universal Ranking Map
 
 | Rank | Weight    | to Member                               | to Post                |
 | ---- | --------- | --------------------------------------- | ---------------------- |
@@ -971,37 +970,37 @@ $$
 
 
 
-## · Notification System
+## Notification System
 
-### ·· Triggering notificatoin
+### ·Triggering notificatoin
 
 - whenever a member performs a cue/like/save/subscribe/pmed action, notificationService will be triggered to log this action.
 - whenever a member performs a query on these notification stack, notificationService will reset the stack to zero.
 
-## · Private Message System
+## Private Message System
 
 
 
-## · Comment System
+## Comment System
 
-### ·· Comment Grading System
+### ·Comment Grading System
 
 - 当赞(Like)/嘘(Dislike)比例超过1/3时，Comment/Subcomment会被标记为赞爆/嘘爆
 - 赞爆/嘘爆会影响到 Member Reputation
 
-## · Post System
+## Post System
 
 - ShortPost (Po) - 区块：兴趣
 - Article (Art) - 区块：文章/长文章
 - Listing (Lst) - 区块：好物
 - Product (Pod) - 区块：商店
 
-### ·· Post Indexing System
+### ·Post Indexing System
 
 - Keyword
 - TimeStamp
 
-### ·· Post Grading System
+### ·Post Grading System
 
 - PostGrade
 
@@ -1009,11 +1008,209 @@ $$
 
 
 
+# APIs
+
+## Member Login
+
+### POST|`/api/auth/[...nextauth]`
+
+
+
+
+
+## Member Info & Statistics
+
+### GET|`/api/member/info/[id]`
+
+### POST|`/api/member/info/[id]`
+
+| Behaviour                              | Affected table          |
+| -------------------------------------- | ----------------------- |
+| Update member info, e.g., EmailAddress | [T] MemberComprehensive |
+
+\* Identity verification required.
+
+### POST|`/api/member/behaviour/follow/[id]`
+
+| Behaviour                  | Affected table                                               |
+| -------------------------- | ------------------------------------------------------------ |
+| Follow / Unfollow a member | **[RL]** FollowingMemberMapping,<br />**[PRL]** FollowedByMemberMapping,<br />**[PRL]** NotifyFollowed,<br />**[C]** Notification ***(accumulate)***,<br />**[C]** MemberStatistics ***(accumulate)*** |
+
+\* Identity verification required.
+
+### POST|`/api/member/behaviour/block/[id]`
+
+| Behaviour      | Affected table                                               |
+| -------------- | ------------------------------------------------------------ |
+| Block a member | **[RL]** BlockedMemberMapping,<br />**[PRL]** BLockedByMemberMapping,<br />**[C]** MemberStatistics ***(accumulate)*** |
+
+\* Identity verification required.
+
+### GET|`/api/member/behaviour/resetpassword/request?emaillAddress=`
+
+
+
+
+
+## Comment Info & Statistics
+
+### GET|`/api/comment/info/[id]`
+
+### POST|`/api/comment/info/index`
+
+| Behaviour                                             | Affected table                                               |
+| ----------------------------------------------------- | ------------------------------------------------------------ |
+| Create<br /> / Reply to a comment<br />(Cue a member) | **[T]** PostCommentMappingComprehensive,<br />**[PRL]** NotifyReplied,<br />**[C]** Notification ***(accumulate)***,<br />**[C]** CommentStatistics ***(accumulate)***,<br />**[C]** PostStatistics ***(accumulate)***,<br />**[C]** TopicStatistics ***(accumulate)***,<br />**[C]** ChannelStatistics ***(accumulate)*** |
+
+\* Identity verification required.
+
+### PUT|`/api/comment/info/[id]`
+
+| Behaviour      | Affected table                          |
+| -------------- | --------------------------------------- |
+| Edit a comment | **[T]** PostCommentMappingComprehensive |
+
+\* Identity verification required.
+
+### DELETE|`/api/comment/info/[id]`
+
+| Behaviour        | Affected table                          |
+| ---------------- | --------------------------------------- |
+| Delete a comment | **[T]** PostCommentMappingComprehensive |
+
+\* Identity verification required.
+
+### POST|`/api/comment/behaviour/attitude/[id]`
+
+| Behaviour                | Affected table                                               |
+| ------------------------ | ------------------------------------------------------------ |
+| Like / Dislike a comment | **[PRL]** AttitudeCommentMapping,<br />**[PRL]** NotifyLiked,<br />**[C]** Notification ***(accumulate)***,<br />**[C]** CommentStatistics ***(accumulate)*** |
+
+\* Identity verification required.
+
+
+
+
+
+## Subcomment Info & Statistics
+
+### GET|`/api/subcomment/info/[id]`
+
+### POST|`/api/subcomment/info/index`
+
+| Behaviour                                                | Affected table                                               |
+| -------------------------------------------------------- | ------------------------------------------------------------ |
+| Create<br /> / Reply to a subcomment<br />(Cue a member) | **[T]** CommentSubcommentMappingComprehensive,<br />**[PRL]** NotifyReplied,<br />**[C]** Notification ***(accumulate)***,<br />**[C]** SubcommentStatistics ***(establish)***,<br />**[C]** CommentStatistics ***(accumulate)***,<br />**[C]** PostStatistics ***(accumulate)***,<br />**[C]** TopicStatistics ***(accumulate)***,<br />**[C]** ChannelStatistics ***(accumulate)*** |
+
+\* Identity verification required.
+
+### PUT|`/api/subcomment/info/[id]`
+
+| Behaviour      | Affected table                                |
+| -------------- | --------------------------------------------- |
+| Edit a comment | **[T]** CommentSubcommentMappingComprehensive |
+
+\* Identity verification required.
+
+### DELETE|`/api/subcomment/info/[id]`
+
+| Behaviour        | Affected table                                |
+| ---------------- | --------------------------------------------- |
+| Delete a comment | **[T]** CommentSubcommentMappingComprehensive |
+
+\* Identity verification required.
+
+### POST|`/api/subcomment/behaviour/attitude/[id]`
+
+| Behaviour                | Affected table                                               |
+| ------------------------ | ------------------------------------------------------------ |
+| Like / Dislike a comment | **[PRL]** AttitudeSubcommentMapping,<br />**[PRL]** NotifyLiked,<br />**[C]** Notification ***(accumulate)***,<br />**[C]** SubcommentStatistics ***(accumulate)*** |
+
+\* Identity verification required.
+
+
+
+
+
+## Topic Info & Statistics
+
+### GET| `/api/topic/[id]`
+
+### GET| `/api/topic/of/[id]`
+
+### POST| `/api/topic/index`
+
+| Behaviour      | Affected table                                        |
+| -------------- | ----------------------------------------------------- |
+| Create a topic | **[T]** TopicComprehensive, **[C]** ChannelStatistics |
+
+
+
+
+
+## Post Info & Statistics
+
+### GET|`/api/post/info/[id]`
+
+| Behaviour   | Affected table                                               |
+| ----------- | ------------------------------------------------------------ |
+| View a post | **[RL]** HistoryMapping,<br />**[C]** PostStatistics ***(accumulate)***,<br />**[C]** TopicStatistics ***(accumulate)***,<br />**[C]** ChannelStatistics ***(accumulate)*** |
+
+### POST|`/api/post/info/index`
+
+| Behaviour     | Affected table                                               |
+| ------------- | ------------------------------------------------------------ |
+| Create a post | **[T]** PostComprehensive,<br />**[RL]** CreationsMapping,<br />**[C]** PostStatistics ***(establish)***,<br />**[C]** TopicStatistics ***(accumulate)***,<br />**[C]** ChannelStatistics ***(accumulate)*** |
+
+\* Identity verification required.
+
+### PUT|`/api/post/info/[id]`
+
+| Behaviour   | Affected table            |
+| ----------- | ------------------------- |
+| Edit a post | **[T]** PostComprehensive |
+
+\* Identity verification required.
+
+### DELETE|`/api/post/info/[id]`
+
+| Behaviour     | Affected table                                               |
+| ------------- | ------------------------------------------------------------ |
+| Delete a post | **[T]** PostComprehensive,<br />**[RL]** CreationsMapping ***(cleanup)*** |
+
+\* Identity verification required.
+
+### POST|`/api/post/behaviour/save/[id]`
+
+| Behaviour   | Affected table                                               |
+| ----------- | ------------------------------------------------------------ |
+| Save a post | **[RL]** SavedMapping,<br />**[PRL]** NotifySaved,<br />**[C]** Notification ***(accumulate)***,<br />**[C]** PostStatistics ***(accumulate)***,<br />**[C]** TopicStatistics ***(accumulate)***,<br />**[C]** ChannelStatistics ***(accumulate)*** |
+
+\* Identity verification required.
+
+### POST|`/api/post/behaviour/attitude/[id]`
+
+| Behaviour             | Affected table                                               |
+| --------------------- | ------------------------------------------------------------ |
+| Like / Dislike a post | **[PRL]** PostAttitudeMapping,<br />**[PRL]** NotifyLiked,<br />**[C]** Notification ***(accumulate)***,<br />**[C]** PostStatistics ***(accumulate)***,<br />**[C]** TopicStatistics ***(accumulate)***,<br />**[C]** ChannelStatistics ***(accumulate)*** |
+
+\* Identity verification required.
+
+
+
+ 
+
+
+
+
+
+
+
 # Mail
 
-## · Use Azure Communication Service to send emails
+## Use Azure Communication Service to send emails
 
-## · Send an email
+## Send an email
 
 ```shell
 npm i @azure/communication-email
@@ -1029,7 +1226,7 @@ npm i @azure/communication-email
 
 # Ui Design
 
-## · Swiper on home page
+## Swiper on home page
 
 Options
 
@@ -1037,11 +1234,11 @@ Options
 
 
 
-## · Post FormData(image) to API
+## Post FormData(image) to API
 
 During dev, three ways of posting form data has been tested but finally the way using `Axios` has been accepted.
 
-### · · Fetch API (JSON)
+### Fetch API (JSON)
 
 ```typescript
 /// using fetch
@@ -1054,7 +1251,7 @@ const resp = await fetch('/api/image/putImage', {
 console.log(await resp.text())
 ```
 
-### · · XMLHttpRequest (FormData)
+### XMLHttpRequest (FormData)
 
 ```typescript
 // using XMLHttpRequest
@@ -1064,7 +1261,7 @@ request.setRequestHeader('content-type', 'multipart/form-data; boundary=null'); 
 request.send(formData);
 ```
 
-### · · Axios (FormData with progress indicator) 
+### Axios (FormData with progress indicator) 
 
 ```typescript
 let formData = new FormData();
@@ -1082,7 +1279,7 @@ console.log('response', response.data);
 
 
 
-## · MUI Theme
+## MUI Theme
 
 - With `themeProvider` can easily modify the default mui theme
 
@@ -1113,17 +1310,17 @@ console.log('response', response.data);
 
 # Db & Storage
 
-## · Using Azure Data Tables Api
+## Using Azure Data Tables Api
 
 ```
 npm install @azure/data-tables
 ```
 
-## · Docs Reference
+## Docs Reference
 
 [Reference](https://www.npmjs.com/package/@azure/data-tables/v/13.0.0)
 
-## · `&` Used in no-standard CSS
+## `&` Used in no-standard CSS
 
 ```scss
 a {
@@ -1146,7 +1343,7 @@ a:hover {
 
 
 
-## · Authorize access to data in Azure Storage
+## Authorize access to data in Azure Storage
 
 > Each time you access data in your storage account, your client  application makes a request over HTTP/HTTPS to Azure Storage. By  default, every resource in Azure Storage is secured, and every request  to a secure resource must be authorized. Authorization ensures that the  client application has the appropriate permissions to access a  particular resource in your storage account.
 
@@ -1156,13 +1353,13 @@ a:hover {
 
 # Authenticate & Authorize
 
-## · NextAuth.js
+## NextAuth.js
 
 [Reference](https://next-auth.js.org/)
 
 [Example](https://github.com/nextauthjs/next-auth-example)
 
-## · Use JWT
+## Use JWT
 
 Use dependencies
 
@@ -1216,9 +1413,9 @@ export default async function Verify(req: NextApiRequest, res: NextApiResponse) 
 
 
 
-## · A study on `[...nextauth].ts`
+## A study on `[...nextauth].ts`
 
-### · · `signin({ user, account, profile, email, credentials })` callback
+### `signin({ user, account, profile, email, credentials })` callback
 
 **A credential signIn will get the result**
 
@@ -1462,11 +1659,11 @@ export default async function Verify(req: NextApiRequest, res: NextApiResponse) 
 
 # Anti-Robot
 
-## · ReCAPTCHA
+## ReCAPTCHA
 
 [recaptcha console](https://www.google.com/u/4/recaptcha/admin/site/584181821)
 
-### · · 使用ReCAPTCHA保护所有不被NextAuth保护的API Endpoint
+### 使用ReCAPTCHA保护所有不被NextAuth保护的API Endpoint
 
 本节使用Change password service作为例子。
 
@@ -1495,7 +1692,7 @@ if (!success) {
 
 
 
-### · · Solve react-google-recaptcha null ref issue
+### Solve react-google-recaptcha null ref issue
 
 This demo is used to reset ReCAPTCHA challenge
 
@@ -1520,9 +1717,9 @@ return (
 
 
 
-## · AES
+## AES
 
-### · · Change password service
+### Change password service
 
 本服务器使用AES产生修改密码的令牌。
 
@@ -1572,19 +1769,19 @@ VTJGc2RHVmtYMS9HQWQydEQ1aFJMUXlmUDhoYXJlZzJjNW0vMEJ3SCttcFhhUXdTZFF3RGtyNjN4OXcx
 
 
 
-## · Use Azure Storage
+## Use Azure Storage
 
 [Reference](https://learn.microsoft.com/en-us/azure/storage/queues/storage-nodejs-how-to-use-queues?tabs=javascript)
 
 
 
-## · Use Gmail Api to send emails
+## Use Gmail Api to send emails
 
 [Youtube](https://www.youtube.com/watch?v=-rcRf7yswfM)
 
 
 
-## · [TS] Option '--resolveJsonModule' cannot be specified without 'node' module resolution strategy.
+## [TS] Option '--resolveJsonModule' cannot be specified without 'node' module resolution strategy.
 
 In `tsconfig.json` file,
 
@@ -1658,7 +1855,7 @@ let a = 50 | 100
 
 
 
-## · Optional property access operator
+## Optional property access operator
 
 ```typescript
 type Customer = {

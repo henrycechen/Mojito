@@ -11,7 +11,7 @@ export default async function Index(req: NextApiRequest, res: NextApiResponse) {
         return;
     }
     try {
-        // [!] Conditional idenitity-ban for this Api
+        // [!] Limited resource supply for identiyless requests
         const { id } = req.query;
         // Step #1 verify post id
         if ('string' !== typeof id) {
