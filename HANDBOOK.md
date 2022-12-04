@@ -404,9 +404,9 @@ Only allow updating other info after 30 seconds since last update
 
 ### [T] CommentSubcommentMappingComprehensive
 
-| PartitionKey | RowKey          | MemberId | Content | SubommentStatus |
-| ------------ | --------------- | -------- | ------- | --------------- |
-| CommentIdStr | SubcommentIdStr | string   | string  | number          |
+| PartitionKey | RowKey          | MemberId | Content | SubcommentStatus |
+| ------------ | --------------- | -------- | ------- | ---------------- |
+| CommentIdStr | SubcommentIdStr | string   | string  | number           |
 
 ### 💡SubcommentStatus Code
 
@@ -626,7 +626,7 @@ Only allow updating other info after 30 seconds since last update
 | RowKey       | string | Category name, e.g., , `"Management"` |
 | *            |        |                                       |
 
-| RowKey   | MemberId | Title  | ImageUrlArr               | ParagraphsArr             | ChannelId | TopicIdArr                |
+| RowKey   | MemberId | Title  | ImageUrlsArr              | ParagraphsArr             | ChannelId | TopicIdsArr               |
 | -------- | -------- | ------ | ------------------------- | ------------------------- | --------- | ------------------------- |
 | `"Info"` | string   | string | string, stringified array | string, stringified array | string    | string, stringified array |
 
@@ -724,7 +724,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 
 ## Notification🆕
 
-### 💡"notification" collection basic type
+### 💡"notificationStatistics" collection basic type
 
 ```json
 {

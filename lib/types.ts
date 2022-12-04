@@ -110,6 +110,13 @@ export type CommentInfo = {
     commentStatus?: number;
 }
 
+
+
+
+
+
+
+
 //////// Azure Table Entity ////////
 export interface AzureTableEntity {
     partitionKey: string;
@@ -140,8 +147,6 @@ export interface LoginCredentialsMapping extends AzureTableEntity {
     MemberIdStr: string;
     IsActive: boolean;
 }
-
-// [PRL] 
 
 // [T] MemberComprehensive
 interface MemberComprehensive extends AzureTableEntity {

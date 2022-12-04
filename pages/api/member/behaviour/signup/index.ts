@@ -4,6 +4,7 @@ import CryptoJS from 'crypto-js';
 
 import AzureTableClient from '../../../../../modules/AzureTableClient';
 import AzureEmailCommunicationClient from '../../../../../modules/AzureEmailCommunicationClient';
+import { IAzureTableEntity, IEmailAddressLoginCredentialMapping, IPasswordHash, IMemberInfo, IMemberManagement } from '../../../../../lib/interfaces';
 import { LangConfigs, EmailMessage, AzureTableEntity, PasswordHash, LoginCredentialsMapping, VerifyAccountRequestInfo } from '../../../../../lib/types';
 import { getRandomStr, verifyEmailAddress, verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500 } from '../../../../../lib/utils';
 import { composeVerifyAccountEmail } from '../../../../../lib/email';
@@ -48,6 +49,7 @@ export default async function SignUp(req: NextApiRequest, res: NextApiResponse) 
             }
         }
         const { emailAddress, password } = JSON.parse(req.body);
+        // [!] attemp to parse JSON string to object makes the probability of causing SyntaxError
         // Step #2.1 verify email address
         if ('string' !== typeof emailAddress || '' === emailAddress) {
             res.status(403).send('Invalid email address');
@@ -66,41 +68,47 @@ export default async function SignUp(req: NextApiRequest, res: NextApiResponse) 
             res.status(400).send('Email address has been registered');
             return;
         }
-        // Step #3.1 create a memberId
+        // Step #3.1 create a new memberId
         const memberId = getRandomStr(true); // use UPPERCASE
-        // Step #3.2 upsertEntity to [Table] LoginCredentialsMapping
-        const loginCredentialsMapping: LoginCredentialsMapping = {
+        // Step #3.2 upsertEntity (emailAddressLoginCredentialMapping) to [RL] LoginCredentialsMapping
+        const emailAddressLoginCredentialMapping: IEmailAddressLoginCredentialMapping = {
             partitionKey: 'EmailAddress',
             rowKey: emailAddress,
-            MemberIdStr: memberId,
+            // MemberIdStr: memberId,
+            MemberId: memberId, // Update: 5/12/2022 all MemberIdStr now using new collom name MemberId
             IsActive: true
         }
-        await loginCredentialsMappingTableClient.upsertEntity(loginCredentialsMapping, 'Replace');
-        // Step #3.3 upsertEntity to [Table] MemberLogin
-        const passwordHash: PasswordHash = {
+        await loginCredentialsMappingTableClient.upsertEntity(emailAddressLoginCredentialMapping, 'Replace');
+        // Step #3.3 upsertEntity (passwordHash) to [T] MemberLogin
+        const passwordHash: IPasswordHash = {
             partitionKey: memberId,
             rowKey: 'PasswordHash',
-            PasswordHashStr: CryptoJS.SHA256(password + salt).toString()
+            PasswordHashStr: CryptoJS.SHA256(password + salt).toString(),
+            IsActive: true
         }
         const memberLoginTableClient = AzureTableClient('MemberLogin');
         await memberLoginTableClient.upsertEntity(passwordHash, 'Replace');
-        // Step #3.4 upsertEntity to [Table] MemberComprehensive.Info     <<<<---------------------------------------- TODO:
-        const memberInfoEmailAddress: AzureTableEntity = {
+        // Step #3.4 upsertEntity (memberInfo) to [T] MemberComprehensive.Info
+        const memberInfo: IMemberInfo = {
             partitionKey: memberId,
-            rowKey: 'EmailAddress',
-            EmailAddressStr: emailAddress
+            rowKey: 'Info',
+            EmailAddress: emailAddress,
+            Gender: -1
         }
-        const memberInfoTableClient = AzureTableClient('MemberInfo');
-        await memberInfoTableClient.upsertEntity(memberInfoEmailAddress, 'Replace');
+        // const memberInfoTableClient = AzureTableClient('MemberInfo');
+        const memberComprehensiveTableClient = AzureTableClient('MemberComprehensive'); // Update: 5/12/2022 applied new table layout (Info & Management merged)
+        await memberComprehensiveTableClient.upsertEntity(memberInfo, 'Replace');
         // Step #3.4 upsertEntity to [Table] MemberManagement
-        const memberManagementMemberStatus: AzureTableEntity = {
+        const memberManagement: IMemberManagement = {
             partitionKey: memberId,
-            rowKey: 'MemberStatus',
-            MemberStatusValue: 0 // Established, email address not verified
+            rowKey: 'Management',
+            MemberStatus: 0, // Established, email address not verified
+            AllowPosting: false,
+            AllowCommenting: false
         }
-        const memberManagementTableClient = AzureTableClient('MemberManagement');
-        await memberManagementTableClient.upsertEntity(memberManagementMemberStatus, 'Replace');
-        // Step #4 componse and send email
+        // const memberManagementTableClient = AzureTableClient('MemberManagement'); //  Update: abandoned [T] MemberMangement
+        await memberComprehensiveTableClient.upsertEntity(memberManagement, 'Replace');
+        // Step #4 compose email to send verification link
         const info: VerifyAccountRequestInfo = {
             memberId
         }

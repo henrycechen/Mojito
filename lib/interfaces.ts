@@ -57,24 +57,31 @@ export interface INicknameMapping extends IAzureTableEntity {
 }
 
 // [T] MemberComprehensive
-interface MemberComprehensive extends IAzureTableEntity {
+interface IComprehensiveEntity extends IAzureTableEntity {
+    partitionKey: string; // id
+    rowKey: 'Info' | 'Management';
+    [key: string]: any;
+}
+
+// [T] MemberComprehensive
+interface IMemberComprehensive extends IComprehensiveEntity {
     partitionKey: string; // member id
     rowKey: 'Info' | 'Management';
     [key: string]: any;
 }
 
-export interface IMemberInfo extends MemberComprehensive {
+export interface IMemberInfo extends IMemberComprehensive {
     partitionKey: string; // member id
     rowKey: 'Info';
     EmailAddress: string;
-    Nickname: string;
-    AvatarImageUrl: string;
-    BriefIntro: string;
+    Nickname?: string;
+    AvatarImageUrl?: string;
+    BriefIntro?: string;
     Gender: -1 | 0 | 1;
-    Birthday: string;
+    Birthday?: string;
 }
 
-export interface IMemberManagement extends MemberComprehensive {
+export interface IMemberManagement extends IMemberComprehensive {
     partitionKey: string; // member id
     rowKey: 'Management';
     MemberStatus: number;
@@ -83,7 +90,7 @@ export interface IMemberManagement extends MemberComprehensive {
 }
 
 // [T] PostCommentMappingComprehensive
-export interface IPostCommentMappingComprehensive extends IAzureTableEntity{
+export interface IPostCommentMappingComprehensive extends IAzureTableEntity {
     partitionKey: string; // post id
     rowKey: string; // comment id
     MemberId: string;
@@ -92,7 +99,7 @@ export interface IPostCommentMappingComprehensive extends IAzureTableEntity{
 }
 
 // [T] CommentSubcommentMappingComprehensive
-export interface ICommentSubcommentMappingComprehensive extends IAzureTableEntity{
+export interface ICommentSubcommentMappingComprehensive extends IAzureTableEntity {
     partitionKey: string; // comment id
     rowKey: string; // subcomment id
     MemberId: string;
@@ -108,16 +115,55 @@ export interface INotification extends IAzureTableEntity {
     Nickname: string; // initiate member nickname
     PostId?: string;
     PostBrief?: string;
-    CommentId?:string;
+    CommentId?: string;
     CommentBrief?: string;
 }
 
+// [T] TopicComprehensive
+interface ITopicComprehensive extends IComprehensiveEntity {
+    partitionKey: string; // topic id
+    rowKey: 'Info' | 'Management';
+    [key: string]: any;
+}
 
-// MemberStatistics
+export interface ITopicInfo extends ITopicComprehensive {
+    partitionKey: string; // topic id
+    rowKey: 'Info';
+    Name: string;
+}
 
-//FIXME: memberId index has been moved to "memberStatistics"
-// export interface MemberIdIndex extends IAzureTableEntity {
-//     partitionKey: 'MemberIdIndex';
-//     rowKey: string;
-//     MemberIdIndexValue: number;
-// }
+export interface ITopicManagement extends ITopicComprehensive {
+    partitionKey: string; // topic id
+    rowKey: 'Management';
+    TopicStatus: number;
+}
+
+// [T] PostComprehensive
+interface IPostComprehensive extends IComprehensiveEntity {
+    partitionKey: string; // post id
+    rowKey: 'Info' | 'Management';
+    [key: string]: any;
+}
+
+export interface IPostInfo extends IPostComprehensive {
+    partitionKey: string; // post id
+    rowKey: 'Info';
+    MemberId: string; // member id
+    Title: string;
+    ImageUrlsArr: string; // stringified array
+    ParagraphsArr: string; // stringified array
+    ChannelId: string;
+    TopicIdsArr: string; // stringified array
+}
+
+export interface IPostManagement extends IPostComprehensive {
+    partitionKey: string; // post id
+    rowKey: 'Management';
+    PostStatus: number;
+}
+
+//////// Atlas Collection Entity////////
+export interface IAtlasCollectionEntity {
+    _id: string; // mongodb object id
+    [key: string]: any;
+}
