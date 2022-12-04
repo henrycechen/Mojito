@@ -117,7 +117,7 @@ export interface AzureTableEntity {
     [key: string]: any;
 }
 
-// MemberLogin
+// [T] MemberLogin
 export interface PasswordHash extends AzureTableEntity {
     partitionKey: string;
     rowKey: string;
@@ -133,11 +133,40 @@ export interface ResetPasswordToken extends AzureTableEntity {
     IsActive?: boolean;
 }
 
+// [RL] LoginCredentialsMapping
 export interface LoginCredentialsMapping extends AzureTableEntity {
     partitionKey: string;
     rowKey: string;
     MemberIdStr: string;
     IsActive: boolean;
+}
+
+// [PRL] 
+
+// [T] MemberComprehensive
+interface MemberComprehensive extends AzureTableEntity {
+    partitionKey: string; // member id
+    rowKey: 'Info' | 'Management';
+    [key: string]: any;
+}
+
+export interface IMemberInfo extends MemberComprehensive {
+    partitionKey: string; // member id
+    rowKey: 'Info';
+    EmailAddress: string;
+    Nickname: string;
+    AvatarImageUrl: string;
+    BriefIntro: string;
+    Gender: -1 | 0 | 1;
+    Birthday: string;
+}
+
+export interface IMemberManagement extends MemberComprehensive {
+    partitionKey: string; // member id
+    rowKey: 'Management';
+    MemberStatus: number;
+    AllowPosting: boolean;
+    AllowCommenting: boolean;
 }
 
 // MemberStatistics

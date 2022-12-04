@@ -84,8 +84,7 @@ export default async function SignUp(req: NextApiRequest, res: NextApiResponse) 
         }
         const memberLoginTableClient = AzureTableClient('MemberLogin');
         await memberLoginTableClient.upsertEntity(passwordHash, 'Replace');
-        // Step #3.4 upsertEntity to [Table] MemberInfo
-        // Step #3.4 upsertEntity to [Table] MemberComprehensive
+        // Step #3.4 upsertEntity to [Table] MemberComprehensive.Info     <<<<---------------------------------------- TODO:
         const memberInfoEmailAddress: AzureTableEntity = {
             partitionKey: memberId,
             rowKey: 'EmailAddress',

@@ -353,14 +353,9 @@ Only allow updating other info after 30 seconds since last update
 
 ### [T] PostCommentMappingComprehensive
 
-| Key          | Type   | Desc         |
-| ------------ | ------ | ------------ |
-| PartitionKey | string | PostIdStr    |
-| RowKey       | string | CommentIdStr |
-
-| MemberId | Content | CommentStatus |
-| -------- | ------- | ------------- |
-| string   | string  | number        |
+| PartitionKey | RowKey       | MemberId | Content | CommentStatus |
+| ------------ | ------------ | -------- | ------- | ------------- |
+| PostIdStr    | CommentIdStr | string   | string  | number        |
 
 ### 💡CommentStatus Code
 
@@ -409,14 +404,9 @@ Only allow updating other info after 30 seconds since last update
 
 ### [T] CommentSubcommentMappingComprehensive
 
-| Key          | Type   | Desc            |
-| ------------ | ------ | --------------- |
-| PartitionKey | string | CommentIdStr    |
-| RowKey       | string | SubcommentIdStr |
-
-| MemberId | Content | CommentStatus |
-| -------- | ------- | ------------- |
-| string   | string  | number        |
+| PartitionKey | RowKey          | MemberId | Content | SubommentStatus |
+| ------------ | --------------- | -------- | ------- | --------------- |
+| CommentIdStr | SubcommentIdStr | string   | string  | number          |
 
 ### 💡SubcommentStatus Code
 
