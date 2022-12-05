@@ -165,9 +165,9 @@ type ResetPasswordRequestInfo = {
 | RowKey       | string | Category name, e.g., `"Info"`, `"Management"` |
 | *            |        |                                               |
 
-| RowKey   | EmailAddress | Nickname | AvatarImageUrl | BriefIntro | Gender                   | Birthday |
-| -------- | ------------ | -------- | -------------- | ---------- | ------------------------ | -------- |
-| `"Info"` | string       | string   | string         | string     | `0 |1 |-1`, default `-1` | string   |
+| RowKey   | RegisteredTimestamp | VerifiedTimestamp | EmailAddress | Nickname | AvatarImageUrl | BriefIntro | Gender                   | Birthday |
+| -------- | ------------------- | ----------------- | ------------ | -------- | -------------- | ---------- | ------------------------ | -------- |
+| `"Info"` | string              | string            | string       | string   | string         | string     | `0 |1 |-1`, default `-1` | string   |
 
 | RowKey         | MemberStatus | AllowPosting | AllowCommenting |
 | -------------- | ------------ | ------------ | --------------- |
@@ -371,7 +371,7 @@ Only allow updating other info after 30 seconds since last update
 | Behaviour                                             | Affected table                                               |
 | ----------------------------------------------------- | ------------------------------------------------------------ |
 | Create<br /> / Reply to a comment<br />(Cue a member) | **[T]** PostCommentMappingComprehensive,<br />**[PRL]** NotifyReplied,<br />**[C]** Notification ***(accumulate)***,<br />**[C]** CommentStatistics ***(accumulate)***,<br />**[C]** PostStatistics ***(accumulate)***,<br />**[C]** TopicStatistics ***(accumulate)***,<br />**[C]** ChannelStatistics ***(accumulate)*** |
-| Edit a comment                                        | **[T]** PostCommentMappingComprehensive                      |
+| Edit a comment                                        | **[T]** PostCommentMappingComprehensive,<br />( **[PRL]** NotifyReplied ),<br />( **[C]** Notification ***(accumulate)*** ) |
 | Delete a comment                                      | **[T]** PostCommentMappingComprehensive                      |
 | Like / Dislike a comment                              | **[PRL]** AttitudeCommentMapping,<br />**[PRL]** NotifyLiked,<br />**[C]** Notification ***(accumulate)***,<br />**[C]** CommentStatistics ***(accumulate)*** |
 
@@ -420,7 +420,7 @@ Only allow updating other info after 30 seconds since last update
 | Behaviour                                                | Affected table                                               |
 | -------------------------------------------------------- | ------------------------------------------------------------ |
 | Create<br /> / Reply to a subcomment<br />(Cue a member) | **[T]** CommentSubcommentMappingComprehensive,<br />**[PRL]** NotifyReplied,<br />**[C]** Notification ***(accumulate)***,<br />**[C]** SubcommentStatistics ***(establish)***,<br />**[C]** CommentStatistics ***(accumulate)***,<br />**[C]** PostStatistics ***(accumulate)***,<br />**[C]** TopicStatistics ***(accumulate)***,<br />**[C]** ChannelStatistics ***(accumulate)***, |
-| Edit a comment                                           | **[T]** CommentSubcommentMappingComprehensive                |
+| Edit a comment                                           | **[T]** CommentSubcommentMappingComprehensive,<br />( **[PRL]** NotifyReplied ),<br />( **[C]** Notification ***(accumulate)*** ) |
 | Delete a comment                                         | **[T]** CommentSubcommentMappingComprehensive                |
 | Like / Dislike a comment                                 | **[PRL]** AttitudeSubcommentMapping,<br />**[PRL]** NotifyLiked,<br />**[C]** Notification ***(accumulate)***,<br />**[C]** SubcommentStatistics ***(accumulate)*** |
 
@@ -439,6 +439,15 @@ Only allow updating other info after 30 seconds since last update
 
 
 ## Notification✅
+
+### ▶️MemberBehaviour.Any
+
+| Behaviour                                      | Affected table                                               |
+| ---------------------------------------------- | ------------------------------------------------------------ |
+| Create<br /> / Edit a post<br />(Cue a member) | ...<br />**[PRL]** NotifyReplied,<br />**[C]** Notification ***(accumulate)***,<br />... |
+| Edit a comment                                 | **[T]** PostCommentMappingComprehensive                      |
+| Delete a comment                               | **[T]** PostCommentMappingComprehensive                      |
+| Like / Dislike a comment                       | **[PRL]** AttitudeCommentMapping,<br />**[PRL]** NotifyLiked,<br />**[C]** Notification ***(accumulate)***,<br />**[C]** CommentStatistics ***(accumulate)*** |
 
 ### [PRL] NotifyCued
 
@@ -564,6 +573,7 @@ Only allow updating other info after 30 seconds since last update
 | Property | Type   | Desc                                    |
 | -------- | ------ | --------------------------------------- |
 | TopictId | string | Random string, 10 characters, lowercase |
+| Name     | string | A-Za-Z + Chinese characters only        |
 
 ### [T] TopicComprehensive
 
@@ -626,9 +636,9 @@ Only allow updating other info after 30 seconds since last update
 | RowKey       | string | Category name, e.g., , `"Management"` |
 | *            |        |                                       |
 
-| RowKey   | MemberId | Title  | ImageUrlsArr              | ParagraphsArr             | ChannelId | TopicIdsArr               |
-| -------- | -------- | ------ | ------------------------- | ------------------------- | --------- | ------------------------- |
-| `"Info"` | string   | string | string, stringified array | string, stringified array | string    | string, stringified array |
+| RowKey   | CreateTimestamp | MemberId | Title  | ImageUrlsArr              | ParagraphsArr             | ChannelId | TopicIdsArr               |
+| -------- | --------------- | -------- | ------ | ------------------------- | ------------------------- | --------- | ------------------------- |
+| `"Info"` | string          | string   | string | string, stringified array | string, stringified array | string    | string, stringified array |
 
 | RowKey         | PostStatus |
 | -------------- | ---------- |
@@ -647,8 +657,8 @@ Only allow updating other info after 30 seconds since last update
 | Behaviour                       | Affected table                                               |
 | ------------------------------- | ------------------------------------------------------------ |
 | View a post                     | **[RL]** HistoryMapping,<br />**[C]** PostStatistics ***(accumulate)***,<br />**[C]** TopicStatistics ***(accumulate)***,<br />**[C]** ChannelStatistics ***(accumulate)***, |
-| Create a post                   | **[T]** PostComprehensive,<br />**[RL]** CreationsMapping,<br />**[C]** PostStatistics ***(establish)***,<br />**[C]** TopicStatistics ***(accumulate)***,<br />**[C]** ChannelStatistics ***(accumulate)*** |
-| Edit a post                     | **[T]** PostComprehensive                                    |
+| Create a post                   | **[T]** PostComprehensive,<br />**[RL]** CreationsMapping,<br />**[C]** PostStatistics ***(establish)***,<br />**[C]** TopicStatistics ***(accumulate)***,<br />**[C]** ChannelStatistics ***(accumulate)***,<br />(**[PRL]** NotifyCued),<br />(**[C]** Notification) |
+| Edit a post                     | **[T]** PostComprehensive,<br />(**[PRL]** NotifyCued),<br />(**[C]*** Notification) |
 | Delete a post                   | **[T]** PostComprehensive,<br />**[RL]** CreationsMapping ***(cleanup)*** |
 | Save a post                     | **[RL]** SavedMapping,<br />**[PRL]** NotifySaved,<br />**[C]** Notification ***(accumulate)***,<br />**[C]** PostStatistics ***(accumulate)***,<br />**[C]** TopicStatistics ***(accumulate)***,<br />**[C]** ChannelStatistics ***(accumulate)***, |
 | Like / Dislike a post           | **[PRL]** PostAttitudeMapping,<br />**[PRL]** NotifyLiked,<br />**[C]** Notification ***(accumulate)***,<br />**[C]** PostStatistics ***(accumulate)***,<br />**[C]** TopicStatistics ***(accumulate)***,<br />**[C]** ChannelStatistics ***(accumulate)*** |
@@ -704,6 +714,18 @@ Only allow updating other info after 30 seconds since last update
 
 
 
+## Stastics✅
+
+### [PRL] Statistics
+
+| PartitionKey      | RowKey      | MemberIdIndexValue |
+| ----------------- | ----------- | ------------------ |
+| `"MemberIdIndex"` | MemberIdStr | number             |
+
+
+
+
+
 ## Reference
 
 - [Design for Querying](https://learn.microsoft.com/en-us/azure/storage/tables/table-storage-design-for-query)
@@ -730,7 +752,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 {
     _id: ObjectId; // mongodb obejct id
     memberId: string; // member id
-    cuedCount: number; // cued times counted from last reset
+    cuedCount: number; // cued times accumulated from last count reset
     repliedCount: number;
     likedCount: number;
     savedCount: number;
@@ -752,16 +774,27 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 
 ```json
 {
-    _id: ObjectId; // mongodb obejct id
+    _id?: string; // mongodb obejct id
     memberId: string; // member id
-    memberIdIndex: number; // calculated member id index
+    postCount: number;
+    replyCount: number;
+    likeCount: number;
+    dislikeCount: number;
+    saveCount: number;
     followingCount: number;
     followedByCount: number;
     blockedCount: number;
 }
 ```
 
+### 💡"memberHistoricalStatistics" collection basic type
 
+```json
+{
+    _id: ObjectId; // mongodb obejct id
+    memberId: string; // member id
+}
+```
 
 
 

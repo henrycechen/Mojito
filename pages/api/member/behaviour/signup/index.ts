@@ -4,8 +4,8 @@ import CryptoJS from 'crypto-js';
 
 import AzureTableClient from '../../../../../modules/AzureTableClient';
 import AzureEmailCommunicationClient from '../../../../../modules/AzureEmailCommunicationClient';
-import { IAzureTableEntity, IEmailAddressLoginCredentialMapping, IPasswordHash, IMemberInfo, IMemberManagement } from '../../../../../lib/interfaces';
-import { LangConfigs, EmailMessage, AzureTableEntity, PasswordHash, LoginCredentialsMapping, VerifyAccountRequestInfo } from '../../../../../lib/types';
+import { IEmailAddressLoginCredentialMapping, IPasswordHash, IMemberInfo, IMemberManagement } from '../../../../../lib/interfaces';
+import { LangConfigs, EmailMessage, VerifyAccountRequestInfo } from '../../../../../lib/types';
 import { getRandomStr, verifyEmailAddress, verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500 } from '../../../../../lib/utils';
 import { composeVerifyAccountEmail } from '../../../../../lib/email';
 
@@ -92,13 +92,13 @@ export default async function SignUp(req: NextApiRequest, res: NextApiResponse) 
         const memberInfo: IMemberInfo = {
             partitionKey: memberId,
             rowKey: 'Info',
-            EmailAddress: emailAddress,
-            Gender: -1
+            RegisteredTimestamp: new Date().toISOString(),
+            EmailAddress: emailAddress
         }
         // const memberInfoTableClient = AzureTableClient('MemberInfo');
         const memberComprehensiveTableClient = AzureTableClient('MemberComprehensive'); // Update: 5/12/2022 applied new table layout (Info & Management merged)
         await memberComprehensiveTableClient.upsertEntity(memberInfo, 'Replace');
-        // Step #3.4 upsertEntity to [Table] MemberManagement
+        // Step #3.4 upsertEntity (memberManagement) to [T] MemberComprehensive.Management
         const memberManagement: IMemberManagement = {
             partitionKey: memberId,
             rowKey: 'Management',

@@ -1,4 +1,4 @@
-import { AzureKeyCredential } from "@azure/core-auth";
+import { AzureKeyCredential } from '@azure/core-auth';
 
 //////// Process States ////////
 export interface IProcessStates {
@@ -73,11 +73,13 @@ interface IMemberComprehensive extends IComprehensiveEntity {
 export interface IMemberInfo extends IMemberComprehensive {
     partitionKey: string; // member id
     rowKey: 'Info';
-    EmailAddress: string;
+    RegisteredTimestamp?: string;
+    VerifiedTimestamp?: string;
+    EmailAddress?: string;
     Nickname?: string;
     AvatarImageUrl?: string;
     BriefIntro?: string;
-    Gender: -1 | 0 | 1;
+    Gender?: -1 | 0 | 1;
     Birthday?: string;
 }
 
@@ -148,6 +150,7 @@ interface IPostComprehensive extends IComprehensiveEntity {
 export interface IPostInfo extends IPostComprehensive {
     partitionKey: string; // post id
     rowKey: 'Info';
+    CreatedTimestamp: string;
     MemberId: string; // member id
     Title: string;
     ImageUrlsArr: string; // stringified array
@@ -162,8 +165,32 @@ export interface IPostManagement extends IPostComprehensive {
     PostStatus: number;
 }
 
+// [PRL] Statistics
+export interface IStatisticsEntity extends IAzureTableEntity {
+    partitionKey: string, // statistics category
+    rowKey: string; // member id
+}
+
+export interface IMemberIdIndex extends IStatisticsEntity {
+    partitionKey: 'MemberIdIndex',
+    rowKey: string; // member id
+    MemberIdIndex: number; // calculated member id index
+}
+
 //////// Atlas Collection Entity////////
 export interface IAtlasCollectionEntity {
-    _id: string; // mongodb object id
     [key: string]: any;
+}
+
+// [C] IMemberStatistics
+export interface IMemberStatistics extends IAtlasCollectionEntity {
+    memberId: string;
+    postCount?: number;
+    replyCount?: number;
+    likeCount?: number;
+    dislikeCount?: number;
+    saveCount?: number;
+    followingCount?: number;
+    followedByCount?: number;
+    blockedCount?: number;
 }

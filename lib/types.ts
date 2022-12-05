@@ -174,9 +174,3 @@ export interface IMemberManagement extends MemberComprehensive {
     AllowCommenting: boolean;
 }
 
-// MemberStatistics
-export interface MemberIdIndex extends AzureTableEntity {
-    partitionKey: 'MemberIdIndex';
-    rowKey: string;
-    MemberIdIndexValue: number;
-}

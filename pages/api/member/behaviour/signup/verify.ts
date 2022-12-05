@@ -3,8 +3,11 @@ import { RestError } from '@azure/data-tables';
 import CryptoJS from 'crypto-js';
 
 import AzureTableClient from '../../../../../modules/AzureTableClient';
-import { AzureTableEntity, MemberIdIndex } from '../../../../../lib/types';
+import AtlasDatabaseClient from '../../../../../modules/AtlasDatabaseClient';
+
+import { AzureTableEntity } from '../../../../../lib/types';
 import { verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500 } from '../../../../../lib/utils';
+import { IMemberInfo, IMemberIdIndex, IMemberStatistics } from '../../../../../lib/interfaces';
 
 const appSecret = process.env.APP_AES_SECRET ?? '';
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
@@ -49,57 +52,77 @@ export default async function VerifyToken(req: NextApiRequest, res: NextApiRespo
             res.status(400).send('Inappropriate request info');
             return;
         }
-        // [!] attemp to parse info json string makes the probability of causing SyntaxError
+        // [!] attemp to parse info JSON string makes the probability of causing SyntaxError
         const { memberId } = JSON.parse(infoJsonStr);
         if (!memberId) {
             res.status(400).send('Incomplete request info');
             return;
         }
-        // Step #4.1 look up account status from [Table] MemberManagement
-        const memberManagementTableClient = AzureTableClient('MemberManagement');
-        const memberStatusQuery = memberManagementTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${memberId}' and RowKey eq 'MemberStatus'` } });
-        const memberStatusQueryResult = await memberStatusQuery.next();
-        if (!memberStatusQueryResult.value) {
-            res.status(404).send('Account status not found');
+        // Step #4.1 look up management record in [T] MemberComprehensive.Management
+        const memberComprehensiveTableClient = AzureTableClient('MemberComprehensive');
+        const memberManagementQuery = memberComprehensiveTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${memberId}' and RowKey eq 'Management'` } });
+        const memberManagementQueryResult = await memberManagementQuery.next();
+        if (!memberManagementQueryResult.value) {
+            res.status(404).send('MemberManagement record not found');
             return;
         }
-        // Step #4.2 verify account status
-        const { MemberStatusValue: memberStatusValue } = memberStatusQueryResult.value;
+        // Step #4.2 verify MemberManagement.MemberStatus
+        const { MemberStatusValue: memberStatusValue } = memberManagementQueryResult.value;
         if (0 !== memberStatusValue) {
-            res.status(400).send('Member is not activatable');
+            res.status(400).send('Request for activating member cannot be fulfilled');
             return;
         }
-        // Step #3.4 updateEntity to [Table] MemberManagement
-        const memberStatus: AzureTableEntity = {
+        // Step #4.3 updateEntity (memberInfo) to [T] MemberComprehensive.Info
+        const memberInfo: IMemberInfo = {
+            partitionKey: memberId,
+            rowKey: 'Info',
+            VerifiedTimestamp: new Date().toISOString(),
+        }
+        await memberComprehensiveTableClient.updateEntity(memberInfo, 'Merge');
+        // Step #4.4 updateEntity (memberManagement) to [T] MemberComprehensive.Management
+        const memberManagement: AzureTableEntity = {
             partitionKey: memberId,
             rowKey: 'MemberStatus',
             MemberStatusValue: 200
         }
-        await memberManagementTableClient.updateEntity(memberStatus, 'Merge');
+        await memberComprehensiveTableClient.updateEntity(memberManagement, 'Merge');
         res.status(200).send('Account verified');
-        // FIXME: statistic moved to MongoDB Atlas collections
-
-        // // Step #4.1 createEntity to [Table] MemberStatistics
-        // const memberStatisticsTableClient = AzureTableClient('MemberStatistics');
-        // const memberIdIndex: MemberIdIndex = {
-        //     partitionKey: 'MemberIdIndex',
-        //     rowKey: memberId,
-        //     MemberIdIndexValue: 0
-        // }
-        // await memberStatisticsTableClient.createEntity(memberIdIndex);
-        // // Step #4.2 get member id index
-        // const memberIdIndexQuery = memberStatisticsTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq 'MemberIdIndex' and RowKey eq '${memberId}'` } });
-        // let i: number = 0;
-        // for await (const memberIdIndexEntity of memberIdIndexQuery) {
-        //     if (memberId === memberIdIndexEntity.rowKey) {
-        //         memberIdIndex.MemberIdIndexValue = i;
-        //         return;
-        //     } else {
-        //         i++;
-        //     }
-        // }
-        // // Step #4.3 updateEntity to [Table] MemberStatistics
-        // await memberStatisticsTableClient.updateEntity(memberIdIndex, 'Merge');
+        // Step #5.1 createEntity (memberIdIndex) to [PRL] Statistics
+        const memberIdIndex: IMemberIdIndex = {
+            partitionKey: 'MemberIdIndex',
+            rowKey: memberId,
+            MemberIdIndex: 0,
+        }
+        const statisticsTableClient = AzureTableClient('Statistics');
+        await statisticsTableClient.createEntity(memberIdIndex);
+        // Step #5.2 look up member id index in [PRL] Statistics
+        const memberIdIndexQuery = statisticsTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq 'MemberIdIndex' and RowKey eq '${memberId}'` } });
+        let i = 0;
+        for await (const memberIdIndexEntity of memberIdIndexQuery) {
+            if (memberId === memberIdIndexEntity.rowKey) {
+                memberIdIndex.MemberIdIndex = i;
+                return;
+            } else {
+                i++;
+            }
+        }
+        // Step #5.3 updateEntity (memberIdIndex) to [PRL] Statistics
+        await statisticsTableClient.updateEntity(memberIdIndex, 'Merge');
+        // Step #6 insertOne (memberStatistics) to [C] memberStatistics
+        const memberStatistics: IMemberStatistics = {
+            memberId,
+            postCount: 0,
+            replyCount: 0,
+            likeCount: 0,
+            dislikeCount: 0,
+            saveCount: 0,
+            followingCount: 0,
+            followedByCount: 0,
+            blockedCount: 0,
+        }
+        const atlasDbClient = AtlasDatabaseClient();
+        const memberStatisticsCollectionClient = atlasDbClient.db('mojito-statistics-dev').collection('memberStatistics');
+        await memberStatisticsCollectionClient.insertOne(memberStatistics);
     } catch (e) {
         if (e instanceof SyntaxError) {
             res.status(400).send('Improperly normalized request info');
