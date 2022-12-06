@@ -1,7 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { RestError } from '@azure/data-tables';
 
 import AzureTableClient from '../../../../modules/AzureTableClient';
-import { response405, response500 } from '../../../../lib/utils';
+import { response405, response500, log } from '../../../../lib/utils';
 
 export default async function GetList(req: NextApiRequest, res: NextApiResponse) {
     const { method } = req;
@@ -29,8 +30,16 @@ export default async function GetList(req: NextApiRequest, res: NextApiResponse)
         const { CH, EN, SvgIconPath: svgIconPath } = channelInfoQueryResult.value;
         // Step #3 response with channel info
         res.status(200).send({ id, name: { ch: CH, en: EN }, svgIconPath });
-    } catch (e) {
-        response500(res, `Uncategorized Error occurred. ${e}`);
+    } catch (e: any) {
+        let msg: string;
+        if (e instanceof RestError) {
+            msg = 'Was trying communicating with table storage.';
+        }
+        else {
+            msg = 'Uncategorized Error occurred.';
+        }
+        response500(res, `${msg} ${e}`);
+        log(msg, e);
         return;
     }
 }

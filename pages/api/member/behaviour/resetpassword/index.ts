@@ -6,6 +6,7 @@ import AzureTableClient from '../../../../../modules/AzureTableClient';
 import { verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500 } from '../../../../../lib/utils';
 import { ResetPasswordToken, PasswordHash } from '../../../../../lib/types';
 import { RestError } from '@azure/data-tables';
+import { IPasswordHash } from '../../../../../lib/interfaces';
 
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
 const salt = process.env.APP_PASSWORD_SALT ?? '';
@@ -51,7 +52,7 @@ export default async function ResetPassword(req: NextApiRequest, res: NextApiRes
             res.status(404).send('Reset password token not found');
             return;
         }
-        const { Timestamp: timestamp, IsActive: isActive, ResetPasswordTokenStr: resetPasswordTokenReference } = tokenQueryResult.value;
+        const { Timestamp: timestamp, IsActive: isActive, ResetPasswordToken: resetPasswordTokenReference } = tokenQueryResult.value;
         // Step #3.2 match reset password tokens
         if (resetPasswordTokenReference !== resetPasswordToken) {
             res.status(403).send('Invalid reset password token (not match)');
@@ -65,10 +66,11 @@ export default async function ResetPassword(req: NextApiRequest, res: NextApiRes
             res.status(403).send('Reset password token has expired');
             return;
         }
-        const passwordHash: PasswordHash = {
+        const passwordHash: IPasswordHash = {
             partitionKey: memberId,
             rowKey: 'PasswordHash',
-            PasswordHashStr: CryptoJS.SHA256(password + salt).toString()
+            PasswordHash: CryptoJS.SHA256(password + salt).toString(),
+            IsActive: true
         }
         // Step #4.1 update PasswordHash to [Table] MemberLogin
         await memeberLoginTableClient.upsertEntity(passwordHash, 'Replace');

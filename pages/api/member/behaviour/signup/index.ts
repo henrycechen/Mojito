@@ -6,7 +6,7 @@ import AzureTableClient from '../../../../../modules/AzureTableClient';
 import AzureEmailCommunicationClient from '../../../../../modules/AzureEmailCommunicationClient';
 import { IEmailAddressLoginCredentialMapping, IPasswordHash, IMemberInfo, IMemberManagement } from '../../../../../lib/interfaces';
 import { LangConfigs, EmailMessage, VerifyAccountRequestInfo } from '../../../../../lib/types';
-import { getRandomStr, verifyEmailAddress, verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500 } from '../../../../../lib/utils';
+import { getRandomStr, verifyEmailAddress, verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500, log } from '../../../../../lib/utils';
 import { composeVerifyAccountEmail } from '../../../../../lib/email';
 
 const appSecret = process.env.APP_AES_SECRET ?? '';
@@ -59,7 +59,7 @@ export default async function SignUp(req: NextApiRequest, res: NextApiResponse) 
             res.status(403).send('Email address not satisfied');
             return;
         }
-        // Step #2.2 look up email address from [Table] LoginCredentialsMapping
+        // Step #2.2 look up email address in [T] LoginCredentialsMapping
         const loginCredentialsMappingTableClient = AzureTableClient('LoginCredentialsMapping');
         const mappingQuery = loginCredentialsMappingTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq 'EmailAddress' and RowKey eq '${emailAddress}'` } });
         // [!] attemp to reterieve entity makes the probability of causing RestError
@@ -75,7 +75,7 @@ export default async function SignUp(req: NextApiRequest, res: NextApiResponse) 
             partitionKey: 'EmailAddress',
             rowKey: emailAddress,
             // MemberIdStr: memberId,
-            MemberId: memberId, // Update: 5/12/2022 all MemberIdStr now using new collom name MemberId
+            MemberId: memberId, // Update: 5/12/2022: MemberIdStr -> MemberId
             IsActive: true
         }
         await loginCredentialsMappingTableClient.upsertEntity(emailAddressLoginCredentialMapping, 'Replace');
@@ -83,20 +83,19 @@ export default async function SignUp(req: NextApiRequest, res: NextApiResponse) 
         const passwordHash: IPasswordHash = {
             partitionKey: memberId,
             rowKey: 'PasswordHash',
-            PasswordHashStr: CryptoJS.SHA256(password + salt).toString(),
+            PasswordHash: CryptoJS.SHA256(password + salt).toString(),
             IsActive: true
         }
         const memberLoginTableClient = AzureTableClient('MemberLogin');
         await memberLoginTableClient.upsertEntity(passwordHash, 'Replace');
-        // Step #3.4 upsertEntity (memberInfo) to [T] MemberComprehensive.Info
+        // Step #3.4 upsertEntity (memberInfo) to [T] MemberComprehensive.Info (create a new member)
         const memberInfo: IMemberInfo = {
             partitionKey: memberId,
             rowKey: 'Info',
             RegisteredTimestamp: new Date().toISOString(),
             EmailAddress: emailAddress
         }
-        // const memberInfoTableClient = AzureTableClient('MemberInfo');
-        const memberComprehensiveTableClient = AzureTableClient('MemberComprehensive'); // Update: 5/12/2022 applied new table layout (Info & Management merged)
+        const memberComprehensiveTableClient = AzureTableClient('MemberComprehensive'); // Update: 5/12/2022: applied new table layout (Info & Management merged)
         await memberComprehensiveTableClient.upsertEntity(memberInfo, 'Replace');
         // Step #3.4 upsertEntity (memberManagement) to [T] MemberComprehensive.Management
         const memberManagement: IMemberManagement = {
@@ -106,12 +105,9 @@ export default async function SignUp(req: NextApiRequest, res: NextApiResponse) 
             AllowPosting: false,
             AllowCommenting: false
         }
-        // const memberManagementTableClient = AzureTableClient('MemberManagement'); //  Update: abandoned [T] MemberMangement
         await memberComprehensiveTableClient.upsertEntity(memberManagement, 'Replace');
         // Step #4 compose email to send verification link
-        const info: VerifyAccountRequestInfo = {
-            memberId
-        }
+        const info: VerifyAccountRequestInfo = { memberId };
         const emailMessage: EmailMessage = {
             sender: '<donotreply@mojito.co.nz>',
             content: {
@@ -129,13 +125,16 @@ export default async function SignUp(req: NextApiRequest, res: NextApiResponse) 
         } else {
             res.status(200).send('Account established, email sent, email address verification required to get full access');
         }
-    } catch (e) {
+    } catch (e: any) {
+        let msg: string;
         if (e instanceof RestError) {
-            response500(res, `Was trying communicating with db. ${e}`);
+            msg = 'Was trying communicating with table storage.';
         }
         else {
-            response500(res, `Uncategorized Error occurred. ${e}`);
+            msg = 'Uncategorized Error occurred.';
         }
+        response500(res, `${msg} ${e}`);
+        log(msg, e);
         return;
     }
 }

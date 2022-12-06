@@ -4,8 +4,9 @@ import CryptoJS from 'crypto-js';
 
 import AzureTableClient from '../../../../../modules/AzureTableClient';
 import AzureEmailCommunicationClient from '../../../../../modules/AzureEmailCommunicationClient';
-import { LangConfigs, EmailMessage, ResetPasswordRequestInfo, ResetPasswordToken } from '../../../../../lib/types';
-import { getRandomHexStr, verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500 } from '../../../../../lib/utils';
+import { IResetPasswordToken } from '../../../../../lib/interfaces';
+import { LangConfigs, EmailMessage, ResetPasswordRequestInfo } from '../../../../../lib/types';
+import { getRandomHexStr, verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500, log } from '../../../../../lib/utils';
 import { composeResetPasswordEmail } from '../../../../../lib/email';
 
 const appSecret = process.env.APP_AES_SECRET ?? '';
@@ -20,7 +21,7 @@ const langConfigs: LangConfigs = {
     }
 }
 
-export default async function Request(req: NextApiRequest, res: NextApiResponse) {
+export default async function RequestResetPassword(req: NextApiRequest, res: NextApiResponse) {
     const { method } = req;
     if ('POST' !== method) {
         response405(req, res);
@@ -34,7 +35,7 @@ export default async function Request(req: NextApiRequest, res: NextApiResponse)
             return;
         }
         const { recaptchaResponse } = req.query;
-        // Step #1 check if it is requested by a bot
+        // Step #1 verify if it is requested by a bot
         const { status, message } = await verifyRecaptchaResponse(recaptchaServerSecret, recaptchaResponse);
         if (200 !== status) {
             if (403 === status) {
@@ -46,12 +47,13 @@ export default async function Request(req: NextApiRequest, res: NextApiResponse)
                 return;
             }
         }
-        // Step #2 find cooresponding memberId
+        // Step #2.1 prepare email address
         const { emailAddress } = req.query;
         if ('string' !== typeof emailAddress || '' === emailAddress) {
             res.status(403).send('Invalid email address');
             return;
         }
+        // Step #2.2 find member id by email address in [T] LoginCredentialsMapping
         const loginCredentialsMappingTableClient = AzureTableClient('LoginCredentialsMapping');
         const mappingQuery = loginCredentialsMappingTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq 'EmailAddress' and RowKey eq '${emailAddress}'` } });
         // [!] attemp to reterieve entity makes the probability of causing RestError
@@ -60,19 +62,19 @@ export default async function Request(req: NextApiRequest, res: NextApiResponse)
             res.status(404).send('Login credential mapping not found');
             return;
         }
-        const { MemberIdStr: memberId } = mappingQueryResult.value;
+        const { MemberId: memberId } = mappingQueryResult.value; // Update: 6/12/2022: MemberIdStr -> MemberId
         if ('string' !== typeof memberId || '' === memberId) {
-            response500(res, `Getting an invalid memberId`);
+            response500(res, `Getting an invalid memberId from login credential mapping record`);
             return;
         }
-        // Step #3 create token
+        // Step #3 create reset password verification token
         const token = getRandomHexStr(true); // use UPPERCASE
         const info: ResetPasswordRequestInfo = {
             memberId,
             resetPasswordToken: token,
             expireDate: new Date().getTime() + 15 * 60 * 1000 // set valid time for 15 minutes
         }
-        // Step #4 componse and send email
+        // Step #4 compose email to send verification link
         const emailMessage: EmailMessage = {
             sender: '<donotreply@mojito.co.nz>',
             content: {
@@ -85,27 +87,30 @@ export default async function Request(req: NextApiRequest, res: NextApiResponse)
         }
         const mailClient = AzureEmailCommunicationClient();
         const { messageId } = await mailClient.send(emailMessage);
-        // Step #5 upsert reset password token to [Table] MemberLogin
-        const memberLoginTableClient = AzureTableClient('MemberLogin');
-        const resetPasswordToken: ResetPasswordToken = {
+        // Step #5 upsertEntity (resetPasswordToken) to [T] MemberLogin
+        const resetPasswordToken: IResetPasswordToken = {
             partitionKey: memberId,
             rowKey: 'ResetPasswordToken',
-            IsActive: true,
-            ResetPasswordTokenStr: token,
-            EmailMessageId: messageId
+            ResetPasswordToken: token,
+            EmailMessageId: messageId,
+            IsActive: true
         }
+        const memberLoginTableClient = AzureTableClient('MemberLogin');
         await memberLoginTableClient.upsertEntity(resetPasswordToken, 'Replace');
         res.status(200).send('Email sent');
-    } catch (e) {
+    } catch (e: any) {
+        let msg: string;
         if (e instanceof TypeError) {
-            response500(res, `Was trying decoding recaptcha verification response. ${e}`);
+            msg = 'Was trying decoding recaptcha verification response.';
         }
         else if (e instanceof RestError) {
-            response500(res, `Was trying communicating with db. ${e}`);
+            msg = 'Was trying communicating with table storage.';
         }
         else {
-            response500(res, `Uncategorized Error occurred. ${e}`);
+            msg = 'Uncategorized Error occurred.';
         }
+        response500(res, `${msg} ${e}`);
+        log(msg, e);
         return;
     }
 }

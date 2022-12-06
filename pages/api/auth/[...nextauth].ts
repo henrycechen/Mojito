@@ -5,12 +5,16 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import CryptoJS from 'crypto-js';
 
 import AzureTableClient from '../../../modules/AzureTableClient';
-import { verifyRecaptchaResponse, verifyEnvironmentVariable, getRandomStr } from '../../../lib/utils';
+import { verifyRecaptchaResponse, verifyEnvironmentVariable, getRandomStr, verifyEmailAddress, log } from '../../../lib/utils';
 import { User } from 'next-auth';
-import { LoginCredentialsMapping, AzureTableEntity } from "../../../lib/types";
+import { IMemberInfo, IMemberLoginRecord, IMemberManagement, IThirdPartyLoginCredentialMapping } from '../../../lib/interfaces';
+import { VerifyAccountRequestInfo, EmailMessage, LangConfigs } from "../../../lib/types";
 import { RestError } from "@azure/storage-blob";
+import { composeVerifyAccountEmail } from "../../../lib/email";
+import AzureEmailCommunicationClient from "../../../modules/AzureEmailCommunicationClient";
+import AtlasDatabaseClient from "../../../modules/AtlasDatabaseClient";
 
-type LoginCredentials = {
+type LoginRequestInfo = {
     recaptchaResponse: any;
     emailAddress: any;
     password: any;
@@ -20,7 +24,7 @@ type ProviderIdMapping = {
     [key: string]: string
 }
 
-interface Member extends User {
+interface MemberUser extends User {
     id: string;
     nickname?: string;
     emailAddress?: string;
@@ -29,9 +33,21 @@ interface Member extends User {
 
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
 const salt = process.env.APP_PASSWORD_SALT ?? '';
-const providerIdMapping: ProviderIdMapping = { // [!] Every time add a new provider, update this dictionary
+const loginProviderIdMapping: ProviderIdMapping = { // [!] Every time add a new provider, update this dictionary
     github: 'GitHubOAuth',
     google: 'GoogleOAuth',
+    // twitter
+    // facebook
+}
+
+const appSecret = process.env.APP_AES_SECRET ?? '';
+const domain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? '';
+const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'ch';
+const langConfigs: LangConfigs = {
+    emailSubject: {
+        ch: '验证您的 Mojito 账户',
+        en: 'Verify your Mojito account'
+    }
 }
 
 export default NextAuth({
@@ -71,25 +87,31 @@ export default NextAuth({
     callbacks: {
         async jwt({ token, user, account, profile }: any) {
             const provider = account?.provider;
+            console.log('jwt call back' + account);
+            // On token update (second call)
             if (!provider) {
                 return token;
             }
+            // On login with Mojito member system (first call)
             if ('mojito' === provider) {
                 token.id = token.sub;
                 return token;
             }
+            // On login with third party login provider
             try {
-                const { providerAccountId } = account;
-                const providerId = providerIdMapping[provider];
+                // Step #1.1 prepare account id
+                const { providerAccountId: accountId } = account;
+                // Step #1.1 prepare provider id
+                const providerId = loginProviderIdMapping[provider];
+                // Step #2 look up login credential mapping in [RL] LoginCredentialsMapping 
                 const loginCredentialsMappingTableClient = AzureTableClient('LoginCredentialsMapping');
-                const mappingQuery = loginCredentialsMappingTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${providerId}' and RowKey eq '${providerAccountId}'` } });
+                const mappingQuery = loginCredentialsMappingTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${providerId}' and RowKey eq '${accountId}'` } });
                 // [!] attemp to reterieve entity makes the probability of causing RestError
                 const mappingQueryResult = await mappingQuery.next();
-                // Step #2 look up login credential mapping in db
                 if (!mappingQueryResult.value) {
-                    throw new Error('Login credentials mapping not found');
+                    throw new Error('Login credentials mapping record not found');
                 } else {
-                    const { MemberIdStr: memberId } = mappingQueryResult.value;
+                    const { MemberId: memberId } = mappingQueryResult.value; // Update 6/12/2022: column name changed, MemberIdStr => MemberId
                     token.id = memberId;
                 }
                 return token;
@@ -102,98 +124,164 @@ export default NextAuth({
             if (!provider) {
                 return false;
             }
-            // Step #1 verify if provider is Mojito account system
             if ('mojito' === provider) {
-                // Step #2.1 look up account status from [Table] MemberManagement
+                // #1 Login with Mojito member system
                 try {
+                    // Step #1 prepare member id
                     const { providerAccountId: memberId } = account;
-                    const memberManagementTableClient = AzureTableClient('MemberManagement');
-                    const memberStatusQuery = memberManagementTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${memberId}' and RowKey eq 'MemberStatus'` } });
-                    const memberStatusQueryResult = await memberStatusQuery.next();
-                    if (!memberStatusQueryResult.value) { // [!] member status not found deemed account deactivated / suspended
+                    // Step #2.1 look up member status in [T] MemberComprehensive.Management
+                    const memberManagementTableClient = AzureTableClient('MemberComprehensive'); // Update 6/12/2022: applied new table layout, MemberManagement -> MemberComprehensive.Management
+                    const memberManagementQuery = memberManagementTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${memberId}' and RowKey eq 'Management'` } });
+                    const memberManagementQueryResult = await memberManagementQuery.next();
+                    if (!memberManagementQueryResult.value) {
+                        // [!] member management record not found deemed member deactivated / suspended
                         return false;
                     }
-                    // Step #2.2 verify account status
-                    const { MemberStatusValue: memberStatusValue } = memberStatusQueryResult.value;
-                    if ([-1, 0].includes(memberStatusValue)) {
-                        return false;
+                    // Step #2.2 verify member status
+                    const { MemberStatus: memberStatus } = memberManagementQueryResult.value; // Update 6/12/2022: column name changed, MemberStatusValue => MemberStatus
+                    // Step #2.2.A member has been suspended or deactivated
+                    if ([-2, -1].includes(memberStatus)) {
+                        return '/error?error=MemberSuspendedOrDeactivated';
                     }
+                    const atlasDbClient = AtlasDatabaseClient();
+                    await atlasDbClient.connect();
+                    const memberStatisticsCollectionClient = atlasDbClient.db('mojito-records-dev').collection('memberLoginRecords');
+                    // Step #2.2.B email address not verified
+                    if (0 === memberStatus) {
+                        const loginRecord: IMemberLoginRecord = {
+                            category: 'error',
+                            providerId: 'MojitoMemberSystem',
+                            timestamp: new Date().toISOString(),
+                            message: 'Attempted login while email address not verified.'
+                        }
+                        await memberStatisticsCollectionClient.updateOne({ memberId }, { $addToSet: { recordsArr: loginRecord } }, { upsert: true });
+                        atlasDbClient.close();
+                        return '/signin?error=EmailAddressUnverified';
+                    }
+                    // Step #2.2.C normal
+                    const loginRecord: IMemberLoginRecord = {
+                        category: 'success',
+                        providerId: 'MojitoMemberSystem',
+                        timestamp: new Date().toISOString()
+                    }
+                    await memberStatisticsCollectionClient.updateOne({ memberId }, { $addToSet: { recordsArr: loginRecord } }, { upsert: true });
+                    atlasDbClient.close();
                     return true;
                 } catch (e) {
+                    let msg: string;
                     if (e instanceof RestError) {
-                        console.log(`SignIn callback - MojitoCredentialProvider - Was trying communicating with db. ${e}`);
+                        msg = `Was trying communicating with table storage. '/api/auth/[...nextauth]/default/callbacks/signIn'`
                     }
+                    else {
+                        msg = `Uncategorized Error occurred. '/api/auth/[...nextauth]/default/callbacks/signIn'`;
+                    }
+                    log(msg, e);
                     return false;
                 }
             } else {
+                // #2 Login with third party login provider
                 try {
-                    const { providerAccountId } = account;
-                    const providerId = providerIdMapping[provider];
+                    // Step #1.1 prepare account id
+                    const { providerAccountId: accountId } = account;
+                    // Step #1.2 prepare provider id
+                    const providerId = loginProviderIdMapping[provider];
+                    // Step #2 look up login credential mapping in [RL] LoginCredentialsMapping 
                     const loginCredentialsMappingTableClient = AzureTableClient('LoginCredentialsMapping');
-                    const mappingQuery = loginCredentialsMappingTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${providerId}' and RowKey eq '${providerAccountId}'` } });
+                    const mappingQuery = loginCredentialsMappingTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${providerId}' and RowKey eq '${accountId}'` } });
                     // [!] attemp to reterieve entity makes the probability of causing RestError
                     const mappingQueryResult = await mappingQuery.next();
-                    // Step #2 look up login credential mapping in db
+                    // Step #3A login credential mapping record NOOOOOOT found, create a new mojito member substitute
                     if (!mappingQueryResult.value) {
-                        // Step #3 mapping not found, create Mojito account
-                        const { email: emailAddress, name: nickName, image: avatarImageUrl } = user;
+                        const { email: emailAddressRef, name: nickName, image: avatarImageUrl } = user;
+                        // Step #3A.0 verify email address
+                        const emailAddress = emailAddressRef ?? '';
+                        if (verifyEmailAddress(emailAddress)) {
+                            return '/error?error=InappropriateEmailAddress';
+                        }
+                        // Step #3A.1 create a new member id
                         const memberId = getRandomStr(true); // use UPPERCASE
-                        // Step #3.1 create login credential mapping
-                        const loginCredentialsMapping: LoginCredentialsMapping = {
+                        // Step #3A.2 create a new third party login credential mapping
+                        const loginCredentialsMapping: IThirdPartyLoginCredentialMapping = {
                             partitionKey: providerId,
-                            rowKey: providerAccountId,
-                            MemberIdStr: memberId,
+                            rowKey: accountId,
+                            MemberId: memberId,
                             IsActive: true
                         }
                         await loginCredentialsMappingTableClient.createEntity(loginCredentialsMapping);
-                        // Step #3.2 create member info
-                        const memberInfoEmailAddress: AzureTableEntity = {
+                        // Step #3A.3 upsertEntity (memberInfo) to [T] MemberComprehensive.Info (create a new member)
+                        const currentDateStr = new Date().toISOString();
+                        const memberInfo: IMemberInfo = {
                             partitionKey: memberId,
-                            rowKey: 'EmailAddress',
-                            EmailAddressStr: emailAddress
+                            rowKey: 'Info',
+                            RegisteredTimestamp: currentDateStr,
+                            VerifiedTimestamp: currentDateStr,
+                            EmailAddress: emailAddress // assume the provided email address is a valid way to reach out to this third party login member
                         }
-                        const memberInfoNickname: AzureTableEntity = {
+                        const memberComprehensiveTableClient = AzureTableClient('MemberComprehensive'); // Update: 6/12/2022: applied new table layout (Info & Management merged)
+                        await memberComprehensiveTableClient.upsertEntity(memberInfo, 'Replace');
+                        // Step #3A.4 create member management
+                        const memberManagement: IMemberManagement = {
                             partitionKey: memberId,
-                            rowKey: 'Nickname',
-                            NicknameStr: nickName
+                            rowKey: 'Management',
+                            MemberStatus: 200, // normal
+                            AllowPosting: true,
+                            AllowCommenting: true
                         }
-                        const memberInfoAvatarImageUrl: AzureTableEntity = {
-                            partitionKey: memberId,
-                            rowKey: 'AvatarImageUrl',
-                            AvatarImageUrlStr: avatarImageUrl
-                        }
-                        const memberInfoTableClient = AzureTableClient('MemberInfo');
-                        await memberInfoTableClient.createEntity(memberInfoEmailAddress);
-                        await memberInfoTableClient.createEntity(memberInfoNickname);
-                        await memberInfoTableClient.createEntity(memberInfoAvatarImageUrl);
-                        // Step #3.3 create member management
-                        const memberManagementMemberStatus: AzureTableEntity = {
-                            partitionKey: memberId,
-                            rowKey: 'MemberStatus',
-                            MemberStatusValue: 200 // Email address verified, normal
-                        }
-                        const memberManagementTableClient = AzureTableClient('MemberManagement');
-                        await memberManagementTableClient.createEntity(memberManagementMemberStatus);
+                        await memberComprehensiveTableClient.upsertEntity(memberManagement, 'Replace');
+                        return true;
                     }
+                    // Step #3B login credential mapping record is found
                     else {
                         const { MemberId: memberId } = mappingQueryResult.value;
-                        // Step #4 verify member status
-                        const memberManagementTableClient = AzureTableClient('MemberManagement');
-                        const memberStatusQuery = memberManagementTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${memberId}' and RowKey eq 'MemberStatus'` } });
-                        const memberStatusQueryResult = await memberStatusQuery.next();
-                        if (!memberStatusQueryResult.value) { // [!] member status not found deemed account deactivated / suspended
-                            return false;
+                        // Step #3B.1 look up member status in [T] MemberComprehensive.Management
+                        const memberManagementTableClient = AzureTableClient('MemberComprehensive'); // Update 6/12/2022: applied new table layout, MemberManagement => MemberComprehensive.Management
+                        const memberManagementQuery = memberManagementTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${memberId}' and RowKey eq 'Management'` } });
+                        // Step #3B.2 verify member status
+                        const memberManagementQueryResult = await memberManagementQuery.next();
+                        // Step #3B.2.A member management record not found deemed account deactivated / suspended
+                        if (!memberManagementQueryResult.value) {
+                            // [!] member management record not found deemed account deactivated / suspended
+                            return '/error?error=MemberSuspendedOrDeactivated';
                         }
-                        const { MemberStatusValue: memberStatusValue } = memberStatusQueryResult.value;
-                        if (-1 === memberStatusValue) {
-                            return false;
+                        const { MemberStatus: memberStatus } = memberManagementQueryResult.value; // Update 6/12/2022: MemberStatusValue => MemberStatus
+                        // Step #3B.2.B member has been suspended or deactivated
+                        if ([-2, -1].includes(memberStatus)) {
+                            return '/error?error=MemberSuspendedOrDeactivated';
                         }
+                        const atlasDbClient = AtlasDatabaseClient();
+                        await atlasDbClient.connect();
+                        const memberStatisticsCollectionClient = atlasDbClient.db('mojito-records-dev').collection('memberLoginRecords');
+                        // Step #3B.2.C email address not verified
+                        if (0 === memberStatus) {
+                            const loginRecord: IMemberLoginRecord = {
+                                category: 'error',
+                                providerId: providerId,
+                                timestamp: new Date().toISOString(),
+                                message: 'Attempted login while email address not verified.'
+                            }
+                            await memberStatisticsCollectionClient.updateOne({ memberId }, { $addToSet: { recordsArr: loginRecord } }, { upsert: true });
+                            atlasDbClient.close();
+                            return '/signin?error=EmailAddressUnverified';
+                        }
+                        // Step #3B.2.D normal
+                        const loginRecord: IMemberLoginRecord = {
+                            category: 'success',
+                            providerId: providerId,
+                            timestamp: new Date().toISOString()
+                        }
+                        await memberStatisticsCollectionClient.updateOne({ memberId }, { $addToSet: { recordsArr: loginRecord } }, { upsert: true });
+                        atlasDbClient.close();
+                        return true;
                     }
-                    return true;
                 } catch (e) {
+                    let msg: string;
                     if (e instanceof RestError) {
-                        console.log(`SignIn callback - ${providerIdMapping[provider]}Provider - Was trying communicating with db. ${e}`);
+                        msg = `Was trying communicating with table storage. '/api/auth/[...nextauth]/default/callbacks/signIn/third-party-login?provider=${provider}'`
                     }
+                    else {
+                        msg = `Uncategorized Error occurred. '/api/auth/[...nextauth]/default/callbacks/signIn/third-party-login?provider=${provider}'`;
+                    }
+                    log(msg, e);
                     return false;
                 }
             }
@@ -205,12 +293,11 @@ export default NextAuth({
     }
 })
 
-async function verifyLoginCredentials(credentials: LoginCredentials): Promise<Member | null> {
+async function verifyLoginCredentials(credentials: LoginRequestInfo): Promise<MemberUser | null> {
     // Step #0 verify environment variables
     const environmentVariable = verifyEnvironmentVariable({ recaptchaServerSecret, salt });
     if (!!environmentVariable) {
-        console.log(`${environmentVariable} not found`);
-        throw new Error('Internal server error')
+        throw new Error(`${environmentVariable} not found`);
     }
     try {
         const { recaptchaResponse } = credentials;
@@ -220,7 +307,7 @@ async function verifyLoginCredentials(credentials: LoginCredentials): Promise<Me
             return null;
         }
         const { emailAddress, password } = credentials;
-        // Step #2 look up memberId from [Table] LoginCredentialsMapping
+        // Step #2 look up member id in [RL] LoginCredentialsMapping
         const loginCredentialsMappingTableClient = AzureTableClient('LoginCredentialsMapping');
         const mappingQuery = loginCredentialsMappingTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq 'EmailAddress' and RowKey eq '${emailAddress}'` } });
         // [!] attemp to reterieve entity makes the probability of causing RestError
@@ -228,38 +315,42 @@ async function verifyLoginCredentials(credentials: LoginCredentials): Promise<Me
         if (!mappingQueryResult.value) {
             return null;
         }
-        const { MemberIdStr: memberId } = mappingQueryResult.value;
+        const { MemberId: memberId } = mappingQueryResult.value; // Update 6/12/2022: MemberIdStr -> MemberId
         if ('string' !== typeof memberId || '' === memberId) {
             return null;
         }
-        // Update 15/11/2022 MemberStatus verification moved to signin callback
-        // Step #3 look up password hash (reference) from [Table] MemberLogin
+        // Step #3 look up password hash (reference) from [T] MemberLogin
         const memberLoginTableClient = AzureTableClient('MemberLogin');
         const loginReferenceQuery = memberLoginTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${memberId}' and RowKey eq 'PasswordHash'` } });
         const loginReferenceQueryResult = await loginReferenceQuery.next();
         if (!loginReferenceQueryResult.value) {
             return null;
         }
-        const { PasswordHashStr: passwordHashReference } = loginReferenceQueryResult.value;
+        const { PasswordHash: passwordHashReference } = loginReferenceQueryResult.value; // Update 6/12/2022: PasswordHashStr -> PasswordHash
         // Step #4 match the password hashes
         const passwordHash = CryptoJS.SHA256(password + salt).toString();
         if (passwordHashReference !== passwordHash) {
             return null;
         }
-        // Step #5 look up {nickname, avatarImage} from [Table] MemberInfo
-        const memberInfoTableClient = AzureTableClient('MemberInfo');
-        const nicknameQuery = memberInfoTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${memberId}' and RowKey eq 'Nickname'` } });
-        const nicknameQueryResult = await nicknameQuery.next();
-        const avatarImageUrlQuery = memberInfoTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${memberId}' and RowKey eq 'Nickname'` } });
-        const avatarImageUrlQueryResult = await avatarImageUrlQuery.next();
+        // Step #5 look up {nickname, avatarImage} in in [T] MemberComprehensive.Info
+        const memberComprehensiveTableClient = AzureTableClient('MemberComprehensive');
+        const memberInfoQuery = memberComprehensiveTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${memberId}' and RowKey eq 'Info'` } });
+        const memberInfoQueryResult = await memberInfoQuery.next();
         return {
             id: memberId,
             email: emailAddress,
-            name: !nicknameQueryResult.value ? '' : nicknameQueryResult.value.NicknameStr,
-            image: !avatarImageUrlQueryResult.value ? '' : avatarImageUrlQueryResult.value.AvatarImgUrlStr,
+            name: !memberInfoQueryResult.value ? '' : memberInfoQueryResult.value.Nickname,
+            image: !memberInfoQueryResult.value ? '' : memberInfoQueryResult.value.AvatarImageUrl,
         }
     } catch (e) {
-        console.log(e);
-        throw new Error('Error occurred when trying to signin');
+        let msg: string;
+        if (e instanceof RestError) {
+            msg = `Was trying communicating with table storage. '/api/auth/[...nextauth]/veriftLoginCredentials'`
+        }
+        else {
+            msg = `Uncategorized Error occurred. '/api/auth/[...nextauth]/veriftLoginCredentials'`;
+        }
+        log(msg, e);
+        return null;
     }
 }

@@ -5,9 +5,8 @@ import CryptoJS from 'crypto-js';
 import AzureTableClient from '../../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from '../../../../../modules/AtlasDatabaseClient';
 
-import { AzureTableEntity } from '../../../../../lib/types';
 import { verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500 } from '../../../../../lib/utils';
-import { IMemberInfo, IMemberIdIndex, IMemberStatistics } from '../../../../../lib/interfaces';
+import { IMemberInfo, IMemberManagement, IMemberIdIndex, IMemberStatistics } from '../../../../../lib/interfaces';
 
 const appSecret = process.env.APP_AES_SECRET ?? '';
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
@@ -18,6 +17,7 @@ export default async function VerifyToken(req: NextApiRequest, res: NextApiRespo
         response405(req, res);
         return;
     }
+    const atlasDbClient = AtlasDatabaseClient();
     try {
         // Step #0 verify environment variables
         const environmentVariable = verifyEnvironmentVariable({ appSecret, recaptchaServerSecret });
@@ -60,16 +60,17 @@ export default async function VerifyToken(req: NextApiRequest, res: NextApiRespo
         }
         // Step #4.1 look up management record in [T] MemberComprehensive.Management
         const memberComprehensiveTableClient = AzureTableClient('MemberComprehensive');
+
         const memberManagementQuery = memberComprehensiveTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${memberId}' and RowKey eq 'Management'` } });
         const memberManagementQueryResult = await memberManagementQuery.next();
         if (!memberManagementQueryResult.value) {
-            res.status(404).send('MemberManagement record not found');
+            res.status(404).send('Member management record not found');
             return;
         }
         // Step #4.2 verify MemberManagement.MemberStatus
-        const { MemberStatusValue: memberStatusValue } = memberManagementQueryResult.value;
-        if (0 !== memberStatusValue) {
-            res.status(400).send('Request for activating member cannot be fulfilled');
+        const { MemberStatus: memberStatus } = memberManagementQueryResult.value;
+        if (0 !== memberStatus) {
+            res.status(409).send('Request for activating member cannot be fulfilled');
             return;
         }
         // Step #4.3 updateEntity (memberInfo) to [T] MemberComprehensive.Info
@@ -80,10 +81,12 @@ export default async function VerifyToken(req: NextApiRequest, res: NextApiRespo
         }
         await memberComprehensiveTableClient.updateEntity(memberInfo, 'Merge');
         // Step #4.4 updateEntity (memberManagement) to [T] MemberComprehensive.Management
-        const memberManagement: AzureTableEntity = {
+        const memberManagement: IMemberManagement = {
             partitionKey: memberId,
-            rowKey: 'MemberStatus',
-            MemberStatusValue: 200
+            rowKey: 'Management',
+            MemberStatus: 200,
+            AllowPosting: true,
+            AllowCommenting: true
         }
         await memberComprehensiveTableClient.updateEntity(memberManagement, 'Merge');
         res.status(200).send('Account verified');
@@ -120,22 +123,26 @@ export default async function VerifyToken(req: NextApiRequest, res: NextApiRespo
             followedByCount: 0,
             blockedCount: 0,
         }
-        const atlasDbClient = AtlasDatabaseClient();
+        await atlasDbClient.connect();
         const memberStatisticsCollectionClient = atlasDbClient.db('mojito-statistics-dev').collection('memberStatistics');
         await memberStatisticsCollectionClient.insertOne(memberStatistics);
     } catch (e) {
-        if (e instanceof SyntaxError) {
+        if (res.headersSent) {
+
+        } else if (e instanceof SyntaxError) {
             res.status(400).send('Improperly normalized request info');
         }
         else if (e instanceof TypeError) {
             response500(res, `Was trying decoding recaptcha verification response. ${e}`);
         }
         else if (e instanceof RestError) {
-            response500(res, `Was trying communicating with db. ${e}`);
+            response500(res, `Was trying communicating with table storage. ${e}`);
         }
         else {
             response500(res, `Uncategorized Error occurred. ${e}`);
         }
-        return;
+        console.log(e);
+    } finally {
+        atlasDbClient.close();
     }
 }

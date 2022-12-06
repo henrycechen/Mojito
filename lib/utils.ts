@@ -155,3 +155,8 @@ export function response500(response: NextApiResponse, msg: string) {
     // response.status(500).send(msg);
     response.status(500).send('development' === process.env.NODE_ENV ? msg : 'Internal Server Error');
 }
+
+//////// Log ////////
+export function log(msg: string, e: any) {
+    console.log(`[${new Date().toISOString()}] ${msg} ${e.stack}`);
+}

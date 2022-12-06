@@ -22,21 +22,21 @@ interface IMemberLoginEntity extends IAzureTableEntity {
 export interface IPasswordHash extends IMemberLoginEntity {
     partitionKey: string;
     rowKey: 'PasswordHash'
-    PasswordHashStr: string;
+    PasswordHash: string;
     IsActive?: boolean;
 }
 
 export interface IResetPasswordToken extends IMemberLoginEntity {
     partitionKey: string;
     rowKey: 'ResetPasswordToken';
-    ResetPasswordTokenStr?: string;
+    ResetPasswordToken?: string;
     EmailMessageId?: string;
     IsActive?: boolean;
 }
 
 // [RL] LoginCredentialsMapping
 interface ILoginCredentialsMappingEntity extends IAzureTableEntity {
-    partitionKey: 'EmailAddress' | 'MojitoMemberId';
+    partitionKey: string;
     rowKey: string;
     MemberId: string
     IsActive: boolean;
@@ -44,6 +44,13 @@ interface ILoginCredentialsMappingEntity extends IAzureTableEntity {
 
 export interface IEmailAddressLoginCredentialMapping extends ILoginCredentialsMappingEntity {
     partitionKey: 'EmailAddress';
+    rowKey: string; // email address
+    MemberId: string;
+    IsActive: boolean;
+}
+
+export interface IThirdPartyLoginCredentialMapping extends ILoginCredentialsMappingEntity {
+    partitionKey: string; // login provider id
     rowKey: string; // email address
     MemberId: string;
     IsActive: boolean;
@@ -193,4 +200,12 @@ export interface IMemberStatistics extends IAtlasCollectionEntity {
     followingCount?: number;
     followedByCount?: number;
     blockedCount?: number;
+}
+
+// [C] IMemberLoginRecord
+export interface IMemberLoginRecord {
+    category: 'success' | 'error';
+    providerId: string;
+    timestamp: string;
+    message?: string;
 }

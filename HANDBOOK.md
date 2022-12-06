@@ -177,7 +177,8 @@ type ResetPasswordRequestInfo = {
 
 | Code    | Explanation                                             |
 | ------- | ------------------------------------------------------- |
-| -1      | Deactivated / Suspended                                 |
+| -2      | Deactivated                                             |
+| -1      | Suspended                                               |
 | 0       | Established, email address not verified                 |
 | **200** | **Email address verified or third party login, normal** |
 | 400     | Restricted to certain content or behaviour              |
@@ -764,7 +765,19 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 
 
 
+## MemberLoginRecords
 
+### 💡"memberLoginRecords" collection basic type
+
+```json
+{
+    _id?: string; // mongodb obejct id
+    memberId: string; // member id
+   recordsArr: any;
+}
+```
+
+### 
 
 
 
@@ -1341,7 +1354,21 @@ console.log('response', response.data);
   <h3></h3> => <div></div>
   ```
 
-  
+
+
+
+## Error Page
+
+| Error                        | Origin | Desc |
+| ---------------------------- | ------ | ---- |
+| AccessDenied                 | signin |      |
+| EmailAddressUnverified       | signin |      |
+| InappropriateEmailAddress    |        |      |
+| PermissionDenied             |        |      |
+| MemberSuspendedOrDeactivated | signin |      |
+| MemberDeactivated            | signin |      |
+
+
 
 
 

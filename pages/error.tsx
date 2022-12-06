@@ -33,15 +33,35 @@ const langConfigs: LangConfigs = {
         ch: '出错啦',
         en: 'Opps'
     },
-    accessDenniedError: {
-        ch: '您的账户需要验证或已被注销',
-        en: 'Your account needs verification or has been canceled'
-    },
     backToHome: {
         ch: '返回主页',
         en: 'Back to home'
+    },
+
+    error: {
+        AccessDenied: {
+            ch: '您的账户需要验证或已被注销',
+            en: 'Your account needs verification or has been canceled'
+        },
+        PermissionDenied: {
+            ch: '',
+            en: ''
+        },
+        EmailAddressUnverified: {
+            ch: '',
+            en: ''
+        },
+        MemberSuspendedOrDeactivated: {
+            ch: '',
+            en: ''
+        },
+        MemberDeactivated: {
+            ch: '',
+            en: ''
+        }
     }
 }
+
 
 export default function About({ errorMessage }: any) {
     const router = useRouter();
@@ -73,9 +93,9 @@ export default function About({ errorMessage }: any) {
                     </Typography>
                 </Box>
                 <Box sx={{ color: 'white', textAlign: 'center', mt: '3rem', padding: 4 }}>
-                    {!!router.query.error && 'AccessDenied' === router.query.error &&
+                    {!!router.query.error && Object.keys(langConfigs.error).includes('string' === typeof router.query.error ? router.query.error : '') &&
                         <Typography variant='h6' sx={{ color: 'white', textAlign: 'center' }}>
-                            {langConfigs.accessDenniedError[lang]}
+                            {langConfigs.error['string' === typeof router.query.error ? router.query.error : ''][lang]}
                         </Typography>
                     }
                     {!router.query.error &&

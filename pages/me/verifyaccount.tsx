@@ -35,8 +35,7 @@ const langConfigs: LangConfigs = {
 const VerifyAccount = () => {
     let recaptcha: any;
     const router = useRouter();
-    const { requestInfo } = router.query;
-    
+
     // Decalre process states
     const [processStates, setProcessStates] = React.useState({
         /**
@@ -45,26 +44,38 @@ const VerifyAccount = () => {
          * - accountverifyresult
          */
         componentOnDisplay: 'accountverify',
+        requestInfo: '',
         recaptchaResponse: '',
         resultContent: '',
     });
 
     // Handle process states change
-    React.useEffect(() => { post() }, [processStates.recaptchaResponse]);
-    const post = async () => {
-        if(!requestInfo) {
+    React.useEffect(() => {
+        if (Object.keys(router.query).length === 0) {
+            return;
+        }
+        const { requestInfo } = router.query
+        if ('string' === typeof requestInfo) {
+            setProcessStates({ ...processStates, requestInfo: requestInfo });
+            recaptcha?.execute();
+            return;
+        } else {
             router.push('/');
             return;
         }
-        if ('accountverify' === processStates.componentOnDisplay && '' === processStates.recaptchaResponse) {
-            recaptcha?.execute();
+    }, [router]);
+
+    React.useEffect(() => { post() }, [processStates.recaptchaResponse]);
+    const post = async () => {
+        if ('' === processStates.requestInfo) {
+            // router.query is not ready
             return;
         }
         if ('' === processStates.recaptchaResponse) {
             // ReCAPTCHA challenge is not ready
             return;
         }
-        const resp = await fetch(`/api/member/behaviour/signup/verify?requestInfo=${requestInfo}&recaptchaResponse=${processStates.recaptchaResponse}`, { method: 'POST' })
+        const resp = await fetch(`/api/member/behaviour/signup/verify?requestInfo=${processStates.requestInfo}&recaptchaResponse=${processStates.recaptchaResponse}`, { method: 'POST' })
         if (200 === resp.status) {
             setProcessStates({ ...processStates, componentOnDisplay: 'accountverifyresult', resultContent: langConfigs.goodResult[lang] })
         } else {
