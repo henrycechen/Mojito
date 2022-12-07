@@ -118,7 +118,13 @@ const SignUp = ({ providers }: any) => {
     // Handle session
     const { data: session } = useSession();
     const router = useRouter();
-    React.useEffect(() => { if (session) router.push('/') }, []);
+    React.useEffect(() => {
+        if (session) router.push('/');
+        const { info } = router.query;
+        if ('string' === typeof info && 'ThirdPartySignupSuccess' === info) {
+            setProcessStates({ ...processStates, componentOnDisplay: 'signuprequestresult', displayCircularProgress: false, resultContent: langConfigs.goodResult[lang] });
+        }
+    }, []);
 
     let recaptcha: any;
 

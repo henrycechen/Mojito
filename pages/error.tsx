@@ -38,7 +38,7 @@ const langConfigs: LangConfigs = {
         en: 'Back to home'
     },
 
-    error: {
+    errors: {
         AccessDenied: {
             ch: '您的账户需要验证或已被注销',
             en: 'Your account needs verification or has been canceled'
@@ -93,9 +93,9 @@ export default function About({ errorMessage }: any) {
                     </Typography>
                 </Box>
                 <Box sx={{ color: 'white', textAlign: 'center', mt: '3rem', padding: 4 }}>
-                    {!!router.query.error && Object.keys(langConfigs.error).includes('string' === typeof router.query.error ? router.query.error : '') &&
+                    {!!router.query.error && Object.keys(langConfigs.errors).includes('string' === typeof router.query.error ? router.query.error : '') &&
                         <Typography variant='h6' sx={{ color: 'white', textAlign: 'center' }}>
-                            {langConfigs.error['string' === typeof router.query.error ? router.query.error : ''][lang]}
+                            {langConfigs.errors['string' === typeof router.query.error ? router.query.error : ''][lang]}
                         </Typography>
                     }
                     {!router.query.error &&

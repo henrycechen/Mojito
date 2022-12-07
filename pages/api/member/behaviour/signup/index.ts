@@ -4,10 +4,11 @@ import CryptoJS from 'crypto-js';
 
 import AzureTableClient from '../../../../../modules/AzureTableClient';
 import AzureEmailCommunicationClient from '../../../../../modules/AzureEmailCommunicationClient';
-import { IEmailAddressLoginCredentialMapping, IPasswordHash, IMemberInfo, IMemberManagement } from '../../../../../lib/interfaces';
+import { IEmailAddressLoginCredentialMapping, IPasswordHash, IMemberInfo, IMemberManagement, IMemberLoginRecord } from '../../../../../lib/interfaces';
 import { LangConfigs, EmailMessage, VerifyAccountRequestInfo } from '../../../../../lib/types';
 import { getRandomStr, verifyEmailAddress, verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500, log } from '../../../../../lib/utils';
 import { composeVerifyAccountEmail } from '../../../../../lib/email';
+import AtlasDatabaseClient from '../../../../../modules/AtlasDatabaseClient';
 
 const appSecret = process.env.APP_AES_SECRET ?? '';
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
@@ -121,10 +122,24 @@ export default async function SignUp(req: NextApiRequest, res: NextApiResponse) 
         const mailClient = AzureEmailCommunicationClient();
         const { messageId } = await mailClient.send(emailMessage);
         if (!messageId) {
-            response500(res, 'Was trying sending email');
-        } else {
-            res.status(200).send('Account established, email sent, email address verification required to get full access');
+            let msg = 'Was trying sending verification email';
+            response500(res, msg);
+            log(msg, {});
+            return;
         }
+        res.status(200).send('Member established');
+        // Step #5 write log
+        const atlasDbClient = AtlasDatabaseClient();
+        await atlasDbClient.connect();
+        const memberLoginRecordsCollectionClient = atlasDbClient.db('mojito-records-dev').collection('memberLoginRecords');
+        const loginRecord: IMemberLoginRecord = {
+            category: 'success',
+            providerId: 'MojitoMemberSystem',
+            timestamp: new Date().toISOString(),
+            message: 'Member established, email address verification required to get full access.'
+        }
+        await memberLoginRecordsCollectionClient.updateOne({ memberId }, { $addToSet: { recordsArr: loginRecord } }, { upsert: true });
+        atlasDbClient.close();
     } catch (e: any) {
         let msg: string;
         if (e instanceof RestError) {

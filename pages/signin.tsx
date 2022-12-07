@@ -82,21 +82,31 @@ const langConfigs: LangConfigs = {
         ch: 'zh-CN',
         en: 'en'
     },
-    recaptchaNotVerifiedError: {
-        ch: '请告诉我们您不是机器人😎',
-        en: 'Please tell us if you are not a robot😎'
-    },
-    recaptchaError: {
-        ch: '我们的人机验证系统出了些问题🤯...请尝试刷新或联系我们的管理员',
-        en: 'Something went wrong with our CAPTCHA🤯...Please try to refresh or contact our Webmaster'
-    },
-    credentialSigninError: {
-        ch: ['邮件地址与密码不匹配', '请再尝试一下'],
-        en: ['Member and password do not match', 'please try again']
-    },
-    thirdPartySigninError: {
-        ch: ['第三方账户登录遇到了一些问题', '请稍后重试或者联系我们的管理员'],
-        en: ['Third-party Account sign in unsuccessful', 'please try again later or contact our Webmaster']
+    errors: {
+        RecaptchaNotVerifiedError: {
+            ch: ['请告诉我们您不是机器人😎', ''],
+            en: ['Please tell us if you are not a robot😎', '']
+        },
+        CredentialsSignin: {
+            ch: ['邮件地址与密码不匹配，请再尝试一下', ''],
+            en: ['Member and password do not match', ', please try again', '']
+        },
+        EmailAddressUnverified: {
+            ch: ['您需要对您的账户完成邮箱验证', '，如有问题请联系我们的管理员'],
+            en: ['You will need to complete email address verification before signin', ', please try again later or contact our Webmaster']
+        },
+        InappropriateEmailAddress: {
+            ch: ['第三方平台提供的信息不能满足我们的要求，请尝试其他的账户或登录方式', '，如有问题请联系我们的管理员'],
+            en: ['The information supplied by the third-party signin provider do not meet our requirements, please try signing in with another account or method', ', please try again later or contact our Webmaster']
+        },
+        MemberSuspendedOrDeactivated: {
+            ch: ['您的账户已停用或已被注销', '，如有问题请联系我们的管理员'],
+            en: ['Your membership has been suspended or deactivated', ', please try again later or contact our Webmaster']
+        },
+        ThirdPartyProviderSigninError: {
+            ch: ['第三方账户登录遇到了一些问题', '请稍后重试或者联系我们的管理员'],
+            en: ['Third-party Account sign in unsuccessful', ', please try again later or contact our Webmaster']
+        },
     }
 }
 
@@ -112,12 +122,43 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
     // Decalre process states
     const [processStates, setProcessStates] = React.useState({
         recaptchaResponse: '',
-        errorContent: '',
-        displayError: false,
+        credentialSigninAlertContent: '',
+        displayCredentialSigninAlert: false,
+        thirdPartyProviderSigninAlerContent: '',
+        displayThirdPartyProviderSignAlert: false,
         displayCircularProgress: false
     })
-
-    // Handle process states change
+    // Handle error hint
+    React.useEffect(() => {
+        const { error, provider } = router.query;
+        if ('string' === typeof error) {
+            if ('CredentialsSignin' === error) {
+                setProcessStates({ ...processStates, credentialSigninAlertContent: langConfigs.errors.CredentialsSignin[lang], displayCredentialSigninAlert: true, displayThirdPartyProviderSignAlert: false });
+                return;
+            }
+            if ('InappropriateEmailAddress' === error) {
+                setProcessStates({ ...processStates, credentialSigninAlertContent: langConfigs.errors.CredentialsSignin[lang], displayCredentialSigninAlert: true, displayThirdPartyProviderSignAlert: false });
+                return;
+            }
+            if ('EmailAddressUnverified' === error) {
+                if ('string' === typeof provider && 'mojito' !== provider) {
+                    setProcessStates({ ...processStates, thirdPartyProviderSigninAlerContent: langConfigs.errors.EmailAddressUnverified[lang], displayCredentialSigninAlert: false, displayThirdPartyProviderSignAlert: true });
+                    return;
+                }
+                setProcessStates({ ...processStates, credentialSigninAlertContent: langConfigs.errors.EmailAddressUnverified[lang], displayCredentialSigninAlert: true, displayThirdPartyProviderSignAlert: false });
+                return;
+            }
+            if ('MemberSuspendedOrDeactivated' === error) {
+                if ('string' === typeof provider && 'mojito' !== provider) {
+                    setProcessStates({ ...processStates, thirdPartyProviderSigninAlerContent: langConfigs.errors.MemberSuspendedOrDeactivated[lang], displayCredentialSigninAlert: false, displayThirdPartyProviderSignAlert: true });
+                    return;
+                }
+                setProcessStates({ ...processStates, credentialSigninAlertContent: langConfigs.errors.MemberSuspendedOrDeactivated[lang], displayCredentialSigninAlert: true, displayThirdPartyProviderSignAlert: false });
+                return;
+            }
+        }
+    }, [router]);
+    // Handle signin form submit on recaptcha response update
     React.useEffect(() => { postRequest() }, [processStates.recaptchaResponse]);
     const postRequest = async () => {
         if ('' === processStates.recaptchaResponse) {
@@ -125,13 +166,13 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
             return;
         }
         if ('' !== signInCredentialStates.emailAddress && '' !== signInCredentialStates.password) {
+            setProcessStates({ ...processStates, displayCredentialSigninAlert: false, displayThirdPartyProviderSignAlert: false });
             signIn('mojito', {
                 recaptchaResponse: processStates.recaptchaResponse,
                 emailAddress: signInCredentialStates.emailAddress,
                 password: signInCredentialStates.password,
                 redirectUrl: router.query?.redirectUrl
             })
-            setProcessStates({ ...processStates, displayCircularProgress: false });
         }
     }
 
@@ -170,6 +211,14 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
             setProcessStates({ ...processStates })
         }
     }
+    const handleRecaptchaLoseFocus = () => {
+        setProcessStates({
+            ...processStates,
+            credentialSigninAlertContent: langConfigs.errors.RecaptchaNotVerifiedError[lang],
+            displayCredentialSigninAlert: true,
+            displayCircularProgress: false
+        })
+    }
 
     return (
         <>
@@ -185,9 +234,10 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
                     </Typography>
                     <Stack component={'form'} spacing={2} sx={{ mt: 4 }} onSubmit={handleSubmit}>
                         <input name='csrfToken' type={'hidden'} defaultValue={csrfToken ?? ''} />
-                        <Box sx={{ display: 'CredentialsSignin' === router.query.error ? 'block' : 'none' }}>
+                        {/* credentials signin & other error alert */}
+                        <Box sx={{ display: processStates.displayCredentialSigninAlert ? 'block' : 'none' }}>
                             <Alert severity='error' >
-                                <strong>{langConfigs.credentialSigninError[lang][0]}</strong>, {langConfigs.credentialSigninError[lang][1]}
+                                <strong>{processStates.credentialSigninAlertContent[0]}</strong>{processStates.credentialSigninAlertContent[1]}
                             </Alert>
                         </Box>
                         <TextField
@@ -231,9 +281,10 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
                     </Stack>
                     <Divider sx={{ mt: 2, mb: 2 }} />
                     <Stack spacing={1}>
-                        <Box sx={{ display: !!router.query.error && 'CredentialsSignin' !== router.query.error ? 'block' : 'none' }}>
+                        {/* third party provider signin error alert */}
+                        <Box sx={{ display: processStates.displayThirdPartyProviderSignAlert ? 'block' : 'none' }}>
                             <Alert severity='error' >
-                                <strong>{langConfigs.thirdPartySigninError[lang][0]}</strong>, {langConfigs.thirdPartySigninError[lang][1]}
+                                <strong>{processStates.thirdPartyProviderSigninAlerContent[0]}</strong>{processStates.thirdPartyProviderSigninAlerContent[1]}
                             </Alert>
                         </Box>
                         {providers && Object.keys(providers).map(p => {
@@ -264,7 +315,7 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
                     </Grid>
                 </Stack>
                 <Copyright sx={{ mt: 8 }} />
-                <About sx={{  mb: 8 }} />
+                <About sx={{ mb: 8 }} />
             </Container>
             <ReCAPTCHA
                 hl={langConfigs.recaptchaLang[lang]}
@@ -272,6 +323,7 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
                 ref={(ref: any) => ref && (recaptcha = ref)}
                 sitekey={recaptchaClientKey}
                 onChange={handleRecaptchaChange}
+                onFocusCapture={handleRecaptchaLoseFocus}
             />
         </>
     )

@@ -158,5 +158,5 @@ export function response500(response: NextApiResponse, msg: string) {
 
 //////// Log ////////
 export function log(msg: string, e: any) {
-    console.log(`[${new Date().toISOString()}] ${msg} ${e.stack}`);
+    console.log(`[${new Date().toISOString()}] ${msg} ${e?.stack}`);
 }

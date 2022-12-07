@@ -7,7 +7,7 @@ import CryptoJS from 'crypto-js';
 import AzureTableClient from '../../../modules/AzureTableClient';
 import { verifyRecaptchaResponse, verifyEnvironmentVariable, getRandomStr, verifyEmailAddress, log } from '../../../lib/utils';
 import { User } from 'next-auth';
-import { IMemberInfo, IMemberLoginRecord, IMemberManagement, IThirdPartyLoginCredentialMapping } from '../../../lib/interfaces';
+import { IMemberIdIndex, IMemberInfo, IMemberLoginRecord, IMemberManagement, IMemberStatistics, IThirdPartyLoginCredentialMapping } from '../../../lib/interfaces';
 import { VerifyAccountRequestInfo, EmailMessage, LangConfigs } from "../../../lib/types";
 import { RestError } from "@azure/storage-blob";
 import { composeVerifyAccountEmail } from "../../../lib/email";
@@ -125,7 +125,7 @@ export default NextAuth({
                 return false;
             }
             if ('mojito' === provider) {
-                // #1 Login with Mojito member system
+                //// #1 Login with Mojito member system
                 try {
                     // Step #1 prepare member id
                     const { providerAccountId: memberId } = account;
@@ -145,7 +145,7 @@ export default NextAuth({
                     }
                     const atlasDbClient = AtlasDatabaseClient();
                     await atlasDbClient.connect();
-                    const memberStatisticsCollectionClient = atlasDbClient.db('mojito-records-dev').collection('memberLoginRecords');
+                    const memberLoginRecordsCollectionClient = atlasDbClient.db('mojito-records-dev').collection('memberLoginRecords');
                     // Step #2.2.B email address not verified
                     if (0 === memberStatus) {
                         const loginRecord: IMemberLoginRecord = {
@@ -154,7 +154,7 @@ export default NextAuth({
                             timestamp: new Date().toISOString(),
                             message: 'Attempted login while email address not verified.'
                         }
-                        await memberStatisticsCollectionClient.updateOne({ memberId }, { $addToSet: { recordsArr: loginRecord } }, { upsert: true });
+                        await memberLoginRecordsCollectionClient.updateOne({ memberId }, { $addToSet: { recordsArr: loginRecord } }, { upsert: true });
                         atlasDbClient.close();
                         return '/signin?error=EmailAddressUnverified';
                     }
@@ -162,9 +162,10 @@ export default NextAuth({
                     const loginRecord: IMemberLoginRecord = {
                         category: 'success',
                         providerId: 'MojitoMemberSystem',
-                        timestamp: new Date().toISOString()
+                        timestamp: new Date().toISOString(),
+                        message: 'Login.'
                     }
-                    await memberStatisticsCollectionClient.updateOne({ memberId }, { $addToSet: { recordsArr: loginRecord } }, { upsert: true });
+                    await memberLoginRecordsCollectionClient.updateOne({ memberId }, { $addToSet: { recordsArr: loginRecord } }, { upsert: true });
                     atlasDbClient.close();
                     return true;
                 } catch (e) {
@@ -179,7 +180,7 @@ export default NextAuth({
                     return false;
                 }
             } else {
-                // #2 Login with third party login provider
+                //// #2 Login with third party login provider
                 try {
                     // Step #1.1 prepare account id
                     const { providerAccountId: accountId } = account;
@@ -190,13 +191,14 @@ export default NextAuth({
                     const mappingQuery = loginCredentialsMappingTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${providerId}' and RowKey eq '${accountId}'` } });
                     // [!] attemp to reterieve entity makes the probability of causing RestError
                     const mappingQueryResult = await mappingQuery.next();
-                    // Step #3A login credential mapping record NOOOOOOT found, create a new mojito member substitute
+                    //// Step #3A login credential mapping record NOOOOOOT found, create a new mojito member substitute
                     if (!mappingQueryResult.value) {
                         const { email: emailAddressRef, name: nickName, image: avatarImageUrl } = user;
                         // Step #3A.0 verify email address
                         const emailAddress = emailAddressRef ?? '';
                         if (verifyEmailAddress(emailAddress)) {
-                            return '/error?error=InappropriateEmailAddress';
+                            // lack of email address or not valid
+                            return `/signin?error=InappropriateEmailAddress&provider=${provider}`;
                         }
                         // Step #3A.1 create a new member id
                         const memberId = getRandomStr(true); // use UPPERCASE
@@ -215,7 +217,7 @@ export default NextAuth({
                             rowKey: 'Info',
                             RegisteredTimestamp: currentDateStr,
                             VerifiedTimestamp: currentDateStr,
-                            EmailAddress: emailAddress // assume the provided email address is a valid way to reach out to this third party login member
+                            EmailAddress: emailAddress // assume the provided (by third party login provider) email address is a valid way to reach out to this third party login member
                         }
                         const memberComprehensiveTableClient = AzureTableClient('MemberComprehensive'); // Update: 6/12/2022: applied new table layout (Info & Management merged)
                         await memberComprehensiveTableClient.upsertEntity(memberInfo, 'Replace');
@@ -223,14 +225,44 @@ export default NextAuth({
                         const memberManagement: IMemberManagement = {
                             partitionKey: memberId,
                             rowKey: 'Management',
-                            MemberStatus: 200, // normal
-                            AllowPosting: true,
-                            AllowCommenting: true
+                            MemberStatus: 0, // Established, email address not verified
+                            AllowPosting: false,
+                            AllowCommenting: false
                         }
                         await memberComprehensiveTableClient.upsertEntity(memberManagement, 'Replace');
-                        return true;
+                        // Step #3A.5 compose email to send verification link
+                        const info: VerifyAccountRequestInfo = { memberId };
+                        const emailMessage: EmailMessage = {
+                            sender: '<donotreply@mojito.co.nz>',
+                            content: {
+                                subject: langConfigs.emailSubject[lang],
+                                html: composeVerifyAccountEmail(domain, Buffer.from(CryptoJS.AES.encrypt(JSON.stringify(info), appSecret).toString()).toString('base64'), lang)
+                            },
+                            recipients: {
+                                to: [{ email: emailAddress }]
+                            }
+                        }
+                        const mailClient = AzureEmailCommunicationClient();
+                        const { messageId } = await mailClient.send(emailMessage);
+                        if (!messageId) {
+                            log('Was tring sending verification email', {});
+                            return '/error'
+                        }
+                        // Step #3A.6 write log
+                        const atlasDbClient = AtlasDatabaseClient();
+                        await atlasDbClient.connect();
+                        const memberLoginRecordsCollectionClient = atlasDbClient.db('mojito-records-dev').collection('memberLoginRecords');
+                        const loginRecord: IMemberLoginRecord = {
+                            category: 'success',
+                            providerId: providerId,
+                            timestamp: new Date().toISOString(),
+                            message: 'Member established, email address verification required to get full access.'
+                        }
+                        await memberLoginRecordsCollectionClient.updateOne({ memberId }, { $addToSet: { recordsArr: loginRecord } }, { upsert: true });
+                        atlasDbClient.close();
+                        return '/signup?info=ThirdPartySignupSuccess';
                     }
-                    // Step #3B login credential mapping record is found
+                    //// Step #3B login credential mapping record is found
                     else {
                         const { MemberId: memberId } = mappingQueryResult.value;
                         // Step #3B.1 look up member status in [T] MemberComprehensive.Management
@@ -241,12 +273,12 @@ export default NextAuth({
                         // Step #3B.2.A member management record not found deemed account deactivated / suspended
                         if (!memberManagementQueryResult.value) {
                             // [!] member management record not found deemed account deactivated / suspended
-                            return '/error?error=MemberSuspendedOrDeactivated';
+                            return '/signin?error=MemberSuspendedOrDeactivated';
                         }
                         const { MemberStatus: memberStatus } = memberManagementQueryResult.value; // Update 6/12/2022: MemberStatusValue => MemberStatus
                         // Step #3B.2.B member has been suspended or deactivated
                         if ([-2, -1].includes(memberStatus)) {
-                            return '/error?error=MemberSuspendedOrDeactivated';
+                            return '/signin?error=MemberSuspendedOrDeactivated';
                         }
                         const atlasDbClient = AtlasDatabaseClient();
                         await atlasDbClient.connect();
@@ -267,7 +299,8 @@ export default NextAuth({
                         const loginRecord: IMemberLoginRecord = {
                             category: 'success',
                             providerId: providerId,
-                            timestamp: new Date().toISOString()
+                            timestamp: new Date().toISOString(),
+                            message: 'Login.'
                         }
                         await memberStatisticsCollectionClient.updateOne({ memberId }, { $addToSet: { recordsArr: loginRecord } }, { upsert: true });
                         atlasDbClient.close();
