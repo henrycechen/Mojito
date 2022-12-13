@@ -8,14 +8,14 @@ import { ProcessStates } from './types';
 //  IDs
 //  - Member ID : 10 characters, UPPERCASE
 //  - Post ID : 10 characters, UPPERCASE
-//  - Topic ID : 10 characters, lowercase
-//  - Comment ID : 16 characters, lowercase
-//  - Subcomment ID : 16 characters, lowercase
+//  - Topic ID : 10 characters, UPPERCASE
+//  - Comment ID : 16 characters, UPPERCASE
+//  - Subcomment ID : 16 characters, UPPERCASE
 //
 //  Names
 //  - Image Filename : 10 characters, lowercase
 //
-export function getRandomStr(useUpperCase: boolean = false): string { // Length of 10
+export function getRandomIdStr(useUpperCase: boolean = false): string { // Length of 10
     if (useUpperCase) {
         return Math.floor(Math.random() * Math.pow(10, 15)).toString(35).toUpperCase();
     } else {
@@ -23,7 +23,7 @@ export function getRandomStr(useUpperCase: boolean = false): string { // Length 
     }
 }
 
-export function getRandomMediumStr(useUpperCase: boolean = false): string { // Length of 16
+export function getRandomIdStrL16(useUpperCase: boolean = false): string { // Length of 16
     if (useUpperCase) {
         return Math.floor(Math.random() * Math.pow(10, 12)).toString(35).toUpperCase() + Math.floor(Math.random() * Math.pow(10, 12)).toString(35).toUpperCase();
     } else {
@@ -31,7 +31,7 @@ export function getRandomMediumStr(useUpperCase: boolean = false): string { // L
     }
 }
 
-export function getRandomLongStr(useUpperCase: boolean = false): string { // Length of 20
+export function getRandomIdStrL20(useUpperCase: boolean = false): string { // Length of 20
     if (useUpperCase) {
         return Math.floor(Math.random() * Math.pow(10, 15)).toString(35).toUpperCase() + Math.floor(Math.random() * Math.pow(10, 15)).toString(35).toUpperCase();
     } else {
@@ -90,6 +90,12 @@ export function verifyEmailAddress(emailAddress: string): boolean {
 export function verifyPassword(password: string): boolean {
     const regex = new RegExp(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/);
     return regex.test(password);
+}
+
+export function verifyId(id: string, length: number): boolean {
+    const str = `^[a-zA-Z0-9]{${length - 2},${length}}$`;
+    const regex = new RegExp(str);
+    return regex.test(id);
 }
 
 type VerifyRecaptchaResult = {

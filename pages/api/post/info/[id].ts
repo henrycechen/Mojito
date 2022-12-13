@@ -1,10 +1,11 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
+
 import { PostInfo } from '../../../../lib/types';
 import { response405, response500 } from '../../../../lib/utils';
 
-export default async function Index(req: NextApiRequest, res: NextApiResponse) {
+export default async function PostInfoIndex(req: NextApiRequest, res: NextApiResponse) {
     const { method } = req;
-    if ('GET' !== method) {
+    if (!['GET', 'PUT', 'DELETE'].includes(method ?? '')) {
         response405(req, res);
         return;
     }
@@ -27,7 +28,7 @@ export default async function Index(req: NextApiRequest, res: NextApiResponse) {
                 '在写前端时遇到的疑惑，感谢！我能想到的就只有作用域的区别了。',
             ],
             imageUrlArr: [
-                
+
                 'https://images.unsplash.com/photo-1553095066-5014bc7b7f2d?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1171&q=80',
                 'https://images.pexels.com/photos/259915/pexels-photo-259915.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
                 // 'https://i.imgur.com/NeY9Bah.jpeg'
@@ -36,17 +37,17 @@ export default async function Index(req: NextApiRequest, res: NextApiResponse) {
             topicList: [
                 {
                     id: '1vakw6fe998',
-                    channelId:'work',
+                    channelId: 'work',
                     name: 'Typescript',
                 },
                 {
                     id: 'iefx61n10y',
-                    channelId:'work',
+                    channelId: 'work',
                     name: '测试',
                 },
                 {
                     id: '757wp7wg36',
-                    channelId:'work',
+                    channelId: 'work',
                     name: '前端',
                 },
             ],

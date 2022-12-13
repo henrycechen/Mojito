@@ -3,7 +3,7 @@ import { getToken } from "next-auth/jwt"
 
 import AzureTableClient from '../../../modules/AzureTableClient';
 import { AzureTableEntity, PostInfo } from '../../../lib/types';
-import { getRandomStr, response405, response500 } from '../../../lib/utils';
+import { getRandomIdStr, response405, response500 } from '../../../lib/utils';
 import { RestError } from '@azure/storage-blob';
 
 
@@ -45,7 +45,7 @@ export default async function Channel(req: NextApiRequest, res: NextApiResponse)
             return;
         }
         // Step #2.1 create a postId
-        const postId = getRandomStr(true); // use UPPERCASE
+        const postId = getRandomIdStr(true); // use UPPERCASE
         // Step #2.2 loop up postId from [Table] PostManagement
         const PostManagementTableClient = AzureTableClient('PostManagement');
         const mappingQuery = PostManagementTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${postId}' and RowKey eq 'PostStatus'` } });

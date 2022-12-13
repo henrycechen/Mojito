@@ -99,25 +99,29 @@ export interface IMemberManagement extends IMemberComprehensive {
 }
 
 // [T] PostCommentMappingComprehensive
-export interface IPostCommentMappingComprehensive extends IAzureTableEntity {
+export interface ICommentComprehensive extends IAzureTableEntity {
     partitionKey: string; // post id
     rowKey: string; // comment id
-    MemberId: string;
-    Content: string;
-    CommentStatus: number;
+    CreateTimestamp?: string;
+    CreateTime?: number;
+    MemberId?: string;
+    Content?: string;
+    CommentStatus?: number;
 }
 
 // [T] CommentSubcommentMappingComprehensive
-export interface ICommentSubcommentMappingComprehensive extends IAzureTableEntity {
+export interface ISubcommentComprehensive extends IAzureTableEntity {
     partitionKey: string; // comment id
     rowKey: string; // subcomment id
-    MemberId: string;
-    Content: string;
-    SubommentStatus: number;
+    CreateTimestamp?: string;
+    CreateTime?: number;
+    MemberId?: string;
+    Content?: string;
+    SubommentStatus?: number;
 }
 
 // [PRL] Notification
-export interface INotification extends IAzureTableEntity {
+export interface INoticeInfo extends IAzureTableEntity {
     partitionKey: string; // notified member id
     rowKey: string; // notify id
     Initiate: string; // initiate member id
@@ -189,6 +193,16 @@ export interface IAtlasCollectionEntity {
     [key: string]: any;
 }
 
+// [C] INotificationStatistics
+export interface INotificationStatistics extends IAtlasCollectionEntity {
+    memberId: string; // member id
+    cuedCount?: number; // cued times accumulated from last count reset
+    repliedCount?: number;
+    likedCount?: number;
+    savedCount?: number;
+    followedCound?: number;
+}
+
 // [C] IMemberStatistics
 export interface IMemberStatistics extends IAtlasCollectionEntity {
     memberId: string;
@@ -202,8 +216,8 @@ export interface IMemberStatistics extends IAtlasCollectionEntity {
     blockedCount?: number;
 }
 
-// [C] IMemberLoginRecord
-export interface IMemberLoginRecord {
+// [C] IMemberLoginLog
+export interface IMemberLoginLog {
     category: 'success' | 'error';
     providerId: string;
     timestamp: string;

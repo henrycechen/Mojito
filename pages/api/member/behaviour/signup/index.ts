@@ -1,12 +1,13 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { RestError } from '@azure/data-tables';
+import { MongoError } from 'mongodb';
 import CryptoJS from 'crypto-js';
 
 import AzureTableClient from '../../../../../modules/AzureTableClient';
 import AzureEmailCommunicationClient from '../../../../../modules/AzureEmailCommunicationClient';
-import { IEmailAddressLoginCredentialMapping, IPasswordHash, IMemberInfo, IMemberManagement, IMemberLoginRecord } from '../../../../../lib/interfaces';
+import { IEmailAddressLoginCredentialMapping, IPasswordHash, IMemberInfo, IMemberManagement, IMemberLoginLog } from '../../../../../lib/interfaces';
 import { LangConfigs, EmailMessage, VerifyAccountRequestInfo } from '../../../../../lib/types';
-import { getRandomStr, verifyEmailAddress, verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500, log } from '../../../../../lib/utils';
+import { getRandomIdStr, verifyEmailAddress, verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500, log } from '../../../../../lib/utils';
 import { composeVerifyAccountEmail } from '../../../../../lib/email';
 import AtlasDatabaseClient from '../../../../../modules/AtlasDatabaseClient';
 
@@ -29,6 +30,7 @@ export default async function SignUp(req: NextApiRequest, res: NextApiResponse) 
         response405(req, res);
         return;
     }
+    const atlasDbClient = AtlasDatabaseClient(); // Db client declared at top enable access from catch statement on error
     try {
         // Step #0 verify environment variables
         const environmentVariable = verifyEnvironmentVariable({ appSecret, recaptchaServerSecret, salt });
@@ -69,9 +71,9 @@ export default async function SignUp(req: NextApiRequest, res: NextApiResponse) 
             res.status(400).send('Email address has been registered');
             return;
         }
-        // Step #3.1 create a new memberId
-        const memberId = getRandomStr(true); // use UPPERCASE
-        // Step #3.2 upsertEntity (emailAddressLoginCredentialMapping) to [RL] LoginCredentialsMapping
+        // Step #3.1 create a new member id
+        const memberId = getRandomIdStr(true); // use UPPERCASE
+        // Step #3.2 upsertEntity (emailAddressLoginCredentialMapping) to [RL] LoginCredentialsMapping (new email login mapping record)
         const emailAddressLoginCredentialMapping: IEmailAddressLoginCredentialMapping = {
             partitionKey: 'EmailAddress',
             rowKey: emailAddress,
@@ -89,7 +91,7 @@ export default async function SignUp(req: NextApiRequest, res: NextApiResponse) 
         }
         const memberLoginTableClient = AzureTableClient('MemberLogin');
         await memberLoginTableClient.upsertEntity(passwordHash, 'Replace');
-        // Step #3.4 upsertEntity (memberInfo) to [T] MemberComprehensive.Info (create a new member)
+        // Step #3.4 upsertEntity (memberInfo) to [T] MemberComprehensive.Info (new member info record)
         const memberInfo: IMemberInfo = {
             partitionKey: memberId,
             rowKey: 'Info',
@@ -98,7 +100,7 @@ export default async function SignUp(req: NextApiRequest, res: NextApiResponse) 
         }
         const memberComprehensiveTableClient = AzureTableClient('MemberComprehensive'); // Update: 5/12/2022: applied new table layout (Info & Management merged)
         await memberComprehensiveTableClient.upsertEntity(memberInfo, 'Replace');
-        // Step #3.4 upsertEntity (memberManagement) to [T] MemberComprehensive.Management
+        // Step #3.5 upsertEntity (memberManagement) to [T] MemberComprehensive.Management (new member management record)
         const memberManagement: IMemberManagement = {
             partitionKey: memberId,
             rowKey: 'Management',
@@ -107,7 +109,7 @@ export default async function SignUp(req: NextApiRequest, res: NextApiResponse) 
             AllowCommenting: false
         }
         await memberComprehensiveTableClient.upsertEntity(memberManagement, 'Replace');
-        // Step #4 compose email to send verification link
+        // Step #3.6 compose email to send verification link
         const info: VerifyAccountRequestInfo = { memberId };
         const emailMessage: EmailMessage = {
             sender: '<donotreply@mojito.co.nz>',
@@ -128,27 +130,30 @@ export default async function SignUp(req: NextApiRequest, res: NextApiResponse) 
             return;
         }
         res.status(200).send('Member established');
-        // Step #5 write log
-        const atlasDbClient = AtlasDatabaseClient();
+        // Step #3.7 write log to [C] MemberLoginRecords
         await atlasDbClient.connect();
-        const memberLoginRecordsCollectionClient = atlasDbClient.db('mojito-records-dev').collection('memberLoginRecords');
-        const loginRecord: IMemberLoginRecord = {
+        const memberLoginLogCollectionClient = atlasDbClient.db('mojito-records-dev').collection('memberLoginLog');
+        const loginLog: IMemberLoginLog = {
             category: 'success',
             providerId: 'MojitoMemberSystem',
             timestamp: new Date().toISOString(),
             message: 'Member established, email address verification required to get full access.'
         }
-        await memberLoginRecordsCollectionClient.updateOne({ memberId }, { $addToSet: { recordsArr: loginRecord } }, { upsert: true });
+        await memberLoginLogCollectionClient.updateOne({ memberId }, { $addToSet: { logArr: loginLog } }, { upsert: true });
         atlasDbClient.close();
     } catch (e: any) {
         let msg: string;
         if (e instanceof RestError) {
             msg = 'Was trying communicating with table storage.';
-        }
-        else {
+        } else if (e instanceof MongoError) {
+            msg = 'Was trying communicating with mongodb.';
+            atlasDbClient.close();
+        } else {
             msg = 'Uncategorized Error occurred.';
         }
-        response500(res, `${msg} ${e}`);
+        if (!res.headersSent) {
+            response500(res, msg);
+        }
         log(msg, e);
         return;
     }

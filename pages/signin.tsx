@@ -206,9 +206,9 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
     // Handle ReCAPTCHA challenge
     const handleRecaptchaChange = (value: any) => {
         if (!!value) {
-            setProcessStates({ ...processStates, recaptchaResponse: value })
+            setProcessStates({ ...processStates, recaptchaResponse: value, displayCredentialSigninAlert: false, displayThirdPartyProviderSignAlert: false });
         } else {
-            setProcessStates({ ...processStates })
+            setProcessStates({ ...processStates });
         }
     }
     const handleRecaptchaLoseFocus = () => {

@@ -58,7 +58,7 @@ import { useTheme } from '@emotion/react';
 import { useRouter } from 'next/router';
 
 import { ProcessStates, Helper, ChannelDictionary, ChannelInfo, LangConfigs } from '../../lib/types';
-import { getRandomLongStr, updateLocalStorage, restoreFromLocalStorage } from '../../lib/utils';
+import { getRandomIdStrL20, updateLocalStorage, restoreFromLocalStorage } from '../../lib/utils';
 import { CenterlizedBox, ResponsiveCard, StyledSwitch, TextButton } from '../../ui/Styled';
 import Navbar from '../../ui/Navbar';
 
@@ -285,8 +285,8 @@ const Member = () => {
         getPostChannelList();
     }, []);
     const getPostChannelList = async () => {
-        const channelDict = await fetch('/api/channel/getdictionary').then(resp => resp.json());
-        const referenceList = await fetch('/api/channel/getindex').then(resp => resp.json());
+        const channelDict = await fetch('/api/channel/dictionary').then(resp => resp.json());
+        const referenceList = await fetch('/api/channel').then(resp => resp.json());
         const channelList: ChannelInfo[] = [];
         referenceList.forEach((channel: keyof ChannelDictionary) => {
             channelList.push(channelDict[channel])

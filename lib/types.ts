@@ -104,9 +104,10 @@ export type TopicInfo = {
 export type CommentInfo = {
     id?: string;
     memberId: string;
+    createTimestamp: string;
     content: string;
-    likedTimes: number;
-    dislikedTimes: number;
+    likedTimes?: number;
+    dislikedTimes?: number;
     commentStatus?: number;
 }
 

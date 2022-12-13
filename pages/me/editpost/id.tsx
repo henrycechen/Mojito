@@ -146,8 +146,8 @@ const EditPost = () => {
 
     // Initialize channel list
     const getPostChannelList = async () => {
-        const channelDict = await fetch('/api/channel/getdictionary').then(resp => resp.json());
-        const referenceList = await fetch('/api/channel/getindex').then(resp => resp.json());
+        const channelDict = await fetch('/api/channel/dictionary').then(resp => resp.json());
+        const referenceList = await fetch('/api/channel').then(resp => resp.json());
         const channelList: ChannelInfo[] = [];
         referenceList.forEach((channel: keyof ChannelDictionary) => {
             channelList.push(channelDict[channel])

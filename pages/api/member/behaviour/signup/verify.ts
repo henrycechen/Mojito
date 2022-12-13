@@ -1,12 +1,13 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { RestError } from '@azure/data-tables';
+import { MongoError } from 'mongodb';
 import CryptoJS from 'crypto-js';
 
 import AzureTableClient from '../../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from '../../../../../modules/AtlasDatabaseClient';
 
-import { verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500 } from '../../../../../lib/utils';
-import { IMemberInfo, IMemberManagement, IMemberIdIndex, IMemberStatistics } from '../../../../../lib/interfaces';
+import { verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500, log } from '../../../../../lib/utils';
+import { IMemberInfo, IMemberManagement, IMemberIdIndex, IMemberStatistics, INotificationStatistics } from '../../../../../lib/interfaces';
 
 const appSecret = process.env.APP_AES_SECRET ?? '';
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
@@ -17,7 +18,7 @@ export default async function VerifyToken(req: NextApiRequest, res: NextApiRespo
         response405(req, res);
         return;
     }
-    const atlasDbClient = AtlasDatabaseClient();
+    const atlasDbClient = AtlasDatabaseClient(); // Db client declared at top enable access from catch statement on error
     try {
         // Step #0 verify environment variables
         const environmentVariable = verifyEnvironmentVariable({ appSecret, recaptchaServerSecret });
@@ -60,7 +61,6 @@ export default async function VerifyToken(req: NextApiRequest, res: NextApiRespo
         }
         // Step #4.1 look up management record in [T] MemberComprehensive.Management
         const memberComprehensiveTableClient = AzureTableClient('MemberComprehensive');
-
         const memberManagementQuery = memberComprehensiveTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${memberId}' and RowKey eq 'Management'` } });
         const memberManagementQueryResult = await memberManagementQuery.next();
         if (!memberManagementQueryResult.value) {
@@ -73,14 +73,14 @@ export default async function VerifyToken(req: NextApiRequest, res: NextApiRespo
             res.status(409).send('Request for activating member cannot be fulfilled');
             return;
         }
-        // Step #4.3 updateEntity (memberInfo) to [T] MemberComprehensive.Info
+        // Step #4.3 updateEntity (memberInfo) to [T] MemberComprehensive.Info (update verified timestamp)
         const memberInfo: IMemberInfo = {
             partitionKey: memberId,
             rowKey: 'Info',
             VerifiedTimestamp: new Date().toISOString(),
         }
         await memberComprehensiveTableClient.updateEntity(memberInfo, 'Merge');
-        // Step #4.4 updateEntity (memberManagement) to [T] MemberComprehensive.Management
+        // Step #4.4 updateEntity (memberManagement) to [T] MemberComprehensive.Management (update member status)
         const memberManagement: IMemberManagement = {
             partitionKey: memberId,
             rowKey: 'Management',
@@ -111,7 +111,7 @@ export default async function VerifyToken(req: NextApiRequest, res: NextApiRespo
         }
         // Step #5.3 updateEntity (memberIdIndex) to [PRL] Statistics
         await statisticsTableClient.updateEntity(memberIdIndex, 'Merge');
-        // Step #6 insertOne (memberStatistics) to [C] memberStatistics
+        // Step #6 insertOne (memberStatistics) to [C] memberStatistics (initialize document)
         const memberStatistics: IMemberStatistics = {
             memberId,
             postCount: 0,
@@ -126,23 +126,37 @@ export default async function VerifyToken(req: NextApiRequest, res: NextApiRespo
         await atlasDbClient.connect();
         const memberStatisticsCollectionClient = atlasDbClient.db('mojito-statistics-dev').collection('memberStatistics');
         await memberStatisticsCollectionClient.insertOne(memberStatistics);
-    } catch (e) {
-        if (res.headersSent) {
-
-        } else if (e instanceof SyntaxError) {
-            res.status(400).send('Improperly normalized request info');
+        // Step #7 insertOne (notificationStatistics) to [C] notificationStatistics (initialize document)
+        const notificationStatistics: INotificationStatistics = {
+            memberId,
+            cuedCount: 0, // cued times accumulated from last count reset
+            repliedCount: 0,
+            likedCount: 0,
+            savedCount: 0,
+            followedCound: 0,
         }
-        else if (e instanceof TypeError) {
-            response500(res, `Was trying decoding recaptcha verification response. ${e}`);
+        const notificationStatisticsCollectionClient = atlasDbClient.db('mojito-statistics-dev').collection('notificationStatistics');
+        await notificationStatisticsCollectionClient.insertOne(notificationStatistics);
+    } catch (e) {
+        let msg: string;
+        if (e instanceof SyntaxError) {
+            res.status(400).send('Improperly normalized request info');
+            return;
+        } else if (e instanceof TypeError) {
+            msg = 'Was trying decoding recaptcha verification response.';
         }
         else if (e instanceof RestError) {
-            response500(res, `Was trying communicating with table storage. ${e}`);
+            msg = 'Was trying communicating with table storage.';
+        } else if (e instanceof MongoError) {
+            msg = 'Was trying communicating with mongodb.';
+            atlasDbClient.close();
+        } else {
+            msg = 'Uncategorized Error occurred.';
         }
-        else {
-            response500(res, `Uncategorized Error occurred. ${e}`);
+        if (!res.headersSent) {
+            response500(res, msg);
         }
-        console.log(e);
-    } finally {
-        atlasDbClient.close();
+        log(msg, e);
+        return;
     }
 }

@@ -175,13 +175,14 @@ type ResetPasswordRequestInfo = {
 
 ### 💡MemberStatus Codes
 
-| Code    | Explanation                                             |
-| ------- | ------------------------------------------------------- |
-| -2      | Deactivated                                             |
-| -1      | Suspended                                               |
-| 0       | Established, email address not verified                 |
-| **200** | **Email address verified or third party login, normal** |
-| 400     | Restricted to certain content or behaviour              |
+| Code     | Explanation                                             |
+| -------- | ------------------------------------------------------- |
+| **-3**   | **Deactivated by WebMaster**                            |
+| -2       | Deactivated (Cancelled)                                 |
+| -1       | Suspended                                               |
+| 0        | Established, email address not verified                 |
+| **200**  | **Email address verified or third party login, normal** |
+| **≥400** | **Restricted to certain content or behaviour**          |
 
 ### [T] MemberLogin
 
@@ -225,17 +226,17 @@ type ResetPasswordRequestInfo = {
 
 ### ▶️MemberBehaviour.MemberLogin
 
-| Behaviour            | Affected table                                               |
-| -------------------- | ------------------------------------------------------------ |
-| Register a member    | **[RL]** LoginCredentialsMapping,<br />**[D]** MemberLogin<br />**[T]** MemberComprehensive.Info,<br /> |
-| Verify email address | **[RL]** BlockedMemberMapping,<br />**[PRL]** BLockedByMemberMapping,<br />**[PD]**MemberStatistics 🆕 |
-| UpdateAvatarImageUrl | **[T]** MemberComprehensive.Info                             |
-| Update Nickname      | **[T]** MemberComprehensive.Info, **[PRL]** NicknameMapping  |
-| Update Password      | **[D]** MemberLogin                                          |
-| Reset Password       | **[D]** MemberLogin                                          |
-| Update BriefIntro    | **[T]** MemberComprehensive.Info                             |
-| Update Gender        | **[T]** MemberComprehensive.Info                             |
-| Update Birthday      | **[T]** MemberComprehensive.Info                             |
+| Behaviour              | Affected table                                               |
+| ---------------------- | ------------------------------------------------------------ |
+| Register a member 🆕    | **[RL]** LoginCredentialsMapping,<br />**[T]** MemberLogin ***(MojitoMemberSystem registeration only)***,<br />**[T]** MemberComprehensive.Info ***(initialize)***,<br />**[T]** MemberComprehensice.Management ***(initialize)***,<br />**[C]** MemberLoginRecords ***(initialize)*** |
+| Verify email address 🆕 | **[T]** MemberComprehensive.Info,<br />**[T]** MemberComprehensive.Management,<br />**[PRL]** Statistics ***(initialize)***,<br />**[C]** memberStatistics ***(initialize)***<br />**[C]** notification ***(initialize)*** |
+| UpdateAvatarImageUrl   | **[T]** MemberComprehensive.Info                             |
+| Update Nickname        | **[T]** MemberComprehensive.Info, **[PRL]** NicknameMapping  |
+| Update Password        | **[T]** MemberLogin                                          |
+| Reset Password         | **[T]** MemberLogin                                          |
+| Update BriefIntro      | **[T]** MemberComprehensive.Info                             |
+| Update Gender          | **[T]** MemberComprehensive.Info                             |
+| Update Birthday        | **[T]** MemberComprehensive.Info                             |
 
 ### 💡Forbid Members frequently updating their avatar image 
 
@@ -354,27 +355,27 @@ Only allow updating other info after 30 seconds since last update
 
 ### [T] PostCommentMappingComprehensive
 
-| PartitionKey | RowKey       | MemberId | Content | CommentStatus |
-| ------------ | ------------ | -------- | ------- | ------------- |
-| PostIdStr    | CommentIdStr | string   | string  | number        |
+| PartitionKey | RowKey       | CreateTimestamp | MemberId | Content | CommentStatus |
+| ------------ | ------------ | --------------- | -------- | ------- | ------------- |
+| PostIdStr    | CommentIdStr | string          | string   | string  | number        |
 
 ### 💡CommentStatus Code
 
-| Code    | Explanation                     |
-| ------- | ------------------------------- |
-| -1      | Deactivated                     |
-| **200** | **Normal**                      |
-| 400     | Restricted to certain behaviour |
-| 401     | Disallow commenting             |
+| Code    | Explanation                  |
+| ------- | ---------------------------- |
+| **-3**  | **Deactivated by WebMaster** |
+| -1      | Deactivated (deleted)        |
+| **200** | **Normal**                   |
+| 201     | Normal, edited               |
 
 ### ▶️MemberBehaviour.Comment
 
-| Behaviour                                             | Affected table                                               |
-| ----------------------------------------------------- | ------------------------------------------------------------ |
-| Create<br /> / Reply to a comment<br />(Cue a member) | **[T]** PostCommentMappingComprehensive,<br />**[PRL]** NotifyReplied,<br />**[C]** Notification ***(accumulate)***,<br />**[C]** CommentStatistics ***(accumulate)***,<br />**[C]** PostStatistics ***(accumulate)***,<br />**[C]** TopicStatistics ***(accumulate)***,<br />**[C]** ChannelStatistics ***(accumulate)*** |
-| Edit a comment                                        | **[T]** PostCommentMappingComprehensive,<br />( **[PRL]** NotifyReplied ),<br />( **[C]** Notification ***(accumulate)*** ) |
-| Delete a comment                                      | **[T]** PostCommentMappingComprehensive                      |
-| Like / Dislike a comment                              | **[PRL]** AttitudeCommentMapping,<br />**[PRL]** NotifyLiked,<br />**[C]** Notification ***(accumulate)***,<br />**[C]** CommentStatistics ***(accumulate)*** |
+| Behaviour                                                    | Affected tables / collections                                |
+| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| Create<br /> / Reply to a post<br />(Cue a member)           | **[T]** PostCommentMappingComprehensive ***(est.)***,<br />**[PRL]** NotifyReplied ***(est.)***,<br />**[C]** Notification***.repliedCount (acc.)***,<br />( Cond. **[PRL]** NotifyCued ***(est.)*** ),<br />( Cond. **[C]** Notification***.cuedCount (acc.)*** ),<br />**[C]** CommentStatistics*** (est.)***,<br />**[C]** memberStatistics***.commentCount (acc.)***,<br />**[C]** PostStatistics***.totalCommentCount (acc.)***,<br />**[C]** TopicStatistics***.totalCommentCount (acc.)***,<br />**[C]** ChannelStatistics***.totalCommentCount (acc.)*** |
+| Edit a comment<br />(Only allowed once,<br /> Editing results in losing<br />like / dislike data)🆕 | **[T]** PostCommentMappingComprehensive ***(put)***,<br />**[C]** commentStatistics***.liked&dislikeCount (put)***,🆕<br />**[C]** memberStatistics***.editCommentCount (acc.)***,<br />( Cond. **[PRL]** NotifyCued ***(est.)*** ),<br />( Cond. **[C]** Notification*.cuedCount* ***(acc.)*** ) |
+| Delete a comment                                             | **[T]** PostCommentMappingComprehensive ***(put)***,<br />**[C]** MemberStatistics***.deleteCommentCount (acc.)*** |
+| Like / Dislike a comment                                     | **[PRL]** AttitudeCommentMapping,<br />**[PRL]** NotifyLiked,<br /> (Cond. **[C]** Notification***.likedCount (acc.)*** ),<br />**[C]** CommentStatistics***.liked/dislikedCount (inc./dec.)*** |
 
 ### [PRL] AttitudeCommentMapping
 
@@ -411,21 +412,23 @@ Only allow updating other info after 30 seconds since last update
 
 ### 💡SubcommentStatus Code
 
-| Code    | Explanation |
-| ------- | ----------- |
-| -1      | Deactivated |
-| **200** | **Normal**  |
+| Code    | Explanation                  |
+| ------- | ---------------------------- |
+| **-3**  | **Deactivated by WebMaster** |
+| -1      | Deactivated (deleted)        |
+| **200** | **Normal**                   |
+| 201     | Normal, edited               |
 
 ### ▶️MemberBehaviour.Subcomment
 
 | Behaviour                                                | Affected table                                               |
 | -------------------------------------------------------- | ------------------------------------------------------------ |
-| Create<br /> / Reply to a subcomment<br />(Cue a member) | **[T]** CommentSubcommentMappingComprehensive,<br />**[PRL]** NotifyReplied,<br />**[C]** Notification ***(accumulate)***,<br />**[C]** SubcommentStatistics ***(establish)***,<br />**[C]** CommentStatistics ***(accumulate)***,<br />**[C]** PostStatistics ***(accumulate)***,<br />**[C]** TopicStatistics ***(accumulate)***,<br />**[C]** ChannelStatistics ***(accumulate)***, |
-| Edit a comment                                           | **[T]** CommentSubcommentMappingComprehensive,<br />( **[PRL]** NotifyReplied ),<br />( **[C]** Notification ***(accumulate)*** ) |
-| Delete a comment                                         | **[T]** CommentSubcommentMappingComprehensive                |
-| Like / Dislike a comment                                 | **[PRL]** AttitudeSubcommentMapping,<br />**[PRL]** NotifyLiked,<br />**[C]** Notification ***(accumulate)***,<br />**[C]** SubcommentStatistics ***(accumulate)*** |
+| Create<br /> / Reply to a subcomment<br />(Cue a member) | **[T]** CommentSubcommentMappingComprehensive ***(est.)***,<br />**[PRL]** NotifyReplied ***(est.)***,<br />**[C]** notification***.repliedCount (acc.)***,<br />( Cond. **[PRL]** NotifyCued ***(est.)*** ),<br />( Cond. **[C]** Notification***.cuedCount (acc.)*** ),<br />**[C]** subcommentStatistics ***(est.)***,<br />**[C]** commentStatistics***.subcommentCount (acc.)*** |
+| Edit a subcomment                                        | **[T]** CommentSubcommentMappingComprehensive ***(put)***,<br />**[C]** subcommentStatistics***.liked&dislikeCount (put)***,🆕<br />**[C]** memberStatistics***.editSubcommentCount (acc.)***,<br />( Cond. **[PRL]** NotifyCued ***(est.)*** ),<br />( Cond. **[C]** Notification*.cuedCount* ***(acc.)*** ) |
+| Delete a subcomment                                      | **[T]** CommentSubcommentMappingComprehensive ***(put)***,<br />**[C]** MemberStatistics***.deleteSubcommentCount (acc.)*** |
+| Like / Dislike a subcomment                              | **[PRL]** AttitudeSubcommentMapping,<br />**[PRL]** NotifyLiked,<br /> (Cond. **[C]** Notification***.likedCount (acc.)*** ),<br />**[C]** SubcommentStatistics***.liked/dislikedCount (inc./dec.)*** |
 
-### [PRL] AttitudeSubcommentMapping
+### [PRL] AttitudeSubcommentMappin
 
 \* This table records the attitude towards to certain commentIds taken by the partition key owner (memberId)
 
@@ -647,11 +650,14 @@ Only allow updating other info after 30 seconds since last update
 
 ### 💡PostStatus Codes
 
-| Code    | Explanation           |
-| ------- | --------------------- |
-| -1      | Deactivated / Removed |
-| **200** | **Normal**            |
-| 401     | Disallow commenting   |
+| Code     | Explanation                            |
+| -------- | -------------------------------------- |
+| **-3**   | **Deactivated (deleted) by WebMaster** |
+| -1       | Deactivated (deleted)                  |
+| **200**  | **Normal**                             |
+| 201      | Normal, edited                         |
+| **≥400** | **Restricted to certain behaviour**    |
+| 401      | Edited, disallow commenting            |
 
 ### ▶️MemberBehaviour.Post
 
@@ -749,7 +755,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 
 ### 💡"notificationStatistics" collection basic type
 
-```json
+```typescript
 {
     _id: ObjectId; // mongodb obejct id
     memberId: string; // member id
@@ -765,19 +771,30 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 
 
 
-## MemberLoginRecords
+## MemberLoginLog
 
-### 💡"memberLoginRecords" collection basic type
+### 💡Basic type of "memberLoginLog" collection
 
-```json
+```typescript
 {
     _id?: string; // mongodb obejct id
     memberId: string; // member id
-   recordsArr: any;
+   	logArr: any;
 }
 ```
 
-### 
+### [Type] LoginLog
+
+```typescript
+{
+    category: 'error' | 'success';
+    providerId: 'MojitoMemberSystem' | string; // LoginProviderId
+    timestamp: string; // new Date().toISOString()
+    message: 'Attempted login while email address not verified.'
+}
+```
+
+
 
 
 
@@ -790,7 +807,10 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
     _id?: string; // mongodb obejct id
     memberId: string; // member id
     postCount: number;
-    replyCount: number;
+    editPostCount:count;
+    commentCount: number;
+    editCommentCount: number;
+    deleteCommentCount: number;
     likeCount: number;
     dislikeCount: number;
     saveCount: number;
@@ -813,9 +833,21 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 
 
 
-## CommentStatistics
+## CommentCompre
 
-### 💡"commentStatistics" collection basic type
+### 💡Basic type of "commentStatistics" collection
+
+```json
+{
+    _id: ObjectId; // mongodb obejct id
+    postId: string; // post id
+    commentStatisticsObj: {
+    	[commentId]: [Type] CommentStatistics;
+	}
+}
+```
+
+### [Type] CommentStatistics
 
 ```json
 {
@@ -831,9 +863,21 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 
 
 
-## SubcommentStatistics 🆕
+## SubcommentStatistics
 
-### 💡"subcommentStatistics" collection basic type
+### 💡Basic type of "subcommentStatistics" collection
+
+```json
+{
+    _id: ObjectId; // mongodb obejct id
+    commentId: string; // subcomment id
+    subcommentStatisticsObj: {
+    	[subcommentId]: [Type] SubcommentStatistics;
+	}
+}
+```
+
+### [Type] SubcommentStatistics
 
 ```json
 {
@@ -852,7 +896,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 
 ## ChannelStatistics 🆕
 
-### 💡"channelStatistics" collection basic type
+### 💡Basic type of "channelStatistics"
 
 ```json
 {
@@ -862,7 +906,6 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
     postCount: number;
     totalHitCount: number;
     totalCommentCount: number;
-    totalSubommentCount: number;
     historyMonthlyHit: HitRecord[];
 	// history postCount, commentCount, etc.
 }
@@ -880,9 +923,9 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 
 
 
-## TopicStatistics 🆕
+## TopicStatistics
 
-### 💡"topicStatistics" collection basic type
+### 💡Basic type of "topicStatistics"
 
 ```json
 {
@@ -891,7 +934,6 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
     postCount: number;
     totalHitCount: number;
     totalCommentCount: number;
-    totalSubommentCount: number;
     historyDailyHit: HitRecord[];
 	historyMonthlyHit: HitRecord[];
 }
@@ -903,7 +945,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 }
 ```
 
-### 💡"topicRanking" collection basic type
+### 💡Basic type of "topicRanking" collection
 
 ```json
 {
@@ -922,23 +964,26 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 
 ## PostStatistics
 
-### 💡"postStatistics" collection basic type
+### 💡Basic type of "postStatistics" collection
 
 ```json
 {
     _id: ObjectId; // mongodb obejct id
     postId: string; // post id
-    totalHitCount: number; // view accumulator
+    totalHitCount: number; // viewed times accumulator
     totalLikedCount: number;
     totalDislikedCount: number;
+    totalCommentCount: number;
     totalSavedCount: number;
     historyHourlyHit: HitRecord[]; // 0 - 24h view record
 }
 ```
 
-### 💡Post ranking
 
-***\* Apply to collection "postRanking"***
+
+
+
+### [Type] PostRanking
 
 ```json
 {
@@ -1104,39 +1149,65 @@ $$
 
 ## Comment Info & Statistics
 
-### GET|`/api/comment/info/[id]`
+### GET|`/api/comment/s/of/[postId]`
 
-### POST|`/api/comment/info/index`
+get comments by post id
 
-| Behaviour                                             | Affected table                                               |
-| ----------------------------------------------------- | ------------------------------------------------------------ |
-| Create<br /> / Reply to a comment<br />(Cue a member) | **[T]** PostCommentMappingComprehensive,<br />**[PRL]** NotifyReplied,<br />**[C]** Notification ***(accumulate)***,<br />**[C]** CommentStatistics ***(accumulate)***,<br />**[C]** PostStatistics ***(accumulate)***,<br />**[C]** TopicStatistics ***(accumulate)***,<br />**[C]** ChannelStatistics ***(accumulate)*** |
+### POST|`/api/comment/of/[postId]/info/index`
 
-\* Identity verification required.
-
-### PUT|`/api/comment/info/[id]`
-
-| Behaviour      | Affected table                          |
-| -------------- | --------------------------------------- |
-| Edit a comment | **[T]** PostCommentMappingComprehensive |
+| Behaviour                                          | Affected table                                               |
+| -------------------------------------------------- | ------------------------------------------------------------ |
+| Create<br /> / Reply to a post<br />(Cue a member) | **[T]** PostCommentMappingComprehensive ***(est.)***,<br />**[PRL]** NotifyReplied ***(est.)***,<br />**[C]** notification***.repliedCount (acc.)***,<br />( Cond. **[PRL]** NotifyCued ***(est.)*** ),<br />( Cond. **[C]** Notification***.cuedCount (acc.)*** ),<br />**[C]** commentStatistics*** (est.)***,<br />**[C]** memberStatistics***.commentCount (acc.)***,<br />**[C]** postStatistics***.totalCommentCount (acc.)***,<br />**[C]** topicStatistics***.totalCommentCount (acc.)***,<br />**[C]** channelStatistics***.totalCommentCount (acc.)*** |
 
 \* Identity verification required.
 
-### DELETE|`/api/comment/info/[id]`
+#### Steps:
 
-| Behaviour        | Affected table                          |
-| ---------------- | --------------------------------------- |
-| Delete a comment | **[T]** PostCommentMappingComprehensive |
+1. createEntity (commentInfo:ICommentInfo) to [T] PostCommentMappingComprehensive
 
-\* Identity verification required.
+2. createEntity (noticeInfo:INoticeInfo) [PRL] NotifyReplied
 
-### POST|`/api/comment/behaviour/attitude/[id]`
+   1. If cued, createEntity (noticeInfo:INoticeInfo) [PRL] NotifyCued
+
+3. accumulate Notification.repliedCount
+
+   1. If cued, accumulate Notification.cuedCount
+
+4. createDocument (commentStatistics) to [C] commentStatistics
+
+5. accumulate memberStatistics.commentCount
+
+   ...
+
+### GET|`/api/comment/of/[postId]/info/[commentId]`
+
+get comment info by post id & comment id
+
+### POST|`/api/comment/of/[postId]/info/[commentId]`
 
 | Behaviour                | Affected table                                               |
 | ------------------------ | ------------------------------------------------------------ |
-| Like / Dislike a comment | **[PRL]** AttitudeCommentMapping,<br />**[PRL]** NotifyLiked,<br />**[C]** Notification ***(accumulate)***,<br />**[C]** CommentStatistics ***(accumulate)*** |
+| Like / Dislike a comment | **[PRL]** AttitudeCommentMapping,<br />**[PRL]** NotifyLiked,<br /> (Cond. **[C]** Notification***.likedCount (acc.)*** ),<br />**[C]** CommentStatistics***.liked/dislikedCount (inc. / dec.)*** |
 
 \* Identity verification required.
+
+### PUT|`/api/comment/of/[postId]/info/[commentId]`
+
+| Behaviour      | Affected table                                               |
+| -------------- | ------------------------------------------------------------ |
+| Edit a comment | **[T]** PostCommentMappingComprehensive ***(put)***,<br />**[C]** CommentStatistics***.liked&dislikeCount (put)***,🆕<br />**[C]** MemberStatistics***.editCommentCount (acc.)***,<br />( Cond. **[PRL]** NotifyCued ***(est.)*** ),<br />( Cond. **[C]** Notification*.cuedCount* ***(acc.)*** ) |
+
+\* Identity verification required.
+
+### DELETE|`/api/comment/of/[postId]/info/[commentId]`
+
+| Behaviour        | Affected table                                               |
+| ---------------- | ------------------------------------------------------------ |
+| Delete a comment | **[T]** PostCommentMappingComprehensive ***(put)***,<br />**[C]** MemberStatistics***.deleteCommentCount (acc.)*** |
+
+\* Identity verification required.
+
+
 
 
 
@@ -1144,9 +1215,13 @@ $$
 
 ## Subcomment Info & Statistics
 
-### GET|`/api/subcomment/info/[id]`
+Update 13/12/2022: Subcomment statistics no longer counted in post/topic/channel statistics. Only a few items are counted in member statistics
 
-### POST|`/api/subcomment/info/index`
+### GET|`/api/subcomment/s/of/[commentId]`
+
+get subcomments by comment id
+
+### POST|`/api/subcomment/of/[commentId]/info/index`
 
 | Behaviour                                                | Affected table                                               |
 | -------------------------------------------------------- | ------------------------------------------------------------ |
@@ -1154,7 +1229,19 @@ $$
 
 \* Identity verification required.
 
-### PUT|`/api/subcomment/info/[id]`
+### GET|`/api/subcomment/of/[commentId]/info/[subcommentId]`
+
+get subcomment info by commentid & subcomment id
+
+### POST|`/api/subcomment/of/[commentId]/info/[subcommentId]`
+
+| Behaviour                   | Affected table                                               |
+| --------------------------- | ------------------------------------------------------------ |
+| Like / Dislike a subcomment | **[PRL]** AttitudeSubommentMapping,<br />**[PRL]** NotifyLiked,<br />( Cond. **[C]** Notification***.likedCount (acc.)*** ),<br />**[C]** SubcommentStatistics***.liked/dislikedCount (inc. / dec.)*** |
+
+\* Identity verification required.
+
+### PUT|`/api/subcomment/of/[commentId]/info/[subcommentId]`
 
 | Behaviour      | Affected table                                |
 | -------------- | --------------------------------------------- |
@@ -1162,7 +1249,7 @@ $$
 
 \* Identity verification required.
 
-### DELETE|`/api/subcomment/info/[id]`
+### DELETE|`/api/subcomment/of/[commentId]/info/[subcommentId]`
 
 | Behaviour        | Affected table                                |
 | ---------------- | --------------------------------------------- |
@@ -1170,13 +1257,7 @@ $$
 
 \* Identity verification required.
 
-### POST|`/api/subcomment/behaviour/attitude/[id]`
 
-| Behaviour                | Affected table                                               |
-| ------------------------ | ------------------------------------------------------------ |
-| Like / Dislike a comment | **[PRL]** AttitudeSubcommentMapping,<br />**[PRL]** NotifyLiked,<br />**[C]** Notification ***(accumulate)***,<br />**[C]** SubcommentStatistics ***(accumulate)*** |
-
-\* Identity verification required.
 
 
 
