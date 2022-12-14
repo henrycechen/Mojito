@@ -135,302 +135,85 @@ type ResetPasswordRequestInfo = {
 
 \* Terms:
 
-- C: Collection
 - T: Table
 - RL: Relation record table
 - PRL: Passive Relation record table (affected by operations on the corresponding RL table)
-- T&PRL: Some entities will be affect by changes in other table / collections
 
+## 💾Member
 
+| Property | Type   | Desc                                              |
+| -------- | ------ | ------------------------------------------------- |
+| MemberId | string | MongoDB ObejctId String, 24 characters, lowercase |
 
+### [T] LoginCredentials
 
+| PartitionKey | RowKey           | PasswordHashStr |
+| ------------ | ---------------- | --------------- |
+| MemberIdStr  | `"PasswordHash"` | string          |
 
-## System (🚫Not-in-use)
-
-(🚫Not-in-use)
-
-
-
-## Member✅
-
-| Property | Type   | Desc                                    |
-| -------- | ------ | --------------------------------------- |
-| MemberId | string | Random string, 10 characters, UPPERCASE |
-
-### [T] MemberComprehensive
-
-| Key          | Type   | Desc                                          |
-| ------------ | ------ | --------------------------------------------- |
-| PartitionKey | string | MemberIdStr                                   |
-| RowKey       | string | Category name, e.g., `"Info"`, `"Management"` |
-| *            |        |                                               |
-
-| RowKey   | RegisteredTimestamp | VerifiedTimestamp | EmailAddress | Nickname | AvatarImageUrl | BriefIntro | Gender                   | Birthday |
-| -------- | ------------------- | ----------------- | ------------ | -------- | -------------- | ---------- | ------------------------ | -------- |
-| `"Info"` | string              | string            | string       | string   | string         | string     | `0 |1 |-1`, default `-1` | string   |
-
-| RowKey         | MemberStatus | AllowPosting | AllowCommenting |
-| -------------- | ------------ | ------------ | --------------- |
-| `"Management"` | number       | boolean      | boolean         |
-
-### 💡MemberStatus Codes
-
-| Code     | Explanation                                             |
-| -------- | ------------------------------------------------------- |
-| **-3**   | **Deactivated by WebMaster**                            |
-| -2       | Deactivated (Cancelled)                                 |
-| -1       | Suspended                                               |
-| 0        | Established, email address not verified                 |
-| **200**  | **Email address verified or third party login, normal** |
-| **≥400** | **Restricted to certain content or behaviour**          |
-
-### [T] MemberLogin
-
-| Key          | Type   | Desc                                  |
-| ------------ | ------ | ------------------------------------- |
-| PartitionKey | string | MemberIdStr                           |
-| RowKey       | string | Category name, e.g., `"PasswordHash"` |
-| *            |        |                                       |
-
-*Column key varies with RowKey.
-
-| RowKey             | Corresponding Column Key | Type / Value                 |
-| ------------------ | ------------------------ | ---------------------------- |
-| PasswordHash       | PasswordHashStr          | string, `"HASH_HASH_HASH=="` |
-| ResetPasswordToken | ResetPasswordTokenStr    | string, `"ABC123"`           |
-
-| RowKey   | LastLoginIPAddress | LastLoginTimestamp |
-| -------- | ------------------ | ------------------ |
-| `"Info"` | string             | string             |
-
-### [RL] LoginCredentialsMapping
-
-| Key          | Type    | Desc                             |
-| ------------ | ------- | -------------------------------- |
-| PartitionKey | string  | Category name, `"EmailAddress"`  |
-| RowKey       | string  | EmailAddressStr, `"abc@123.com"` |
-| MemberIdStr  | string  |                                  |
-| IsActive     | boolean |                                  |
-
-**\* 31/10/2022** There will not be an `IsActive` column for this table, an delete request will result in removing process.
-
-### [PRL] NicknameMapping
-
-\* An update on [D&PRL] MemberInfo will also update this table.
-
-| Key          | Type   | Desc                               |
-| ------------ | ------ | ---------------------------------- |
-| PartitionKey | string | `"Nickname"`                       |
-| RowKey       | string | NicknameStr, e.g., `"henrycechen"` |
-| MemberIdStr  | string |                                    |
-
-### ▶️MemberBehaviour.MemberLogin
-
-| Behaviour              | Affected table                                               |
-| ---------------------- | ------------------------------------------------------------ |
-| Register a member 🆕    | **[RL]** LoginCredentialsMapping,<br />**[T]** MemberLogin ***(MojitoMemberSystem registeration only)***,<br />**[T]** MemberComprehensive.Info ***(initialize)***,<br />**[T]** MemberComprehensice.Management ***(initialize)***,<br />**[C]** MemberLoginRecords ***(initialize)*** |
-| Verify email address 🆕 | **[T]** MemberComprehensive.Info,<br />**[T]** MemberComprehensive.Management,<br />**[PRL]** Statistics ***(initialize)***,<br />**[C]** memberStatistics ***(initialize)***<br />**[C]** notification ***(initialize)*** |
-| UpdateAvatarImageUrl   | **[T]** MemberComprehensive.Info                             |
-| Update Nickname        | **[T]** MemberComprehensive.Info, **[PRL]** NicknameMapping  |
-| Update Password        | **[T]** MemberLogin                                          |
-| Reset Password         | **[T]** MemberLogin                                          |
-| Update BriefIntro      | **[T]** MemberComprehensive.Info                             |
-| Update Gender          | **[T]** MemberComprehensive.Info                             |
-| Update Birthday        | **[T]** MemberComprehensive.Info                             |
-
-### 💡Forbid Members frequently updating their avatar image 
-
-Only allow updating avatar image after 7 days since last update.
-
-```typescript
-const {Timestamp: lastModifiedTime} = MemberInfoQueryResult.value;
-const diff:number = new Date().getTime() - new Date(lastModifiedTime).getTime();
-if (diff < 604800000) {
-    // allow updating avatar image
-}
-```
-
-### 💡Forbid Members frequently updating their nicknames
-
-Only allow updating nickname after 7 days since last update
-
-```typescript
-// Same as above
-```
-
-### 💡Forbid Members frequently updating other info
-
-Only allow updating other info after 30 seconds since last update
-
-```
-您更新太频繁了，请稍候片刻再重试
-```
-
-### ▶️MemberBehaviour.Members
-
-| Behaviour                  | Affected table                                               |
-| -------------------------- | ------------------------------------------------------------ |
-| Follow / Unfollow a member | **[RL]** FollowingMemberMapping,<br />**[PRL]** FollowedByMemberMapping,<br />**[PRL]** NotifyFollowed,<br />**[C]** Notification ***(accumulate)***,<br />**[C]** MemberStatistics ***(accumulate)*** |
-| Block a member 🆕           | **[RL]** BlockedMemberMapping,<br />**[PRL]** BLockedByMemberMapping,<br />**[C]** MemberStatistics ***(accumulate)*** |
+| PartitionKey | RowKey                 | ResetPasswordTokenStr |
+| ------------ | ---------------------- | --------------------- |
+| MemberIdStr  | `"ResetPasswordToken"` | string                |
 
 ### [RL] FollowingMemberMapping
 
-\* This table records the following memberIds of the partition key owner (memberId)
+\* This table records the following member ids of the partition key (member id)
 
-| Key          | Type    | Desc                 |
-| ------------ | ------- | -------------------- |
-| PartitionKey | string  | MemberIdStr          |
-| RowKey       | string  | FollowingMemberIdStr |
-| IsActive     | boolean | Default `true`       |
+| PartitionKey | RowKey               | IsActive                |
+| ------------ | -------------------- | ----------------------- |
+| MemberIdStr  | FollowingMemberIdStr | boolean, default `true` |
 
 ### [PRL] FollowedByMemberMapping
 
-\* This table records the memberIds of who have been following the partition key owner (memberId)
+\* This table records the member ids of who have been following the partition key (member id)
 
-| Key          | Type    | Desc                  |
-| ------------ | ------- | --------------------- |
-| PartitionKey | string  | MemberIdStr           |
-| RowKey       | string  | FollowedByMemberIdStr |
-| IsActive     | boolean | Default `true`        |
+| PartitionKey | RowKey                | IsActive                |
+| ------------ | --------------------- | ----------------------- |
+| MemberIdStr  | FollowedByMemberIdStr | boolean, default `true` |
 
 ### [RL] BlockedMemberMapping
 
-\* This table records the memberIds blocked by the partition key owner (memberId)
+\* This table records the member ids blocked by the partition key (member id)
 
-| Key          | Type    | Desc               |
-| ------------ | ------- | ------------------ |
-| PartitionKey | string  | MemberIdStr        |
-| RowKey       | string  | BlockedMemberIdStr |
-| IsActive     | boolean | Default `true`     |
-
-### [PRL] BlockedByMemberMapping
-
-\* This table records the memberIds of whom have blocked the partition key owner (memberId)
-
-| Key          | Type    | Desc                 |
-| ------------ | ------- | -------------------- |
-| PartitionKey | string  | MemberIdStr          |
-| RowKey       | string  | BlockedByMemberIdStr |
-| IsActive     | boolean | Default `true`       |
-
-### ⚙️MemberManagement
-
-| Management                           | Affected table                         |
-| ------------------------------------ | -------------------------------------- |
-| Activate <br />/ Deactivate a member | **[T]** MemberComprehensive.Management |
-| Allow<br />/ Forbid posting          | **[T]** MemberComprehensive.Management |
-| Allow<br />/ Forbid commenting       | **[T]** MemberComprehensive.Management |
+| PartitionKey | RowKey             | IsActive                |
+| ------------ | ------------------ | ----------------------- |
+| MemberIdStr  | BlockedMemberIdStr | boolean, default `true` |
 
 
 
 
 
-## PrivateMessage (🚫Not-in-use)
+## 💾Comment
 
-### [T] PrivateMessage (🚫Not-in-use)
-
-| Key          | Type   | Desc                             |
-| ------------ | ------ | -------------------------------- |
-| PartitionKey | string | PmIdStr                          |
-| RowKey       | string | Category name, e.g. InitMemberId |
-| *            |        |                                  |
-
-\* Column key varies with RowKey.
-
-| RowKey          | Corresponding Column Key | Corresponding Column Type/Value E.g. |
-| --------------- | ------------------------ | ------------------------------------ |
-| InitMemberId    | InitMemberIdStr          | string                               |
-| RecpMemberIdArr | RecpMemberIdArrStr       | string                               |
-| MessageArr      | MessageArrStr            | string                               |
-
-
-
-
-
-## Comment✅
-
-| Property  | Type   | Desc                                    |
-| --------- | ------ | --------------------------------------- |
-| CommentId | string | Random string, 16 characters, lowercase |
-
-### [T] PostCommentMappingComprehensive
-
-| PartitionKey | RowKey       | CreateTimestamp | MemberId | Content | CommentStatus |
-| ------------ | ------------ | --------------- | -------- | ------- | ------------- |
-| PostIdStr    | CommentIdStr | string          | string   | string  | number        |
-
-### 💡CommentStatus Code
-
-| Code    | Explanation                  |
-| ------- | ---------------------------- |
-| **-3**  | **Deactivated by WebMaster** |
-| -1      | Deactivated (deleted)        |
-| **200** | **Normal**                   |
-| 201     | Normal, edited               |
-
-### ▶️MemberBehaviour.Comment
-
-| Behaviour                                                    | Affected tables / collections                                |
-| ------------------------------------------------------------ | ------------------------------------------------------------ |
-| Create<br /> / Reply to a post<br />(Cue a member)           | **[T]** PostCommentMappingComprehensive ***(est.)***,<br />**[PRL]** NotifyReplied ***(est.)***,<br />**[C]** Notification***.repliedCount (acc.)***,<br />( Cond. **[PRL]** NotifyCued ***(est.)*** ),<br />( Cond. **[C]** Notification***.cuedCount (acc.)*** ),<br />**[C]** CommentStatistics*** (est.)***,<br />**[C]** memberStatistics***.commentCount (acc.)***,<br />**[C]** PostStatistics***.totalCommentCount (acc.)***,<br />**[C]** TopicStatistics***.totalCommentCount (acc.)***,<br />**[C]** ChannelStatistics***.totalCommentCount (acc.)*** |
-| Edit a comment<br />(Only allowed once,<br /> Editing results in losing<br />like / dislike data)🆕 | **[T]** PostCommentMappingComprehensive ***(put)***,<br />**[C]** commentStatistics***.liked&dislikeCount (put)***,🆕<br />**[C]** memberStatistics***.editCommentCount (acc.)***,<br />( Cond. **[PRL]** NotifyCued ***(est.)*** ),<br />( Cond. **[C]** Notification*.cuedCount* ***(acc.)*** ) |
-| Delete a comment                                             | **[T]** PostCommentMappingComprehensive ***(put)***,<br />**[C]** MemberStatistics***.deleteCommentCount (acc.)*** |
-| Like / Dislike a comment                                     | **[PRL]** AttitudeCommentMapping,<br />**[PRL]** NotifyLiked,<br /> (Cond. **[C]** Notification***.likedCount (acc.)*** ),<br />**[C]** CommentStatistics***.liked/dislikedCount (inc./dec.)*** |
+| Property  | Type   | Desc                                              |
+| --------- | ------ | ------------------------------------------------- |
+| CommentId | string | MongoDB ObejctId String, 24 characters, lowercase |
 
 ### [PRL] AttitudeCommentMapping
 
-\* This table records the attitude towards to certain commentIds taken by the partition key owner (memberId)
+\* This table records the attitude expressed to certain comment ids by the partition key (member id)
 
-| Key          | Type   | Desc                      |
-| ------------ | ------ | ------------------------- |
-| PartitionKey | string | MemberIdStr               |
-| RowKey       | string | CommentIdStr              |
-| Attitude     | number | `-1 | 0 | 1`, default `0` |
-
-### ⚙️CommentManagement
-
-| Management                            | Affected table                          |
-| ------------------------------------- | --------------------------------------- |
-| Activate <br />/ Deactivate a comment | **[T]** CommentComprehensive.Management |
-| Allow<br />/ Forbid commenting        | **[T]** CommentComprehensive.Management |
+| PartitionKey | RowKey       | Attitude                        |
+| ------------ | ------------ | ------------------------------- |
+| MemberIdStr  | CommentIdStr | number, `-1 |0 |1`, default `0` |
 
 
 
 
 
-## Subcomment✅
+## 💾Subcomment
 
-| Property     | Type   | Desc                                    |
-| ------------ | ------ | --------------------------------------- |
-| SubcommentId | string | Random string, 16 characters, lowercase |
+| Property     | Type   | Desc                                              |
+| ------------ | ------ | ------------------------------------------------- |
+| SubcommentId | string | MongoDB ObejctId String, 24 characters, lowercase |
 
-### [T] CommentSubcommentMappingComprehensive
+### [PRL] AttitudeSubcommentMapping
 
-| PartitionKey | RowKey          | MemberId | Content | SubcommentStatus |
-| ------------ | --------------- | -------- | ------- | ---------------- |
-| CommentIdStr | SubcommentIdStr | string   | string  | number           |
+\* This table records the attitude expressed to certain commentIds by the partition key (member id)
 
-### 💡SubcommentStatus Code
-
-| Code    | Explanation                  |
-| ------- | ---------------------------- |
-| **-3**  | **Deactivated by WebMaster** |
-| -1      | Deactivated (deleted)        |
-| **200** | **Normal**                   |
-| 201     | Normal, edited               |
-
-### ▶️MemberBehaviour.Subcomment
-
-| Behaviour                                                | Affected table                                               |
-| -------------------------------------------------------- | ------------------------------------------------------------ |
-| Create<br /> / Reply to a subcomment<br />(Cue a member) | **[T]** CommentSubcommentMappingComprehensive ***(est.)***,<br />**[PRL]** NotifyReplied ***(est.)***,<br />**[C]** notification***.repliedCount (acc.)***,<br />( Cond. **[PRL]** NotifyCued ***(est.)*** ),<br />( Cond. **[C]** Notification***.cuedCount (acc.)*** ),<br />**[C]** subcommentStatistics ***(est.)***,<br />**[C]** commentStatistics***.subcommentCount (acc.)*** |
-| Edit a subcomment                                        | **[T]** CommentSubcommentMappingComprehensive ***(put)***,<br />**[C]** subcommentStatistics***.liked&dislikeCount (put)***,🆕<br />**[C]** memberStatistics***.editSubcommentCount (acc.)***,<br />( Cond. **[PRL]** NotifyCued ***(est.)*** ),<br />( Cond. **[C]** Notification*.cuedCount* ***(acc.)*** ) |
-| Delete a subcomment                                      | **[T]** CommentSubcommentMappingComprehensive ***(put)***,<br />**[C]** MemberStatistics***.deleteSubcommentCount (acc.)*** |
-| Like / Dislike a subcomment                              | **[PRL]** AttitudeSubcommentMapping,<br />**[PRL]** NotifyLiked,<br /> (Cond. **[C]** Notification***.likedCount (acc.)*** ),<br />**[C]** SubcommentStatistics***.liked/dislikedCount (inc./dec.)*** |
-
-### [PRL] AttitudeSubcommentMappin
-
-\* This table records the attitude towards to certain commentIds taken by the partition key owner (memberId)
+| PartitionKey | RowKey        | Attitude                        |
+| ------------ | ------------- | ------------------------------- |
+| MemberIdStr  | SubcommentStr | number, `-1 |0 |1`, default `0` |
 
 | Key          | Type   | Desc                      |
 | ------------ | ------ | ------------------------- |
@@ -442,16 +225,7 @@ Only allow updating other info after 30 seconds since last update
 
 
 
-## Notification✅
-
-### ▶️MemberBehaviour.Any
-
-| Behaviour                                      | Affected table                                               |
-| ---------------------------------------------- | ------------------------------------------------------------ |
-| Create<br /> / Edit a post<br />(Cue a member) | ...<br />**[PRL]** NotifyReplied,<br />**[C]** Notification ***(accumulate)***,<br />... |
-| Edit a comment                                 | **[T]** PostCommentMappingComprehensive                      |
-| Delete a comment                               | **[T]** PostCommentMappingComprehensive                      |
-| Like / Dislike a comment                       | **[PRL]** AttitudeCommentMapping,<br />**[PRL]** NotifyLiked,<br />**[C]** Notification ***(accumulate)***,<br />**[C]** CommentStatistics ***(accumulate)*** |
+## 💾Notification
 
 ### [PRL] NotifyCued
 
@@ -515,7 +289,7 @@ Only allow updating other info after 30 seconds since last update
 
 
 
-## Channel✅
+## 💾Channel
 
 | ChannelId                    | ChannelNameStr | 中文   | Svg Icon Reference |
 | ---------------------------- | -------------- | ------ | ------------------ |
@@ -533,143 +307,28 @@ Only allow updating other info after 30 seconds since last update
 | furnishing                   | Furnishing     | 家装   | YardIcon           |
 | invest                       | Invest         | 投资   | MonetizationOnIcon |
 | event                        | Event          | 时事   | NewspaperIcon      |
+| all                          | All            | 全部   |                    |
 
-### [T] ChannelInfo - ChannelInfo
+### [T] ChannelInfo
 
-| Key          | Type   | Desc                    |
-| ------------ | ------ | ----------------------- |
-| PartitionKey | string | `"ChannelInfo"`         |
-| RowKey       | string | ChannelIdStr            |
-| CH           | string | Channel name in Chinese |
-| EN           | string | Channel name in English |
-| SvgIconPath  | string | string, svg icon path   |
+| Key          | Type   | Desc                                     |
+| ------------ | ------ | ---------------------------------------- |
+| PartitionKey | string | Category name, e.g., `"Info"`, `"Index"` |
+| *            |        |                                          |
 
-### [T] ChannelInfo - ChannelIdIndex
+| PartitionKey | RowKey       | CH     | EN     | SvgIconPath |
+| ------------ | ------------ | ------ | ------ | ----------- |
+| `"Info"`     | ChannelIdStr | string | string | string      |
 
-| Key                 | Type   | Desc                      |
-| ------------------- | ------ | ------------------------- |
-| PartitionKey        | string | `"ChannelIdIndex"`        |
-| RowKey              | string | `"default"`               |
-| ChannelIdIndexValue | string | string, stringified array |
-
-### [RL] ChannelPostMapping
-
-| Key          | Type    | Desc         |
-| ------------ | ------- | ------------ |
-| PartitionKey | string  | ChannelIdStr |
-| RowKey       | string  | PostIdStr    |
-| IsActive     | boolean |              |
-
-### [RL] ChannelTopicMapping
-
-| Key          | Type    | Desc         |
-| ------------ | ------- | ------------ |
-| PartitionKey | string  | ChannelIdStr |
-| RowKey       | string  | TopicIdStr   |
-| IsActive     | boolean |              |
+| PartitionKey | RowKey      | InedxValue                |
+| ------------ | ----------- | ------------------------- |
+| `"Index"`    | `"default"` | string, stringified array |
 
 
 
 
 
-## Topic✅
-
-| Property | Type   | Desc                                    |
-| -------- | ------ | --------------------------------------- |
-| TopictId | string | Random string, 10 characters, lowercase |
-| Name     | string | A-Za-Z + Chinese characters only        |
-
-### [T] TopicComprehensive
-
-| Key          | Type   | Desc                                          |
-| ------------ | ------ | --------------------------------------------- |
-| PartitionKey | string | TopicIdStr                                    |
-| RowKey       | string | Category name, e.g., `"Info"`, `"Management"` |
-
-| RowKey   | Name   |
-| -------- | ------ |
-| `"Info"` | string |
-
-| RowKey         | TopicStatus |
-| -------------- | ----------- |
-| `"Management"` | number      |
-
-### 💡TopicStatus Codes
-
-| Code    | Explanation           |
-| ------- | --------------------- |
-| -1      | Deactivated / Removed |
-| **200** | **Normal**            |
-
-### [RL] TopicPostMapping
-
-| Key          | Type    | Desc       |
-| ------------ | ------- | ---------- |
-| PartitionKey | string  | TopicIdStr |
-| RowKey       | string  | PostIdStr  |
-| IsActive     | boolean |            |
-
-### ▶️MemberBehaviour.Topic
-
-| Behaviour      | Affected table                                        |
-| -------------- | ----------------------------------------------------- |
-| Create a topic | **[T]** TopicComprehensive, **[C]** ChannelStatistics |
-
-### ⚙️TopicManagement 
-
-| Management                          | Affected table             |
-| ----------------------------------- | -------------------------- |
-| Activate <br />/ Deactivate a topic | **[D]** TopicComprehensive |
-
-
-
-
-
-## Post✅
-
-| Property | Type   | Desc                                    |
-| -------- | ------ | --------------------------------------- |
-| PostId   | string | Random string, 10 characters, UPPERCASE |
-
-
-### [T] PostComprehensive
-
-| Key          | Type   | Desc                                  |
-| ------------ | ------ | ------------------------------------- |
-| PartitionKey | string | PostIdStr                             |
-| RowKey       | string | Category name, e.g., , `"Management"` |
-| *            |        |                                       |
-
-| RowKey   | CreateTimestamp | MemberId | Title  | ImageUrlsArr              | ParagraphsArr             | ChannelId | TopicIdsArr               |
-| -------- | --------------- | -------- | ------ | ------------------------- | ------------------------- | --------- | ------------------------- |
-| `"Info"` | string          | string   | string | string, stringified array | string, stringified array | string    | string, stringified array |
-
-| RowKey         | PostStatus |
-| -------------- | ---------- |
-| `"Management"` | number     |
-
-### 💡PostStatus Codes
-
-| Code     | Explanation                            |
-| -------- | -------------------------------------- |
-| **-3**   | **Deactivated (deleted) by WebMaster** |
-| -1       | Deactivated (deleted)                  |
-| **200**  | **Normal**                             |
-| 201      | Normal, edited                         |
-| **≥400** | **Restricted to certain behaviour**    |
-| 401      | Edited, disallow commenting            |
-
-### ▶️MemberBehaviour.Post
-
-| Behaviour                       | Affected table                                               |
-| ------------------------------- | ------------------------------------------------------------ |
-| View a post                     | **[RL]** HistoryMapping,<br />**[C]** PostStatistics ***(accumulate)***,<br />**[C]** TopicStatistics ***(accumulate)***,<br />**[C]** ChannelStatistics ***(accumulate)***, |
-| Create a post                   | **[T]** PostComprehensive,<br />**[RL]** CreationsMapping,<br />**[C]** PostStatistics ***(establish)***,<br />**[C]** TopicStatistics ***(accumulate)***,<br />**[C]** ChannelStatistics ***(accumulate)***,<br />(**[PRL]** NotifyCued),<br />(**[C]** Notification) |
-| Edit a post                     | **[T]** PostComprehensive,<br />(**[PRL]** NotifyCued),<br />(**[C]*** Notification) |
-| Delete a post                   | **[T]** PostComprehensive,<br />**[RL]** CreationsMapping ***(cleanup)*** |
-| Save a post                     | **[RL]** SavedMapping,<br />**[PRL]** NotifySaved,<br />**[C]** Notification ***(accumulate)***,<br />**[C]** PostStatistics ***(accumulate)***,<br />**[C]** TopicStatistics ***(accumulate)***,<br />**[C]** ChannelStatistics ***(accumulate)***, |
-| Like / Dislike a post           | **[PRL]** PostAttitudeMapping,<br />**[PRL]** NotifyLiked,<br />**[C]** Notification ***(accumulate)***,<br />**[C]** PostStatistics ***(accumulate)***,<br />**[C]** TopicStatistics ***(accumulate)***,<br />**[C]** ChannelStatistics ***(accumulate)*** |
-| Share a post<br />(🚫Not-in-use) |                                                              |
+## 💾Post
 
 ### [RL] HistoryMapping
 
@@ -683,7 +342,7 @@ Only allow updating other info after 30 seconds since last update
 
 ### [RL] CreationsMapping 🆕
 
-\* This table records the postIds published by the partition key owner (memberId)
+\* This table records the postIds published by the partition key owner (member id)
 
 | Key          | Type    | Desc           |
 | ------------ | ------- | -------------- |
@@ -693,7 +352,7 @@ Only allow updating other info after 30 seconds since last update
 
 ### [RL] SavedMapping
 
-\* This table records the postIds saved by the partition key owner (memberId)
+\* This table records the postIds saved by the partition key owner (member id)
 
 | Key          | Type    | Desc           |
 | ------------ | ------- | -------------- |
@@ -701,27 +360,21 @@ Only allow updating other info after 30 seconds since last update
 | RowKey       | string  | PostIdStr      |
 | IsActive     | boolean | Default `true` |
 
-### [PRL] PostAttitudeMapping
+### [PRL] AttitudePostMapping
 
-\* This table records the attitude towards to certain postIds taken by the partition key owner (memberId)
+\* This table records the attitude towards to certain postIds taken by the partition key owner (member id)
 
 | Key          | Type   | Desc                      |
 | ------------ | ------ | ------------------------- |
-| PartitionKey | string | PostIdStr                 |
-| RowKey       | string | MemberIdStr               |
+| PartitionKey | string | MemberIdStr               |
+| RowKey       | string | PostIdStr                 |
 | Attitude     | number | `-1 | 0 | 1`, default `0` |
 
-### ⚙️PostManagement 
-
-| Management                         | Affected table            |
-| ---------------------------------- | ------------------------- |
-| Activate <br />/ Deactivate a posy | **[T]** PostComprehensive |
 
 
 
 
-
-## Stastics✅
+## 💾Stastics
 
 ### [PRL] Statistics
 
@@ -735,7 +388,7 @@ Only allow updating other info after 30 seconds since last update
 
 ## Reference
 
-- [Design for Querying](https://learn.microsoft.com/en-us/azure/storage/tables/table-storage-design-for-query)
+- Microsoft - Design for Querying [Link](https://learn.microsoft.com/en-us/azure/storage/tables/table-storage-design-for-query)
 
 
 
@@ -751,19 +404,18 @@ Only allow updating other info after 30 seconds since last update
 mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statistics-dev" --apiVersion 1 --username dbmaster
 ```
 
-## Notification🆕
-
-### 💡"notificationStatistics" collection basic type
+## 📋Notification
 
 ```typescript
 {
-    _id: ObjectId; // mongodb obejct id
-    memberId: string; // member id
+    _id: ObjectId;
+    memberId: string;
+    
     cuedCount: number; // cued times accumulated from last count reset
     repliedCount: number;
     likedCount: number;
     savedCount: number;
-    followedCound: number;
+    followedCount: number;
 }
 ```
 
@@ -771,26 +423,136 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 
 
 
-## MemberLoginLog
+## 📋Member
 
-### 💡Basic type of "memberLoginLog" collection
+### [C] memberComprehensive
 
 ```typescript
 {
-    _id?: string; // mongodb obejct id
+    _id: string;  // mongodb obejct id | memberId (auto-generated)
+    
+    //// info ////
+    memberId: string; // 10 characters, UPPERCASE
+    registeredTime: number;
+    verifiedTime: number;
+    emailAddress: string;
+    emailAddressHash: string; // prevent duplicated login credential when registering
+    nickname: string;
+    nicknameHash: string; // prevent duplicated nickname when re-naming
+    briefIntro: string;
+    gender: -1 | 0 | 1;
+    birthday: string;
+    
+    //// management ////
+    status: number;
+    allowPosting: boolean;
+    allowCommenting: boolean;
+}
+```
+
+### 💡MemberStatus Codes
+
+| Code     | Explanation                                             |
+| -------- | ------------------------------------------------------- |
+| **-3**   | **Deactivated by WebMaster**                            |
+| -2       | Deactivated (Cancelled)                                 |
+| -1       | Suspended                                               |
+| 0        | Established, email address not verified                 |
+| **200**  | **Email address verified or third party login, normal** |
+| **≥400** | **Restricted to certain content or behaviour**          |
+
+### [C] memberLoginHistory
+
+```typescript
+{
+    _id: string; // mongodb obejct id
     memberId: string; // member id
-   	logArr: any;
-}
-```
-
-### [Type] LoginLog
-
-```typescript
-{
-    category: 'error' | 'success';
+   	category: 'error' | 'success';
     providerId: 'MojitoMemberSystem' | string; // LoginProviderId
     timestamp: string; // new Date().toISOString()
-    message: 'Attempted login while email address not verified.'
+    message: string; // short message, e.g., 'Attempted login while email address not verified.'
+}
+```
+
+### [C] memberStatistics
+
+```typescript
+{
+    _id: string; // mongodb obejct id
+    memberId: string;
+    
+    //// total statistics ////
+    // creation
+    totalCreationCount: number; // info page required
+    totalCreationEditCount: number;
+    totalCreationDeleteCount: number;
+    // comment
+    totalCommentCount: number;
+    totalCommentEditCount: number;
+    totalCommentDeleteCount: number;
+    // attitude
+    totalLikeCount: number;
+    totalDislikeCount: number;
+    // on other members
+    totalFollowingCount: number;
+    totalBlockedCount: number;
+    // by other members
+    totalCreationLikedCount: number; // info page required
+    totalCreationDislikedCount: number;
+    totalCommentLikedCount: number;
+    totalCommentDislikedCount: number;
+    totalSavedCount: number; // info page required
+    followedByCount: number; // info page required
+}
+```
+
+### [C] memberStatisticsHistory
+
+\* Maintained by automation script
+
+```typescript
+{
+    _id: string; // mongodb obejct id
+    
+    memberId: string;    
+ 	createdTime: number; // created time of this document (member statistics snapshot)
+    memberStatisticsObj: { [key: timeStr]: MemberStatistics }
+}
+```
+
+### Type MemberStatistics
+
+```typescript
+{
+    // creation
+    totalCreationCount: number; // info page required
+    totalCreationEditCount: number;
+    totalCreationDeleteCount: number;
+    // by other members
+	totalCreationLikedCount: number; // info page required
+    totalCreationDislikedCount: number;
+    totalCommentLikedCount: number;
+    totalCommentDislikedCount: number;
+    totalSavedCount: number; // info page required
+    followedByCount: number; // info page required
+}
+```
+
+### [C] attitudeMapping
+
+```typescript
+{
+    _id: string; // mongodb obejct id
+    
+    memberId: string;
+    postId: string; // divided by post id
+    attitude: number; // -1 | 0 | 1
+    attitudeCommentMapping: {
+        [key: commentIdStr]: number // -1 | 0 | 1
+    };
+    attitudeSubcommentMapping: {
+        [key: subcommentIdStr]: number // -1 | 0 | 1
+    }
 }
 ```
 
@@ -798,122 +560,139 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 
 
 
-## MemberStatistics
+## 📋Comment
 
-### 💡"memberStatistics" collection basic type
+### [C] commentComprehensive
 
-```json
+```typescript
 {
-    _id?: string; // mongodb obejct id
-    memberId: string; // member id
-    postCount: number;
-    editPostCount:count;
-    commentCount: number;
-    editCommentCount: number;
-    deleteCommentCount: number;
-    likeCount: number;
-    dislikeCount: number;
-    saveCount: number;
-    followingCount: number;
-    followedByCount: number;
-    blockedCount: number;
-}
-```
-
-### 💡"memberHistoricalStatistics" collection basic type
-
-```json
-{
-    _id: ObjectId; // mongodb obejct id
-    memberId: string; // member id
-}
-```
-
-
-
-
-
-## CommentCompre
-
-### 💡Basic type of "commentStatistics" collection
-
-```json
-{
-    _id: ObjectId; // mongodb obejct id
-    postId: string; // post id
-    commentStatisticsObj: {
-    	[commentId]: [Type] CommentStatistics;
-	}
-}
-```
-
-### [Type] CommentStatistics
-
-```json
-{
-    _id: ObjectId; // mongodb obejct id
-    commentId: string; // comment id
+     _id: string; // mongodb obejct id
+    
+    //// info ////
+    postId: string;
+    commentId: string; // 16 characters, UPPERCASE
+    createdTime: number; // created time of this document (comment est.)
+    content: string;
+    
+	//// management ////
+    status: number;
+    
+    //// statistics ////
     likedCount: number;
     dislikedCount: number;
     subcommentCount: number;
 }
 ```
 
-
-
-
-
-## SubcommentStatistics
-
-### 💡Basic type of "subcommentStatistics" collection
+### [C] subcommentComprehensive
 
 ```json
 {
-    _id: ObjectId; // mongodb obejct id
-    commentId: string; // subcomment id
-    subcommentStatisticsObj: {
-    	[subcommentId]: [Type] SubcommentStatistics;
-	}
-}
-```
-
-### [Type] SubcommentStatistics
-
-```json
-{
-    _id: ObjectId; // mongodb obejct id
-    subcommentId: string; // subcomment id
+    _id: string; // mongodb obejct id
+    
+    //// info ////
+    commentId: string;
+    subcommentId: string; // 16 characters, UPPERCASE
+    createdTime: number; // created time of this document (subcomment est.)
+    content: string;
+    
+	//// management ////
+    commentStatus: number;
+    
+    //// statistics ////
     likedCount: number;
     dislikedCount: number;
 }
 ```
 
+### 💡Comment & SubcommentStatus Code
+
+| Code    | Explanation                            |
+| ------- | -------------------------------------- |
+| **-3**  | **Deactivated (removed) by WebMaster** |
+| -1      | Deactivated (removed)                  |
+| **200** | **Normal**                             |
+| 201     | Normal, edited                         |
 
 
 
 
 
+## 📋Channel
 
-## ChannelStatistics 🆕
-
-### 💡Basic type of "channelStatistics"
+### [C] channelStatistics
 
 ```json
 {
     _id: ObjectId; // mongodb obejct id
-    channelId: string; // post id
-    topicCount: number;
-    postCount: number;
+    
+    //// info ////
+    channelId: string; // pre-defined channel id
+    createTime: number;
+    
+    //// total statistics ////
     totalHitCount: number;
-    totalCommentCount: number;
-    historyMonthlyHit: HitRecord[];
-	// history postCount, commentCount, etc.
+    totalTopicCount: number;
+    totalPostCount: number;
+    totalCommentCount: number; // subcomment included
 }
+```
 
-// HitRecord
+### [C] channelStatisticsHistory
+
+\* Maintained by automation script
+
+```json
 {
-    timestamp: string;
-    hit: number;
+    _id: ObjectId; // mongodb obejct id
+    
+    //// info ////
+    channelId: string;
+    createdTime: number; // created time of this document (channel statistics snapshot)
+    channelStatisticsObj: { [key: timeStr]: ChannelStatistics }
+}
+```
+
+### Type ChannelStatistics
+
+```json
+{
+    totalHitCount: number;
+    totalTopicCount: number;
+    totalPostCount: number;
+    totalCommentCount: number;
+}
+```
+
+### [C] channelPostMapping
+
+```typescript
+{
+    _id: ObjectId; // mongodb obejct id
+    
+    //// info ////
+    channelId: string;
+    postId: string;
+    createdTime: number; // created time of this document (post est.)
+    
+    //// management ////
+    status: number;
+}
+```
+
+### [C] channelTopicMapping
+
+```typescript
+{
+    _id: ObjectId; // mongodb obejct id
+    
+    //// info ////
+    channelId: string;
+    topicId: string;
+    createdTime: number; // created time of this document (topic est.)
+    
+    //// management ////
+    status: number;
 }
 ```
 
@@ -921,38 +700,124 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 
 
 
+## 📋Topic
 
-
-## TopicStatistics
-
-### 💡Basic type of "topicStatistics"
+### [C] topicComprehensive
 
 ```json
 {
-    _id: ObjectId; // mongodb obejct id
-    topicId: string; // post id
-    postCount: number;
-    totalHitCount: number;
+    _id: ObjectIdStr; // mongodb obejct id
+    
+    //// info ////
+    topicId: string; // 16 characters, UPPERCASE
+    createdTime: number; // create time of this document (topic est.)
+    content: string; // topic content
+    
+    //// management ////
+    status: number;
+    
+    //// total statistics ////
+    totalPostCount: number;
+    totalHitCount: number; // total hit count of total posts of this topic
     totalCommentCount: number;
-    historyDailyHit: HitRecord[];
-	historyMonthlyHit: HitRecord[];
-}
-
-// HitRecord
-{
-    timestamp: string;
-    hit: number;
+    totalSearchCount: number;
 }
 ```
 
-### 💡Basic type of "topicRanking" collection
+### 💡TopicStatus Codes
 
-```json
+| Code    | Explanation                            |
+| ------- | -------------------------------------- |
+| **-3**  | **Deactivated (removed) by WebMaster** |
+| -1      | Deactivated (removed)                  |
+| **200** | **Normal**                             |
+
+### [C] topicStatisticsHistory
+
+\* Maintained by automation script
+
+```typescript
 {
-    _id: ObjectId; // mongodb obejct id
-    topicRankingId: string; // topic id
+ 	_id: string; // mongodb obejct id
+    
+    topicId: string;    
+ 	createdTime: number; // created time of this document (topic statistics snapshot)
+    topicStatisticsObj: { [key: timeStr]: TopicStatistics }
+}
+```
+
+### Type TopicStatistics
+
+```typescript
+{
+    totalPostCount: number;
+    totalHitCount: number;
+    totalCommentCount: number;
+    totalSearchCount: number;
+}
+```
+
+### [C] topicPostMapping
+
+```typescript
+{
+     _id: string; // mongodb obejct id
+    
+    //// info ////
+    topicId: string;
+    postId: string;
+    createdTime: number; // created time of this document (post est. time)
+    
+    //// management ////
+    status: number;
+}
+```
+
+
+
+
+
+## 📋TopicRanking
+
+### [C] topicRankingStatistics
+
+\* Maintained by automation script
+
+```typescript
+{
+    _id: string; // mongodb obejct id
+    
+    //// info ////
+    rankingId: string; // topic ranking id
     channelId: string; // channel id
-    topicObjArr: topicObj[];
+    topicRankingObj: TopicRankingStatistics
+}
+```
+
+### [C] topicRankingStatisticsHistory
+
+\* Maintained by automation script
+
+```typescript
+{
+    _id: string; // mongodb obejct id
+    
+    //// ranking info ////
+    rankingId: string; // topic ranking id
+    channelId: string; // channel id
+    createTime: number; // reated time of this document (topic ranking statistics snapshot)
+    topicRankingStatisticsObj: { [key: timeStr]: TopicRankingStatistics }
+}
+```
+
+### Type TopicRankingStatistics
+
+```typescript
+{
+   [key: topicIdStr]: {
+       topicId: string;
+       content: string;
+   }
 }
 ```
 
@@ -962,20 +827,71 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 
 
 
-## PostStatistics
+## 📋Post
 
-### 💡Basic type of "postStatistics" collection
+### [C] postComprehensive
 
 ```json
 {
     _id: ObjectId; // mongodb obejct id
-    postId: string; // post id
-    totalHitCount: number; // viewed times accumulator
+    
+    //// info ////
+    memberId: string;
+    postId: string; // 10 characters, UPPERCASE
+    createdTime: number; // created time of this document (post est.)
+    title: string;
+    imageUrlsArr: string[];
+	paragraphsArr: string[];
+
+	channelId: string;
+	topicIdsArr: string[];
+
+    //// management ////
+    status: number;
+
+    //// total statistics ////
+	totalHitCount: number; // viewed times accumulator
     totalLikedCount: number;
     totalDislikedCount: number;
     totalCommentCount: number;
     totalSavedCount: number;
-    historyHourlyHit: HitRecord[]; // 0 - 24h view record
+}
+```
+
+### 💡PostStatus Codes
+
+| Code     | Explanation                            |
+| -------- | -------------------------------------- |
+| **-3**   | **Deactivated (deleted) by WebMaster** |
+| -1       | Deactivated (deleted)                  |
+| **200**  | **Normal**                             |
+| 201      | Normal, edited                         |
+| **≥400** | **Restricted to certain behaviour**    |
+| 401      | Edited, disallow commenting            |
+
+### [C] postStatisticsHistory
+
+\* Maintained by automation script
+
+```typescript
+{
+     _id: string; // mongodb obejct id
+    
+    postId: string;    
+ 	createdTime: number; // created time of this document (post statistics snapshot)
+    postStatisticsObj: { [key: timeStr]: PostStatistics }
+}
+```
+
+### Type PostStatistics
+
+```typescript
+{
+    totalHitCount: number;
+    totalLikedCount: number;
+    totalDislikedCount: number;
+    totalCommentCount: number;
+    totalSavedCount: number;
 }
 ```
 
@@ -983,13 +899,19 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 
 
 
-### [Type] PostRanking
+## 📋PostRanking
+
+### [C] postRankingStatistics 
+
+\* Maintained by automation script
 
 ```json
 {
     _id: ObjectId; // mongodb obejct id
-    postRankingId: string; // post ranking id
-    postIdArr: string[];
+    
+    rankingId: string; // post ranking id
+    channelId: string; // all/food/shopping/etc.
+    postRankingObj: PostRankingStatistics;
 }
 ```
 
@@ -1000,18 +922,41 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 | 7D_HOT    |      |
 | 30D_HOT   |      |
 
-### 💡Locally running script that update the statistic DB
+### [C] postRankingStatisticsHistory
 
-### 💡PostRanking Mechanism
+\* Maintained by automation script
 
-1. Get **New Zealand Standard *Time(GMT+12*)** Date (NZT 0:00, ignore *Daylight Saving Time*) as **PartitionKey**
-2. Update **PostIdArrStr** field for ranking purpose
+```typescript
+{
+    _id: string; // mongodb obejct id
+    
+    //// ranking info ////
+    rankingId: string; // post ranking id
+    channelId: string; // all/food/shopping/etc.
+    createTime: number; // reated time of this document (post ranking statistics snapshot)
+    postRankingStatisticsObj: { [key: timeStr]: PostRankingStatistics }
+}
+```
 
-### 💡Affected by Post Grading System (Not-properly-designed)
+### Type PostRankingStatistics
 
-- Triggered every 15 minute automaticly by the system, re-rank the latest postings
+```typescript
+{
+    [key: postIdStr]: {
+       postId: string;
+       title: string;
+       imageUrl: string; // url string of the first image or empty ("")
+   }
+}
+```
 
 
+
+
+
+## Reference
+
+- MongoDB - Find a document [Link](https://www.mongodb.com/docs/drivers/node/current/usage-examples/find/)
 
 
 
@@ -1021,75 +966,116 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 
 # Systems Design
 
+\* Terms:
 
+- est: Establish / Initialize
+- acc: Accumulate
+- inc: Increase
+- dec: Decrease
 
-## Member System
+## ▶️MemberLogin
 
-- MemberInfo
-- MemberSettings
-- MemberLogin
-- MemberBehaviour
-- MemberMessage
+| Behaviour              | Affected tables / collections                                |
+| ---------------------- | ------------------------------------------------------------ |
+| Register a member 🆕    | **[RL]** LoginCredentialsMapping,<br />**[T]** MemberLogin ***(MojitoMemberSystem registeration only)***,<br />**[T]** MemberComprehensive***.Info (est.)***,<br />**[T]** MemberComprehensice***.Management (est.)***,<br />**[C]** memberLoginRecords ***(est.)*** |
+| Verify email address 🆕 | **[T]** MemberComprehensive.Info,<br />**[T]** MemberComprehensive.Management,<br />**[PRL]** Statistics ***(est.)***,<br />**[C]** memberStatistics ***(est.)***<br />**[C]** notification ***(est.)*** |
+|                        |                                                              |
 
-### ·Member Prestige System
+### 🔁Login with Mojito Member System
 
-- Reputation
-- Coin
+1. Look up email address (hash) in **[C] MemberComprehensive**
+2. Retrieve member id or return error if no record
+3. Look up login credential (password hash) in **[T] LoginCredentials**
+4. Retrieve password hash or return error if no record
+5. Match password hashes
 
-### ·*\*Design-Unfinished\** Algorithm
+### 🔁Login with Third-party login provider
 
-$$
-Initial\ Posting\ Weight = 100 \times MemberReputation\ Weight
-$$
+1. Look up email address (hash) in **[C] MemberComprehensive**
+2. Create new member info if no record
 
-### ·Universal Ranking Map
+## ▶️MemberInfo
 
-| Rank | Weight    | to Member                               | to Post                |
-| ---- | --------- | --------------------------------------- | ---------------------- |
-| A    | 150       | Key opinion leader                      | Highly recommanded     |
-| B    | 110 - 149 | Member with good reputation             | Nice, higher ranked    |
-| C    | 90 - 109  | Normal                                  | Normal                 |
-| D    | 50 - 89   | Member with bad reputation              | Bad, Lower ranked      |
-| E    | 1 - 49    | Post / Commenting forbidden (temporary) | Awful, controlled      |
-| F    | 1 - 49    | Deactived by WebMaster                  | Deactived by WebMaster |
+| Behaviour            | Affected tables / collections                               |
+| -------------------- | ----------------------------------------------------------- |
+| UpdateAvatarImageUrl | **[T]** MemberComprehensive.Info                            |
+| Update Nickname      | **[T]** MemberComprehensive.Info, **[PRL]** NicknameMapping |
+| Update Password      | **[T]** MemberLogin                                         |
+| Reset Password       | **[T]** MemberLogin                                         |
+| Update BriefIntro    | **[T]** MemberComprehensive.Info                            |
+| Update Gender        | **[T]** MemberComprehensive.Info                            |
+| Update Birthday      | **[T]** MemberComprehensive.Info                            |
 
+### 💡Forbid Members frequently updating their avatar image 
 
+Only allow updating avatar image after 7 days since last update.
 
-## Notification System
+```typescript
+const {Timestamp: lastModifiedTime} = MemberInfoQueryResult.value;
+const diff:number = new Date().getTime() - new Date(lastModifiedTime).getTime();
+if (diff < 604800000) {
+    // allow updating avatar image
+}
+```
 
-### ·Triggering notificatoin
+### 💡Forbid Members frequently updating their nicknames
 
-- whenever a member performs a cue/like/save/subscribe/pmed action, notificationService will be triggered to log this action.
-- whenever a member performs a query on these notification stack, notificationService will reset the stack to zero.
+Only allow updating nickname after 7 days since last update
 
-## Private Message System
+```typescript
+// Same as above
+```
 
+### 💡Forbid Members frequently updating other info
 
+Only allow updating other info after 30 seconds since last update
 
-## Comment System
+```
+您更新太频繁了，请稍候片刻再重试
+```
 
-### ·Comment Grading System
+## ▶️Members
 
-- 当赞(Like)/嘘(Dislike)比例超过1/3时，Comment/Subcomment会被标记为赞爆/嘘爆
-- 赞爆/嘘爆会影响到 Member Reputation
+| Behaviour                  | Affected tables / collections                                |
+| -------------------------- | ------------------------------------------------------------ |
+| Follow / Unfollow a member | **[RL]** FollowingMemberMapping,<br />**[PRL]** FollowedByMemberMapping,<br />**[PRL]** NotifyFollowed,<br />**[C]** Notification ***(accumulate)***,<br />**[C]** MemberStatistics ***(accumulate)*** |
+| Block a member 🆕           | **[RL]** BlockedMemberMapping,<br />**[PRL]** BLockedByMemberMapping,<br />**[C]** MemberStatistics ***(accumulate)*** |
 
-## Post System
+## ▶️Comment
 
-- ShortPost (Po) - 区块：兴趣
-- Article (Art) - 区块：文章/长文章
-- Listing (Lst) - 区块：好物
-- Product (Pod) - 区块：商店
+| Behaviour                                                    | Affected tables / collections                                |
+| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| Create<br /> / Reply to a post<br />(Cue a member)           | **[T]** PostCommentMappingComprehensive ***(est.)***,<br />**[PRL]** NotifyReplied ***(est.)***,<br />**[C]** Notification***.repliedCount (acc.)***,<br />( Cond. **[PRL]** NotifyCued ***(est.)*** ),<br />( Cond. **[C]** Notification***.cuedCount (acc.)*** ),<br />**[C]** CommentStatistics*** (est.)***,<br />**[C]** memberStatistics***.commentCount (acc.)***,<br />**[C]** PostStatistics***.totalCommentCount (acc.)***,<br />**[C]** TopicStatistics***.totalCommentCount (acc.)***,<br />**[C]** ChannelStatistics***.totalCommentCount (acc.)*** |
+| Edit a comment<br />(Only allowed once,<br /> Editing results in losing<br />like / dislike data)🆕 | **[T]** PostCommentMappingComprehensive ***(put)***,<br />**[C]** commentStatistics***.liked&dislikeCount (put)***,🆕<br />**[C]** memberStatistics***.editCommentCount (acc.)***,<br />( Cond. **[PRL]** NotifyCued ***(est.)*** ),<br />( Cond. **[C]** Notification*.cuedCount* ***(acc.)*** ) |
+| Delete a comment                                             | **[T]** PostCommentMappingComprehensive ***(put)***,<br />**[C]** MemberStatistics***.deleteCommentCount (acc.)*** |
+| Like / Dislike a comment                                     | **[PRL]** AttitudeCommentMapping,<br />**[PRL]** NotifyLiked,<br /> (Cond. **[C]** Notification***.likedCount (acc.)*** ),<br />**[C]** CommentStatistics***.liked/dislikedCount (inc./dec.)*** |
 
-### ·Post Indexing System
+## ▶️Subcomment
 
-- Keyword
-- TimeStamp
+| Behaviour                                                | Affected tables / collections                                |
+| -------------------------------------------------------- | ------------------------------------------------------------ |
+| Create<br /> / Reply to a subcomment<br />(Cue a member) | **[T]** CommentSubcommentMappingComprehensive ***(est.)***,<br />**[PRL]** NotifyReplied ***(est.)***,<br />**[C]** notification***.repliedCount (acc.)***,<br />( Cond. **[PRL]** NotifyCued ***(est.)*** ),<br />( Cond. **[C]** Notification***.cuedCount (acc.)*** ),<br />**[C]** subcommentStatistics ***(est.)***,<br />**[C]** commentStatistics***.subcommentCount (acc.)*** |
+| Edit a subcomment                                        | **[T]** CommentSubcommentMappingComprehensive ***(put)***,<br />**[C]** subcommentStatistics***.liked&dislikeCount (put)***,🆕<br />**[C]** memberStatistics***.editSubcommentCount (acc.)***,<br />( Cond. **[PRL]** NotifyCued ***(est.)*** ),<br />( Cond. **[C]** Notification*.cuedCount* ***(acc.)*** ) |
+| Delete a subcomment                                      | **[T]** CommentSubcommentMappingComprehensive ***(put)***,<br />**[C]** MemberStatistics***.deleteSubcommentCount (acc.)*** |
+| Like / Dislike a subcomment                              | **[PRL]** AttitudeSubcommentMapping,<br />**[PRL]** NotifyLiked,<br /> (Cond. **[C]** Notification***.likedCount (acc.)*** ),<br />**[C]** SubcommentStatistics***.liked/dislikedCount (inc./dec.)*** |
 
-### ·Post Grading System
+## ▶️Topic
 
-- PostGrade
+| Behaviour      | Affected tables / collections                         |
+| -------------- | ----------------------------------------------------- |
+| Create a topic | **[T]** TopicComprehensive, **[C]** ChannelStatistics |
 
+## ▶️Post
 
+| Behaviour                       | Affected tables / collections                                |
+| ------------------------------- | ------------------------------------------------------------ |
+| View a post                     | **[RL]** HistoryMapping,<br />**[C]** PostStatistics ***(accumulate)***,<br />**[C]** TopicStatistics ***(accumulate)***,<br />**[C]** ChannelStatistics ***(accumulate)***, |
+| Create a post                   | **[T]** PostComprehensive,<br />**[RL]** CreationsMapping,<br />**[C]** PostStatistics ***(establish)***,<br />**[C]** TopicStatistics ***(accumulate)***,<br />**[C]** ChannelStatistics ***(accumulate)***,<br />(**[PRL]** NotifyCued),<br />(**[C]** Notification) |
+| Edit a post                     | **[T]** PostComprehensive,<br />(**[PRL]** NotifyCued),<br />(**[C]*** Notification) |
+| Delete a post                   | **[T]** PostComprehensive,<br />**[RL]** CreationsMapping ***(cleanup)*** |
+| Save a post                     | **[RL]** SavedMapping,<br />**[PRL]** NotifySaved,<br />**[C]** Notification ***(accumulate)***,<br />**[C]** PostStatistics ***(accumulate)***,<br />**[C]** TopicStatistics ***(accumulate)***,<br />**[C]** ChannelStatistics ***(accumulate)***, |
+| Like / Dislike a post           | **[PRL]** PostAttitudeMapping,<br />**[PRL]** NotifyLiked,<br />**[C]** Notification ***(accumulate)***,<br />**[C]** PostStatistics ***(accumulate)***,<br />**[C]** TopicStatistics ***(accumulate)***,<br />**[C]** ChannelStatistics ***(accumulate)*** |
+| Share a post<br />(🚫Not-in-use) |                                                              |
 
 
 

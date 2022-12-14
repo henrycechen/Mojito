@@ -58,7 +58,7 @@ import { useTheme } from '@emotion/react';
 import { useRouter } from 'next/router';
 
 import { ProcessStates, Helper, ChannelDictionary, ChannelInfo, LangConfigs } from '../../lib/types';
-import { getRandomIdStrL20, updateLocalStorage, restoreFromLocalStorage } from '../../lib/utils';
+import {  updateLocalStorage, restoreFromLocalStorage } from '../../lib/utils';
 import { CenterlizedBox, ResponsiveCard, StyledSwitch, TextButton } from '../../ui/Styled';
 import Navbar from '../../ui/Navbar';
 

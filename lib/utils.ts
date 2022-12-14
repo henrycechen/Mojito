@@ -8,7 +8,7 @@ import { ProcessStates } from './types';
 //  IDs
 //  - Member ID : 10 characters, UPPERCASE
 //  - Post ID : 10 characters, UPPERCASE
-//  - Topic ID : 10 characters, UPPERCASE
+//  - Topic ID : 16 characters, UPPERCASE
 //  - Comment ID : 16 characters, UPPERCASE
 //  - Subcomment ID : 16 characters, UPPERCASE
 //
@@ -23,19 +23,11 @@ export function getRandomIdStr(useUpperCase: boolean = false): string { // Lengt
     }
 }
 
-export function getRandomIdStrL16(useUpperCase: boolean = false): string { // Length of 16
+export function getRandomIdStrL(useUpperCase: boolean = false): string { // Length of 16
     if (useUpperCase) {
         return Math.floor(Math.random() * Math.pow(10, 12)).toString(35).toUpperCase() + Math.floor(Math.random() * Math.pow(10, 12)).toString(35).toUpperCase();
     } else {
         return Math.floor(Math.random() * Math.pow(10, 12)).toString(35) + Math.floor(Math.random() * Math.pow(10, 12)).toString(35);
-    }
-}
-
-export function getRandomIdStrL20(useUpperCase: boolean = false): string { // Length of 20
-    if (useUpperCase) {
-        return Math.floor(Math.random() * Math.pow(10, 15)).toString(35).toUpperCase() + Math.floor(Math.random() * Math.pow(10, 15)).toString(35).toUpperCase();
-    } else {
-        return Math.floor(Math.random() * Math.pow(10, 15)).toString(35) + Math.floor(Math.random() * Math.pow(10, 15)).toString(35);
     }
 }
 
