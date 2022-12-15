@@ -6,15 +6,19 @@ import { ProcessStates } from './types';
 //  Rules of creating random IDs / names
 //
 //  IDs
-//  - Member ID : 10 characters, UPPERCASE
-//  - Post ID : 10 characters, UPPERCASE
-//  - Topic ID : 16 characters, UPPERCASE
-//  - Comment ID : 16 characters, UPPERCASE
-//  - Subcomment ID : 16 characters, UPPERCASE
-//  - Notice ID : 10 characters, UPPERCASE
+//  - Member id : 10 characters, UPPERCASE
+//  - Post id : 10 characters, UPPERCASE
+//  - Topic id : 16 characters, UPPERCASE
+//  - Comment id : 16 characters, UPPERCASE
+//  - Subcomment id : 16 characters, UPPERCASE
+//  - Notice id : 10 characters, UPPERCASE
 //
 //  Names
-//  - Image Filename : 10 characters, lowercase
+//  - Image filename : 10 characters, lowercase
+//
+//  Tokens
+//  - Verify email address token: 8 characters Hex, UPPERCASE
+//  - Reset password token: 8 characters Hex, UPPERCASE
 //
 export function getRandomIdStr(useUpperCase: boolean = false): string { // Length of 10
     if (useUpperCase) {

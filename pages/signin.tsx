@@ -96,14 +96,18 @@ const langConfigs: LangConfigs = {
             en: ['You will need to complete email address verification before signin', ', please try again later or contact our Webmaster']
         },
         InappropriateEmailAddress: {
-            ch: ['第三方平台提供的信息不能满足我们的要求，请尝试其他的账户或登录方式', '，如有问题请联系我们的管理员'],
+            ch: ['第三方平台提供的账户信息不能满足我们的要求，请尝试其他的账户或登录方式', '，如有问题请联系我们的管理员'],
             en: ['The information supplied by the third-party signin provider do not meet our requirements, please try signing in with another account or method', ', please try again later or contact our Webmaster']
         },
         MemberSuspendedOrDeactivated: {
             ch: ['您的账户已停用或已被注销', '，如有问题请联系我们的管理员'],
             en: ['Your membership has been suspended or deactivated', ', please try again later or contact our Webmaster']
         },
-        ThirdPartyProviderSigninError: {
+        UnrecognizedProvider: {
+            ch: ['您刚刚尝试使用我们不支持的第三方账户登录', '请尝试使用Mojito账户或我们支持的登录方式，如有问题请联系我们的管理员'],
+            en: ['The third-party signin provider you tried signin with is not supported by us', ', please try signing in with Mojito account or other methods we supported or contact our Webmaster']
+        },
+        ThirdPartyProviderSignin: {
             ch: ['第三方账户登录遇到了一些问题', '请稍后重试或者联系我们的管理员'],
             en: ['Third-party Account sign in unsuccessful', ', please try again later or contact our Webmaster']
         },

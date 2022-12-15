@@ -149,21 +149,21 @@ type ResetPasswordRequestInfo = {
 
 \* This table records the password credentials for login procedure
 
-| PartitionKey        | RowKey                 | MemberId | PasswordHash |
-| ------------------- | ---------------------- | -------- | ------------ |
-| EmailAddressHashStr | `"MojitoMemberSystem"` | string   | string       |
+| PartitionKey        | RowKey                 | MemberId | PasswordHash          |
+| ------------------- | ---------------------- | -------- | --------------------- |
+| EmailAddressSHA1Str | `"MojitoMemberSystem"` | string   | string, SHA256 String |
 
 | PartitionKey        | RowKey                                 | MemberId |
 | ------------------- | -------------------------------------- | -------- |
-| EmailAddressHashStr | `"GitHubOAuth"`, `"GoogleOAuth"`, etc. | string   |
+| EmailAddressSHA1Str | `"GitHubOAuth"`, `"GoogleOAuth"`, etc. | string   |
 
 | PartitionKey        | RowKey                 | VerifyEmailAddressToken |
 | ------------------- | ---------------------- | ----------------------- |
-| EmailAddressHashStr | `"VerifyEmailAddress"` | string                  |
+| EmailAddressSHA1Str | `"VerifyEmailAddress"` | string                  |
 
 | PartitionKey        | RowKey            | ResetPasswordToken |
 | ------------------- | ----------------- | ------------------ |
-| EmailAddressHashStr | `"ResetPassword"` | string             |
+| EmailAddressSHA1Str | `"ResetPassword"` | string             |
 
 ### [RL] FollowingMemberMapping
 
@@ -391,6 +391,8 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 
 ### [C] memberComprehensive
 
+`mojito-statistics-dev.comprehensive.member`
+
 ```typescript
 {
     _id: string;  // mongodb obejct id
@@ -404,6 +406,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
     memberIndex: number;
     nickname: string;
     nicknameHash: string; // prevent duplicated nickname when re-naming
+  	i
     briefIntro: string;
     gender: -1 | 0 | 1;
     birthday: string;
@@ -428,6 +431,8 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 
 ### [C] memberLoginJournal
 
+`mojito-statistics-dev.journal.login`
+
 ```typescript
 {
     _id: string; // mongodb obejct id
@@ -440,6 +445,8 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 ```
 
 ### [C] memberStatistics
+
+`mojito-statistics-dev.statistics.member`
 
 ```typescript
 {

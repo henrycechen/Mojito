@@ -36,6 +36,7 @@ interface MemberUser extends User {
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
 const salt = process.env.APP_PASSWORD_SALT ?? '';
 const loginProviderIdMapping: ProviderIdMapping = { // [!] Every time add a new provider, update this dictionary
+    mojito: 'MojitoMemberSystem',
     github: 'GitHubOAuth',
     google: 'GoogleOAuth',
     // instagram
@@ -49,7 +50,7 @@ const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'ch';
 const langConfigs: LangConfigs = {
     emailSubject: {
         ch: '验证您的 Mojito 账户',
-        en: 'Verify your Mojito account'
+        en: 'Verify your Mojito membership'
     }
 }
 
@@ -78,7 +79,11 @@ export default NextAuth({
                 if (!credentials) {
                     return null;
                 }
-                return await verifyLoginCredentials(credentials);
+                return {
+                    id: '87076677',
+                    email: 'test@test.com'
+                }
+                // return await verifyLoginCredentials(credentials);
             }
         })
     ],
@@ -123,24 +128,38 @@ export default NextAuth({
             }
         },
         async signIn({ user, account, profile, email, credentials }) {
-            const provider = account?.provider;
-            if (!provider) {
-                return false;
+            // {id, email} = user
+            // {provider} = account
+
+            const provider = account?.provider ?? '';
+            if (!Object.keys(loginProviderIdMapping).includes(provider)) {
+                return '/signin?error=UnrecognizedProvider';
             }
+            const providerId = loginProviderIdMapping[provider];
             const atlasDbClient = AtlasDatabaseClient(); // Db client declared at top enable access from catch statement on error
             if ('mojito' === provider) {
                 //// #1 Login with Mojito member system
                 try {
                     // Step #1 prepare member id
-                    const { providerAccountId: memberId } = account;
-                    // Step #2.1 look up member status in [T] MemberComprehensive.Management
-                    const memberManagementTableClient = AzureTableClient('MemberComprehensive'); // Update 6/12/2022: applied new table layout, MemberManagement -> MemberComprehensive.Management
-                    const memberManagementQuery = memberManagementTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${memberId}' and RowKey eq 'Management'` } });
-                    const memberManagementQueryResult = await memberManagementQuery.next();
-                    if (!memberManagementQueryResult.value) {
-                        // [!] member management record not found deemed member deactivated / suspended
-                        return false;
-                    }
+                    const { id: memberId } = user;
+                    // Step #2.1 look up member status in [C] memberComprehensive
+                    await atlasDbClient.connect();
+                    console.log(memberId, providerId);
+                    const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection('member');
+                    const memberComprehensiveResult = await memberComprehensiveCollectionClient.findOne({ memberId, providerId });
+                    // if not found => null
+                    console.log(memberComprehensiveResult);
+                    
+                    user.name = memberComprehensiveResult?.nickname;
+                    user.image = memberComprehensiveResult?.image;
+
+                    console.log(user);
+                    
+                    return '/signin?error=UnrecognizedProvider';
+
+
+
+
                     // Step #2.2 verify member status
                     const { MemberStatus: memberStatus } = memberManagementQueryResult.value; // Update 6/12/2022: column name changed, MemberStatusValue => MemberStatus
                     // Step #2.2.A member has been suspended or deactivated
@@ -344,49 +363,27 @@ async function verifyLoginCredentials(credentials: LoginRequestInfo): Promise<Me
             return null;
         }
         const { emailAddress, password } = credentials;
-        // Step #2 look up member id in [RL] LoginCredentialsMapping
-        const loginCredentialsMappingTableClient = AzureTableClient('LoginCredentialsMapping');
-        const mappingQuery = loginCredentialsMappingTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq 'EmailAddress' and RowKey eq '${emailAddress}'` } });
+        // Step #2 look up email address sha1 in [RL] Credentials
+        const credentialsTableClient = AzureTableClient('Credentials');
+        const loginCredentialsQuery = credentialsTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${CryptoJS.SHA1(emailAddress).toString()}' and RowKey eq 'MojitoMemberSystem'` } });
         // [!] attemp to reterieve entity makes the probability of causing RestError
-        const mappingQueryResult = await mappingQuery.next();
-        if (!mappingQueryResult.value) {
+        const loginCredentialsQueryResult = await loginCredentialsQuery.next();
+        if (!loginCredentialsQueryResult.value) {
             // [!] login credential mapping record not found deemed member deactivated / suspended / not registered
             return null;
         }
-        const { MemberId: memberId } = mappingQueryResult.value; // Update 6/12/2022: MemberIdStr -> MemberId
-        if ('string' !== typeof memberId || '' === memberId) {
-            // [!] Improper member id
-            return null;
-        }
-        // Step #3 look up password hash (reference) from [T] MemberLogin
-        const memberLoginTableClient = AzureTableClient('MemberLogin');
-        const loginReferenceQuery = memberLoginTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${memberId}' and RowKey eq 'PasswordHash'` } });
-        const loginReferenceQueryResult = await loginReferenceQuery.next();
-        if (!loginReferenceQueryResult.value) {
-            // [!] password hash (reference) record not found deemed member deactivated / suspended / not registered
-            return null;
-        }
-        const { PasswordHash: passwordHashReference } = loginReferenceQueryResult.value; // Update 6/12/2022: PasswordHashStr -> PasswordHash
+        const { MemberId: memberId, PasswordHash: passwordHashReference } = loginCredentialsQueryResult.value;
         // Step #4 match the password hashes
         const passwordHash = CryptoJS.SHA256(password + salt).toString();
         if (passwordHashReference !== passwordHash) {
             // [!] password hashes not match
             return null;
         }
-        // Step #5 look up {nickname, avatarImage} in in [T] MemberComprehensive.Info
-        const memberComprehensiveTableClient = AzureTableClient('MemberComprehensive');
-        const memberInfoQuery = memberComprehensiveTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${memberId}' and RowKey eq 'Info'` } });
-        const memberInfoQueryResult = await memberInfoQuery.next();
-        let nickname = loginReferenceQueryResult?.value?.Nickname;
-        if (!nickname) {
-            nickname = '';
-            // update table storage
-        } 
         return {
             id: memberId,
             email: emailAddress,
-            name: nickname,
-            image: !memberInfoQueryResult.value ? '' : memberInfoQueryResult.value.AvatarImageUrl,
+            // name: nickname,
+            // image: !memberInfoQueryResult.value ? '' : memberInfoQueryResult.value.AvatarImageUrl,
         }
     } catch (e) {
         let msg: string;
