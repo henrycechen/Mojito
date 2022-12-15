@@ -11,6 +11,7 @@ import { ProcessStates } from './types';
 //  - Topic ID : 16 characters, UPPERCASE
 //  - Comment ID : 16 characters, UPPERCASE
 //  - Subcomment ID : 16 characters, UPPERCASE
+//  - Notice ID : 10 characters, UPPERCASE
 //
 //  Names
 //  - Image Filename : 10 characters, lowercase

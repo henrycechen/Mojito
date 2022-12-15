@@ -135,9 +135,9 @@ type ResetPasswordRequestInfo = {
 
 \* Terms:
 
-- T: Table
-- RL: Relation record table
-- PRL: Passive Relation record table (affected by operations on the corresponding RL table)
+- **[T]**: Table
+- **[RL]**: Relation record table
+- **[PRL]**: Passive Relation record table (side-affected by operations on the corresponding RL table)
 
 ## 💾Member
 
@@ -145,15 +145,25 @@ type ResetPasswordRequestInfo = {
 | -------- | ------ | ------------------------------------------------- |
 | MemberId | string | MongoDB ObejctId String, 24 characters, lowercase |
 
-### [T] LoginCredentials
+### [RL] Credentials
 
-| PartitionKey | RowKey           | PasswordHashStr |
-| ------------ | ---------------- | --------------- |
-| MemberIdStr  | `"PasswordHash"` | string          |
+\* This table records the password credentials for login procedure
 
-| PartitionKey | RowKey                 | ResetPasswordTokenStr |
-| ------------ | ---------------------- | --------------------- |
-| MemberIdStr  | `"ResetPasswordToken"` | string                |
+| PartitionKey        | RowKey                 | MemberId | PasswordHash |
+| ------------------- | ---------------------- | -------- | ------------ |
+| EmailAddressHashStr | `"MojitoMemberSystem"` | string   | string       |
+
+| PartitionKey        | RowKey                                 | MemberId |
+| ------------------- | -------------------------------------- | -------- |
+| EmailAddressHashStr | `"GitHubOAuth"`, `"GoogleOAuth"`, etc. | string   |
+
+| PartitionKey        | RowKey                 | VerifyEmailAddressToken |
+| ------------------- | ---------------------- | ----------------------- |
+| EmailAddressHashStr | `"VerifyEmailAddress"` | string                  |
+
+| PartitionKey        | RowKey            | ResetPasswordToken |
+| ------------------- | ----------------- | ------------------ |
+| EmailAddressHashStr | `"ResetPassword"` | string             |
 
 ### [RL] FollowingMemberMapping
 
@@ -171,55 +181,21 @@ type ResetPasswordRequestInfo = {
 | ------------ | --------------------- | ----------------------- |
 | MemberIdStr  | FollowedByMemberIdStr | boolean, default `true` |
 
-### [RL] BlockedMemberMapping
+### [RL] BlockingMemberMapping
 
 \* This table records the member ids blocked by the partition key (member id)
 
-| PartitionKey | RowKey             | IsActive                |
-| ------------ | ------------------ | ----------------------- |
-| MemberIdStr  | BlockedMemberIdStr | boolean, default `true` |
+| PartitionKey | RowKey              | IsActive                |
+| ------------ | ------------------- | ----------------------- |
+| MemberIdStr  | BlockingMemberIdStr | boolean, default `true` |
 
+### [PRL] BlockedByMemberMapping
 
+\* This table records the member ids of who have been blocking the partition key (member id)
 
-
-
-## 💾Comment
-
-| Property  | Type   | Desc                                              |
-| --------- | ------ | ------------------------------------------------- |
-| CommentId | string | MongoDB ObejctId String, 24 characters, lowercase |
-
-### [PRL] AttitudeCommentMapping
-
-\* This table records the attitude expressed to certain comment ids by the partition key (member id)
-
-| PartitionKey | RowKey       | Attitude                        |
-| ------------ | ------------ | ------------------------------- |
-| MemberIdStr  | CommentIdStr | number, `-1 |0 |1`, default `0` |
-
-
-
-
-
-## 💾Subcomment
-
-| Property     | Type   | Desc                                              |
-| ------------ | ------ | ------------------------------------------------- |
-| SubcommentId | string | MongoDB ObejctId String, 24 characters, lowercase |
-
-### [PRL] AttitudeSubcommentMapping
-
-\* This table records the attitude expressed to certain commentIds by the partition key (member id)
-
-| PartitionKey | RowKey        | Attitude                        |
-| ------------ | ------------- | ------------------------------- |
-| MemberIdStr  | SubcommentStr | number, `-1 |0 |1`, default `0` |
-
-| Key          | Type   | Desc                      |
-| ------------ | ------ | ------------------------- |
-| PartitionKey | string | MemberIdStr               |
-| RowKey       | string | SubcommentStr             |
-| Attitude     | number | `-1 | 0 | 1`, default `0` |
+| PartitionKey | RowKey               | IsActive                |
+| ------------ | -------------------- | ----------------------- |
+| MemberIdStr  | BlockedByMemberIdStr | boolean, default `true` |
 
 
 
@@ -227,63 +203,60 @@ type ResetPasswordRequestInfo = {
 
 ## 💾Notification
 
-### [PRL] NotifyCued
+### [PRL] Notice
 
-| PartitionKey        | RowKey       | Initiate    | Nickname | PostId | PostBrief |
-| ------------------- | ------------ | ----------- | -------- | ------ | --------- |
-| NotifiedMemberIdStr | NotifiyIdStr | MemberIdStr | string   | string | string    |
+#### Cued (@)
+
+| PartitionKey        | RowKey   | InitiateId  | PostId | PostBrief |
+| ------------------- | -------- | ----------- | ------ | --------- |
+| NotifiedMemberIdStr | NoticeId | MemberIdStr | string | string    |
 
 ```
 - WebMaster在帖子“WebMaster在Mojito发的第一篇帖子”中提到了您
+- WebMaster在帖子“WebMaster在Mojito发的第一篇帖子”的评论“可喜可贺可惜可...”中提到了您
 ```
 
-### [PRL] NotifyReplied
+#### Replied (↩️)
 
-| PartitionKey        | RowKey       | Initiate    | Nickname | PostId | PostBrief | CommentId? | CommentBrief? |
-| ------------------- | ------------ | ----------- | -------- | ------ | --------- | ---------- | ------------- |
-| NotifiedMemberIdStr | NotifiyIdStr | MemberIdStr | string   | string | string    | string     | string        |
+| PartitionKey        | RowKey   | InitiateId  | PostId | PostBrief | CommentId | CommentBrief |
+| ------------------- | -------- | ----------- | ------ | --------- | --------- | ------------ |
+| NotifiedMemberIdStr | NoticeId | MemberIdStr | string | string    | string    | string       |
 
 ```
 - WebMaster回复了您的帖子“WebMaster在Mojito发的第一篇帖子”
 - WebMaster在帖子“WebMaster在Mojito发的第一篇帖子”中回复了您的评论“可喜可贺可惜可...”
 ```
 
-### [PRL] NotifyLiked
+#### Liked (❤️)
 
-| PartitionKey        | RowKey       | Initiate    | Nickname | PostId | PostBrief | CommentId? | CommentBrief? |
-| ------------------- | ------------ | ----------- | -------- | ------ | --------- | ---------- | ------------- |
-| NotifiedMemberIdStr | NotifiyIdStr | MemberIdStr | string   | string | string    | string     | string        |
+| PartitionKey        | RowKey   | InitiateId  | PostId | PostBrief |
+| ------------------- | -------- | ----------- | ------ | --------- |
+| NotifiedMemberIdStr | NoticeId | MemberIdStr | string | string    |
 
 ```
 - WebMaster喜欢了您的帖子“WebMaster在Mojito发的第一篇帖子”
 - WebMaster喜欢了您在“WebMaster在Mojito发的第一篇帖子”中发表的评论“可喜可贺可惜可...”
 ```
 
-### [PRL] NotifySaved
+#### Saved (💾)
 
-| PartitionKey        | RowKey       | Initiate    | Nickname | PostId | PostBrief |
-| ------------------- | ------------ | ----------- | -------- | ------ | --------- |
-| NotifiedMemberIdStr | NotifiyIdStr | MemberIdStr | string   | string | string    |
+| PartitionKey        | RowKey   | InitiateId  | PostId | PostBrief |
+| ------------------- | -------- | ----------- | ------ | --------- |
+| NotifiedMemberIdStr | NoticeId | MemberIdStr | string | string    |
 
 ```
 - WebMaster收藏了“WebMaster在Mojito发的第一篇帖子”中提到了您
 ```
 
-### [PRL] NotifyFollowed
+#### Followed (🔔)
 
-| PartitionKey        | RowKey       | Initiate    | Nickname |
-| ------------------- | ------------ | ----------- | -------- |
-| NotifiedMemberIdStr | NotifiyIdStr | MemberIdStr | string   |
+| PartitionKey        | RowKey   | InitiateId  |
+| ------------------- | -------- | ----------- |
+| NotifiedMemberIdStr | NoticeId | MemberIdStr |
 
 ```
 - WebMaster关注了您
 ```
-
-### [PRL] NotifyPrivateMessaged (🚫Not-in-use)
-
-| PartitionKey        | RowKey       | Initiate    | ...  |      |      |
-| ------------------- | ------------ | ----------- | ---- | ---- | ---- |
-| NotifiedMemberIdStr | NotifiyIdStr | MemberIdStr | ...  |      |      |
 
 
 
@@ -311,11 +284,6 @@ type ResetPasswordRequestInfo = {
 
 ### [T] ChannelInfo
 
-| Key          | Type   | Desc                                     |
-| ------------ | ------ | ---------------------------------------- |
-| PartitionKey | string | Category name, e.g., `"Info"`, `"Index"` |
-| *            |        |                                          |
-
 | PartitionKey | RowKey       | CH     | EN     | SvgIconPath |
 | ------------ | ------------ | ------ | ------ | ----------- |
 | `"Info"`     | ChannelIdStr | string | string | string      |
@@ -332,7 +300,7 @@ type ResetPasswordRequestInfo = {
 
 ### [RL] HistoryMapping
 
-\* This table records the postIds viewed by the partition key owner (memberId)
+\* This table records the post ids viewed by the partition key (member id)
 
 | Key          | Type    | Desc           |
 | ------------ | ------- | -------------- |
@@ -340,9 +308,9 @@ type ResetPasswordRequestInfo = {
 | RowKey       | string  | PostIdStr      |
 | IsActive     | boolean | Default `true` |
 
-### [RL] CreationsMapping 🆕
+### [RL] CreationsMapping
 
-\* This table records the postIds published by the partition key owner (member id)
+\* This table records the post ids published by the partition key (member id)
 
 | Key          | Type    | Desc           |
 | ------------ | ------- | -------------- |
@@ -352,7 +320,7 @@ type ResetPasswordRequestInfo = {
 
 ### [RL] SavedMapping
 
-\* This table records the postIds saved by the partition key owner (member id)
+\* This table records the post ids saved by the partition key (member id)
 
 | Key          | Type    | Desc           |
 | ------------ | ------- | -------------- |
@@ -360,27 +328,17 @@ type ResetPasswordRequestInfo = {
 | RowKey       | string  | PostIdStr      |
 | IsActive     | boolean | Default `true` |
 
-### [PRL] AttitudePostMapping
-
-\* This table records the attitude towards to certain postIds taken by the partition key owner (member id)
-
-| Key          | Type   | Desc                      |
-| ------------ | ------ | ------------------------- |
-| PartitionKey | string | MemberIdStr               |
-| RowKey       | string | PostIdStr                 |
-| Attitude     | number | `-1 | 0 | 1`, default `0` |
-
 
 
 
 
 ## 💾Stastics
 
-### [PRL] Statistics
+### [T] Statistics
 
-| PartitionKey      | RowKey      | MemberIdIndexValue |
-| ----------------- | ----------- | ------------------ |
-| `"MemberIdIndex"` | MemberIdStr | number             |
+| PartitionKey         | RowKey      |
+| -------------------- | ----------- |
+| `"MemberStatistics"` | MemberIdStr |
 
 
 
@@ -400,18 +358,24 @@ type ResetPasswordRequestInfo = {
 
 # Collections (Atlas)
 
+\* Terms:
+
+- **[C]**: Collection
+
 ```shell
 mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statistics-dev" --apiVersion 1 --username dbmaster
 ```
 
 ## 📋Notification
 
+### [C] notificationStatistics
+
 ```typescript
 {
     _id: ObjectId;
-    memberId: string;
     
-    cuedCount: number; // cued times accumulated from last count reset
+    memberId: string;
+    cuedCount: number; // accumulated from last reset
     repliedCount: number;
     likedCount: number;
     savedCount: number;
@@ -429,14 +393,15 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 
 ```typescript
 {
-    _id: string;  // mongodb obejct id | memberId (auto-generated)
+    _id: string;  // mongodb obejct id
     
     //// info ////
     memberId: string; // 10 characters, UPPERCASE
+    providerId: string; // "MojitoMemberSystem" | "GitHubOAuth" | ...
     registeredTime: number;
     verifiedTime: number;
     emailAddress: string;
-    emailAddressHash: string; // prevent duplicated login credential when registering
+    memberIndex: number;
     nickname: string;
     nicknameHash: string; // prevent duplicated nickname when re-naming
     briefIntro: string;
@@ -461,12 +426,12 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 | **200**  | **Email address verified or third party login, normal** |
 | **≥400** | **Restricted to certain content or behaviour**          |
 
-### [C] memberLoginHistory
+### [C] memberLoginJournal
 
 ```typescript
 {
     _id: string; // mongodb obejct id
-    memberId: string; // member id
+    memberId: string;
    	category: 'error' | 'success';
     providerId: 'MojitoMemberSystem' | string; // LoginProviderId
     timestamp: string; // new Date().toISOString()
@@ -497,12 +462,13 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
     totalFollowingCount: number;
     totalBlockedCount: number;
     // by other members
+    totalCreationHitCount: number;
     totalCreationLikedCount: number; // info page required
     totalCreationDislikedCount: number;
+    totalSavedCount: number;
     totalCommentLikedCount: number;
     totalCommentDislikedCount: number;
-    totalSavedCount: number; // info page required
-    followedByCount: number; // info page required
+    totalFollowedByCount: number; // info page required
 }
 ```
 
@@ -520,7 +486,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 }
 ```
 
-### Type MemberStatistics
+### 💡Type MemberStatistics
 
 ```typescript
 {
@@ -538,14 +504,14 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 }
 ```
 
-### [C] attitudeMapping
+### [C] attitudePostMapping
 
 ```typescript
 {
     _id: string; // mongodb obejct id
     
     memberId: string;
-    postId: string; // divided by post id
+    postId?: string; // divided by post id
     attitude: number; // -1 | 0 | 1
     attitudeCommentMapping: {
         [key: commentIdStr]: number // -1 | 0 | 1
@@ -607,7 +573,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 
 ### 💡Comment & SubcommentStatus Code
 
-| Code    | Explanation                            |
+| Code    | Explanation00                          |
 | ------- | -------------------------------------- |
 | **-3**  | **Deactivated (removed) by WebMaster** |
 | -1      | Deactivated (removed)                  |
@@ -631,10 +597,11 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
     createTime: number;
     
     //// total statistics ////
-    totalHitCount: number;
     totalTopicCount: number;
     totalPostCount: number;
+    totalHitCount: number;
     totalCommentCount: number; // subcomment included
+    totalSavedCount: number;
 }
 ```
 
@@ -653,7 +620,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 }
 ```
 
-### Type ChannelStatistics
+### 💡Type ChannelStatistics
 
 ```json
 {
@@ -720,6 +687,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
     totalPostCount: number;
     totalHitCount: number; // total hit count of total posts of this topic
     totalCommentCount: number;
+    totalSavedCount: number;
     totalSearchCount: number;
 }
 ```
@@ -746,7 +714,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 }
 ```
 
-### Type TopicStatistics
+### 💡Type TopicStatistics
 
 ```typescript
 {
@@ -810,7 +778,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 }
 ```
 
-### Type TopicRankingStatistics
+### 💡Type TopicRankingStatistics
 
 ```typescript
 {
@@ -883,7 +851,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 }
 ```
 
-### Type PostStatistics
+### 💡Type PostStatistics
 
 ```typescript
 {
@@ -938,7 +906,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 }
 ```
 
-### Type PostRankingStatistics
+### 💡Type PostRankingStatistics
 
 ```typescript
 {
@@ -968,43 +936,363 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 
 \* Terms:
 
-- est: Establish / Initialize
+- est: Establish / Initialize / Create
 - acc: Accumulate
 - inc: Increase
 - dec: Decrease
 
-## ▶️MemberLogin
+## ▶️Signup & Login
 
-| Behaviour              | Affected tables / collections                                |
-| ---------------------- | ------------------------------------------------------------ |
-| Register a member 🆕    | **[RL]** LoginCredentialsMapping,<br />**[T]** MemberLogin ***(MojitoMemberSystem registeration only)***,<br />**[T]** MemberComprehensive***.Info (est.)***,<br />**[T]** MemberComprehensice***.Management (est.)***,<br />**[C]** memberLoginRecords ***(est.)*** |
-| Verify email address 🆕 | **[T]** MemberComprehensive.Info,<br />**[T]** MemberComprehensive.Management,<br />**[PRL]** Statistics ***(est.)***,<br />**[C]** memberStatistics ***(est.)***<br />**[C]** notification ***(est.)*** |
-|                        |                                                              |
+### 🔁Register with Mojito Member System
+
+| Behaviour         | Involved tables / collections                                |
+| ----------------- | ------------------------------------------------------------ |
+| Register a member | **[RL]** Credentials ***(est.)***,<br />**[C]** memberComprehensive ***(est.)***<br />**[C]** memberLoginJournal ***(est.)*** |
+
+1. Look up login credential (email address hash) in **[RL] Credentials**
+
+2. Create a new record of ***LoginCredentials*** in **[RL] Credentials** or return ***"Email registered" error***
+
+   ```json
+   {
+       partitionKey: "_", // email address hash
+       rowKey: "MojitoMemberSystem",
+       MemberId: "_", // 10 characters, UPPERCASE
+       passwordHash: "_"
+   }
+   ```
+
+3. **Upsert** a new record of ***VerifyEmailAddressCredentials*** in **[RL] Credentials**
+
+   ```json
+   {
+       partitionKey: "_", // email address hash
+       rowKey: "VerifyEmailAddress",
+       VerifyEmailAddressToken: "_", // 8 characters Hex, UPPERCASE
+   }
+   ```
+
+4. Create a new document of ***MemberComprehensive*** with limited info and management in **[C] memberComprehensive**
+
+   ```json
+   {
+       //// info ////
+       memberId: "_", // 10 characters, UPPERCASE
+       providerId: "MojitoMemberSystem",
+       registeredTime: 1670987135509,
+       emailAddress: "_",
+       //// management ////
+       status: 0,
+       allowPosting: false,
+       allowCommenting: false
+   }
+   ```
+
+5. Create a new document of ***MemberLoginJournal*** in **[C] memberLoginJournal**
+
+   ```json
+   {
+       memberId: "_",
+      	category: 'success',
+       providerId: 'MojitoMemberSystem',
+       timestamp: "2022-12-14T03:05:35.509Z",
+       message: "Registered. Please verify email address to get full access."
+   }
+   ```
+
+6. Send email
+
+   ```json
+   { // base64 string contains info as follows
+       memberId: "_",
+       providerId: "MojitoMemberSystem",
+       emailAddressHash: "",
+       token: "" // 8 characters Hex, UPPERCASE
+   }
+   ```
+
+### 🔁Request for re-send verification email
+
+| Behaviour                  | Involved tables / collections                          |
+| -------------------------- | ------------------------------------------------------ |
+| Request for password reset | **[RL]** Credentials,<br />**[C]** memberComprehensive |
+
+1. Look up login credential (email address hash) in **[RL] Credentials**
+
+2. Look up member management (status) in **[C] memberComprehensive** or return ***"Member can not be activated" error (status>0)***
+
+3. Create a new record of ***VerifyEmailAddressCredentials*** in **[RL] Credentials**
+
+   ```json
+   {
+       partitionKey: "_", // email address hash
+       rowKey: "VerifyEmailAddress",
+       ResetPasswordToken: "_" // 8 characters Hex, UPPERCASE
+   }
+   ```
+
+4. Send email
+
+   ```json
+   { // base64 string contains info as follows
+       memberId: "_",
+       providerId: "MojitoMemberSystem",
+       emailAddressHash: "_",
+       token: "" // 8 characters Hex, UPPERCASE
+   }
+   ```
+
+*\* This procedure applied for both Mojito Member System signin and Third-party login provider signin.*
+
+*\* This procedure is unable to prohibit users from verifying two members with same the email address. This system allows member shares email addresses between login providers*
+
+### 🔁Verify email address
+
+| Behaviour            | Involved tables / collections                                |
+| -------------------- | ------------------------------------------------------------ |
+| Verify email address | **[RL]** Credentials,<br />**[C]** memberComprehensive,<br />**[T]** Statistics ***(est.)***,<br />**[C]** memberStatistics ***(est.)***<br />**[C]** notificationStatistics ***(est.)*** |
+
+1. Retrieve info from email content
+
+   ```json
+   {
+       memberId: "_",
+       providerId: "MojitoMemberSystem", // "MojitoMemberSystem"| "GitHubOAuth" | undefined (deemed as "MojitoMemberSystem")
+       emailAddressHash: "_",
+       token: "" // 8 characters Hex, UPPERCASE
+   }
+   ```
+
+2. Look up login credentials (email address hash) in **[RL] Credentials**
+
+3. Look up verify email address credentials (token) or return ***"Member not found" error***
+
+4. Match the verify email address tokens or return ***"Member cannot be activated" error (token not match or not found)***
+
+5. Update member info (status, verified time) in **[C] memberComprehensive** or ***"Member cannot be activated" error***
+
+6. Create a new record of ***MemberStatistics*** in **[T] Statistics**
+
+7. Calculate the index of the current member
+
+8. Update member index in **[C] memberComprehensive**
+
+9. Create a new document of ***MemberStatistics*** in **[C] memberStatistics**
+
+   ```json
+   {
+       memberId: "_",
+       //// total statistics ////
+       totalCreationCount: 0, // info page required
+       totalCreationEditCount: 0,
+       // ...
+   }
+   ```
+
+10. Create a new document of ***Notification*** in **[C] notificationStatistics**
+
+   ```json
+   {
+       memberId: "_",
+       newCuedCount: 0, // accumulated from last reset
+       newRepliedCount: 0,
+       newLikedCount: 0,
+       newSavedCount: 0,
+       newFollowedCount: 0,
+   }
+   ```
+
+11. Create a new document of ***MemberLoginJournal*** in **[C] memberLoginJournal**
+
+    ```json
+    {
+        memberId: "_",
+       	category: 'success',
+        providerId: 'MojitoMemberSystem',
+        timestamp: "2022-12-14T03:05:35.509Z",
+        message: "Email address verified."
+    }
+    ```
+
 
 ### 🔁Login with Mojito Member System
 
-1. Look up email address (hash) in **[C] MemberComprehensive**
-2. Retrieve member id or return error if no record
-3. Look up login credential (password hash) in **[T] LoginCredentials**
-4. Retrieve password hash or return error if no record
-5. Match password hashes
+| Behaviour                             | Involved tables / collections                                |
+| ------------------------------------- | ------------------------------------------------------------ |
+| Login with <br />Mojito Member System | **[RL]** Credentials,<br />**[C]** memberComprehensive,<br />**[C]** memberLoginJournal |
+
+1. Look up login credentials (email address hash, password hash) in **[RL] Credentials**
+
+2. Match password hashes or return ***"Member not found" error***
+
+3. Look up member management (status) in **[C] memberComprehensive** or return ***"Email address and password not match" error***
+
+4. Look up member info or return ***"Member not activated" or "Member has been suspended or deactivated" error***
+
+5. Return member info
+
+6. Create a new document of ***MemberLoginJournal*** in **[C] memberLoginJournal**
+
+   ```json
+   {
+       memberId: "_",
+      	category: 'success',
+       providerId: 'MojitoMemberSystem',
+       timestamp: "2022-12-14T03:05:35.509Z",
+       message: "Login."
+   }
+   ```
 
 ### 🔁Login with Third-party login provider
 
-1. Look up email address (hash) in **[C] MemberComprehensive**
-2. Create new member info if no record
+| Behaviour                                   | Involved tables / collections                                |
+| ------------------------------------------- | ------------------------------------------------------------ |
+| Login with <br />Third-party login provider | **[RL]** Credentials,<br />**[C]** memberComprehensive,<br />**[C]** memberLoginJournal |
 
-## ▶️MemberInfo
+1. Look up login credential record (email address hash) in **[RL] Credentials**
 
-| Behaviour            | Affected tables / collections                               |
-| -------------------- | ----------------------------------------------------------- |
-| UpdateAvatarImageUrl | **[T]** MemberComprehensive.Info                            |
-| Update Nickname      | **[T]** MemberComprehensive.Info, **[PRL]** NicknameMapping |
-| Update Password      | **[T]** MemberLogin                                         |
-| Reset Password       | **[T]** MemberLogin                                         |
-| Update BriefIntro    | **[T]** MemberComprehensive.Info                            |
-| Update Gender        | **[T]** MemberComprehensive.Info                            |
-| Update Birthday      | **[T]** MemberComprehensive.Info                            |
+2. Look up member management (status) in **[C] memberComprehensive** or
+
+   1. Create a new document of ***LoginCredentials*** in **[RL] Credentials**
+
+      ```json
+      {
+          partitionKey: "_", // email address hash
+          rowKey: "GitHubOAuth", // login (register) with a GitHub account
+          MemberId: "_" // 10 characters, UPPERCASE
+      }
+      ```
+
+   2. **Upsert** a new record of ***VerifyEmailAddressCredentials*** in **[RL] Credentials**
+
+      ```json
+      {
+          partitionKey: "_", // email address hash
+          rowKey: "VerifyEmailAddress",
+          VerifyEmailAddressToken: "_", // 8 characters Hex, UPPERCASE
+      }
+      ```
+
+   3. Create a new document of ***MemberComprehensive*** with limited info and management in **[C] memberComprehensive**
+
+      ```json
+      {
+          //// info ////
+          memberId: "_", // 10 characters, UPPERCASE
+          providerId: "GitHubOAuth", // login (register) with a GitHub account
+          registeredTime: 1670987135509,
+          emailAddress: "_",
+          //// management ////
+          status: 0,
+          allowPosting: false,
+          allowCommenting: false
+      }
+      ```
+
+   4. Create a new document of ***MemberLoginJournal*** in **[C] memberLoginJournal** 
+
+      ```json
+      {
+          memberId: "_",
+         	category: 'success',
+          providerId: 'GitHubOAuth',
+          timestamp: "2022-12-14T03:05:35.509Z",
+          message: "Registered. Please verify email address to get full access."
+      }
+      ```
+
+   5. Send email (notice member to go over **🔁Verify email address** procedure before signin)
+
+      ```json
+      { // base64 string contains info as follows
+          memberId: "_",
+          providerId: "GitHubOAuth",
+          emailAddressHash: "_",
+          token: "" // 8 characters Hex, UPPERCASE
+      }
+      ```
+
+4. Return member info or return ***"Member not activated" or "Member has been suspended or deactivated" error***
+
+5. Create a new document of ***MemberLoginJournal*** in **[C] memberLoginJournal**
+
+   ```typescript
+   {
+       memberId: "_",
+      	category: 'success',
+       providerId: 'GitHubOAuth',
+       timestamp: "2022-12-14T03:05:35.509Z",
+       message: "Login."
+   }
+   ```
+
+## ▶️Member Info
+
+### 🔁Request for password reset
+
+| Behaviour                  | Involved tables / collections |
+| -------------------------- | ----------------------------- |
+| Request for password reset | **[RL]** Credentials          |
+
+1. Look up login credentials (email address hash) in **[RL] Credentials**
+
+2. Create a new record of ***ResetPasswordCredentials*** in **[RL] Credentials** or return ***"Member not found" error***
+
+   ```json
+   {
+       partitionKey: "_", // email address hash
+       rowKey: "ResetPassword",
+       ResetPasswordToken: "_" // 8 characters Hex, UPPERCASE
+   }
+   ```
+
+3. Send email
+
+   ```json
+   { // base64 string contains info as follows
+       emailAddressHash: "_",
+       token: "" // 8 characters Hex, UPPERCASE
+   }
+   ```
+
+### 🔁Reset password
+
+| Behaviour      | Involved tables / collections |
+| -------------- | ----------------------------- |
+| Reset Password | **[RL]** Credentials          |
+
+1. Look up login credentials (email address hash) in **[RL] Credentials** or return ***"Member not found" error***
+
+2. Look up reset password credentials (token) in **[RL] Credentials**
+
+3. Verify modified timestamp and match the reset password tokens or return ***"Password cannot be reset" error (token not match or not found)***
+
+4. Return (success)
+
+5. Create a new document of ***MemberLoginJournal*** in **[C] memberLoginJournal**
+
+   ```json
+   {
+       memberId: "_",
+      	category: 'success',
+       providerId: 'MojitoMemberSystem',
+       timestamp: "2022-12-14T03:05:35.509Z",
+       message: "Reset password."
+   }
+   ```
+
+   
+
+### 🔁Update member info
+
+| Behaviour             | Involved tables / collections |
+| --------------------- | ----------------------------- |
+| Update AvatarImageUrl | **[C]** memberComprehensive   |
+| Update Nickname       | **[C]** memberComprehensive   |
+| Update Password       | **[RL]** Credentials          |
+| Update BriefIntro     | **[C]** memberComprehensive   |
+| Update Gender         | **[C]** memberComprehensive   |
+| Update Birthday       | **[C]** memberComprehensive   |
 
 ### 💡Forbid Members frequently updating their avatar image 
 
@@ -1034,290 +1322,313 @@ Only allow updating other info after 30 seconds since last update
 您更新太频繁了，请稍候片刻再重试
 ```
 
-## ▶️Members
+## ▶️On other Members
+
+### 🔁Follow/Unfollow a member
 
 | Behaviour                  | Affected tables / collections                                |
 | -------------------------- | ------------------------------------------------------------ |
-| Follow / Unfollow a member | **[RL]** FollowingMemberMapping,<br />**[PRL]** FollowedByMemberMapping,<br />**[PRL]** NotifyFollowed,<br />**[C]** Notification ***(accumulate)***,<br />**[C]** MemberStatistics ***(accumulate)*** |
-| Block a member 🆕           | **[RL]** BlockedMemberMapping,<br />**[PRL]** BLockedByMemberMapping,<br />**[C]** MemberStatistics ***(accumulate)*** |
+| Follow / Unfollow a member | **[RL]** FollowingMemberMapping,<br />**[PRL]** FollowedByMemberMapping,<br />**[PRL]** Notice,<br />**[C]** Notification ***(acc.)***,<br />**[C]** MemberStatistics ***(acc.)*** |
+
+1. Create a new record / Delete record of ***FollowingMemberMapping*** in **[RL] FollowingMemberMapping**
+
+   ```json
+   {
+       partitionKey: "_", // member id (actor)
+       rowKey: "_", // member id (affected member)
+       IsActive: true
+   }
+   ```
+
+2. Create a new record / Delete record of ***FollowedByMemberMapping*** in **[PRL] FollowedByMemberMapping**
+
+   ```json
+   {
+       partitionKey: "_", // member id (affected member)
+       rowKey: "_", // member id (actor)
+       IsActive: true
+   }
+   ```
+
+3. Create a new record of ***Notice*** in **[PRL] Notice**
+
+   ```json
+   {
+       partitionKey: "_", // member id (affected member)
+       rowKey: "_", // notice id, 10 characters, UPPERCASE
+       InitiateId: "_", // member id of actor
+   }
+   ```
+
+4. Update notification statistics (followedCount) in **[C] notification** *(Follow act only)*
+
+   ```json
+   {
+       memberId: string; // (actor)
+       followedCount: 0 // ++
+   }
+   ```
+
+5. Update member statistics (followedByCount) in **[C] memberStatistics**
+
+   ```json
+   {
+       memberId: string; // (actor)
+       totalFollowingCount: 0 // ++
+   }
+   ```
+
+   ```json
+   {
+       memberId: string; // (affected member)
+       totalFollowedCount: 0 // ++/--
+   }
+   ```
+
+### 🔁Block/Unblock a member
+
+| Behaviour      | Affected tables / collections                                |
+| -------------- | ------------------------------------------------------------ |
+| Block a member | **[RL]** BlockingMemberMapping,<br />**[PRL]** BlockedByMemberMapping,<br />**[C]** memberStatistics ***(acc.)*** |
+
+Mostly same as 🔁Follow/Unfollow a member
 
 ## ▶️Comment
 
+### 🔁Create a comment
+
+| Behaviour                            | Affected tables / collections                                |
+| ------------------------------------ | ------------------------------------------------------------ |
+| Create a comment<br />(Cue a member) | **[C]** commentComprehensive ***(est.)***,<br />( Cond. **[PRL]** Notice***.Replied (est.)*** ),<br />( Cond. **[C]** notificationStatistics***.repliedCount (acc.)*** ),<br />( Cond. **[PRL]** Notice***.Cued (est.)*** ),<br />( Cond. **[C]** notificationStatistics***.cuedCount (acc.)*** ),<br />**[C]** memberStatistics***.totalCommentCount (acc.)***,<br />**[C]** postComprehensive***.totalCommentCount (acc.)***,<br />**[C]** topicComprehensive***.totalCommentCount (acc.)***,<br />**[C]** channelStatistics***.totalCommentCount (acc.)*** |
+
+1. Create a new document of ***CommentComprehensive*** in **[C] commentComprehensive **
+2. Skip (if blocked by post author) or Create a new record of ***RepliedNotice*** in **[PRL] Notice**
+3. Skip (if blocked by post author)  or Update document (**repliedCount**) in **[C] notificationStatistics**
+4. Skip (if not cued anyone or blocked) or Create a new record of ***RepliedNotice*** in **[PRL] Notice**
+5. Skip (if not cued anyone or blocked) or Update document (**cuedCount**) in **[C] notificationStatistics**
+6. Update document (**totalCommentCount**) in **[C] memberStatistics**
+7. Update document (**totalCommentCount**) in **[C] postComprehensive**
+8. Update document (**totalCommentCount**) in **[C] topicComprehensive**
+9. Update document (**totalCommentCount**) in **[C] channelStatistics**
+
+### 🔁Edit a comment
+
 | Behaviour                                                    | Affected tables / collections                                |
 | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| Create<br /> / Reply to a post<br />(Cue a member)           | **[T]** PostCommentMappingComprehensive ***(est.)***,<br />**[PRL]** NotifyReplied ***(est.)***,<br />**[C]** Notification***.repliedCount (acc.)***,<br />( Cond. **[PRL]** NotifyCued ***(est.)*** ),<br />( Cond. **[C]** Notification***.cuedCount (acc.)*** ),<br />**[C]** CommentStatistics*** (est.)***,<br />**[C]** memberStatistics***.commentCount (acc.)***,<br />**[C]** PostStatistics***.totalCommentCount (acc.)***,<br />**[C]** TopicStatistics***.totalCommentCount (acc.)***,<br />**[C]** ChannelStatistics***.totalCommentCount (acc.)*** |
-| Edit a comment<br />(Only allowed once,<br /> Editing results in losing<br />like / dislike data)🆕 | **[T]** PostCommentMappingComprehensive ***(put)***,<br />**[C]** commentStatistics***.liked&dislikeCount (put)***,🆕<br />**[C]** memberStatistics***.editCommentCount (acc.)***,<br />( Cond. **[PRL]** NotifyCued ***(est.)*** ),<br />( Cond. **[C]** Notification*.cuedCount* ***(acc.)*** ) |
-| Delete a comment                                             | **[T]** PostCommentMappingComprehensive ***(put)***,<br />**[C]** MemberStatistics***.deleteCommentCount (acc.)*** |
-| Like / Dislike a comment                                     | **[PRL]** AttitudeCommentMapping,<br />**[PRL]** NotifyLiked,<br /> (Cond. **[C]** Notification***.likedCount (acc.)*** ),<br />**[C]** CommentStatistics***.liked/dislikedCount (inc./dec.)*** |
+| Edit a comment<br />(Only allowed once,<br /> Editing results in losing<br />like / dislike data)🆕 | **[C]** commentComprehensive ***(put.)***,<br />**[C]** memberStatistics***.totalCommentEditCount (acc.)***,<br />( Cond. **[PRL]** NotifyCued ***(est.)*** ),<br />( Cond. **[C]** Notification*.cuedCount* ***(acc.)*** ) |
 
-## ▶️Subcomment
+1. Look up comment management (status) in **[C] commentComprehensive**
 
-| Behaviour                                                | Affected tables / collections                                |
-| -------------------------------------------------------- | ------------------------------------------------------------ |
-| Create<br /> / Reply to a subcomment<br />(Cue a member) | **[T]** CommentSubcommentMappingComprehensive ***(est.)***,<br />**[PRL]** NotifyReplied ***(est.)***,<br />**[C]** notification***.repliedCount (acc.)***,<br />( Cond. **[PRL]** NotifyCued ***(est.)*** ),<br />( Cond. **[C]** Notification***.cuedCount (acc.)*** ),<br />**[C]** subcommentStatistics ***(est.)***,<br />**[C]** commentStatistics***.subcommentCount (acc.)*** |
-| Edit a subcomment                                        | **[T]** CommentSubcommentMappingComprehensive ***(put)***,<br />**[C]** subcommentStatistics***.liked&dislikeCount (put)***,🆕<br />**[C]** memberStatistics***.editSubcommentCount (acc.)***,<br />( Cond. **[PRL]** NotifyCued ***(est.)*** ),<br />( Cond. **[C]** Notification*.cuedCount* ***(acc.)*** ) |
-| Delete a subcomment                                      | **[T]** CommentSubcommentMappingComprehensive ***(put)***,<br />**[C]** MemberStatistics***.deleteSubcommentCount (acc.)*** |
-| Like / Dislike a subcomment                              | **[PRL]** AttitudeSubcommentMapping,<br />**[PRL]** NotifyLiked,<br /> (Cond. **[C]** Notification***.likedCount (acc.)*** ),<br />**[C]** SubcommentStatistics***.liked/dislikedCount (inc./dec.)*** |
+2. Verify comment status
+
+3. Update document (**content, status=201**) in **[C] commentComprehensive** or return ***"Comment cannot be edited" error (status<0)***
+
+   ```
+   201 [有更改]/[Edited]
+   ```
+
+4. Update document (**totalCommentEditCount++**) in **[C] memberStatistics**
+
+5. Skip (if not cued anyone or blocked) or Create a new record of ***RepliedNotice*** in **[PRL] Notice**
+
+6. Skip (if not cued anyone or blocked) or Update document (**cuedCount**) in **[C] notificationStatistics**
+
+*\* Edit actions are only allowed once. Once performed would result in losing like/dislike data*
+
+### 🔁Delete a comment
+
+| Behaviour        | Affected tables / collections                                |
+| ---------------- | ------------------------------------------------------------ |
+| Delete a comment | **[C]** commentComprehensive ***(put.)***,<br />**[C]** memberStatistics***.totalCommentDeleteCount(acc.)*** |
+
+1. Update document (**content, status=-1/-3**) in **[C] commentComprehensive**
+
+   ```
+   -1 [已删除]/[Removed]
+   -3 [已被管理员删除]/[Removed by MojitoMaster]
+   ```
+
+2. Update document (**totalCommentEditCount++**) in **[C] memberStatistics**
+
+### 🔁Create a subcomment / Reply to a comment
+
+| Behaviour                               | Affected tables / collections                                |
+| --------------------------------------- | ------------------------------------------------------------ |
+| Create a subcomment<br />(Cue a member) | **[C]** subcommentComprehensive ***(est.)***,<br />( Cond. **[PRL]** Notice***.Replied (est.)*** ),<br />( Cond. **[C]** notificationStatistics***.repliedCount (acc.)*** ),<br />( Cond. **[PRL]** Notice***.Cued (est.)*** ),<br />( Cond. **[C]** notificationStatistics***.cuedCount (acc.)*** ),<br />**[C]** memberStatistics***.totalCommentCount (acc.)***,<br />**[C]** postComprehensive***.totalCommentCount (acc.)***,<br />**[C]** topicComprehensive***.totalCommentCount (acc.)***,<br />**[C]** channelStatistics***.totalCommentCount (acc.)*** |
+
+### 🔁Edit a subcomment
+
+| Behaviour                                                    | Affected tables / collections                                |
+| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| Edit a subcomment<br />(Only allowed once,<br /> Editing results in losing<br />like / dislike data)🆕 | **[C]** subcommentComprehensive ***(put.)***,<br />**[C]** memberStatistics***.totalCommentEditCount (acc.)***,<br />( Cond. **[PRL]** NotifyCued ***(est.)*** ),<br />( Cond. **[C]** Notification*.cuedCount* ***(acc.)*** ) |
+
+### 🔁Delete a comment/subcomment
+
+| Behaviour           | Affected tables / collections                                |
+| ------------------- | ------------------------------------------------------------ |
+| Delete a subcomment | **[C]** subcommentComprehensive ***(put.)***,<br />**[C]** memberStatistics***.totalCommentDeleteCount (acc.)*** |
+
+## ▶️Attitude
+
+### 🔁Express attitude on a post
+
+| Behaviour                                                 | Affected tables / collections                                |
+| --------------------------------------------------------- | ------------------------------------------------------------ |
+| Like /<br />Unlike /<br />Dislike /<br />Undislike a post | **[C]** postComprehensive***.totalLiked/DislikedCount (inc./dec.)***,<br />( Cond. **[PRL]** Notice***.Liked (est.)*** ),<br />( Cond. **[C]** notificationStatistics***.likedCount (acc.)*** ),<br />**[C]** attitudePostMapping ***(est./inc.)*** |
+
+*\* [PRL] Notice is accumulate-only; editing, removing is prohibited*
+
+### 🔁Express attitude on a comment/subcomment
+
+| Behaviour                                                    | Affected tables / collections                                |
+| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| Like /<br />Unlike /<br />Dislike /<br />Undislike a comment /<br />subcomment | **[C]** comment/subcommentComprehensive***.totalLiked/DislikedCount (inc./dec.)***,<br />( Cond. **[PRL]** Notice***.Liked(est.)*** ),<br />( Cond. **[C]** notificationStatistics***.likedCount (acc.)*** ),<br />**[C]** attitudePostMapping ***(est./inc.)*** |
 
 ## ▶️Topic
 
-| Behaviour      | Affected tables / collections                         |
-| -------------- | ----------------------------------------------------- |
-| Create a topic | **[T]** TopicComprehensive, **[C]** ChannelStatistics |
+| Behaviour      | Affected tables / collections                                |
+| -------------- | ------------------------------------------------------------ |
+| Create a topic | **[C]** topicComprehensive ***(est.)***,<br />**[C]** channelStatistics***.totalTopicCount (acc.)*** |
+| Refer a topic  | See 🔁Create to a post                                        |
+| Search a topic | **[C]** topicComprehensive***.totalSearchCount (acc.)***     |
 
 ## ▶️Post
 
-| Behaviour                       | Affected tables / collections                                |
-| ------------------------------- | ------------------------------------------------------------ |
-| View a post                     | **[RL]** HistoryMapping,<br />**[C]** PostStatistics ***(accumulate)***,<br />**[C]** TopicStatistics ***(accumulate)***,<br />**[C]** ChannelStatistics ***(accumulate)***, |
-| Create a post                   | **[T]** PostComprehensive,<br />**[RL]** CreationsMapping,<br />**[C]** PostStatistics ***(establish)***,<br />**[C]** TopicStatistics ***(accumulate)***,<br />**[C]** ChannelStatistics ***(accumulate)***,<br />(**[PRL]** NotifyCued),<br />(**[C]** Notification) |
-| Edit a post                     | **[T]** PostComprehensive,<br />(**[PRL]** NotifyCued),<br />(**[C]*** Notification) |
-| Delete a post                   | **[T]** PostComprehensive,<br />**[RL]** CreationsMapping ***(cleanup)*** |
-| Save a post                     | **[RL]** SavedMapping,<br />**[PRL]** NotifySaved,<br />**[C]** Notification ***(accumulate)***,<br />**[C]** PostStatistics ***(accumulate)***,<br />**[C]** TopicStatistics ***(accumulate)***,<br />**[C]** ChannelStatistics ***(accumulate)***, |
-| Like / Dislike a post           | **[PRL]** PostAttitudeMapping,<br />**[PRL]** NotifyLiked,<br />**[C]** Notification ***(accumulate)***,<br />**[C]** PostStatistics ***(accumulate)***,<br />**[C]** TopicStatistics ***(accumulate)***,<br />**[C]** ChannelStatistics ***(accumulate)*** |
-| Share a post<br />(🚫Not-in-use) |                                                              |
+### 🔁View a post
+
+| Behaviour   | Affected tables / collections                                |
+| ----------- | ------------------------------------------------------------ |
+| View a post | **[RL]** HistoryMapping ***(est.)***,<br />**[C]** postComprehensive***.totalHitCount (acc.)***,<br />**[C]** topicStatistics ***.totalHitCount (acc.)***,<br />**[C]** channelStatistics***.totalHitCount (acc.)***, |
+
+### 🔁Create a post
+
+| Behaviour     | Affected tables / collections                                |
+| ------------- | ------------------------------------------------------------ |
+| Create a post | **[C]** postComprehensive,<br />( Cond. **[PRL]** Notice***.Cued (est.)*** ),<br />( Cond. **[C]** notificationStatistics***.cuedCount (acc.)*** )<br />**[C]** memberStatistics***.totalCreationCount (acc.)***,<br />**[C]** topicComprehensive***.totalPostCount (acc.)***,<br />**[C]** channelStatistics***.totalPostCount (acc.)*** |
+
+### 🔁Edit a post
+
+| Behaviour   | Affected tables / collections                                |
+| ----------- | ------------------------------------------------------------ |
+| Edit a post | **[C]** postComprehensive,<br />**[C]** memberComprehensive***.totalCommentEditCount (acc.)***<br />( Cond. **[PRL]** Notice***.Cued (est.)*** ),<br />( Cond. **[C]** notificationStatistics***.cuedCount (acc.)*** ) |
+
+### 🔁Delete a post
+
+| Behaviour     | Affected tables / collections                                |
+| ------------- | ------------------------------------------------------------ |
+| Delete a post | **[C]** postComprehensive,<br />**[C]** memberComprehensive***.totalCreationDeleteCount (acc.)*** |
+
+### 🔁Save a post
+
+| Behaviour   | Affected tables / collections                                |
+| ----------- | ------------------------------------------------------------ |
+| Save a post | **[RL]** SavedMapping,<br />( Cond. **[PRL]** Notice***.Saved (est.)*** ),<br />( Cond. **[C]** notificationStatistics***.savedCount (acc.)*** ),<br />**[C]** memberStatistics***.totalSavedCount(acc.)***,<br />**[C]** postComprehensive***.totalSavedCount(acc.)***,<br />**[C]** topicComprehensive***.totalSavedCount(acc.)***,<br />**[C]** channelStatistics***.totalSavedCount (acc.)*** |
 
 
 
 # APIs
 
-## Member SignUp
+## 📦Notification
 
-### POST|`/api/member/behaviour/signup/index`
+GET|`/api/notification/[id]`
 
-| Behaviour | Affected table                                               |
-| --------- | ------------------------------------------------------------ |
-| Signup    | [T] LoginCredentialsMapping,<br />[T] MemberLogin,<br />[T] MemberComprehensive |
+## 📦Member
 
+### Signup
 
+POST|`/api/member/behaviour/signup/index`
 
-## Member Login
+### Signin
 
-### POST|`/api/auth/[...nextauth]`
+POST|`/api/auth/[...nextauth]`
 
+## 📦Member
 
+### Info & Statistics
 
+GET|`/api/member/info/[id]`
 
+POST|`/api/member/info/[id]`
 
-## Member Info & Statistics
+POST|`/api/member/behaviour/follow/[id]`
 
-### GET|`/api/member/info/[id]`
+POST|`/api/member/behaviour/block/[id]`
 
-### POST|`/api/member/info/[id]`
+GET|`/api/member/behaviour/resetpassword/request?emaillAddress=`
 
-| Behaviour                              | Affected table          |
-| -------------------------------------- | ----------------------- |
-| Update member info, e.g., EmailAddress | [T] MemberComprehensive |
+## 📦Comment
 
-\* Identity verification required.
+###  Info & Statistics
 
-### POST|`/api/member/behaviour/follow/[id]`
+GET|`/api/comment/s/of/[postId]`
 
-| Behaviour                  | Affected table                                               |
-| -------------------------- | ------------------------------------------------------------ |
-| Follow / Unfollow a member | **[RL]** FollowingMemberMapping,<br />**[PRL]** FollowedByMemberMapping,<br />**[PRL]** NotifyFollowed,<br />**[C]** Notification ***(accumulate)***,<br />**[C]** MemberStatistics ***(accumulate)*** |
+POST|`/api/comment/of/[postId]/info/index`
 
-\* Identity verification required.
+GET|`/api/comment/of/[postId]/info/[commentId]`
 
-### POST|`/api/member/behaviour/block/[id]`
+POST|`/api/comment/of/[postId]/info/[commentId]`
 
-| Behaviour      | Affected table                                               |
-| -------------- | ------------------------------------------------------------ |
-| Block a member | **[RL]** BlockedMemberMapping,<br />**[PRL]** BLockedByMemberMapping,<br />**[C]** MemberStatistics ***(accumulate)*** |
+PUT|`/api/comment/of/[postId]/info/[commentId]`
 
-\* Identity verification required.
+DELETE|`/api/comment/of/[postId]/info/[commentId]`
 
-### GET|`/api/member/behaviour/resetpassword/request?emaillAddress=`
+## 📦Subcomment
 
+### Info & Statistics
 
+GET|`/api/subcomment/s/of/[commentId]`
 
+POST|`/api/subcomment/of/[commentId]/info/index`
 
+GET|`/api/subcomment/of/[commentId]/info/[subcommentId]`
 
-## Comment Info & Statistics
+POST|`/api/subcomment/of/[commentId]/info/[subcommentId]`
 
-### GET|`/api/comment/s/of/[postId]`
+PUT|`/api/subcomment/of/[commentId]/info/[subcommentId]`
 
-get comments by post id
+DELETE|`/api/subcomment/of/[commentId]/info/[subcommentId]`
 
-### POST|`/api/comment/of/[postId]/info/index`
+## 📦Channel
 
-| Behaviour                                          | Affected table                                               |
-| -------------------------------------------------- | ------------------------------------------------------------ |
-| Create<br /> / Reply to a post<br />(Cue a member) | **[T]** PostCommentMappingComprehensive ***(est.)***,<br />**[PRL]** NotifyReplied ***(est.)***,<br />**[C]** notification***.repliedCount (acc.)***,<br />( Cond. **[PRL]** NotifyCued ***(est.)*** ),<br />( Cond. **[C]** Notification***.cuedCount (acc.)*** ),<br />**[C]** commentStatistics*** (est.)***,<br />**[C]** memberStatistics***.commentCount (acc.)***,<br />**[C]** postStatistics***.totalCommentCount (acc.)***,<br />**[C]** topicStatistics***.totalCommentCount (acc.)***,<br />**[C]** channelStatistics***.totalCommentCount (acc.)*** |
+### Info & Statistics
 
-\* Identity verification required.
+GET|`/api/channel/info/[id]`
 
-#### Steps:
+GET|`/api/channel/dictionary`
 
-1. createEntity (commentInfo:ICommentInfo) to [T] PostCommentMappingComprehensive
+GET|`/api/channel/index`
 
-2. createEntity (noticeInfo:INoticeInfo) [PRL] NotifyReplied
+## 📦Topic
 
-   1. If cued, createEntity (noticeInfo:INoticeInfo) [PRL] NotifyCued
+### Info & Statistics
 
-3. accumulate Notification.repliedCount
+GET| `/api/topic/[id]`
 
-   1. If cued, accumulate Notification.cuedCount
+GET| `/api/topic/of/channel/[id]`
 
-4. createDocument (commentStatistics) to [C] commentStatistics
+POST| `/api/topic/index`
 
-5. accumulate memberStatistics.commentCount
+## 📦Post
 
-   ...
+### Info & Statistics
 
-### GET|`/api/comment/of/[postId]/info/[commentId]`
+GET|`/api/post/info/[id]`
 
-get comment info by post id & comment id
+POST|`/api/post/info/index`
 
-### POST|`/api/comment/of/[postId]/info/[commentId]`
+PUT|`/api/post/info/[id]`
 
-| Behaviour                | Affected table                                               |
-| ------------------------ | ------------------------------------------------------------ |
-| Like / Dislike a comment | **[PRL]** AttitudeCommentMapping,<br />**[PRL]** NotifyLiked,<br /> (Cond. **[C]** Notification***.likedCount (acc.)*** ),<br />**[C]** CommentStatistics***.liked/dislikedCount (inc. / dec.)*** |
+DELETE|`/api/post/info/[id]`
 
-\* Identity verification required.
+POST|`/api/post/behaviour/save/[id]`
 
-### PUT|`/api/comment/of/[postId]/info/[commentId]`
+POST|`/api/post/behaviour/attitude/[id]`
 
-| Behaviour      | Affected table                                               |
-| -------------- | ------------------------------------------------------------ |
-| Edit a comment | **[T]** PostCommentMappingComprehensive ***(put)***,<br />**[C]** CommentStatistics***.liked&dislikeCount (put)***,🆕<br />**[C]** MemberStatistics***.editCommentCount (acc.)***,<br />( Cond. **[PRL]** NotifyCued ***(est.)*** ),<br />( Cond. **[C]** Notification*.cuedCount* ***(acc.)*** ) |
 
-\* Identity verification required.
-
-### DELETE|`/api/comment/of/[postId]/info/[commentId]`
-
-| Behaviour        | Affected table                                               |
-| ---------------- | ------------------------------------------------------------ |
-| Delete a comment | **[T]** PostCommentMappingComprehensive ***(put)***,<br />**[C]** MemberStatistics***.deleteCommentCount (acc.)*** |
-
-\* Identity verification required.
-
-
-
-
-
-
-
-## Subcomment Info & Statistics
-
-Update 13/12/2022: Subcomment statistics no longer counted in post/topic/channel statistics. Only a few items are counted in member statistics
-
-### GET|`/api/subcomment/s/of/[commentId]`
-
-get subcomments by comment id
-
-### POST|`/api/subcomment/of/[commentId]/info/index`
-
-| Behaviour                                                | Affected table                                               |
-| -------------------------------------------------------- | ------------------------------------------------------------ |
-| Create<br /> / Reply to a subcomment<br />(Cue a member) | **[T]** CommentSubcommentMappingComprehensive,<br />**[PRL]** NotifyReplied,<br />**[C]** Notification ***(accumulate)***,<br />**[C]** SubcommentStatistics ***(establish)***,<br />**[C]** CommentStatistics ***(accumulate)***,<br />**[C]** PostStatistics ***(accumulate)***,<br />**[C]** TopicStatistics ***(accumulate)***,<br />**[C]** ChannelStatistics ***(accumulate)*** |
-
-\* Identity verification required.
-
-### GET|`/api/subcomment/of/[commentId]/info/[subcommentId]`
-
-get subcomment info by commentid & subcomment id
-
-### POST|`/api/subcomment/of/[commentId]/info/[subcommentId]`
-
-| Behaviour                   | Affected table                                               |
-| --------------------------- | ------------------------------------------------------------ |
-| Like / Dislike a subcomment | **[PRL]** AttitudeSubommentMapping,<br />**[PRL]** NotifyLiked,<br />( Cond. **[C]** Notification***.likedCount (acc.)*** ),<br />**[C]** SubcommentStatistics***.liked/dislikedCount (inc. / dec.)*** |
-
-\* Identity verification required.
-
-### PUT|`/api/subcomment/of/[commentId]/info/[subcommentId]`
-
-| Behaviour      | Affected table                                |
-| -------------- | --------------------------------------------- |
-| Edit a comment | **[T]** CommentSubcommentMappingComprehensive |
-
-\* Identity verification required.
-
-### DELETE|`/api/subcomment/of/[commentId]/info/[subcommentId]`
-
-| Behaviour        | Affected table                                |
-| ---------------- | --------------------------------------------- |
-| Delete a comment | **[T]** CommentSubcommentMappingComprehensive |
-
-\* Identity verification required.
-
-
-
-
-
-
-
-## Topic Info & Statistics
-
-### GET| `/api/topic/[id]`
-
-### GET| `/api/topic/of/channel/[id]`
-
-### POST| `/api/topic/index`
-
-| Behaviour      | Affected table                                        |
-| -------------- | ----------------------------------------------------- |
-| Create a topic | **[T]** TopicComprehensive, **[C]** ChannelStatistics |
-
-
-
-
-
-## Post Info & Statistics
-
-### GET|`/api/post/info/[id]`
-
-| Behaviour   | Affected table                                               |
-| ----------- | ------------------------------------------------------------ |
-| View a post | **[RL]** HistoryMapping,<br />**[C]** PostStatistics ***(accumulate)***,<br />**[C]** TopicStatistics ***(accumulate)***,<br />**[C]** ChannelStatistics ***(accumulate)*** |
-
-### POST|`/api/post/info/index`
-
-| Behaviour     | Affected table                                               |
-| ------------- | ------------------------------------------------------------ |
-| Create a post | **[T]** PostComprehensive,<br />**[RL]** CreationsMapping,<br />**[C]** PostStatistics ***(establish)***,<br />**[C]** TopicStatistics ***(accumulate)***,<br />**[C]** ChannelStatistics ***(accumulate)*** |
-
-\* Identity verification required.
-
-### PUT|`/api/post/info/[id]`
-
-| Behaviour   | Affected table            |
-| ----------- | ------------------------- |
-| Edit a post | **[T]** PostComprehensive |
-
-\* Identity verification required.
-
-### DELETE|`/api/post/info/[id]`
-
-| Behaviour     | Affected table                                               |
-| ------------- | ------------------------------------------------------------ |
-| Delete a post | **[T]** PostComprehensive,<br />**[RL]** CreationsMapping ***(cleanup)*** |
-
-\* Identity verification required.
-
-### POST|`/api/post/behaviour/save/[id]`
-
-| Behaviour   | Affected table                                               |
-| ----------- | ------------------------------------------------------------ |
-| Save a post | **[RL]** SavedMapping,<br />**[PRL]** NotifySaved,<br />**[C]** Notification ***(accumulate)***,<br />**[C]** PostStatistics ***(accumulate)***,<br />**[C]** TopicStatistics ***(accumulate)***,<br />**[C]** ChannelStatistics ***(accumulate)*** |
-
-\* Identity verification required.
-
-### POST|`/api/post/behaviour/attitude/[id]`
-
-| Behaviour             | Affected table                                               |
-| --------------------- | ------------------------------------------------------------ |
-| Like / Dislike a post | **[PRL]** PostAttitudeMapping,<br />**[PRL]** NotifyLiked,<br />**[C]** Notification ***(accumulate)***,<br />**[C]** PostStatistics ***(accumulate)***,<br />**[C]** TopicStatistics ***(accumulate)***,<br />**[C]** ChannelStatistics ***(accumulate)*** |
-
-\* Identity verification required.
 
 
 
  
-
-
 
 
 

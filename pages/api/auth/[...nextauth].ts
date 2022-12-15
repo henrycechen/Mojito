@@ -38,6 +38,7 @@ const salt = process.env.APP_PASSWORD_SALT ?? '';
 const loginProviderIdMapping: ProviderIdMapping = { // [!] Every time add a new provider, update this dictionary
     github: 'GitHubOAuth',
     google: 'GoogleOAuth',
+    // instagram
     // twitter
     // facebook
 }
