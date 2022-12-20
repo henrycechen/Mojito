@@ -114,7 +114,7 @@ const ResetPassword = () => {
         displayError: false,
         displayCircularProgress: false,
         resultContent: '',
-        memberId: '',
+        emailAddress: '',
         resetPasswordToken: ''
     });
 
@@ -134,10 +134,10 @@ const ResetPassword = () => {
             const resp = await fetch(`/api/member/behaviour/resetpassword/verify?requestInfo=${requestInfo}&recaptchaResponse=${processStates.recaptchaResponse}`);
             if (200 === resp.status) {
                 recaptcha?.reset();
-                const { memberId, resetPasswordToken } = await resp.json();
-                setProcessStates({ ...processStates, componentOnDisplay: 'resetpasswordform', memberId, resetPasswordToken })
+                const { emailAddress, resetPasswordToken } = await resp.json();
+                setProcessStates({ ...processStates, componentOnDisplay: 'resetpasswordform', emailAddress, resetPasswordToken })
             } else {
-                console.log(await resp.text());
+                // console.log(await resp.text());
                 setProcessStates({ ...processStates, componentOnDisplay: 'resetpasswordresult', resultContent: langConfigs.tokenError[lang] });
             }
         } else {
@@ -145,7 +145,7 @@ const ResetPassword = () => {
             const resp = await fetch(`/api/member/behaviour/resetpassword?recaptchaResponse=${processStates.recaptchaResponse}`, {
                 method: 'POST',
                 body: JSON.stringify({
-                    memberId: processStates.memberId,
+                    emailAddress: processStates.emailAddress,
                     resetPasswordToken: processStates.resetPasswordToken,
                     password: passwordStates.password
                 })

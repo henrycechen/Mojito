@@ -37,27 +37,18 @@ const langConfigs: LangConfigs = {
         ch: '返回主页',
         en: 'Back to home'
     },
-
     errors: {
-        AccessDenied: {
-            ch: '您的账户需要验证或已被注销',
-            en: 'Your account needs verification or has been canceled'
+        EmailAddressVerificationRequired: {
+            ch: ['您需要对您的账户完成邮箱验证', '，如有问题请联系我们的管理员'],
+            en: ['You will need to complete email address verification before signin', ', please try again later or contact our Webmaster']
         },
-        PermissionDenied: {
-            ch: '',
-            en: ''
-        },
-        EmailAddressUnverified: {
-            ch: '',
-            en: ''
+        DefectiveMember: {
+            ch: ['您的账户存在错误', '，请联系我们的管理员'],
+            en: ['An error occurred with your membership', ', please contact our Webmaster']
         },
         MemberSuspendedOrDeactivated: {
-            ch: '',
-            en: ''
-        },
-        MemberDeactivated: {
-            ch: '',
-            en: ''
+            ch: ['您的账户已停用或已被注销', '，如有问题请联系我们的管理员'],
+            en: ['Your membership has been suspended or deactivated', ', please try again later or contact our Webmaster']
         }
     }
 }

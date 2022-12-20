@@ -238,6 +238,16 @@ type ResetPasswordRequestInfo = {
 - WebMaster喜欢了您在“WebMaster在Mojito发的第一篇帖子”中发表的评论“可喜可贺可惜可...”
 ```
 
+#### Pinned (⬆️)
+
+| PartitionKey        | RowKey   | InitiateId  | PostId | PostBrief |
+| ------------------- | -------- | ----------- | ------ | --------- |
+| NotifiedMemberIdStr | NoticeId | MemberIdStr | string | string    |
+
+```
+- WebMaster置顶了您在“WebMaster在Mojito发的第一篇帖子”中发表的评论“可喜可贺可惜可...”
+```
+
 #### Saved (💾)
 
 | PartitionKey        | RowKey   | InitiateId  | PostId | PostBrief |
@@ -332,18 +342,6 @@ type ResetPasswordRequestInfo = {
 
 
 
-## 💾Stastics
-
-### [T] Statistics
-
-| PartitionKey         | RowKey      |
-| -------------------- | ----------- |
-| `"MemberStatistics"` | MemberIdStr |
-
-
-
-
-
 ## Reference
 
 - Microsoft - Design for Querying [Link](https://learn.microsoft.com/en-us/azure/storage/tables/table-storage-design-for-query)
@@ -399,22 +397,20 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
     
     //// info ////
     memberId: string; // 10 characters, UPPERCASE
-    providerId: string; // "MojitoMemberSystem" | "GitHubOAuth" | ...
-    registeredTime: number;
-    verifiedTime: number;
-    emailAddress: string;
-    memberIndex: number;
-    nickname: string;
-    nicknameHash: string; // prevent duplicated nickname when re-naming
-  	i
-    briefIntro: string;
-    gender: -1 | 0 | 1;
-    birthday: string;
+    providerId?: string; // "MojitoMemberSystem" | "GitHubOAuth" | ...
+    registeredTime?: number;// new Date().getTime()
+    verifiedTime?: number;
+    emailAddress?: string;
+    nickname?: string;
+  	avatarImageUrl?: string;
+    briefIntro?: string;
+    gender?: -1 | 0 | 1;
+    birthday?: string;
     
     //// management ////
-    status: number;
-    allowPosting: boolean;
-    allowCommenting: boolean;
+    status?: number;
+    allowPosting?: boolean;
+    allowCommenting?: boolean;
 }
 ```
 
@@ -429,7 +425,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 | **200**  | **Email address verified or third party login, normal** |
 | **≥400** | **Restricted to certain content or behaviour**          |
 
-### [C] memberLoginJournal
+### [C] loginJournal
 
 `mojito-statistics-dev.journal.login`
 
@@ -806,7 +802,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 
 ### [C] postComprehensive
 
-```json
+```typescript
 {
     _id: ObjectId; // mongodb obejct id
     
@@ -820,6 +816,8 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 
 	channelId: string;
 	topicIdsArr: string[];
+  	
+	pinnedCommentId: string;
 
     //// management ////
     status: number;
@@ -1063,7 +1061,6 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 
    ```json
    {
-       memberId: "_",
        providerId: "MojitoMemberSystem", // "MojitoMemberSystem"| "GitHubOAuth" | undefined (deemed as "MojitoMemberSystem")
        emailAddressHash: "_",
        token: "" // 8 characters Hex, UPPERCASE
@@ -1072,19 +1069,25 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 
 2. Look up login credentials (email address hash) in **[RL] Credentials**
 
-3. Look up verify email address credentials (token) or return ***"Member not found" error***
+3. Look up verify email address credentials (token) in **[RL] Credentials** or return ***"Member not found" error***
 
 4. Match the verify email address tokens or return ***"Member cannot be activated" error (token not match or not found)***
 
 5. Update member info (status, verified time) in **[C] memberComprehensive** or ***"Member cannot be activated" error***
 
-6. Create a new record of ***MemberStatistics*** in **[T] Statistics**
+   ```json
+   {
+       //// info ////
+       verifiedTime: new Date().getTime(),
+       gender: 0,
+       //// management ////
+       status: 200,
+       allowPosting: true,
+       allowCommenting: true
+   }
+   ```
 
-7. Calculate the index of the current member
-
-8. Update member index in **[C] memberComprehensive**
-
-9. Create a new document of ***MemberStatistics*** in **[C] memberStatistics**
+6. Create a new document of ***MemberStatistics*** in **[C] memberStatistics**
 
    ```json
    {
@@ -1096,7 +1099,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
    }
    ```
 
-10. Create a new document of ***Notification*** in **[C] notificationStatistics**
+7. Create a new document of ***Notification*** in **[C] notificationStatistics**
 
    ```json
    {
@@ -1109,18 +1112,21 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
    }
    ```
 
-11. Create a new document of ***MemberLoginJournal*** in **[C] memberLoginJournal**
+8. Create a new document of ***MemberLoginJournal*** in **[C] memberLoginJournal**
 
-    ```json
-    {
-        memberId: "_",
-       	category: 'success',
-        providerId: 'MojitoMemberSystem',
-        timestamp: "2022-12-14T03:05:35.509Z",
-        message: "Email address verified."
-    }
-    ```
+   ```json
+   {
+       memberId: "_",
+      	category: 'success',
+       providerId: 'MojitoMemberSystem',
+       timestamp: "2022-12-14T03:05:35.509Z",
+       message: "Email address verified."
+   }
+   ```
 
+### 🔁Request re-send verification email
+
+1. Retrieve request info (email address, provider id) from request body
 
 ### 🔁Login with Mojito Member System
 
@@ -1160,7 +1166,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 
 2. Look up member management (status) in **[C] memberComprehensive** or
 
-   1. Create a new document of ***LoginCredentials*** in **[RL] Credentials**
+   1. Create a new record of ***LoginCredentials*** in **[RL] Credentials**
 
       ```json
       {
@@ -1189,6 +1195,8 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
           providerId: "GitHubOAuth", // login (register) with a GitHub account
           registeredTime: 1670987135509,
           emailAddress: "_",
+          nickname: "_",
+         	avatarImageUrl: "_",
           //// management ////
           status: 0,
           allowPosting: false,
@@ -1204,7 +1212,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
          	category: 'success',
           providerId: 'GitHubOAuth',
           timestamp: "2022-12-14T03:05:35.509Z",
-          message: "Registered. Please verify email address to get full access."
+          message: "Registered."
       }
       ```
 
@@ -1474,6 +1482,12 @@ Mostly same as 🔁Follow/Unfollow a member
 | Behaviour           | Affected tables / collections                                |
 | ------------------- | ------------------------------------------------------------ |
 | Delete a subcomment | **[C]** subcommentComprehensive ***(put.)***,<br />**[C]** memberStatistics***.totalCommentDeleteCount (acc.)*** |
+
+### 🔁Pin a comment
+
+| Behaviour     | Affected tables / collections                          |
+| ------------- | ------------------------------------------------------ |
+| Pin a comment | **[C]** postComprehensive***.pinnedCommentId (put.)*** |
 
 ## ▶️Attitude
 

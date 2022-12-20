@@ -90,7 +90,6 @@ const langConfigs: LangConfigs = {
     emailAddressNotSatisfiedError: {
         ch: '邮件地址不符合格式',
         en: 'Email address does not match the format'
-
     },
     passwordNotSatisfiedError: {
         ch: '密码不符合安全性要求',
@@ -111,6 +110,18 @@ const langConfigs: LangConfigs = {
     badResult: {
         ch: '账户注册失败😥请稍后重试或者联系我们的管理员',
         en: 'Failed to register😥 Please try again later or contact our Webmaster'
+    },
+    goodResendEmailResult: {
+        ch: '一封验证邮件已发送到注册时使用的邮箱😉验证邮箱后就可以登录啦~',
+        en: 'A verification email has been sent to the address for registration😉 After verifying your email address you will have full access'
+    },
+    cannotResendEmailResult: {
+        ch: '您的账户存在问题或已停用或注销因而不能发送验证邮件😥如有问题请联系我们的管理员，',
+        en: 'An error occurred with your member or your member has been suspended or deactivated😥 If there is any problem please contact our Webmaster'
+    },
+    badResendEmailResult: {
+        ch: '验证邮件发送失败😥请稍后重试或者联系我们的管理员',
+        en: 'Failed to re-send verification email😥 Please try again later or contact our Webmaster'
     }
 }
 
@@ -121,8 +132,34 @@ const SignUp = ({ providers }: any) => {
     React.useEffect(() => {
         if (session) router.push('/');
         const { info } = router.query;
-        if ('string' === typeof info && 'ThirdPartySignupSuccess' === info) {
-            setProcessStates({ ...processStates, componentOnDisplay: 'signuprequestresult', displayCircularProgress: false, resultContent: langConfigs.goodResult[lang] });
+        if ('string' === typeof info) {
+            if ('ResendVerificationEmailSuccess' === info) {
+                setProcessStates({
+                    ...processStates,
+                    componentOnDisplay: 'signuprequestresult',
+                    displayCircularProgress: false,
+                    resultContent: langConfigs.goodResendEmailResult[lang]
+                });
+                return;
+            }
+            if ('CannotVerificationEmailSuccess' === info) {
+                setProcessStates({
+                    ...processStates,
+                    componentOnDisplay: 'signuprequestresult',
+                    displayCircularProgress: false,
+                    resultContent: langConfigs.cannotResendEmailResult[lang]
+                });
+                return;
+            }
+            if ('ResendVerificationEmailError' === info) {
+                setProcessStates({
+                    ...processStates,
+                    componentOnDisplay: 'signuprequestresult',
+                    displayCircularProgress: false,
+                    resultContent: langConfigs.badResendEmailResult[lang]
+                });
+                return;
+            }
         }
     }, []);
 

@@ -70,9 +70,13 @@ const langConfigs: LangConfigs = {
         ch: (partyName: string) => `使用 ${partyName} 账户登录`,
         en: (partyName: string) => `Use ${partyName} Account to sign in`,
     },
-    forgetPwd: {
+    forgetPassword: {
         ch: '忘记密码了？',
         en: 'Forgot password?'
+    },
+    resendVerificationEmail: {
+        ch: '重新发送验证邮件',
+        en: 'Re-send verification email'
     },
     appSignup: {
         ch: '没有Mojito账户？现在就注册吧',
@@ -91,26 +95,30 @@ const langConfigs: LangConfigs = {
             ch: ['邮件地址与密码不匹配，请再尝试一下', ''],
             en: ['Member and password do not match', ', please try again', '']
         },
-        EmailAddressUnverified: {
-            ch: ['您需要对您的账户完成邮箱验证', '，如有问题请联系我们的管理员'],
+        EmailAddressVerificationRequired: {
+            ch: ['您需要对您的账户完成邮箱验证', '，如有问题请联系我们的管理员，'],
             en: ['You will need to complete email address verification before signin', ', please try again later or contact our Webmaster']
         },
         InappropriateEmailAddress: {
             ch: ['第三方平台提供的账户信息不能满足我们的要求，请尝试其他的账户或登录方式', '，如有问题请联系我们的管理员'],
             en: ['The information supplied by the third-party signin provider do not meet our requirements, please try signing in with another account or method', ', please try again later or contact our Webmaster']
         },
+        DefectiveMember: {
+            ch: ['您的账户存在错误', '，请联系我们的管理员'],
+            en: ['An error occurred with your member', ', please contact our Webmaster']
+        },
         MemberSuspendedOrDeactivated: {
             ch: ['您的账户已停用或已被注销', '，如有问题请联系我们的管理员'],
-            en: ['Your membership has been suspended or deactivated', ', please try again later or contact our Webmaster']
+            en: ['Your member has been suspended or deactivated', ', please try again later or contact our Webmaster']
         },
         UnrecognizedProvider: {
-            ch: ['您刚刚尝试使用我们不支持的第三方账户登录', '请尝试使用Mojito账户或我们支持的登录方式，如有问题请联系我们的管理员'],
+            ch: ['您尝试使用我们不支持的第三方账户登录', '，请使用Mojito账户或我们支持的登录方式，如有问题请联系我们的管理员'],
             en: ['The third-party signin provider you tried signin with is not supported by us', ', please try signing in with Mojito account or other methods we supported or contact our Webmaster']
         },
         ThirdPartyProviderSignin: {
-            ch: ['第三方账户登录遇到了一些问题', '请稍后重试或者联系我们的管理员'],
+            ch: ['第三方账户登录遇到了一些问题', '，请稍后重试或者联系我们的管理员'],
             en: ['Third-party Account sign in unsuccessful', ', please try again later or contact our Webmaster']
-        },
+        }
     }
 }
 
@@ -125,43 +133,128 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
 
     // Decalre process states
     const [processStates, setProcessStates] = React.useState({
+        /**
+         * progress list:
+         * - signin
+         * - login
+         * - resendemail
+         */
+        processInProgress: 'signin',
         recaptchaResponse: '',
-        credentialSigninAlertContent: '',
-        displayCredentialSigninAlert: false,
-        thirdPartyProviderSigninAlerContent: '',
+        mojitoMemberSystemSigninAlertContent: '',
+        displayMojitoMemberSystemSigninAlert: false,
+        thirdPartyProviderSigninAlertContent: '',
         displayThirdPartyProviderSignAlert: false,
+        displayResendEmailButton: false,
         displayCircularProgress: false
     })
     // Handle error hint
     React.useEffect(() => {
-        const { error, provider } = router.query;
+        const { error, providerId } = router.query;
         if ('string' === typeof error) {
             if ('CredentialsSignin' === error) {
-                setProcessStates({ ...processStates, credentialSigninAlertContent: langConfigs.errors.CredentialsSignin[lang], displayCredentialSigninAlert: true, displayThirdPartyProviderSignAlert: false });
+                setProcessStates({
+                    ...processStates,
+                    mojitoMemberSystemSigninAlertContent: langConfigs.errors.CredentialsSignin[lang],
+                    displayMojitoMemberSystemSigninAlert: true,
+                    displayThirdPartyProviderSignAlert: false,
+                    displayResendEmailButton: false
+                });
+                return;
+            }
+            if ('EmailAddressVerificationRequired' === error) {
+                if ('string' === typeof providerId && 'MojitoMemberSystem' === providerId) {
+                    setProcessStates({
+                        ...processStates,
+                        mojitoMemberSystemSigninAlertContent: langConfigs.errors.EmailAddressVerificationRequired[lang],
+                        displayMojitoMemberSystemSigninAlert: true,
+                        displayThirdPartyProviderSignAlert: false,
+                        displayResendEmailButton: true
+                    });
+                    return;
+                }
+                setProcessStates({
+                    ...processStates,
+                    thirdPartyProviderSigninAlertContent: langConfigs.errors.EmailAddressVerificationRequired[lang],
+                    displayMojitoMemberSystemSigninAlert: false,
+                    displayThirdPartyProviderSignAlert: true,
+                    displayResendEmailButton: true
+                });
                 return;
             }
             if ('InappropriateEmailAddress' === error) {
-                setProcessStates({ ...processStates, credentialSigninAlertContent: langConfigs.errors.CredentialsSignin[lang], displayCredentialSigninAlert: true, displayThirdPartyProviderSignAlert: false });
+                setProcessStates({
+                    ...processStates,
+                    thirdPartyProviderSigninAlertContent: langConfigs.errors.InappropriateEmailAddress[lang],
+                    displayMojitoMemberSystemSigninAlert: false,
+                    displayThirdPartyProviderSignAlert: true,
+                    displayResendEmailButton: false
+                });
                 return;
             }
-            if ('EmailAddressUnverified' === error) {
-                if ('string' === typeof provider && 'mojito' !== provider) {
-                    setProcessStates({ ...processStates, thirdPartyProviderSigninAlerContent: langConfigs.errors.EmailAddressUnverified[lang], displayCredentialSigninAlert: false, displayThirdPartyProviderSignAlert: true });
+            if ('DefectiveMember' === error) {
+                if ('string' === typeof providerId && 'MojitoMemberSystem' === providerId) {
+                    setProcessStates({
+                        ...processStates,
+                        mojitoMemberSystemSigninAlertContent: langConfigs.errors.DefectiveMember[lang],
+                        displayMojitoMemberSystemSigninAlert: true,
+                        displayThirdPartyProviderSignAlert: false,
+                        displayResendEmailButton: false
+                    });
                     return;
                 }
-                setProcessStates({ ...processStates, credentialSigninAlertContent: langConfigs.errors.EmailAddressUnverified[lang], displayCredentialSigninAlert: true, displayThirdPartyProviderSignAlert: false });
+                setProcessStates({
+                    ...processStates,
+                    thirdPartyProviderSigninAlertContent: langConfigs.errors.DefectiveMember[lang],
+                    displayMojitoMemberSystemSigninAlert: false,
+                    displayThirdPartyProviderSignAlert: true,
+                    displayResendEmailButton: false
+                });
                 return;
             }
             if ('MemberSuspendedOrDeactivated' === error) {
-                if ('string' === typeof provider && 'mojito' !== provider) {
-                    setProcessStates({ ...processStates, thirdPartyProviderSigninAlerContent: langConfigs.errors.MemberSuspendedOrDeactivated[lang], displayCredentialSigninAlert: false, displayThirdPartyProviderSignAlert: true });
+                if ('string' === typeof providerId && 'MojitoMemberSystem' === providerId) {
+                    setProcessStates({
+                        ...processStates,
+                        mojitoMemberSystemSigninAlertContent: langConfigs.errors.MemberSuspendedOrDeactivated[lang],
+                        displayMojitoMemberSystemSigninAlert: true,
+                        displayThirdPartyProviderSignAlert: false,
+                        displayResendEmailButton: false
+                    });
                     return;
                 }
-                setProcessStates({ ...processStates, credentialSigninAlertContent: langConfigs.errors.MemberSuspendedOrDeactivated[lang], displayCredentialSigninAlert: true, displayThirdPartyProviderSignAlert: false });
+                setProcessStates({
+                    ...processStates,
+                    thirdPartyProviderSigninAlertContent: langConfigs.errors.MemberSuspendedOrDeactivated[lang],
+                    displayMojitoMemberSystemSigninAlert: false,
+                    displayThirdPartyProviderSignAlert: true,
+                    displayResendEmailButton: false
+                });
+                return;
+            }
+            if ('UnrecognizedProvider' === error) {
+                setProcessStates({
+                    ...processStates,
+                    thirdPartyProviderSigninAlertContent: langConfigs.errors.UnrecognizedProvider[lang],
+                    displayMojitoMemberSystemSigninAlert: false,
+                    displayThirdPartyProviderSignAlert: true,
+                    displayResendEmailButton: false
+                });
+                return;
+            }
+            if ('ThirdPartyProviderSignin' === error) {
+                setProcessStates({
+                    ...processStates,
+                    thirdPartyProviderSigninAlertContent: langConfigs.errors.ThirdPartyProviderSignin[lang],
+                    displayMojitoMemberSystemSigninAlert: false,
+                    displayThirdPartyProviderSignAlert: true,
+                    displayResendEmailButton: false
+                });
                 return;
             }
         }
     }, [router]);
+
     // Handle signin form submit on recaptcha response update
     React.useEffect(() => { postRequest() }, [processStates.recaptchaResponse]);
     const postRequest = async () => {
@@ -169,23 +262,42 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
             // ReCAPTCHA challenge not ready
             return;
         }
-        if ('' !== signInCredentialStates.emailAddress && '' !== signInCredentialStates.password) {
-            setProcessStates({ ...processStates, displayCredentialSigninAlert: false, displayThirdPartyProviderSignAlert: false });
-            signIn('mojito', {
-                recaptchaResponse: processStates.recaptchaResponse,
-                emailAddress: signInCredentialStates.emailAddress,
-                password: signInCredentialStates.password,
-                redirectUrl: router.query?.redirectUrl
-            })
+        if ('signin' === processStates.processInProgress) {
+            if ('' !== signInCredentialStates.emailAddress && '' !== signInCredentialStates.password) {
+                setProcessStates({ ...processStates, processInProgress: 'login', displayMojitoMemberSystemSigninAlert: false, displayThirdPartyProviderSignAlert: false });
+                await signIn('mojito', {
+                    recaptchaResponse: processStates.recaptchaResponse,
+                    emailAddress: signInCredentialStates.emailAddress,
+                    password: signInCredentialStates.password,
+                    redirectUrl: router.query?.redirectUrl
+                })
+            }
+        }
+        if ('resendemail' === processStates.processInProgress) {
+            const { providerId, emailAddressB64 } = router.query;
+            const resp = await fetch(`/api/member/behaviour/signup/request?recaptchaResponse=${processStates.recaptchaResponse}`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    providerId,
+                    emailAddressB64
+                })
+            });
+            if (200 === resp.status) {
+                router.push('/signup?info=ResendVerificationEmailSuccess');
+            } else if (500 !== resp.status) {
+                router.push('/signup?info=CannotVerificationEmailSuccess');
+            } else {
+                router.push('/signup?info=ResendVerificationEmailError');
+            }
         }
     }
 
     // Decalre signIn credential states
     const [signInCredentialStates, setSignInCredentialStates] = React.useState({
         // emailAddress: '',
-        emailAddress: 'henryme8@gmail.com', //////// test
+        emailAddress: 'henrycechen@gmail.com', //////// TODO: test ////////
         // password: '',
-        password: '123@abcD', //////// test
+        password: '123@abcD', //////// TODO: test ////////
         showpassword: false
     })
 
@@ -203,25 +315,39 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
     // Handle signIn form submit
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        setProcessStates({ ...processStates, displayCircularProgress: true });
+        setProcessStates({ ...processStates, processInProgress: 'signin', displayCircularProgress: true });
         recaptcha?.execute();
     };
+
+    // Handle re-send verification email
+    const handleResendEmail = () => {
+        setProcessStates({ ...processStates, processInProgress: 'resendemail', displayCircularProgress: false });
+        recaptcha?.execute();
+    }
 
     // Handle ReCAPTCHA challenge
     const handleRecaptchaChange = (value: any) => {
         if (!!value) {
-            setProcessStates({ ...processStates, recaptchaResponse: value, displayCredentialSigninAlert: false, displayThirdPartyProviderSignAlert: false });
+            setProcessStates({
+                ...processStates,
+                recaptchaResponse: value,
+                displayMojitoMemberSystemSigninAlert: false,
+                displayThirdPartyProviderSignAlert: false
+            });
         } else {
             setProcessStates({ ...processStates });
         }
     }
     const handleRecaptchaLoseFocus = () => {
-        setProcessStates({
-            ...processStates,
-            credentialSigninAlertContent: langConfigs.errors.RecaptchaNotVerifiedError[lang],
-            displayCredentialSigninAlert: true,
-            displayCircularProgress: false
-        })
+        setTimeout(() => {
+            setProcessStates({
+                ...processStates,
+                mojitoMemberSystemSigninAlertContent: langConfigs.errors.RecaptchaNotVerifiedError[lang],
+                displayMojitoMemberSystemSigninAlert: 'login' !== processStates.processInProgress,
+                displayResendEmailButton: false,
+                displayCircularProgress: false
+            })
+        }, 1000);
     }
 
     return (
@@ -239,9 +365,13 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
                     <Stack component={'form'} spacing={2} sx={{ mt: 4 }} onSubmit={handleSubmit}>
                         <input name='csrfToken' type={'hidden'} defaultValue={csrfToken ?? ''} />
                         {/* credentials signin & other error alert */}
-                        <Box sx={{ display: processStates.displayCredentialSigninAlert ? 'block' : 'none' }}>
+                        <Box sx={{ display: processStates.displayMojitoMemberSystemSigninAlert ? 'block' : 'none' }}>
                             <Alert severity='error' >
-                                <strong>{processStates.credentialSigninAlertContent[0]}</strong>{processStates.credentialSigninAlertContent[1]}
+                                <strong>{processStates.mojitoMemberSystemSigninAlertContent[0]}</strong>
+                                {processStates.mojitoMemberSystemSigninAlertContent[1]}
+                                <Link color={'inherit'} sx={{ display: processStates.displayResendEmailButton ? 'inline' : 'none', cursor: 'default', '&:hover': { cursor: 'pointer' }, }} onClick={handleResendEmail}>
+                                    {langConfigs.resendVerificationEmail[lang]}
+                                </Link>
                             </Alert>
                         </Box>
                         <TextField
@@ -288,7 +418,11 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
                         {/* third party provider signin error alert */}
                         <Box sx={{ display: processStates.displayThirdPartyProviderSignAlert ? 'block' : 'none' }}>
                             <Alert severity='error' >
-                                <strong>{processStates.thirdPartyProviderSigninAlerContent[0]}</strong>{processStates.thirdPartyProviderSigninAlerContent[1]}
+                                <strong>{processStates.thirdPartyProviderSigninAlertContent[0]}</strong>
+                                {processStates.thirdPartyProviderSigninAlertContent[1]}
+                                <Link color={'inherit'} sx={{ display: processStates.displayResendEmailButton ? 'inline' : 'none', cursor: 'default', '&:hover': { cursor: 'pointer' }, }} onClick={handleResendEmail}>
+                                    {langConfigs.resendVerificationEmail[lang]}
+                                </Link>
                             </Alert>
                         </Box>
                         {providers && Object.keys(providers).map(p => {
@@ -308,7 +442,7 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
                     <Grid container sx={{ mt: 3 }} >
                         <Grid item xs>
                             <Link href="/forgot" variant="body2">
-                                {langConfigs.forgetPwd[lang]}
+                                {langConfigs.forgetPassword[lang]}
                             </Link>
                         </Grid>
                         <Grid item>

@@ -1,5 +1,3 @@
-import { AzureKeyCredential } from '@azure/core-auth';
-
 //////// Process States ////////
 export interface IProcessStates {
     [key: string]: any
@@ -12,101 +10,37 @@ export interface IAzureTableEntity {
     [key: string]: any;
 }
 
-// [T] MemberLogin
-interface IMemberLoginEntity extends IAzureTableEntity {
-    partitionKey: string;
-    rowKey: 'PasswordHash' | 'ResetPasswordToken';
-    [key: string]: any;
-}
-
-export interface IPasswordHash extends IMemberLoginEntity {
-    partitionKey: string;
-    rowKey: 'PasswordHash'
-    PasswordHash: string;
-    IsActive?: boolean;
-}
-
-export interface IResetPasswordToken extends IMemberLoginEntity {
-    partitionKey: string;
-    rowKey: 'ResetPasswordToken';
-    ResetPasswordToken?: string;
-    EmailMessageId?: string;
-    IsActive?: boolean;
-}
-
-// [RL] LoginCredentialsMapping
-interface ILoginCredentialsMappingEntity extends IAzureTableEntity {
-    partitionKey: string;
+// [RL] Credentials
+interface ICredentials extends IAzureTableEntity {
+    partitionKey: string; // email address sh1 hash
     rowKey: string;
-    MemberId: string
-    IsActive: boolean;
-}
-
-export interface IEmailAddressLoginCredentialMapping extends ILoginCredentialsMappingEntity {
-    partitionKey: 'EmailAddress';
-    rowKey: string; // email address
-    MemberId: string;
-    IsActive: boolean;
-}
-
-export interface IThirdPartyLoginCredentialMapping extends ILoginCredentialsMappingEntity {
-    partitionKey: string; // login provider id
-    rowKey: string; // email address
-    MemberId: string;
-    IsActive: boolean;
-}
-
-// [PRL] NicknameMapping
-export interface INicknameMapping extends IAzureTableEntity {
-    partitionKey: 'Nickname';
-    rowKey: string; // nickname
-    MemberId: string
-}
-
-// [T] MemberComprehensive
-interface IComprehensiveEntity extends IAzureTableEntity {
-    partitionKey: string; // id
-    rowKey: 'Info' | 'Management';
     [key: string]: any;
 }
 
-// [T] MemberComprehensive
-interface IMemberComprehensive extends IComprehensiveEntity {
-    partitionKey: string; // member id
-    rowKey: 'Info' | 'Management';
-    [key: string]: any;
+export interface ILoginCredentials extends ICredentials {
+    partitionKey: string; // email address sh1 hash
+    rowKey: string; // login provider id
+    MemberId: string;
+    PasswordHash?: string;
 }
 
-export interface IMemberInfo extends IMemberComprehensive {
-    partitionKey: string; // member id
-    rowKey: 'Info';
-    RegisteredTimestamp?: string;
-    VerifiedTimestamp?: string;
-    EmailAddress?: string;
-    Nickname?: string;
-    AvatarImageUrl?: string;
-    BriefIntro?: string;
-    Gender?: -1 | 0 | 1;
-    Birthday?: string;
+export interface IMojitoMemberSystemLoginCredentials extends ILoginCredentials {
+    partitionKey: string; // email address sh1 hash
+    rowKey: 'MojitoMemberSystem'; // login provider id
+    MemberId: string;
+    PasswordHash: string;
 }
 
-export interface IMemberManagement extends IMemberComprehensive {
-    partitionKey: string; // member id
-    rowKey: 'Management';
-    MemberStatus: number;
-    AllowPosting: boolean;
-    AllowCommenting: boolean;
+export interface IVerifyEmailAddressCredentials extends ICredentials {
+    partitionKey: string; // email address sh1 hash
+    rowKey: 'VerifyEmailAddress';
+    VerifyEmailAddressToken: string;
 }
 
-// [T] PostCommentMappingComprehensive
-export interface ICommentComprehensive extends IAzureTableEntity {
-    partitionKey: string; // post id
-    rowKey: string; // comment id
-    CreateTimestamp?: string;
-    CreateTime?: number;
-    MemberId?: string;
-    Content?: string;
-    CommentStatus?: number;
+export interface IResetPasswordCredentials extends ICredentials {
+    partitionKey: string; // email address sh1 hash
+    rowKey: 'ResetPassword';
+    ResetPasswordToken: string;
 }
 
 // [T] CommentSubcommentMappingComprehensive
@@ -120,7 +54,7 @@ export interface ISubcommentComprehensive extends IAzureTableEntity {
     SubommentStatus?: number;
 }
 
-// [PRL] Notification
+// [PRL] Notice
 export interface INoticeInfo extends IAzureTableEntity {
     partitionKey: string; // notified member id
     rowKey: string; // notify id
@@ -132,69 +66,13 @@ export interface INoticeInfo extends IAzureTableEntity {
     CommentBrief?: string;
 }
 
-// [T] TopicComprehensive
-interface ITopicComprehensive extends IComprehensiveEntity {
-    partitionKey: string; // topic id
-    rowKey: 'Info' | 'Management';
-    [key: string]: any;
-}
-
-export interface ITopicInfo extends ITopicComprehensive {
-    partitionKey: string; // topic id
-    rowKey: 'Info';
-    Name: string;
-}
-
-export interface ITopicManagement extends ITopicComprehensive {
-    partitionKey: string; // topic id
-    rowKey: 'Management';
-    TopicStatus: number;
-}
-
-// [T] PostComprehensive
-interface IPostComprehensive extends IComprehensiveEntity {
-    partitionKey: string; // post id
-    rowKey: 'Info' | 'Management';
-    [key: string]: any;
-}
-
-export interface IPostInfo extends IPostComprehensive {
-    partitionKey: string; // post id
-    rowKey: 'Info';
-    CreatedTimestamp: string;
-    MemberId: string; // member id
-    Title: string;
-    ImageUrlsArr: string; // stringified array
-    ParagraphsArr: string; // stringified array
-    ChannelId: string;
-    TopicIdsArr: string; // stringified array
-}
-
-export interface IPostManagement extends IPostComprehensive {
-    partitionKey: string; // post id
-    rowKey: 'Management';
-    PostStatus: number;
-}
-
-// [PRL] Statistics
-export interface IStatisticsEntity extends IAzureTableEntity {
-    partitionKey: string, // statistics category
-    rowKey: string; // member id
-}
-
-export interface IMemberIdIndex extends IStatisticsEntity {
-    partitionKey: 'MemberIdIndex',
-    rowKey: string; // member id
-    MemberIdIndex: number; // calculated member id index
-}
-
 //////// Atlas Collection Entity////////
-export interface IAtlasCollectionEntity {
+export interface IAtlasCollectionDocument {
     [key: string]: any;
 }
 
 // [C] INotificationStatistics
-export interface INotificationStatistics extends IAtlasCollectionEntity {
+export interface INotificationStatistics extends IAtlasCollectionDocument {
     memberId: string; // member id
     cuedCount?: number; // cued times accumulated from last count reset
     repliedCount?: number;
@@ -203,23 +81,57 @@ export interface INotificationStatistics extends IAtlasCollectionEntity {
     followedCound?: number;
 }
 
-// [C] IMemberStatistics
-export interface IMemberStatistics extends IAtlasCollectionEntity {
-    memberId: string;
-    postCount?: number;
-    replyCount?: number;
-    likeCount?: number;
-    dislikeCount?: number;
-    saveCount?: number;
-    followingCount?: number;
-    followedByCount?: number;
-    blockedCount?: number;
+// [C] memberComprehensive
+export interface IMemberComprehensive extends IAtlasCollectionDocument {
+    memberId: string; // 10 characters, UPPERCASE
+    providerId?: string; // "MojitoMemberSystem" | "GitHubOAuth" | ...
+    registeredTime?: number;
+    verifiedTime?: number;
+    emailAddress?: string;
+    memberIndex?: number;
+    nickname?: string;
+    nicknameHash?: string; // prevent duplicated nickname when re-naming
+    avatarImageUrl?: string;
+    briefIntro?: string;
+    gender?: -1 | 0 | 1;
+    birthday?: string;
+    status?: number;
+    allowPosting?: boolean;
+    allowCommenting?: boolean;
 }
 
-// [C] IMemberLoginLog
-export interface IMemberLoginLog {
-    category: 'success' | 'error';
-    providerId: string;
-    timestamp: string;
-    message?: string;
+// [C] memberStatistics
+export interface IMemberStatistics extends IAtlasCollectionDocument {
+    memberId: string;
+    // creation
+    totalCreationCount: number; // info page required
+    totalCreationEditCount: number;
+    totalCreationDeleteCount: number;
+    // comment
+    totalCommentCount: number;
+    totalCommentEditCount: number;
+    totalCommentDeleteCount: number;
+    // attitude
+    totalLikeCount: number;
+    totalDislikeCount: number;
+    // on other members
+    totalFollowingCount: number;
+    totalBlockedCount: number;
+    // by other members
+    totalCreationHitCount: number;
+    totalCreationLikedCount: number; // info page required
+    totalCreationDislikedCount: number;
+    totalSavedCount: number;
+    totalCommentLikedCount: number;
+    totalCommentDislikedCount: number;
+    totalFollowedByCount: number; // info page required
+}
+
+// [C] loginJournal
+export interface ILoginJournal extends IAtlasCollectionDocument {
+    memberId: string;
+    category: 'error' | 'success';
+    providerId: 'MojitoMemberSystem' | string; // LoginProviderId
+    timestamp: string; // new Date().toISOString()
+    message: string; // short message, e.g., 'Attempted login while email address not verified.'
 }

@@ -1,10 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { RestError } from '@azure/data-tables';
-import CryptoJS from 'crypto-js';
 
-import { verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500 } from '../../../../../lib/utils';
+import { verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500, log } from '../../../../../lib/utils';
 
-const appSecret = process.env.APP_AES_SECRET ?? '';
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
 
 export default async function VerifyToken(req: NextApiRequest, res: NextApiResponse) {
@@ -13,22 +10,24 @@ export default async function VerifyToken(req: NextApiRequest, res: NextApiRespo
         response405(req, res);
         return;
     }
+    const environmentVariable = verifyEnvironmentVariable({ recaptchaServerSecret });
+    //// Verify environment variables ////
+    if (!!environmentVariable) {
+        const msg = `${environmentVariable} not found`;
+        response500(res, msg);
+        log(msg);
+        return;
+    }
     try {
-        // Step #0 verify environment variables
-        const environmentVariable = verifyEnvironmentVariable({ appSecret, recaptchaServerSecret });
-        if (!!environmentVariable) {
-            response500(res, `${environmentVariable} not found`);
-            return;
-        }
         const { requestInfo, recaptchaResponse } = req.query;
         // Step #1 verify if it is bot
-        const { status, message } = await verifyRecaptchaResponse(recaptchaServerSecret, recaptchaResponse);
-        if (200 !== status) {
-            if (403 === status) {
+        const { status: recaptchaStatus, message } = await verifyRecaptchaResponse(recaptchaServerSecret, recaptchaResponse);
+        if (200 !== recaptchaStatus) {
+            if (403 === recaptchaStatus) {
                 res.status(403).send(message);
                 return;
             }
-            if (500 === status) {
+            if (500 === recaptchaStatus) {
                 response500(res, message);
                 return;
             }
@@ -38,43 +37,34 @@ export default async function VerifyToken(req: NextApiRequest, res: NextApiRespo
             res.status(403).send('Invalid request info');
             return;
         }
-        if ('' === appSecret) {
-            response500(res, 'App scret not found');
-            return;
-        }
-        // Step #3.1 decode base64 string to cypher
-        const infoCypher = Buffer.from(requestInfo, 'base64').toString();
-        // Step #3.2 decode cypher to json string
-        const infoJsonStr = CryptoJS.AES.decrypt(infoCypher, appSecret).toString(CryptoJS.enc.Utf8);
-        if (infoJsonStr.length === 0) {
-            res.status(400).send('Inappropriate request info');
-            return;
-        }
+        // Step #3.1 decode base64 string to plain string
+        const requestInfoStr = Buffer.from(requestInfo, 'base64').toString();
         // [!] attemp to parse info json string makes the probability of causing SyntaxError
-        const { memberId, resetPasswordToken, expireDate } = JSON.parse(infoJsonStr);
-        if (!memberId || !resetPasswordToken || !expireDate) {
-            res.status(400).send('Incomplete request info');
+        const { emailAddress, resetPasswordToken, expireDate } = JSON.parse(requestInfoStr);
+        if (!(emailAddress && resetPasswordToken && expireDate)) {
+            res.status(400).send('Defactive request info');
             return;
         }
-        if (new Date().getTime() > expireDate) {
-            res.status(403).send('Reset password token has expired');
+        if (new Date().getTime() > parseInt(expireDate)) {
+            res.status(403).send('Reset password token expired');
             return;
         }
-        // Step #4 verification pass, send { memberId, resetPasswordToken } in plain text
-        res.status(200).send({ memberId, resetPasswordToken });
-    } catch (e) {
+        //// Response 200, verification pass ////
+        res.status(200).send({ emailAddress, resetPasswordToken });
+    } catch (e: any) {
+        let msg: string;
         if (e instanceof SyntaxError) {
             res.status(400).send('Improperly normalized request info');
+            return;
+        } else if (e instanceof TypeError) {
+            msg = 'Was trying decoding recaptcha verification response.';
+        } else {
+            msg = 'Uncategorized Error occurred.';
         }
-        else if (e instanceof TypeError) {
-            response500(res, `Was trying decoding recaptcha verification response. ${e}`);
+        if (!res.headersSent) {
+            response500(res, msg);
         }
-        else if (e instanceof RestError) {
-            response500(res, `Was trying communicating with db. ${e}`);
-        }
-        else {
-            response500(res, `Uncategorized Error occurred. ${e}`);
-        }
+        log(msg, e);
         return;
     }
 }

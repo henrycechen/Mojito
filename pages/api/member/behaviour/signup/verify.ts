@@ -6,10 +6,9 @@ import CryptoJS from 'crypto-js';
 import AzureTableClient from '../../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from '../../../../../modules/AtlasDatabaseClient';
 
-import { verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500, log } from '../../../../../lib/utils';
-import { IMemberInfo, IMemberManagement, IMemberIdIndex, IMemberStatistics, INotificationStatistics } from '../../../../../lib/interfaces';
+import { verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500, log, verifyEmailAddress } from '../../../../../lib/utils';
+import { INotificationStatistics, IMemberComprehensive, IMemberStatistics, ILoginJournal } from '../../../../../lib/interfaces';
 
-const appSecret = process.env.APP_AES_SECRET ?? '';
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
 
 export default async function VerifyToken(req: NextApiRequest, res: NextApiResponse) {
@@ -18,23 +17,26 @@ export default async function VerifyToken(req: NextApiRequest, res: NextApiRespo
         response405(req, res);
         return;
     }
-    const atlasDbClient = AtlasDatabaseClient(); // Db client declared at top enable access from catch statement on error
+    const environmentVariable = verifyEnvironmentVariable({ recaptchaServerSecret });
+    //// Verify environment variables ////
+    if (!!environmentVariable) {
+        const msg = `${environmentVariable} not found`;
+        response500(res, msg);
+        log(msg);
+        return;
+    }
+    //// Declare DB client ////
+    const atlasDbClient = AtlasDatabaseClient();
     try {
-        // Step #0 verify environment variables
-        const environmentVariable = verifyEnvironmentVariable({ appSecret, recaptchaServerSecret });
-        if (!!environmentVariable) {
-            response500(res, `${environmentVariable} not found`);
-            return;
-        }
         const { recaptchaResponse } = req.query;
         // Step #1 verify if it is bot
-        const { status, message } = await verifyRecaptchaResponse(recaptchaServerSecret, recaptchaResponse);
-        if (200 !== status) {
-            if (403 === status) {
+        const { status: recaptchaStatus, message } = await verifyRecaptchaResponse(recaptchaServerSecret, recaptchaResponse);
+        if (200 !== recaptchaStatus) {
+            if (403 === recaptchaStatus) {
                 res.status(403).send(message);
                 return;
             }
-            if (500 === status) {
+            if (500 === recaptchaStatus) {
                 response500(res, message);
                 return;
             }
@@ -45,98 +47,149 @@ export default async function VerifyToken(req: NextApiRequest, res: NextApiRespo
             res.status(403).send('Invalid request info');
             return;
         }
-        // Step #3.1 decode base64 string to cypher
-        const infoCypher = Buffer.from(requestInfo, 'base64').toString();
-        // Step #3.2 decode cypher to json string
-        const infoJsonStr = CryptoJS.AES.decrypt(infoCypher, appSecret).toString(CryptoJS.enc.Utf8);
-        if (infoJsonStr.length === 0) {
-            res.status(400).send('Inappropriate request info');
+        // Step #3 decode base64 string to plain string
+        const requestInfoStr = Buffer.from(requestInfo, 'base64').toString();
+        if ('' === requestInfoStr) {
+            res.status(403).send('Invalid request info');
             return;
         }
-        // [!] attemp to parse info JSON string makes the probability of causing SyntaxError
-        const { memberId } = JSON.parse(infoJsonStr);
-        if (!memberId) {
-            res.status(400).send('Incomplete request info');
+        const { emailAddress, providerId, verifyEmailAddressToken } = JSON.parse(requestInfoStr);
+        //// [!] attemp to parse info JSON string makes the probability of causing SyntaxError ////
+        if (!(emailAddress && providerId && verifyEmailAddressToken)) {
+            res.status(400).send('Defactive request info');
             return;
         }
-        // Step #4.1 look up management record in [T] MemberComprehensive.Management
-        const memberComprehensiveTableClient = AzureTableClient('MemberComprehensive');
-        const memberManagementQuery = memberComprehensiveTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${memberId}' and RowKey eq 'Management'` } });
-        const memberManagementQueryResult = await memberManagementQuery.next();
-        if (!memberManagementQueryResult.value) {
-            res.status(404).send('Member management record not found');
+        if (!verifyEmailAddress(emailAddress)) {
+            res.status(400).send('Improper email address');
             return;
         }
-        // Step #4.2 verify MemberManagement.MemberStatus
-        const { MemberStatus: memberStatus } = memberManagementQueryResult.value;
-        if (0 !== memberStatus) {
+        const emailAddressHash = CryptoJS.SHA1(emailAddress).toString();
+        // Step #4.1 look up verify email address credentials record (by email address hash) in [RL] Credentials
+        const credentialsTableClient = AzureTableClient('Credentials');
+        const emailVerificationCredentialsQuery = credentialsTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${emailAddressHash}' and RowKey eq 'VerifyEmailAddress'` } });
+        //// [!] attemp to reterieve entity makes the probability of causing RestError ////
+        const emailVerificationCredentialsQueryResult = await emailVerificationCredentialsQuery.next();
+        if (!emailVerificationCredentialsQueryResult.value) {
+            res.status(404).send('Email verification credentials record not found');
+            return;
+        }
+        const { VerifyEmailAddressToken: verifyEmailAddressTokenReference } = emailVerificationCredentialsQueryResult.value;
+        // Step #4.2 match tokens
+        if (verifyEmailAddressTokenReference !== verifyEmailAddressToken) {
+            res.status(404).send('Email verification tokens not match');
+            return;
+        }
+        // Step #4.3 look up login credentials record in [RL] Credentials
+        const loginCredentialsQuery = credentialsTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${emailAddressHash}' and RowKey eq '${providerId}'` } });
+        const loginCredentialsQueryResult = await loginCredentialsQuery.next();
+        if (!loginCredentialsQueryResult.value) {
+            res.status(404).send('Login credentials record not found');
+            return;
+        }
+        const { MemberId: memberId } = loginCredentialsQueryResult.value;
+        // Step #4.4 look up member management document in [C] memberComprehensive
+        await atlasDbClient.connect();
+        const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
+        const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne<IMemberComprehensive>({ memberId, providerId });
+        if (null === memberComprehensiveQueryResult) {
+            //// [!] document not found ////
+            const msg = 'Member management (document of IMemberComprehensive) not found in [C] memberComprehensive';
+            response500(res, msg);
+            log(msg);
+            return;
+        }
+        const { status } = memberComprehensiveQueryResult;
+        if ('number' !== typeof status) {
+            //// [!] member status (property of IMemberComprehensive) not found or status (code) error ////
+            const msg = 'Member status (property of IMemberComprehensive) error in [C] memberComprehensive';
+            response500(res, msg)
+            log(msg);
+            return;
+        }
+        // Step #4.5 verify member status
+        if (0 !== status) {
             res.status(409).send('Request for activating member cannot be fulfilled');
             return;
         }
-        // Step #4.3 updateEntity (memberInfo) to [T] MemberComprehensive.Info (update verified timestamp)
-        const memberInfo: IMemberInfo = {
-            partitionKey: memberId,
-            rowKey: 'Info',
-            VerifiedTimestamp: new Date().toISOString(),
-        }
-        await memberComprehensiveTableClient.updateEntity(memberInfo, 'Merge');
-        // Step #4.4 updateEntity (memberManagement) to [T] MemberComprehensive.Management (update member status)
-        const memberManagement: IMemberManagement = {
-            partitionKey: memberId,
-            rowKey: 'Management',
-            MemberStatus: 200,
-            AllowPosting: true,
-            AllowCommenting: true
-        }
-        await memberComprehensiveTableClient.updateEntity(memberManagement, 'Merge');
-        res.status(200).send('Account verified');
-        // Step #5.1 createEntity (memberIdIndex) to [PRL] Statistics
-        const memberIdIndex: IMemberIdIndex = {
-            partitionKey: 'MemberIdIndex',
-            rowKey: memberId,
-            MemberIdIndex: 0,
-        }
-        const statisticsTableClient = AzureTableClient('Statistics');
-        await statisticsTableClient.createEntity(memberIdIndex);
-        // Step #5.2 look up member id index in [PRL] Statistics
-        const memberIdIndexQuery = statisticsTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq 'MemberIdIndex' and RowKey eq '${memberId}'` } });
-        let i = 0;
-        for await (const memberIdIndexEntity of memberIdIndexQuery) {
-            if (memberId === memberIdIndexEntity.rowKey) {
-                memberIdIndex.MemberIdIndex = i;
-                return;
-            } else {
-                i++;
+        // Step #5 update status code (IMemberComprehensive) in [C] memberComprehensive
+        const memberComprehensiveCollectionUpdateResult = await memberComprehensiveCollectionClient.updateOne({ memberId, providerId }, {
+            $set: {
+                //// info ////
+                verifiedTime: new Date().getTime(),
+                gender: -1, // "keep as secret"
+                //// management ////
+                status: 200,
+                allowPosting: true,
+                allowCommenting: true
             }
+        }, { upsert: true });
+        if (!memberComprehensiveCollectionUpdateResult.acknowledged) {
+            const msg = `Was trying updating document (IMemberComprehensive) in [C] memberComprehensive for member id: ${memberId}`;
+            response500(res, msg);
+            log(msg);
+            return;
         }
-        // Step #5.3 updateEntity (memberIdIndex) to [PRL] Statistics
-        await statisticsTableClient.updateEntity(memberIdIndex, 'Merge');
-        // Step #6 insertOne (memberStatistics) to [C] memberStatistics (initialize document)
-        const memberStatistics: IMemberStatistics = {
+        // Step #6 insert document (IMemberStatistics) in [C] memberStatistics
+        const memberStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IMemberStatistics>('member');
+        const memberStatisticsCollectionInsertResult = await memberStatisticsCollectionClient.insertOne({
             memberId,
-            postCount: 0,
-            replyCount: 0,
-            likeCount: 0,
-            dislikeCount: 0,
-            saveCount: 0,
-            followingCount: 0,
-            followedByCount: 0,
-            blockedCount: 0,
+            // creation
+            totalCreationCount: 0, // info page required
+            totalCreationEditCount: 0,
+            totalCreationDeleteCount: 0,
+            // comment
+            totalCommentCount: 0,
+            totalCommentEditCount: 0,
+            totalCommentDeleteCount: 0,
+            // attitude
+            totalLikeCount: 0,
+            totalDislikeCount: 0,
+            // on other members
+            totalFollowingCount: 0,
+            totalBlockedCount: 0,
+            // by other members
+            totalCreationHitCount: 0,
+            totalCreationLikedCount: 0, // info page required
+            totalCreationDislikedCount: 0,
+            totalSavedCount: 0,
+            totalCommentLikedCount: 0,
+            totalCommentDislikedCount: 0,
+            totalFollowedByCount: 0, // info page required
+        });
+        if (!memberStatisticsCollectionInsertResult.acknowledged) {
+            const msg = `Was trying inserting document (IMemberStatistics) in [C] memberStatistics for member id: ${memberId}`;
+            response500(res, msg);
+            log(msg);
+            return;
         }
-        await atlasDbClient.connect();
-        const memberStatisticsCollectionClient = atlasDbClient.db('mojito-statistics-dev').collection('memberStatistics');
-        await memberStatisticsCollectionClient.insertOne(memberStatistics);
-        // Step #7 insertOne (notificationStatistics) to [C] notificationStatistics (initialize document)
-        const notificationStatistics: INotificationStatistics = {
+        // Step #7 insert document (INotification) in [C] notificationStatistics
+        const notificationStatisticsCollectionClient = atlasDbClient.db('statistics').collection<INotificationStatistics>('notification');
+        const notificationCollectionInsertResult = await notificationStatisticsCollectionClient.insertOne({
             memberId,
             cuedCount: 0, // cued times accumulated from last count reset
             repliedCount: 0,
             likedCount: 0,
             savedCount: 0,
             followedCound: 0,
+        });
+        if (!notificationCollectionInsertResult.acknowledged) {
+            const msg = `Was trying inserting document (INotification) in [C] notificationStatistics for member id: ${memberId}`;
+            response500(res, msg);
+            log(msg);
+            return;
         }
-        const notificationStatisticsCollectionClient = atlasDbClient.db('mojito-statistics-dev').collection('notificationStatistics');
-        await notificationStatisticsCollectionClient.insertOne(notificationStatistics);
+        //// Response 200 ////
+        res.status(200).send('Email address verified');
+        // Step #8 write journal (ILoginJournal) in [C] loginJournal
+        const loginJournalCollectionClient = atlasDbClient.db('journal').collection<ILoginJournal>('login');
+        await loginJournalCollectionClient.insertOne({
+            memberId,
+            category: 'success',
+            providerId,
+            timestamp: new Date().toISOString(),
+            message: 'Email address verified.'
+        });
+        atlasDbClient.close();
     } catch (e) {
         let msg: string;
         if (e instanceof SyntaxError) {
@@ -144,11 +197,10 @@ export default async function VerifyToken(req: NextApiRequest, res: NextApiRespo
             return;
         } else if (e instanceof TypeError) {
             msg = 'Was trying decoding recaptcha verification response.';
-        }
-        else if (e instanceof RestError) {
-            msg = 'Was trying communicating with table storage.';
+        } else if (e instanceof RestError) {
+            msg = 'Was trying communicating with azure table storage.';
         } else if (e instanceof MongoError) {
-            msg = 'Was trying communicating with mongodb.';
+            msg = 'Was trying communicating with atlas database.';
             atlasDbClient.close();
         } else {
             msg = 'Uncategorized Error occurred.';

@@ -4,10 +4,11 @@ import CryptoJS from 'crypto-js';
 
 import AzureTableClient from '../../../../../modules/AzureTableClient';
 import AzureEmailCommunicationClient from '../../../../../modules/AzureEmailCommunicationClient';
-import { IResetPasswordToken } from '../../../../../lib/interfaces';
+
+import { IResetPasswordCredentials } from '../../../../../lib/interfaces';
 import { LangConfigs, EmailMessage, ResetPasswordRequestInfo } from '../../../../../lib/types';
 import { getRandomHexStr, verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500, log } from '../../../../../lib/utils';
-import { composeResetPasswordEmail } from '../../../../../lib/email';
+import { composeResetPasswordEmailContent } from '../../../../../lib/email';
 
 const appSecret = process.env.APP_AES_SECRET ?? '';
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
@@ -27,13 +28,13 @@ export default async function RequestResetPassword(req: NextApiRequest, res: Nex
         response405(req, res);
         return;
     }
+    //// Verify environment variables ////
+    const environmentVariable = verifyEnvironmentVariable({ appSecret, recaptchaServerSecret });
+    if (!!environmentVariable) {
+        response500(res, `${environmentVariable} not found`);
+        return;
+    }
     try {
-        // Step #0 verify environment variables
-        const environmentVariable = verifyEnvironmentVariable({ appSecret, recaptchaServerSecret });
-        if (!!environmentVariable) {
-            response500(res, `${environmentVariable} not found`);
-            return;
-        }
         const { recaptchaResponse } = req.query;
         // Step #1 verify if it is requested by a bot
         const { status, message } = await verifyRecaptchaResponse(recaptchaServerSecret, recaptchaResponse);
@@ -53,63 +54,52 @@ export default async function RequestResetPassword(req: NextApiRequest, res: Nex
             res.status(403).send('Invalid email address');
             return;
         }
-        // Step #2.2 find member id by email address in [T] LoginCredentialsMapping
-        const loginCredentialsMappingTableClient = AzureTableClient('LoginCredentialsMapping');
-        const mappingQuery = loginCredentialsMappingTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq 'EmailAddress' and RowKey eq '${emailAddress}'` } });
-        // [!] attemp to reterieve entity makes the probability of causing RestError
-        const mappingQueryResult = await mappingQuery.next();
-        if (!mappingQueryResult.value) {
-            res.status(404).send('Login credential mapping not found');
+        const emailAddressHash = CryptoJS.SHA1(emailAddress).toString();
+        // Step #2.2 find member id by email address in [RL] Credentials
+        const credentialsTableClient = AzureTableClient('Credentials');
+        const loginCredentialsQuery = credentialsTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${emailAddressHash}' and RowKey eq 'MojitoMemberSystem'` } });
+        //// [!] attemp to reterieve entity makes the probability of causing RestError ////
+        const loginCredentialsQueryResult = await loginCredentialsQuery.next();
+        if (!loginCredentialsQueryResult.value) {
+            res.status(404).send('Login credentials record not found');
             return;
         }
-        const { MemberId: memberId } = mappingQueryResult.value; // Update: 6/12/2022: MemberIdStr -> MemberId
-        if ('string' !== typeof memberId || '' === memberId) {
-            response500(res, `Getting an invalid memberId from login credential mapping record`);
-            return;
-        }
-        // Step #3 create reset password verification token
-        const token = getRandomHexStr(true); // use UPPERCASE
+        // Step #3.1 create a new reset password verification token
+        const resetPasswordToken = getRandomHexStr(true); // use UPPERCASE
         const info: ResetPasswordRequestInfo = {
-            memberId,
-            resetPasswordToken: token,
+            emailAddress,
+            resetPasswordToken: resetPasswordToken,
             expireDate: new Date().getTime() + 15 * 60 * 1000 // set valid time for 15 minutes
         }
-        // Step #4 compose email to send verification link
+        // Step #3.2 upsert entity (IResetPasswordCredentials) in [RL] Credentials
+        credentialsTableClient.upsertEntity<IResetPasswordCredentials>({ partitionKey: emailAddressHash, rowKey: 'ResetPassword', ResetPasswordToken: resetPasswordToken }, 'Replace');
+        //// Response 200 ////
+        res.status(200).send('Email sent');
+        // Step #4 send email
         const emailMessage: EmailMessage = {
             sender: '<donotreply@mojito.co.nz>',
             content: {
                 subject: langConfigs.emailSubject[lang],
-                html: composeResetPasswordEmail(domain, Buffer.from(CryptoJS.AES.encrypt(JSON.stringify(info), appSecret).toString()).toString('base64'), lang)
+                html: composeResetPasswordEmailContent(domain, Buffer.from(JSON.stringify(info)).toString('base64'), lang)
             },
             recipients: {
                 to: [{ email: emailAddress }]
             }
         }
         const mailClient = AzureEmailCommunicationClient();
-        const { messageId } = await mailClient.send(emailMessage);
-        // Step #5 upsertEntity (resetPasswordToken) to [T] MemberLogin
-        const resetPasswordToken: IResetPasswordToken = {
-            partitionKey: memberId,
-            rowKey: 'ResetPasswordToken',
-            ResetPasswordToken: token,
-            EmailMessageId: messageId,
-            IsActive: true
-        }
-        const memberLoginTableClient = AzureTableClient('MemberLogin');
-        await memberLoginTableClient.upsertEntity(resetPasswordToken, 'Replace');
-        res.status(200).send('Email sent');
+        await mailClient.send(emailMessage);
     } catch (e: any) {
         let msg: string;
         if (e instanceof TypeError) {
             msg = 'Was trying decoding recaptcha verification response.';
-        }
-        else if (e instanceof RestError) {
+        } else if (e instanceof RestError) {
             msg = 'Was trying communicating with table storage.';
-        }
-        else {
+        } else {
             msg = 'Uncategorized Error occurred.';
         }
-        response500(res, `${msg} ${e}`);
+        if (!res.headersSent) {
+            response500(res, msg);
+        }
         log(msg, e);
         return;
     }

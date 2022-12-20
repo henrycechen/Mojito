@@ -1,4 +1,4 @@
-export function composeResetPasswordEmail(domain: string, info: string, lang: string = 'ch'): string {
+export function composeResetPasswordEmailContent(domain: string, info: string, lang: string = 'ch'): string {
     const isCh = 'ch' === lang;
     return `
 <head>
@@ -85,7 +85,7 @@ export function composeResetPasswordEmail(domain: string, info: string, lang: st
 `
 }
 
-export function composeVerifyAccountEmail(domain: string, info: string, lang: string = 'ch'): string {
+export function composeVerifyEmailAddressEmailContent(domain: string, info: string, lang: string = 'ch'): string {
     const isCh = 'ch' === lang;
     return `
 <head>
@@ -162,7 +162,7 @@ export function composeVerifyAccountEmail(domain: string, info: string, lang: st
     <div class="mt p">
         <div class="row">${isCh ? '您可以通过单击以下链接验证您的 Mojito 账户：' : 'You can verify your Mojito account by clicking the link below:'}</div>
         <div class="row">
-            <a href="${domain}/me/verifyaccount?requestInfo=${info}">${domain}/me/verifyaccount</a>
+            <a href="${domain}/me/verifyemailaddress?requestInfo=${info}">${domain}/me/verifyaccount</a>
         </div>
         <div class="row">${isCh ? '链接长期有效。如果您无意执行此操作请忽略本邮件。' : 'The link is valid forever. Please ignore this message if you do not intend to do so.'}</div>
         <div class="signature">Mojito New Zealand</div>
