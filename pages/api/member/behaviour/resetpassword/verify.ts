@@ -59,7 +59,7 @@ export default async function VerifyToken(req: NextApiRequest, res: NextApiRespo
         } else if (e instanceof TypeError) {
             msg = 'Was trying decoding recaptcha verification response.';
         } else {
-            msg = 'Uncategorized Error occurred.';
+            msg = `Uncategorized. ${e.msg}`;
         }
         if (!res.headersSent) {
             response500(res, msg);

@@ -347,7 +347,7 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
                 displayResendEmailButton: false,
                 displayCircularProgress: false
             })
-        }, 1000);
+        }, 2000);
     }
 
     return (

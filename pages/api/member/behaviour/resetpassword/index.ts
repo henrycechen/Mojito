@@ -102,21 +102,22 @@ export default async function ResetPassword(req: NextApiRequest, res: NextApiRes
             timestamp: new Date().toISOString(),
             message: 'Password reset.'
         });
-        atlasDbClient.close();
-    } catch (e) {
+        await atlasDbClient.close();
+    } catch (e: any) {
         let msg: string;
         if (e instanceof RestError) {
             msg = 'Was trying communicating with azure table storage.';
         } else if (e instanceof MongoError) {
-            msg = 'Was trying communicating with atlas database.';
-            atlasDbClient.close();
+            msg = 'Was trying communicating with atlas mongodb.';
         } else {
-            msg = 'Uncategorized Error occurred.';
+            msg = `Uncategorized. ${e?.msg}`;
         }
         if (!res.headersSent) {
             response500(res, msg);
         }
         log(msg, e);
+        atlasDbClient
+        await atlasDbClient.close();
         return;
     }
 }

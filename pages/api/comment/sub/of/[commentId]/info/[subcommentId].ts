@@ -1,8 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getToken } from "next-auth/jwt"
 
-import { MemberInfo } from '../../../../../../lib/types';
-import { response405, response500 } from '../../../../../../lib/utils';
+import { MemberInfo } from '../../../../../../../lib/types';
+import { response405, response500 } from '../../../../../../../lib/utils';
 
 export default async function SubcommentInfoIndex(req: NextApiRequest, res: NextApiResponse) {
     const { method } = req;
@@ -10,7 +10,10 @@ export default async function SubcommentInfoIndex(req: NextApiRequest, res: Next
         response405(req, res);
         return;
     }
+    //// Verify identity ////
     const { id } = req.query;
+
+
     // Step #1 verify comment id
     if ('string' !== typeof id) {
         res.status(400).send('Improper member id');

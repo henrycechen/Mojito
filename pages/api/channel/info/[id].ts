@@ -31,15 +31,7 @@ export default async function GetList(req: NextApiRequest, res: NextApiResponse)
         // Step #3 response with channel info
         res.status(200).send({ id, name: { ch: CH, en: EN }, svgIconPath });
     } catch (e: any) {
-        let msg: string;
-        if (e instanceof RestError) {
-            msg = 'Was trying communicating with table storage.';
-        }
-        else {
-            msg = 'Uncategorized Error occurred.';
-        }
-        response500(res, `${msg} ${e}`);
-        log(msg, e);
+        
         return;
     }
 }

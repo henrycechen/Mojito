@@ -1,8 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getToken } from "next-auth/jwt"
 
-import { MemberInfo } from '../../../../../../lib/types';
-import { response405, response500 } from '../../../../../../lib/utils';
+import { MemberInfo } from '../../../../../../../lib/types';
+import { response405, response500 } from '../../../../../../../lib/utils';
 
 // This index only accept POST/PUT/DELETE request to 'create' / 'update' / 'delete' subcomment
 // Use 'api/subcomment/of/[commentId]/info/[subcommentId]' to GET subcomment info
@@ -16,6 +16,11 @@ export default async function CreateSubcomment(req: NextApiRequest, res: NextApi
         response405(req, res);
         return;
     }
+    //// Verify identity ////
+
+
+
+    
     // Step #1 verify comment id
     res.send('subcomment created');
     // Step #2 verify identity

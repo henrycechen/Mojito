@@ -91,48 +91,15 @@ export default NextAuth({
     },
     callbacks: {
         async jwt({ token, user, account, profile }: any) {
-            const provider = account?.provider;
-            console.log('jwt call back');
-            console.log('token ', token);
-            console.log('account ', account);
+            console.log(token);
 
-            // On token update (second call)
-            if (!provider) {
-                return token;
-            }
-            // On login with Mojito member system (first call)
-            // if ('mojito' === provider) {
-            //     token.id = token.sub;
-            //     return token;
-            // }
-            // // On login with third party login provider
-            try {
-                //     // Step #1.1 prepare account id
-                //     const { providerAccountId: accountId } = account;
-                //     // Step #1.1 prepare provider id
-                //     const providerId = loginProviderIdMapping[provider];
-                //     // Step #2 look up login credential mapping in [RL] LoginCredentialsMapping 
-                //     const loginCredentialsMappingTableClient = AzureTableClient('LoginCredentialsMapping');
-                //     const mappingQuery = loginCredentialsMappingTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${providerId}' and RowKey eq '${accountId}'` } });
-                //     // [!] attemp to reterieve entity makes the probability of causing RestError
-                //     const mappingQueryResult = await mappingQuery.next();
-                //     if (!mappingQueryResult.value) {
-                //         throw new Error('Login credentials mapping record not found');
-                //     } else {
-                //         const { MemberId: memberId } = mappingQueryResult.value; // Update 6/12/2022: column name changed, MemberIdStr => MemberId
-                //         token.id = memberId;
-                //     }
-                //     return token;
-            } catch (e) {
-                throw e;
-            }
+            return token;
         },
         async signIn({ user, account, profile, email, credentials }) {
             // For this callback, three variable shall be retrieved from the parameters
-            // {id, email} = user
-            // {provider} = account
+            // {id, email} from user, {provider} from account
             //// Verify login provider ////
-            const provider = account?.provider ?? '';
+            const provider: string = account?.provider ?? '';
             if (!Object.keys(loginProviderIdMapping).includes(provider)) {
                 return '/signin?error=UnrecognizedProvider';
             }
@@ -179,21 +146,19 @@ export default NextAuth({
                         timestamp: new Date().toISOString(),
                         message: 'Login.'
                     });
-                    atlasDbClient.close();
+                    await atlasDbClient.close();
                     // Step #4 complete session (jwt) info
                     const { nickname: name, avatarImageUrl: image } = memberComprehensiveQueryResult;
                     user.name = name;
                     user.image = image;
                     return true;
-                } catch (e) {
+                } catch (e: any) {
                     let msg = ` '/api/auth/[...nextauth]/default/callbacks/signIn?provider=MojitoMemberSystem'`;
-                    if (e instanceof RestError) {
-                        msg = 'Was trying communicating with table storage.' + msg;
-                    } else if (e instanceof MongoError) {
-                        msg = 'Was trying communicating with mongodb.' + msg;
-                        atlasDbClient.close();
+                    if (e instanceof MongoError) {
+                        msg = 'Was trying communicating with atlas mongodb.' + msg;
+                        await atlasDbClient.close();
                     } else {
-                        msg = 'Uncategorized Error occurred.' + msg;
+                        msg = `Uncategorized. ${e?.msg}` + msg;
                     }
                     log(msg, e);
                     return '/error';
@@ -221,7 +186,7 @@ export default NextAuth({
                     // Step #A2.2 upsert entity (ILoginCredentials) in [RL] Credentials
                     credentialsTableClient.upsertEntity<ILoginCredentials>({ partitionKey: emailAddressHash, rowKey: providerId, MemberId: memberId }, 'Replace');
                     // Step #A2.3 create a new email address verification token
-                    
+
                     const verifyEmailAddressToken = getRandomHexStr(true);
                     // Step #A2.4 upsert entity (IVerifyEmailAddressCredentials) in [RL] Credentials
                     credentialsTableClient.upsertEntity<IVerifyEmailAddressCredentials>({ partitionKey: emailAddressHash, rowKey: 'VerifyEmailAddress', VerifyEmailAddressToken: verifyEmailAddressToken }, 'Replace');
@@ -252,7 +217,7 @@ export default NextAuth({
                         timestamp: new Date().toISOString(),
                         message: 'Registered.'
                     });
-                    atlasDbClient.close();
+                    await atlasDbClient.close();
                     // Step #A3 send email
                     const info: VerifyEmailAddressRequestInfo = { emailAddress, providerId, verifyEmailAddressToken };
                     const emailMessage: EmailMessage = {
@@ -312,20 +277,20 @@ export default NextAuth({
                         timestamp: new Date().toISOString(),
                         message: 'Login.'
                     });
-                    atlasDbClient.close();
+                    await atlasDbClient.close();
                     return true;
                 }
-            } catch (e) {
+            } catch (e: any) {
                 let msg = ` '/api/auth/[...nextauth]/default/callbacks/signIn/?provider=${provider}'`;
                 if (e instanceof RestError) {
-                    msg = 'Was trying communicating with table storage.' + msg;
+                    msg = 'Was trying communicating with azure table storage.' + msg;
                 } else if (e instanceof MongoError) {
-                    msg = 'Was trying communicating with mongodb.' + msg;
-                    atlasDbClient.close();
+                    msg = 'Was trying communicating with atlas mongodb.' + msg;
                 } else {
-                    msg = 'Uncategorized Error occurred.' + msg;
+                    msg = `Uncategorized. ${e?.msg}` + msg;
                 }
                 log(msg, e);
+                await atlasDbClient.close();
                 return false;
             }
         },
@@ -370,14 +335,14 @@ async function verifyLoginCredentials(credentials: LoginRequestInfo): Promise<Me
             id: memberId,
             email: emailAddress
         }
-    } catch (e) {
+    } catch (e: any) {
         let msg: string;
         if (e instanceof ReferenceError) {
             msg = `${environmentVariable} not found. '/api/auth/[...nextauth]/veriftLoginCredentials'`;
         } else if (e instanceof RestError) {
             msg = `Was trying communicating with azure table storage. '/api/auth/[...nextauth]/veriftLoginCredentials'`
         } else {
-            msg = `Uncategorized Error occurred. trace='/api/auth/[...nextauth]/veriftLoginCredentials'`;
+            msg = `Uncategorized. ${e?.msg} trace='/api/auth/[...nextauth]/veriftLoginCredentials'`;
         }
         log(msg, e);
         return null;

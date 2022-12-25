@@ -15,7 +15,7 @@ export default async function GetCommentsByPostId(req: NextApiRequest, res: Next
         response405(req, res);
         return;
     }
-    // Step #1 verify post id
+    //// Verify post id ////
     const { postId } = req.query;
     if ('string' !== typeof postId || !verifyId(postId, 10)) {
         res.status(400).send('Improper post id');
@@ -52,24 +52,25 @@ export default async function GetCommentsByPostId(req: NextApiRequest, res: Next
         // Step #4 look up comment statistics in [C] commentStatistics
         await atlasDbClient.connect();
         const commentStatisticsCollectionClient = atlasDbClient.db('mojito-records-dev').collection('commentStatistics');
-        const commentStatisticsDoc = commentStatisticsCollectionClient.findOne({postId})
+        const commentStatisticsDoc = commentStatisticsCollectionClient.findOne({postId});
         res.send(['ok']);
+        await atlasDbClient.close();
 
 
     } catch (e: any) {
         let msg: string;
         if (e instanceof RestError) {
-            msg = 'Was trying communicating with table storage.';
+            msg = 'Was trying communicating with azure table storage.';
         } else if (e instanceof MongoError) {
-            msg = 'Was trying communicating with mongodb.';
-            atlasDbClient.close();
+            msg = 'Was trying communicating with atlas mongodb.';
         } else {
-            msg = 'Uncategorized Error occurred.';
+            msg = `Uncategorized. ${e?.msg}`;
         }
         if (!res.headersSent) {
             response500(res, msg);
         }
         log(msg, e);
+        await atlasDbClient.close();
         return;
     }
 }

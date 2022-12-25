@@ -38,13 +38,13 @@ export default async function GetDictionary(req: NextApiRequest, res: NextApiRes
         } while (!channelInfoQueryResult.done)
         // Step #2 response with post channel list
         res.status(200).send(channelInfo);
-    } catch (e) {
+    } catch (e: any) {
         let msg: string;
         if (e instanceof RestError) {
-            msg = `Was trying communicating with table storage.`;
+            msg = `Was trying communicating with azure table storage.`;
         }
         else {
-            msg = `Uncategorized Error occurred`;
+            msg = `Uncategorized. ${e?.msg}`;
         }
         response500(res, msg);
         log(msg, e);

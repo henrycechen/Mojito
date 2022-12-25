@@ -87,7 +87,7 @@ export default async function VerifyToken(req: NextApiRequest, res: NextApiRespo
             return;
         }
         const { MemberId: memberId } = loginCredentialsQueryResult.value;
-        // Step #4.4 look up member management document in [C] memberComprehensive
+        // Step #4.4 look up member status (IMemberComprehensive) in [C] memberComprehensive
         await atlasDbClient.connect();
         const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
         const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne<IMemberComprehensive>({ memberId, providerId });
@@ -189,8 +189,8 @@ export default async function VerifyToken(req: NextApiRequest, res: NextApiRespo
             timestamp: new Date().toISOString(),
             message: 'Email address verified.'
         });
-        atlasDbClient.close();
-    } catch (e) {
+        await atlasDbClient.close();
+    } catch (e: any) {
         let msg: string;
         if (e instanceof SyntaxError) {
             res.status(400).send('Improperly normalized request info');
@@ -200,15 +200,15 @@ export default async function VerifyToken(req: NextApiRequest, res: NextApiRespo
         } else if (e instanceof RestError) {
             msg = 'Was trying communicating with azure table storage.';
         } else if (e instanceof MongoError) {
-            msg = 'Was trying communicating with atlas database.';
-            atlasDbClient.close();
+            msg = 'Was trying communicating with atlas mongodb.';
         } else {
-            msg = 'Uncategorized Error occurred.';
+            msg = `Uncategorized. ${e?.msg}`;
         }
         if (!res.headersSent) {
             response500(res, msg);
         }
         log(msg, e);
+        await atlasDbClient.close();
         return;
     }
 }

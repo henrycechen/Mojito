@@ -11,7 +11,7 @@ import { ProcessStates } from './types';
 //  - Topic id : 16 characters, UPPERCASE
 //  - Comment id : 16 characters, UPPERCASE
 //  - Subcomment id : 16 characters, UPPERCASE
-//  - Notice id : 10 characters, UPPERCASE
+//  - Notice id : 16 characters, UPPERCASE
 //
 //  Names
 //  - Image filename : 10 characters, lowercase
@@ -44,6 +44,14 @@ export function getRandomHexStr(useUpperCase: boolean = false): string { // Leng
     }
 }
 
+export function getRandomHexStrS(useUpperCase: boolean = false): string {
+    if (useUpperCase) {
+        return Math.floor(Math.random() * Math.pow(10, 5)).toString(16).toUpperCase();
+    } else {
+        return Math.floor(Math.random() * Math.pow(10, 5)).toString(16);
+    }
+}
+
 export function timeStampToString(timeStamp: any): string {
     if (!timeStamp) {
         return '0分钟前';
@@ -57,6 +65,63 @@ export function timeStampToString(timeStamp: any): string {
         return `${(mins / 60000).toFixed()}分钟前`
     }
     return `${(diff / 3600000).toFixed()}小时${(mins / 60000).toFixed()}分钟前`
+}
+
+//////// Nickname ////////
+export function getNicknameFromToken(token: any): string {
+    if (token.hasOwnProperty('name')) {
+        return token.name;
+    } else if (token.hasOwnProperty('sub') && '' !== token.sub) {
+        let id = `${token.sub}`;
+        return 'MojitoMember ' + id.slice(0, 4);
+    }
+    return 'MojitoMember ' + getRandomHexStrS(true);
+}
+
+//////// Content ////////
+export function getContentBrief(content: any, length = 21): string {
+    if ('string' !== typeof content) {
+        return '';
+    }
+    if (content.length === 0) {
+        return '';
+    }
+    if (content.length > 21) {
+        return content.slice(0, 21) + '...';
+    }
+    return content;
+}
+
+//////// Post ////////
+export function getImageUrlsArrayFromRequestBody(requestBody: any): string[] {
+    if ('object' !== typeof requestBody) {
+        return [];
+    }
+    if (!(undefined !== requestBody['imageUrlsArr'] && Array.isArray(requestBody['imageUrlsArr']))) {
+        return [];
+    }
+    return Array.prototype.filter.call([...requestBody['imageUrlsArr']], (imageUrl) => verifyUrl(imageUrl))
+}
+
+export function getParagraphsArrayFromRequestBody(requestBody: any): string[] {
+    if ('object' !== typeof requestBody) {
+        return [];
+    }
+    if (!(undefined !== requestBody['paragraphsArr'] && Array.isArray(requestBody['paragraphsArr']))) {
+        return [];
+    }
+    return [...requestBody['paragraphsArr']];
+}
+
+//////// Topic ////////
+export function getTopicIdsArrayFromRequestBody(requestBody: any): string[] {
+    if ('object' !== typeof requestBody) {
+        return [];
+    }
+    if (!(undefined !== requestBody['topicIdsArr'] && Array.isArray(requestBody['topicIdsArr']))) {
+        return [];
+    }
+    return [...requestBody['topicIdsArr']];
 }
 
 //////// Utilize local storage ////////
@@ -84,15 +149,38 @@ export function verifyEmailAddress(emailAddress: string): boolean {
     return regex.test(emailAddress);
 }
 
-export function verifyPassword(password: string): boolean {
+export function verifyPassword(password: any): boolean {
+    if (undefined === password) {
+        return false;
+    }
+    if ('string' !== typeof password) {
+        return false;
+    }
     const regex = new RegExp(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/);
     return regex.test(password);
 }
 
-export function verifyId(id: string, length: number): boolean {
+export function verifyId(id: any, length: number): boolean {
+    if (undefined === id) {
+        return false;
+    }
+    if ('string' !== typeof id) {
+        return false;
+    }
     const str = `^[a-zA-Z0-9]{${length - 2},${length}}$`;
-    const regex = new RegExp(str);
+    const regex = new RegExp(`^[a-zA-Z0-9]{${length - 2},${length}}$`);
     return regex.test(id);
+}
+
+export function verifyUrl(url: any): boolean {
+    if (undefined === url) {
+        return false;
+    }
+    if ('string' !== typeof url) {
+        return false;
+    }
+    const regex = new RegExp(/^(?:https?):\/\/(.?\w)+(:\d+)?(\/([\w.%\-\/]))?$/);
+    return regex.test(url);
 }
 
 type VerifyRecaptchaResult = {

@@ -25,15 +25,15 @@ export default async function GetIndex(req: NextApiRequest, res: NextApiResponse
         // Step #2 response with post channel list
         // [!] attemp to parese string to object makes the probability of causing SyntaxError
         res.status(200).send(JSON.parse(ChannelIdIndex));
-    } catch (e) {
+    } catch (e: any) {
         let msg: string;
         if (e instanceof SyntaxError) {
             msg = `Was trying parse post channel index string.`;
         } else if (e instanceof RestError) {
-            msg = `Was trying communicating with table storage.`;
+            msg = `Was trying communicating with azure table storage.`;
         }
         else {
-            msg = `Uncategorized Error occurred`;
+            msg = `Uncategorized. ${e?.msg}`;
         }
         response500(res, msg);
         log(msg, e);

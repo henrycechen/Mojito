@@ -43,35 +43,30 @@ export interface IResetPasswordCredentials extends ICredentials {
     ResetPasswordToken: string;
 }
 
-// [T] CommentSubcommentMappingComprehensive
-export interface ISubcommentComprehensive extends IAzureTableEntity {
-    partitionKey: string; // comment id
-    rowKey: string; // subcomment id
-    CreateTimestamp?: string;
-    CreateTime?: number;
-    MemberId?: string;
-    Content?: string;
-    SubommentStatus?: number;
+export interface IMemberMapping extends IAzureTableEntity {
+    partitionKey: string; // member id (subject)
+    rowKey: string; // member id (object)
 }
 
 // [PRL] Notice
 export interface INoticeInfo extends IAzureTableEntity {
     partitionKey: string; // notified member id
     rowKey: string; // notify id
-    Initiate: string; // initiate member id
+    Category: 'Cued' | 'Replied' | 'Liked' | 'Pinned' | 'Saved' | 'Followed';
+    InitiateId: string; // initiate member id
     Nickname: string; // initiate member nickname
     PostId?: string;
-    PostBrief?: string;
+    PostTitle?: string;
     CommentId?: string;
     CommentBrief?: string;
 }
 
-//////// Atlas Collection Entity////////
+//////// Atlas Collection Entity ////////
 export interface IAtlasCollectionDocument {
     [key: string]: any;
 }
 
-// [C] INotificationStatistics
+// [C] notificationStatistics
 export interface INotificationStatistics extends IAtlasCollectionDocument {
     memberId: string; // member id
     cuedCount?: number; // cued times accumulated from last count reset
@@ -134,4 +129,93 @@ export interface ILoginJournal extends IAtlasCollectionDocument {
     providerId: 'MojitoMemberSystem' | string; // LoginProviderId
     timestamp: string; // new Date().toISOString()
     message: string; // short message, e.g., 'Attempted login while email address not verified.'
+}
+
+// [C] attitudePostMapping
+export interface IAttitudePostMapping extends IAtlasCollectionDocument {
+    memberId: string;
+    postId?: string; // divided by post id
+    attitude: number; // -1 | 0 | 1
+    attitudeCommentMapping: {
+        [key: string]: number
+    };
+    attitudeSubcommentMapping: {
+        [key: string]: number
+    }
+}
+
+// [C] commentComprehensive
+export interface ICommentComprehensive extends IAtlasCollectionDocument {
+    commentId: string; // 16 characters, UPPERCASE
+    postId: string;
+    memberId: string;
+    createdTime: number; // created time of this document (comment est.)
+    content: string;
+    status: number;
+    edited: IEditedCommentComprehensive | null;
+    totalLikedCount: number;
+    totalDislikedCount: number;
+    totalSubcommentCount: number;
+}
+
+export interface IEditedCommentComprehensive extends IAtlasCollectionDocument {
+    editedTime: number;
+    content: string;
+    totalLikedCountBeforeEdit: number;
+    totalDislikedCountBeforeEdit: number;
+    totalSubcommentCountBeforeEdit?: number;
+}
+
+// [C] subcommentComprehensive
+export interface ISubcommentComprehensive extends IAtlasCollectionDocument {
+    subcommentId: string; // 16 characters, UPPERCASE
+    commentId: string;
+    memberId: string;
+    createdTime: number; // created time of this document (subcomment est.)
+    content: string;
+    status: number;
+    edited: IEditedCommentComprehensive | null;
+    totalLikedCount: number;
+    totalDislikedCount: number;
+}
+
+// [C] channelStatistics
+export interface IChannelStatistics extends IAtlasCollectionDocument {
+
+}
+
+// [C] topicComprehensive
+export interface ITopicComprehensive extends IAtlasCollectionDocument {
+
+}
+
+// [C] postComprehensive
+export interface IPostComprehensive extends IAtlasCollectionDocument {
+    postId: string; // 10 characters, UPPERCASE
+    memberId: string;
+    createdTime: number; // created time of this document (post est.)
+    title: string;
+    imageUrlsArr: string[];
+    paragraphsArr: string[];
+    channelId: string;
+    topicIdsArr: string[];
+    pinnedCommentId: string | null;
+    edited: IEditedPostComprehensive | null;
+    status: number;
+    totalHitCount: number; // viewed times accumulator
+    totalLikedCount: number;
+    totalDislikedCount: number;
+    totalCommentCount: number;
+    totalSavedCount: number;
+}
+
+export interface IEditedPostComprehensive extends IAtlasCollectionDocument {
+    editedTime: number;
+    title: string;
+    imageUrlsArr: string[];
+    paragraphsArr: string[];
+    channelId: string;
+    topicIdsArr: string[];
+    likedCountBeforeEdit: number;
+    dislikedCountBeforeEdit: number;
 }

@@ -30,11 +30,6 @@ export default async function SignUp(req: NextApiRequest, res: NextApiResponse) 
         response405(req, res);
         return;
     }
-
-
-//////// test ////////
-
-
     //// Verify environment variables ////
     const environmentVariable = verifyEnvironmentVariable({ recaptchaServerSecret, salt });
     if (!!environmentVariable) {
@@ -125,7 +120,7 @@ export default async function SignUp(req: NextApiRequest, res: NextApiResponse) 
             timestamp: new Date().toISOString(),
             message: 'Registered.'
         });
-        atlasDbClient.close();
+        await atlasDbClient.close();
         // Step #6 send email
         const info: VerifyEmailAddressRequestInfo = { emailAddress, providerId, verifyEmailAddressToken };
         const emailMessage: EmailMessage = {
@@ -141,19 +136,7 @@ export default async function SignUp(req: NextApiRequest, res: NextApiResponse) 
         const mailClient = AzureEmailCommunicationClient();
         await mailClient.send(emailMessage);
     } catch (e: any) {
-        let msg: string;
-        if (e instanceof RestError) {
-            msg = 'Was trying communicating with azure table storage.';
-        } else if (e instanceof MongoError) {
-            msg = 'Was trying communicating with atlas database.';
-            atlasDbClient.close();
-        } else {
-            msg = 'Uncategorized Error occurred.';
-        }
-        if (!res.headersSent) {
-            response500(res, msg);
-        }
-        log(msg, e);
+
         return;
     }
 }

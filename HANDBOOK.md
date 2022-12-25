@@ -139,11 +139,11 @@ type ResetPasswordRequestInfo = {
 - **[RL]**: Relation record table
 - **[PRL]**: Passive Relation record table (side-affected by operations on the corresponding RL table)
 
-## 💾Member
+## 📘Member
 
-| Property | Type   | Desc                                              |
-| -------- | ------ | ------------------------------------------------- |
-| MemberId | string | MongoDB ObejctId String, 24 characters, lowercase |
+| Property | Type   | Desc                     |
+| -------- | ------ | ------------------------ |
+| MemberId | string | 10 characters, UPPERCASE |
 
 ### [RL] Credentials
 
@@ -169,47 +169,53 @@ type ResetPasswordRequestInfo = {
 
 \* This table records the following member ids of the partition key (member id)
 
-| PartitionKey | RowKey               | IsActive                |
-| ------------ | -------------------- | ----------------------- |
-| MemberIdStr  | FollowingMemberIdStr | boolean, default `true` |
+| PartitionKey | RowKey               |
+| ------------ | -------------------- |
+| MemberIdStr  | FollowingMemberIdStr |
 
 ### [PRL] FollowedByMemberMapping
 
 \* This table records the member ids of who have been following the partition key (member id)
 
-| PartitionKey | RowKey                | IsActive                |
-| ------------ | --------------------- | ----------------------- |
-| MemberIdStr  | FollowedByMemberIdStr | boolean, default `true` |
+| PartitionKey | RowKey                |
+| ------------ | --------------------- |
+| MemberIdStr  | FollowedByMemberIdStr |
 
 ### [RL] BlockingMemberMapping
 
 \* This table records the member ids blocked by the partition key (member id)
 
-| PartitionKey | RowKey              | IsActive                |
-| ------------ | ------------------- | ----------------------- |
-| MemberIdStr  | BlockingMemberIdStr | boolean, default `true` |
+| PartitionKey | RowKey              |
+| ------------ | ------------------- |
+| MemberIdStr  | BlockingMemberIdStr |
 
 ### [PRL] BlockedByMemberMapping
 
 \* This table records the member ids of who have been blocking the partition key (member id)
 
-| PartitionKey | RowKey               | IsActive                |
-| ------------ | -------------------- | ----------------------- |
-| MemberIdStr  | BlockedByMemberIdStr | boolean, default `true` |
+| PartitionKey | RowKey               |
+| ------------ | -------------------- |
+| MemberIdStr  | BlockedByMemberIdStr |
 
 
 
 
 
-## 💾Notification
+## 📘Notification
+
+| Property     | Type   | Desc                     |
+| ------------ | ------ | ------------------------ |
+| NoticeId     | string | 16 characters, UPPERCASE |
+| PostTitle    | string |                          |
+| CommentBrief | string | maximum 21 characters    |
 
 ### [PRL] Notice
 
 #### Cued (@)
 
-| PartitionKey        | RowKey   | InitiateId  | PostId | PostBrief |
-| ------------------- | -------- | ----------- | ------ | --------- |
-| NotifiedMemberIdStr | NoticeId | MemberIdStr | string | string    |
+| PartitionKey        | RowKey   | Category | InitiateId  | PostId | PostTitle | CommentId | CommentBrief |
+| ------------------- | -------- | -------- | ----------- | ------ | --------- | --------- | ------------ |
+| NotifiedMemberIdStr | NoticeId | `"Cued"` | MemberIdStr | string | string    | string    | strin        |
 
 ```
 - WebMaster在帖子“WebMaster在Mojito发的第一篇帖子”中提到了您
@@ -218,9 +224,9 @@ type ResetPasswordRequestInfo = {
 
 #### Replied (↩️)
 
-| PartitionKey        | RowKey   | InitiateId  | PostId | PostBrief | CommentId | CommentBrief |
-| ------------------- | -------- | ----------- | ------ | --------- | --------- | ------------ |
-| NotifiedMemberIdStr | NoticeId | MemberIdStr | string | string    | string    | string       |
+| PartitionKey        | RowKey   | Category    | InitiateId  | PostId | PostTitle | CommentId | CommentBrief |
+| ------------------- | -------- | ----------- | ----------- | ------ | --------- | --------- | ------------ |
+| NotifiedMemberIdStr | NoticeId | `"Replied"` | MemberIdStr | string | string    | string    | string       |
 
 ```
 - WebMaster回复了您的帖子“WebMaster在Mojito发的第一篇帖子”
@@ -229,9 +235,9 @@ type ResetPasswordRequestInfo = {
 
 #### Liked (❤️)
 
-| PartitionKey        | RowKey   | InitiateId  | PostId | PostBrief |
-| ------------------- | -------- | ----------- | ------ | --------- |
-| NotifiedMemberIdStr | NoticeId | MemberIdStr | string | string    |
+| PartitionKey        | RowKey   | Category  | InitiateId  | PostId | PostTitle |
+| ------------------- | -------- | --------- | ----------- | ------ | --------- |
+| NotifiedMemberIdStr | NoticeId | `"Liked"` | MemberIdStr | string | string    |
 
 ```
 - WebMaster喜欢了您的帖子“WebMaster在Mojito发的第一篇帖子”
@@ -240,9 +246,9 @@ type ResetPasswordRequestInfo = {
 
 #### Pinned (⬆️)
 
-| PartitionKey        | RowKey   | InitiateId  | PostId | PostBrief |
-| ------------------- | -------- | ----------- | ------ | --------- |
-| NotifiedMemberIdStr | NoticeId | MemberIdStr | string | string    |
+| PartitionKey        | RowKey   | Category   | InitiateId  | PostId | PostTitle |
+| ------------------- | -------- | ---------- | ----------- | ------ | --------- |
+| NotifiedMemberIdStr | NoticeId | `"Pinned"` | MemberIdStr | string | string    |
 
 ```
 - WebMaster置顶了您在“WebMaster在Mojito发的第一篇帖子”中发表的评论“可喜可贺可惜可...”
@@ -250,9 +256,9 @@ type ResetPasswordRequestInfo = {
 
 #### Saved (💾)
 
-| PartitionKey        | RowKey   | InitiateId  | PostId | PostBrief |
-| ------------------- | -------- | ----------- | ------ | --------- |
-| NotifiedMemberIdStr | NoticeId | MemberIdStr | string | string    |
+| PartitionKey        | RowKey   | Category  | InitiateId  | PostId | PostTitle |
+| ------------------- | -------- | --------- | ----------- | ------ | --------- |
+| NotifiedMemberIdStr | NoticeId | `"Saved"` | MemberIdStr | string | string    |
 
 ```
 - WebMaster收藏了“WebMaster在Mojito发的第一篇帖子”中提到了您
@@ -260,9 +266,9 @@ type ResetPasswordRequestInfo = {
 
 #### Followed (🔔)
 
-| PartitionKey        | RowKey   | InitiateId  |
-| ------------------- | -------- | ----------- |
-| NotifiedMemberIdStr | NoticeId | MemberIdStr |
+| PartitionKey        | RowKey   | Category     | InitiateId  |
+| ------------------- | -------- | ------------ | ----------- |
+| NotifiedMemberIdStr | NoticeId | `"Followed"` | MemberIdStr |
 
 ```
 - WebMaster关注了您
@@ -272,7 +278,7 @@ type ResetPasswordRequestInfo = {
 
 
 
-## 💾Channel
+## 📘Channel
 
 | ChannelId                    | ChannelNameStr | 中文   | Svg Icon Reference |
 | ---------------------------- | -------------- | ------ | ------------------ |
@@ -306,7 +312,7 @@ type ResetPasswordRequestInfo = {
 
 
 
-## 💾Post
+## 📘Post
 
 ### [RL] HistoryMapping
 
@@ -364,7 +370,7 @@ type ResetPasswordRequestInfo = {
 mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statistics-dev" --apiVersion 1 --username dbmaster
 ```
 
-## 📋Notification
+## 📗Notification
 
 ### [C] notificationStatistics
 
@@ -385,7 +391,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 
 
 
-## 📋Member
+## 📗Member
 
 ### [C] memberComprehensive
 
@@ -507,14 +513,20 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 }
 ```
 
-### [C] attitudePostMapping
+
+
+
+
+## 📗Attitude
+
+### [C] attitudeComprehensive
 
 ```typescript
 {
     _id: string; // mongodb obejct id
     
     memberId: string;
-    postId?: string; // divided by post id
+    postId: string; // divided by post id
     attitude: number; // -1 | 0 | 1
     attitudeCommentMapping: {
         [key: commentIdStr]: number // -1 | 0 | 1
@@ -527,9 +539,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 
 
 
-
-
-## 📋Comment
+## 📗Comment
 
 ### [C] commentComprehensive
 
@@ -538,18 +548,26 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
      _id: string; // mongodb obejct id
     
     //// info ////
-    postId: string;
     commentId: string; // 16 characters, UPPERCASE
+    postId: string;
+    memberId: string;
     createdTime: number; // created time of this document (comment est.)
     content: string;
+    edited: {
+        editedTime: number; // 201: edited | -1/-3: removed
+        content: string;
+        totalLikedCountBeforeEdit: number;
+        totalDislikedCountBeforeEdit: number;
+        totalSubcommentCountBeforeEdit: number;
+    } | null
     
 	//// management ////
     status: number;
     
     //// statistics ////
-    likedCount: number;
-    dislikedCount: number;
-    subcommentCount: number;
+    totalLikedCount: number;
+    totalDislikedCount: number;
+    totalSubcommentCount: number;
 }
 ```
 
@@ -560,17 +578,24 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
     _id: string; // mongodb obejct id
     
     //// info ////
-    commentId: string;
     subcommentId: string; // 16 characters, UPPERCASE
+    commentId: string;
+    memberId: string;
     createdTime: number; // created time of this document (subcomment est.)
     content: string;
+    edited: {
+        editedTime: number; // 201: edited | -1/-3: removed
+        content: string;
+        totalLikedCountBeforeEdit: number;
+        totalDislikedCountBeforeEdit: number;
+    } | null
     
 	//// management ////
     commentStatus: number;
     
     //// statistics ////
-    likedCount: number;
-    dislikedCount: number;
+    totalLikedCount: number;
+    totalDislikedCount: number;
 }
 ```
 
@@ -587,7 +612,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 
 
 
-## 📋Channel
+## 📗Channel
 
 ### [C] channelStatistics
 
@@ -597,7 +622,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
     
     //// info ////
     channelId: string; // pre-defined channel id
-    createTime: number;
+    createdTime: number;
     
     //// total statistics ////
     totalTopicCount: number;
@@ -670,7 +695,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 
 
 
-## 📋Topic
+## 📗Topic
 
 ### [C] topicComprehensive
 
@@ -680,6 +705,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
     
     //// info ////
     topicId: string; // 16 characters, UPPERCASE
+    channelId: string;
     createdTime: number; // create time of this document (topic est.)
     content: string; // topic content
     
@@ -748,7 +774,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 
 
 
-## 📋TopicRanking
+## 📗TopicRanking
 
 ### [C] topicRankingStatistics
 
@@ -798,7 +824,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 
 
 
-## 📋Post
+## 📗Post
 
 ### [C] postComprehensive
 
@@ -807,17 +833,23 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
     _id: ObjectId; // mongodb obejct id
     
     //// info ////
-    memberId: string;
     postId: string; // 10 characters, UPPERCASE
+    memberId: string;
     createdTime: number; // created time of this document (post est.)
     title: string;
     imageUrlsArr: string[];
 	paragraphsArr: string[];
-
 	channelId: string;
 	topicIdsArr: string[];
-  	
 	pinnedCommentId: string;
+    edited: {
+        editedTime: number;
+        title: string;
+        imageUrlsArr: string[];
+		paragraphsArr: string[];
+        channelId: string;
+		topicIdsArr: string[];
+    } | null
 
     //// management ////
     status: number;
@@ -872,7 +904,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 
 
 
-## 📋PostRanking
+## 📗PostRanking
 
 ### [C] postRankingStatistics 
 
@@ -946,9 +978,9 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 - inc: Increase
 - dec: Decrease
 
-## ▶️Signup & Login
+## 📦Signup & Login
 
-### 🔁Register with Mojito Member System
+### ▶️Register with Mojito Member System
 
 | Behaviour         | Involved tables / collections                                |
 | ----------------- | ------------------------------------------------------------ |
@@ -1016,7 +1048,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
    }
    ```
 
-### 🔁Request for re-send verification email
+### ▶️Request for re-send verification email
 
 | Behaviour                  | Involved tables / collections                          |
 | -------------------------- | ------------------------------------------------------ |
@@ -1051,7 +1083,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 
 *\* This procedure is unable to prohibit users from verifying two members with same the email address. This system allows member shares email addresses between login providers*
 
-### 🔁Verify email address
+### ▶️Verify email address
 
 | Behaviour            | Involved tables / collections                                |
 | -------------------- | ------------------------------------------------------------ |
@@ -1124,11 +1156,11 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
    }
    ```
 
-### 🔁Request re-send verification email
+### ▶️Request re-send verification email
 
 1. Retrieve request info (email address, provider id) from request body
 
-### 🔁Login with Mojito Member System
+### ▶️Login with Mojito Member System
 
 | Behaviour                             | Involved tables / collections                                |
 | ------------------------------------- | ------------------------------------------------------------ |
@@ -1156,7 +1188,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
    }
    ```
 
-### 🔁Login with Third-party login provider
+### ▶️Login with Third-party login provider
 
 | Behaviour                                   | Involved tables / collections                                |
 | ------------------------------------------- | ------------------------------------------------------------ |
@@ -1216,7 +1248,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
       }
       ```
 
-   5. Send email (notice member to go over **🔁Verify email address** procedure before signin)
+   5. Send email (notice member to go over **▶️Verify email address** procedure before signin)
 
       ```json
       { // base64 string contains info as follows
@@ -1241,9 +1273,9 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
    }
    ```
 
-## ▶️Member Info
+## 📦Member Info
 
-### 🔁Request for password reset
+### ▶️Request for password reset
 
 | Behaviour                  | Involved tables / collections |
 | -------------------------- | ----------------------------- |
@@ -1270,7 +1302,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
    }
    ```
 
-### 🔁Reset password
+### ▶️Reset password
 
 | Behaviour      | Involved tables / collections |
 | -------------- | ----------------------------- |
@@ -1298,7 +1330,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 
    
 
-### 🔁Update member info
+### ▶️Update member info
 
 | Behaviour             | Involved tables / collections |
 | --------------------- | ----------------------------- |
@@ -1337,9 +1369,9 @@ Only allow updating other info after 30 seconds since last update
 您更新太频繁了，请稍候片刻再重试
 ```
 
-## ▶️On other Members
+## 📦Behaviour on other Members
 
-### 🔁Follow/Unfollow a member
+### ▶️Follow/Unfollow a member
 
 | Behaviour                  | Affected tables / collections                                |
 | -------------------------- | ------------------------------------------------------------ |
@@ -1400,33 +1432,34 @@ Only allow updating other info after 30 seconds since last update
    }
    ```
 
-### 🔁Block/Unblock a member
+### ▶️Block/Unblock a member
 
 | Behaviour      | Affected tables / collections                                |
 | -------------- | ------------------------------------------------------------ |
 | Block a member | **[RL]** BlockingMemberMapping,<br />**[PRL]** BlockedByMemberMapping,<br />**[C]** memberStatistics ***(acc.)*** |
 
-Mostly same as 🔁Follow/Unfollow a member
+Mostly same as ▶️Follow/Unfollow a member
 
-## ▶️Comment
+## 📦Comment
 
-### 🔁Create a comment
+### ▶️Create a comment
 
 | Behaviour                            | Affected tables / collections                                |
 | ------------------------------------ | ------------------------------------------------------------ |
-| Create a comment<br />(Cue a member) | **[C]** commentComprehensive ***(est.)***,<br />( Cond. **[PRL]** Notice***.Replied (est.)*** ),<br />( Cond. **[C]** notificationStatistics***.repliedCount (acc.)*** ),<br />( Cond. **[PRL]** Notice***.Cued (est.)*** ),<br />( Cond. **[C]** notificationStatistics***.cuedCount (acc.)*** ),<br />**[C]** memberStatistics***.totalCommentCount (acc.)***,<br />**[C]** postComprehensive***.totalCommentCount (acc.)***,<br />**[C]** topicComprehensive***.totalCommentCount (acc.)***,<br />**[C]** channelStatistics***.totalCommentCount (acc.)*** |
+| Create a comment<br />(Cue a member) | **[C]** commentComprehensive ***(est.)***,<br />**[C]** postComprehensive***.totalCommentCount (acc.)***,<br />**[C]** memberStatistics***.totalCommentCount (acc.)***,<br />**[C]** channelStatistics***.totalCommentCount (acc.)***<br />( Cond. **[PRL]** Notice***.Replied (est.)*** ),<br />( Cond. **[C]** notificationStatistics***.repliedCount (acc.)*** ),<br />( Cond. **[PRL]** Notice***.Cued (est.)*** ),<br />( Cond. **[C]** notificationStatistics***.cuedCount (acc.)*** ),<br />( Cond. **[C]** topicComprehensive***.totalCommentCount (acc.)*** ) |
 
-1. Create a new document of ***CommentComprehensive*** in **[C] commentComprehensive **
-2. Skip (if blocked by post author) or Create a new record of ***RepliedNotice*** in **[PRL] Notice**
-3. Skip (if blocked by post author)  or Update document (**repliedCount**) in **[C] notificationStatistics**
-4. Skip (if not cued anyone or blocked) or Create a new record of ***RepliedNotice*** in **[PRL] Notice**
-5. Skip (if not cued anyone or blocked) or Update document (**cuedCount**) in **[C] notificationStatistics**
-6. Update document (**totalCommentCount**) in **[C] memberStatistics**
-7. Update document (**totalCommentCount**) in **[C] postComprehensive**
-8. Update document (**totalCommentCount**) in **[C] topicComprehensive**
-9. Update document (**totalCommentCount**) in **[C] channelStatistics**
+1. Look up document of ***IPostComprehensive*** in **[C] postComprehensive**
+2. Insert a new document of ***ICommentComprehensive*** in **[C] commentComprehensive** or return  ***"Post not found" error***
+3. Update document (**totalCommentCount**) in **[C] postComprehensive** 
+4. Update document (**totalCommentCount**) in **[C] memberStatistics**
+5. Update document (**totalCommentCount**) in **[C] channelStatistics**
+6. Skip (if post not belonged to any topics) or Update documents (**totalCommentCount**) in **[C] topicComprehensive**
+7. Skip (if not cued anyone or blocked) or Create a new record of ***RepliedNotice*** in **[PRL] Notice**
+8. Skip (if not cued anyone or blocked) or Update document (**repliedCount**) in **[C] notificationStatistics**
+9. Skip (if blocked by post author) or Create a new record of ***CuedNotice*** in **[PRL] Notice**
+10. Skip (if blocked by post author)  or Update document (**cuedCount**) in **[C] notificationStatistics**
 
-### 🔁Edit a comment
+### ▶️Edit a comment
 
 | Behaviour                                                    | Affected tables / collections                                |
 | ------------------------------------------------------------ | ------------------------------------------------------------ |
@@ -1450,7 +1483,7 @@ Mostly same as 🔁Follow/Unfollow a member
 
 *\* Edit actions are only allowed once. Once performed would result in losing like/dislike data*
 
-### 🔁Delete a comment
+### ▶️Delete a comment
 
 | Behaviour        | Affected tables / collections                                |
 | ---------------- | ------------------------------------------------------------ |
@@ -1465,33 +1498,33 @@ Mostly same as 🔁Follow/Unfollow a member
 
 2. Update document (**totalCommentEditCount++**) in **[C] memberStatistics**
 
-### 🔁Create a subcomment / Reply to a comment
+### ▶️Create a subcomment / Reply to a comment
 
 | Behaviour                               | Affected tables / collections                                |
 | --------------------------------------- | ------------------------------------------------------------ |
 | Create a subcomment<br />(Cue a member) | **[C]** subcommentComprehensive ***(est.)***,<br />( Cond. **[PRL]** Notice***.Replied (est.)*** ),<br />( Cond. **[C]** notificationStatistics***.repliedCount (acc.)*** ),<br />( Cond. **[PRL]** Notice***.Cued (est.)*** ),<br />( Cond. **[C]** notificationStatistics***.cuedCount (acc.)*** ),<br />**[C]** memberStatistics***.totalCommentCount (acc.)***,<br />**[C]** postComprehensive***.totalCommentCount (acc.)***,<br />**[C]** topicComprehensive***.totalCommentCount (acc.)***,<br />**[C]** channelStatistics***.totalCommentCount (acc.)*** |
 
-### 🔁Edit a subcomment
+### ▶️Edit a subcomment
 
 | Behaviour                                                    | Affected tables / collections                                |
 | ------------------------------------------------------------ | ------------------------------------------------------------ |
 | Edit a subcomment<br />(Only allowed once,<br /> Editing results in losing<br />like / dislike data)🆕 | **[C]** subcommentComprehensive ***(put.)***,<br />**[C]** memberStatistics***.totalCommentEditCount (acc.)***,<br />( Cond. **[PRL]** NotifyCued ***(est.)*** ),<br />( Cond. **[C]** Notification*.cuedCount* ***(acc.)*** ) |
 
-### 🔁Delete a comment/subcomment
+### ▶️Delete a comment/subcomment
 
 | Behaviour           | Affected tables / collections                                |
 | ------------------- | ------------------------------------------------------------ |
 | Delete a subcomment | **[C]** subcommentComprehensive ***(put.)***,<br />**[C]** memberStatistics***.totalCommentDeleteCount (acc.)*** |
 
-### 🔁Pin a comment
+### ▶️Pin a comment
 
 | Behaviour     | Affected tables / collections                          |
 | ------------- | ------------------------------------------------------ |
 | Pin a comment | **[C]** postComprehensive***.pinnedCommentId (put.)*** |
 
-## ▶️Attitude
+## 📦Attitude
 
-### 🔁Express attitude on a post
+### ▶️Express attitude on a post
 
 | Behaviour                                                 | Affected tables / collections                                |
 | --------------------------------------------------------- | ------------------------------------------------------------ |
@@ -1499,47 +1532,54 @@ Mostly same as 🔁Follow/Unfollow a member
 
 *\* [PRL] Notice is accumulate-only; editing, removing is prohibited*
 
-### 🔁Express attitude on a comment/subcomment
+### ▶️Express attitude on a comment/subcomment
 
 | Behaviour                                                    | Affected tables / collections                                |
 | ------------------------------------------------------------ | ------------------------------------------------------------ |
 | Like /<br />Unlike /<br />Dislike /<br />Undislike a comment /<br />subcomment | **[C]** comment/subcommentComprehensive***.totalLiked/DislikedCount (inc./dec.)***,<br />( Cond. **[PRL]** Notice***.Liked(est.)*** ),<br />( Cond. **[C]** notificationStatistics***.likedCount (acc.)*** ),<br />**[C]** attitudePostMapping ***(est./inc.)*** |
 
-## ▶️Topic
+## 📦Topic
 
 | Behaviour      | Affected tables / collections                                |
 | -------------- | ------------------------------------------------------------ |
 | Create a topic | **[C]** topicComprehensive ***(est.)***,<br />**[C]** channelStatistics***.totalTopicCount (acc.)*** |
-| Refer a topic  | See 🔁Create to a post                                        |
+| Refer a topic  | See ▶️Create to a post                                        |
 | Search a topic | **[C]** topicComprehensive***.totalSearchCount (acc.)***     |
 
-## ▶️Post
+## 📦Post
 
-### 🔁View a post
+### ▶️View a post
 
 | Behaviour   | Affected tables / collections                                |
 | ----------- | ------------------------------------------------------------ |
-| View a post | **[RL]** HistoryMapping ***(est.)***,<br />**[C]** postComprehensive***.totalHitCount (acc.)***,<br />**[C]** topicStatistics ***.totalHitCount (acc.)***,<br />**[C]** channelStatistics***.totalHitCount (acc.)***, |
+| View a post | **[RL]** HistoryMapping ***(est.)***,<br />**[C]** postComprehensive***.totalHitCount (acc.)***,<br />**[C]** channelStatistics***.totalHitCount (acc.)***,<br />( Cond. **[C]** topicStatistics ***.totalHitCount (acc.)*** ) |
 
-### 🔁Create a post
+### ▶️Create a post
 
 | Behaviour     | Affected tables / collections                                |
 | ------------- | ------------------------------------------------------------ |
-| Create a post | **[C]** postComprehensive,<br />( Cond. **[PRL]** Notice***.Cued (est.)*** ),<br />( Cond. **[C]** notificationStatistics***.cuedCount (acc.)*** )<br />**[C]** memberStatistics***.totalCreationCount (acc.)***,<br />**[C]** topicComprehensive***.totalPostCount (acc.)***,<br />**[C]** channelStatistics***.totalPostCount (acc.)*** |
+| Create a post | **[C]** postComprehensive,<br />**[C]** memberStatistics***.totalCreationCount (acc.)***,<br />**[C]** channelStatistics***.totalPostCount (acc.)***<br />( Cond. **[C]** topicComprehensive***.totalPostCount (acc.)*** ),<br />( Cond. **[PRL]** Notice***.Cued (est.)*** ),<br />( Cond. **[C]** notificationStatistics***.cuedCount (acc.)*** ) |
 
-### 🔁Edit a post
+1. Insert a new document of ***IPostComprehensive*** in **[C] postComprehensive**
+2. Update document (**totalCreationCount**) in **[C] memberStatistics**
+3. Update document (**totalPostCount**) in **[C] channelStatistics**
+4. Skip (if post not belonged to any topics) or Update documents (**totalPostCount**) in **[C] topicComprehensive**
+5. Skip (if blocked by post author) or Create a new record of ***CuedNotice*** in **[PRL] Notice**
+6. Skip (if blocked by post author)  or Update document (**cuedCount**) in **[C] notificationStatistics**
+
+### ▶️Edit a post
 
 | Behaviour   | Affected tables / collections                                |
 | ----------- | ------------------------------------------------------------ |
 | Edit a post | **[C]** postComprehensive,<br />**[C]** memberComprehensive***.totalCommentEditCount (acc.)***<br />( Cond. **[PRL]** Notice***.Cued (est.)*** ),<br />( Cond. **[C]** notificationStatistics***.cuedCount (acc.)*** ) |
 
-### 🔁Delete a post
+### ▶️Delete a post
 
 | Behaviour     | Affected tables / collections                                |
 | ------------- | ------------------------------------------------------------ |
 | Delete a post | **[C]** postComprehensive,<br />**[C]** memberComprehensive***.totalCreationDeleteCount (acc.)*** |
 
-### 🔁Save a post
+### ▶️Save a post
 
 | Behaviour   | Affected tables / collections                                |
 | ----------- | ------------------------------------------------------------ |
@@ -1549,11 +1589,11 @@ Mostly same as 🔁Follow/Unfollow a member
 
 # APIs
 
-## 📦Notification
+## 🛠️Notification
 
 GET|`/api/notification/[id]`
 
-## 📦Member
+## 🛠️Member
 
 ### Signup
 
@@ -1562,8 +1602,6 @@ POST|`/api/member/behaviour/signup/index`
 ### Signin
 
 POST|`/api/auth/[...nextauth]`
-
-## 📦Member
 
 ### Info & Statistics
 
@@ -1577,9 +1615,9 @@ POST|`/api/member/behaviour/block/[id]`
 
 GET|`/api/member/behaviour/resetpassword/request?emaillAddress=`
 
-## 📦Comment
+## 🛠️Comment
 
-###  Info & Statistics
+###  Comment Info & Statistics
 
 GET|`/api/comment/s/of/[postId]`
 
@@ -1593,9 +1631,7 @@ PUT|`/api/comment/of/[postId]/info/[commentId]`
 
 DELETE|`/api/comment/of/[postId]/info/[commentId]`
 
-## 📦Subcomment
-
-### Info & Statistics
+### Subcomment Info & Statistics
 
 GET|`/api/subcomment/s/of/[commentId]`
 
@@ -1609,7 +1645,7 @@ PUT|`/api/subcomment/of/[commentId]/info/[subcommentId]`
 
 DELETE|`/api/subcomment/of/[commentId]/info/[subcommentId]`
 
-## 📦Channel
+## 🛠️Channel
 
 ### Info & Statistics
 
@@ -1619,7 +1655,7 @@ GET|`/api/channel/dictionary`
 
 GET|`/api/channel/index`
 
-## 📦Topic
+## 🛠️Topic
 
 ### Info & Statistics
 
@@ -1629,7 +1665,7 @@ GET| `/api/topic/of/channel/[id]`
 
 POST| `/api/topic/index`
 
-## 📦Post
+## 🛠️Post
 
 ### Info & Statistics
 

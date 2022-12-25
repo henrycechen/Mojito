@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { RestError } from '@azure/data-tables';
+import { MongoError } from 'mongodb';
 import CryptoJS from 'crypto-js';
 
 import AzureTableClient from '../../../../../modules/AzureTableClient';
@@ -69,7 +70,7 @@ export default async function RequestVerificationEmail(req: NextApiRequest, res:
             return;
         }
         const emailAddress = Buffer.from(emailAddressB64, 'base64').toString();
-        if ('' === emailAddress){
+        if ('' === emailAddress) {
             res.status(403).send('Invalid email address');
             return;
         }
@@ -125,6 +126,7 @@ export default async function RequestVerificationEmail(req: NextApiRequest, res:
         credentialsTableClient.upsertEntity<IVerifyEmailAddressCredentials>({ partitionKey: emailAddressHash, rowKey: 'VerifyEmailAddress', VerifyEmailAddressToken: verifyEmailAddressToken }, 'Replace');
         //// Response 200 ////
         res.status(200).send('Verification email sent');
+        await atlasDbClient.close();
         // Step #4 send email
         const info: VerifyEmailAddressRequestInfo = { emailAddress, providerId, verifyEmailAddressToken };
         const emailMessage: EmailMessage = {
@@ -140,16 +142,8 @@ export default async function RequestVerificationEmail(req: NextApiRequest, res:
         const mailClient = AzureEmailCommunicationClient();
         await mailClient.send(emailMessage);
     } catch (e: any) {
-        let msg: string;
-        if (e instanceof RestError) {
-            msg = 'Was trying communicating with table storage.';
-        } else {
-            msg = 'Uncategorized Error occurred.';
-        }
-        if (!res.headersSent) {
-            response500(res, msg);
-        }
-        log(msg, e);
+        
+        await atlasDbClient.close();
         return;
     }
 }
