@@ -332,8 +332,8 @@ const Member = () => {
         }
     }, [processStates])
     const getPosts = async () => {
-        // ---------- get channel id for querying posts------------
-        const resp = await fetch('/api/post?ranking=newest');
+        //// TODO: test api '/post' moved to '/post/of' ////
+        const resp = await fetch('/api/post/of?ranking=newest');
         const list = await resp.json();
         setPostList(list);
     }

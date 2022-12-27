@@ -1,22 +1,23 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { RestError } from '@azure/data-tables';
+import { MongoError } from 'mongodb';
 import { getToken } from 'next-auth/jwt';
 
 import AzureTableClient from '../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from '../../../../modules/AtlasDatabaseClient';
 
-import { INoticeInfo, INotificationStatistics, IMemberStatistics, IChannelStatistics, ITopicComprehensive, IPostComprehensive } from '../../../../lib/interfaces';
+import { INoticeInfo, INotificationStatistics, IMemberStatistics, IChannelStatistics, ITopicComprehensive, IPostComprehensive, ITopicPostMapping } from '../../../../lib/interfaces';
 import { ChannelInfo } from '../../../../lib/types';
-import { getRandomIdStr, getRandomIdStrL, getNicknameFromToken, getImageUrlsArrayFromRequestBody, getParagraphsArrayFromRequestBody, verifyUrl, response405, response500, log, getTopicIdsArrayFromRequestBody } from '../../../../lib/utils';
+import { getRandomIdStr, getRandomIdStrL, getNicknameFromToken, getImageUrlsArrayFromRequestBody, getParagraphsArrayFromRequestBody, verifyUrl, response405, response500, log, getTopicBase64StringsArrayFromRequestBody } from '../../../../lib/utils';
+
+const domain = process.env.NEXT_PUBLIC_APP_DOMAIN;
 
 // This interface only accepts post (create post) method
 // Use 'api/post/info/[postId]' to GET comment info
 //
-// Info required:
-// - title: string;
-// - imageUrlsArr: string[];
-// - channelId: string;
-// cuedMemberIdsArr: string[] | undefined;
+// Post info required:
+// - title
+// - channelId
 //
 export default async function CreatePost(req: NextApiRequest, res: NextApiResponse) {
     const { method } = req;
@@ -27,31 +28,73 @@ export default async function CreatePost(req: NextApiRequest, res: NextApiRespon
     //// Verify identity ////
     const token = await getToken({ req });
     if (!(token && token?.sub)) {
-        // called by member him/herself
         res.status(400).send('Invalid identity');
+        return;
+    }
+    //// Verify post title ////
+    const { title } = req.body;
+    if (!('string' === typeof title && '' !== title)) {
+        res.status(400).send('Improper post title');
+        return;
+    }
+    ////Verify channel id ////
+    const { channelId } = req.body;
+    if (!('string' === typeof channelId && '' !== channelId)) {
+        res.status(400).send('Improper channel id');
+        return;
+    }
+    let channelDict: any;
+    try {
+        channelDict = await fetch(`${domain}/api/channel/dictionary`).then(resp => resp.json()).catch(e => { throw e });
+    } catch (e) {
+        let msg = `Was trying retrieving channel dictionary.`;
+        response500(res, msg);
+        log(msg, e);
+        return;
+    }
+    if (!Object.hasOwn(channelDict, channelId)) {
+        res.status(400).send('Channel id not found');
         return;
     }
     //// Declare DB client ////
     const atlasDbClient = AtlasDatabaseClient();
     try {
         atlasDbClient.connect();
+
+        //// Check member status ////
+
+        // Step #1.1 prepare member id (of post author)
+        const { sub: memberId } = token;
+        // Step #1.2 look up member status (IMemberComprehensive) in [C] memberComprehensive
+        const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberStatistics>('member');
+        const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne<IMemberStatistics>({ memberId });
+        if (null === memberComprehensiveQueryResult) {
+            res.status(500).send('Member not found');
+            log(`Member was tring creating comment (member id: ${memberId}) but have no document (of IMemberComprehensive) in [C] memberComprehensive`);
+            return;
+        }
+        const { status: memberStatus, allowCommenting } = memberComprehensiveQueryResult;
+        if (!(0 < memberStatus && allowCommenting)) {
+            res.status(403).send('Creating posts is not allowed for this member');
+            return;
+        }
+
+        //// Create post ////
+
         // Step #2.1 create a new post id
         const postId = getRandomIdStr(true);
-        // Step #2.2 prepare member id (of post author)
-        const { sub: memberId } = token;
-        // Step #2.3 verify title
-        const { title, channelId } = req.body;
-        const topicIdsArr = getTopicIdsArrayFromRequestBody(req.body);
-        // Step #2.4 insert document (IPostComprehensive) in [C] postComprehensive
+        // Step #2.2 explicitly get topic id from request body (topic content strings)
+        const topicIdsArr = getTopicBase64StringsArrayFromRequestBody(req.body);
+        // Step #2.3 insert document (of IPostComprehensive) in [C] postComprehensive
         const postComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IPostComprehensive>('post');
         const postComprehensiveInsertResult = await postComprehensiveCollectionClient.insertOne({
             postId,
             memberId,
             createdTime: new Date().getTime(),
-            title,
+            title, // required
             imageUrlsArr: getImageUrlsArrayFromRequestBody(req.body),
             paragraphsArr: getParagraphsArrayFromRequestBody(req.body),
-            channelId,
+            channelId, // required
             topicIdsArr,
             pinnedCommentId: null,
             edited: null,
@@ -63,14 +106,15 @@ export default async function CreatePost(req: NextApiRequest, res: NextApiRespon
             totalSavedCount: 0
         });
         if (!postComprehensiveInsertResult.acknowledged) {
-            log(`Failed to insert document (IPostComprehensive, member id: ${memberId}) in [C] postComprehensive`);
-            res.status(500).send('Post failed to create');
+            log(`Failed to insert document (of IPostComprehensive, member id: ${memberId}) in [C] postComprehensive`);
+            res.status(500).send('Failed to create post');
             return;
         } else {
             res.status(200).send(postId);
         }
 
         //// Update statistics ////
+
         // Step #3.1 update total creation count (IMemberStatistics) in [C] memberStatistics
         const memberStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IMemberStatistics>('member');
         const memberStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId }, {
@@ -94,14 +138,40 @@ export default async function CreatePost(req: NextApiRequest, res: NextApiRespon
         // Step #3.3 (cond.) update total post count (ITopicComprehensive) in [C] topicComprehensive
         if (Array.isArray(topicIdsArr) && topicIdsArr.length !== 0) {
             const topicComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<ITopicComprehensive>('topic');
+            const topicPostMappingCollectionClient = atlasDbClient.db('mapping').collection<ITopicPostMapping>('topic-post');
             for await (const topicId of topicIdsArr) {
-                const topicComprehensiveUpdateResult = await topicComprehensiveCollectionClient.updateOne({ postId }, {
+                // Step #3.3.1 update topic statistics or insert document (of ITopicComprehensive) in [C] topicComprehensive
+                const topicComprehensiveUpdateResult = await topicComprehensiveCollectionClient.updateOne({ topicId }, {
+                    //// [!] create new topic comprehensive document if no found ////
+                    $set: {
+                        topicId, // base64 string from topic content string
+                        channelId,
+                        createdTime: new Date().getTime(), // create time of this document (topic est.)
+                        status: 200,
+                        totalPostCount: 1, // this post
+                        totalHitCount: 1,
+                        totalCommentCount: 0,
+                        totalSavedCount: 0,
+                        totalSearchCount: 0
+                    },
+                    //// [!] update document if found ////
                     $inc: {
                         totalPostCount: 1
                     }
-                });
+                }, { upsert: true });
                 if (!topicComprehensiveUpdateResult.acknowledged) {
                     log(`Document (IPostComprehensive, post id: ${postId}) inserted in [C] postComprehensive successfully but failed to update totalPostCount (of ITopicComprehensive, topic id: ${topicId}) in [C] topicComprehensive`);
+                }
+                // Step #3.3.2 insert document (of ITopicPostMapping) in [C] topicPostMapping
+                const topicPostMappingInsertResult = await topicPostMappingCollectionClient.insertOne({
+                    topicId,
+                    postId,
+                    channelId,
+                    createdTime: new Date().getTime(),
+                    status: 200
+                });
+                if (!topicPostMappingInsertResult.acknowledged) {
+                    log(`Document (ITopicPostMapping, post id: ${postId}) inserted in [C] postComprehensive successfully but failed to insert document (of ITopicPostMapping, topic id: ${topicId}) in [C] topicPostMapping`);
                 }
             }
         }
@@ -147,21 +217,23 @@ export default async function CreatePost(req: NextApiRequest, res: NextApiRespon
         }
         await atlasDbClient.close();
         return;
-
-
-
-
-
     } catch (e: any) {
-        let msg: string;
-        if (e instanceof RestError) {
-            msg = `Was trying communicating with azure table storage.`;
-        }
-        else {
+        let msg;
+        if (e instanceof SyntaxError) {
+            res.status(400).send('Improperly normalized request info');
+            return;
+        } else if (e instanceof RestError) {
+            msg = 'Was trying communicating with azure table storage.';
+        } else if (e instanceof MongoError) {
+            msg = 'Was trying communicating with atlas mongodb.';
+        } else {
             msg = `Uncategorized. ${e?.msg}`;
         }
-        response500(res, msg);
+        if (!res.headersSent) {
+            response500(res, msg);
+        }
         log(msg, e);
+        await atlasDbClient.close();
         return;
     }
 }

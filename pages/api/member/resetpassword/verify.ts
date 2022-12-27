@@ -49,7 +49,7 @@ export default async function VerifyToken(req: NextApiRequest, res: NextApiRespo
             res.status(403).send('Reset password token expired');
             return;
         }
-        //// Response 200, verification pass ////
+        //// Verification pass ////
         res.status(200).send({ emailAddress, resetPasswordToken });
     } catch (e: any) {
         let msg: string;

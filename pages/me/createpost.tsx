@@ -177,7 +177,7 @@ const CreatePost = () => {
     });
     React.useEffect(() => { getFollowingMembers() }, []);
     const getFollowingMembers = async () => {
-        const resp = await fetch('/api/member/behaviour/followmember');
+        const resp = await fetch('/api/member/followmember');
         const list = await resp.json();
         if ('object' === typeof list && 0 !== list.length) {
             setCuedMemberHelper({ ...cueMemberHelper, memberInfoList: list });
@@ -359,6 +359,7 @@ const CreatePost = () => {
             imageUrlArr: []
         }
         try {
+            //// TODO: update required as new api rules appied
             const resp = await axios.post('/api/post/create', post);
             const { data: postId } = resp;
             if ('string' === typeof postId && '' !== postId) {

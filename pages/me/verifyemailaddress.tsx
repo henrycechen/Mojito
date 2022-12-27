@@ -75,7 +75,7 @@ const VerifyAccount = () => {
             // ReCAPTCHA challenge is not ready
             return;
         }
-        const resp = await fetch(`/api/member/behaviour/signup/verify?requestInfo=${processStates.requestInfo}&recaptchaResponse=${processStates.recaptchaResponse}`, { method: 'POST' })
+        const resp = await fetch(`/api/member/signup/verify?requestInfo=${processStates.requestInfo}&recaptchaResponse=${processStates.recaptchaResponse}`, { method: 'POST' })
         if (200 === resp.status) {
             setProcessStates({ ...processStates, componentOnDisplay: 'accountverifyresult', resultContent: langConfigs.goodResult[lang] })
         } else {

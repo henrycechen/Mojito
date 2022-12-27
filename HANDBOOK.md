@@ -135,9 +135,8 @@ type ResetPasswordRequestInfo = {
 
 \* Terms:
 
-- **[T]**: Table
-- **[RL]**: Relation record table
-- **[PRL]**: Passive Relation record table (side-affected by operations on the corresponding RL table)
+- [RL]: Relation record table
+- [PRL]: Passive Relation record table (side-affected by operations on the corresponding RL table)
 
 ## 📘Member
 
@@ -215,7 +214,7 @@ type ResetPasswordRequestInfo = {
 
 | PartitionKey        | RowKey   | Category | InitiateId  | PostId | PostTitle | CommentId | CommentBrief |
 | ------------------- | -------- | -------- | ----------- | ------ | --------- | --------- | ------------ |
-| NotifiedMemberIdStr | NoticeId | `"Cued"` | MemberIdStr | string | string    | string    | strin        |
+| NotifiedMemberIdStr | NoticeId | `"Cued"` | MemberIdStr | string | string    | string    | string       |
 
 ```
 - WebMaster在帖子“WebMaster在Mojito发的第一篇帖子”中提到了您
@@ -235,9 +234,9 @@ type ResetPasswordRequestInfo = {
 
 #### Liked (❤️)
 
-| PartitionKey        | RowKey   | Category  | InitiateId  | PostId | PostTitle |
-| ------------------- | -------- | --------- | ----------- | ------ | --------- |
-| NotifiedMemberIdStr | NoticeId | `"Liked"` | MemberIdStr | string | string    |
+| PartitionKey        | RowKey   | Category  | InitiateId  | PostId | PostTitle | CommentId | CommentBrief |
+| ------------------- | -------- | --------- | ----------- | ------ | --------- | --------- | ------------ |
+| NotifiedMemberIdStr | NoticeId | `"Liked"` | MemberIdStr | string | string    | string    | string       |
 
 ```
 - WebMaster喜欢了您的帖子“WebMaster在Mojito发的第一篇帖子”
@@ -364,7 +363,7 @@ type ResetPasswordRequestInfo = {
 
 \* Terms:
 
-- **[C]**: Collection
+- [C]: Collection
 
 ```shell
 mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statistics-dev" --apiVersion 1 --username dbmaster
@@ -625,11 +624,13 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
     createdTime: number;
     
     //// total statistics ////
-    totalTopicCount: number;
-    totalPostCount: number;
     totalHitCount: number;
+    totalPostCount: number;
+    totalPostDeleteCount: number;
     totalCommentCount: number; // subcomment included
+    totalCommentDeleteCount: number;
     totalSavedCount: number;
+    totalTopicCount: number;
 }
 ```
 
@@ -659,38 +660,6 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 }
 ```
 
-### [C] channelPostMapping
-
-```typescript
-{
-    _id: ObjectId; // mongodb obejct id
-    
-    //// info ////
-    channelId: string;
-    postId: string;
-    createdTime: number; // created time of this document (post est.)
-    
-    //// management ////
-    status: number;
-}
-```
-
-### [C] channelTopicMapping
-
-```typescript
-{
-    _id: ObjectId; // mongodb obejct id
-    
-    //// info ////
-    channelId: string;
-    topicId: string;
-    createdTime: number; // created time of this document (topic est.)
-    
-    //// management ////
-    status: number;
-}
-```
-
 
 
 
@@ -704,18 +673,19 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
     _id: ObjectIdStr; // mongodb obejct id
     
     //// info ////
-    topicId: string; // 16 characters, UPPERCASE
+    topicId: string; // base64 string from topic content string
     channelId: string;
     createdTime: number; // create time of this document (topic est.)
-    content: string; // topic content
     
     //// management ////
     status: number;
     
     //// total statistics ////
-    totalPostCount: number;
     totalHitCount: number; // total hit count of total posts of this topic
+    totalPostCount: number;
+    totalPostDeleteCount: number;
     totalCommentCount: number;
+    totalCommentDeleteCount: number;
     totalSavedCount: number;
     totalSearchCount: number;
 }
@@ -763,6 +733,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
     //// info ////
     topicId: string;
     postId: string;
+    channelId: string;
     createdTime: number; // created time of this document (post est. time)
     
     //// management ////
@@ -859,6 +830,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
     totalLikedCount: number;
     totalDislikedCount: number;
     totalCommentCount: number;
+    totalCommentDeleteCount: number;
     totalSavedCount: number;
 }
 ```
@@ -984,7 +956,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 
 | Behaviour         | Involved tables / collections                                |
 | ----------------- | ------------------------------------------------------------ |
-| Register a member | **[RL]** Credentials ***(est.)***,<br />**[C]** memberComprehensive ***(est.)***<br />**[C]** memberLoginJournal ***(est.)*** |
+| Register a member | [RL] Credentials ***(est.)***,<br />[C] memberComprehensive ***(est.)***<br />[C] memberLoginJournal ***(est.)*** |
 
 1. Look up login credential (email address hash) in **[RL] Credentials**
 
@@ -1050,9 +1022,9 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 
 ### ▶️Request for re-send verification email
 
-| Behaviour                  | Involved tables / collections                          |
-| -------------------------- | ------------------------------------------------------ |
-| Request for password reset | **[RL]** Credentials,<br />**[C]** memberComprehensive |
+| Behaviour                  | Involved tables / collections                  |
+| -------------------------- | ---------------------------------------------- |
+| Request for password reset | [RL] Credentials,<br />[C] memberComprehensive |
 
 1. Look up login credential (email address hash) in **[RL] Credentials**
 
@@ -1087,7 +1059,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 
 | Behaviour            | Involved tables / collections                                |
 | -------------------- | ------------------------------------------------------------ |
-| Verify email address | **[RL]** Credentials,<br />**[C]** memberComprehensive,<br />**[T]** Statistics ***(est.)***,<br />**[C]** memberStatistics ***(est.)***<br />**[C]** notificationStatistics ***(est.)*** |
+| Verify email address | [RL] Credentials,<br />[C] memberComprehensive,<br />[C] memberStatistics ***(est.)***<br />[C] notificationStatistics ***(est.)*** |
 
 1. Retrieve info from email content
 
@@ -1164,7 +1136,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 
 | Behaviour                             | Involved tables / collections                                |
 | ------------------------------------- | ------------------------------------------------------------ |
-| Login with <br />Mojito Member System | **[RL]** Credentials,<br />**[C]** memberComprehensive,<br />**[C]** memberLoginJournal |
+| Login with <br />Mojito Member System | [RL] Credentials,<br />[C] memberComprehensive,<br />[C] memberLoginJournal |
 
 1. Look up login credentials (email address hash, password hash) in **[RL] Credentials**
 
@@ -1192,7 +1164,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 
 | Behaviour                                   | Involved tables / collections                                |
 | ------------------------------------------- | ------------------------------------------------------------ |
-| Login with <br />Third-party login provider | **[RL]** Credentials,<br />**[C]** memberComprehensive,<br />**[C]** memberLoginJournal |
+| Login with <br />Third-party login provider | [RL] Credentials,<br />[C] memberComprehensive,<br />[C] memberLoginJournal |
 
 1. Look up login credential record (email address hash) in **[RL] Credentials**
 
@@ -1279,7 +1251,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 
 | Behaviour                  | Involved tables / collections |
 | -------------------------- | ----------------------------- |
-| Request for password reset | **[RL]** Credentials          |
+| Request for password reset | [RL] Credentials              |
 
 1. Look up login credentials (email address hash) in **[RL] Credentials**
 
@@ -1306,7 +1278,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 
 | Behaviour      | Involved tables / collections |
 | -------------- | ----------------------------- |
-| Reset Password | **[RL]** Credentials          |
+| Reset Password | [RL] Credentials              |
 
 1. Look up login credentials (email address hash) in **[RL] Credentials** or return ***"Member not found" error***
 
@@ -1334,12 +1306,12 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 
 | Behaviour             | Involved tables / collections |
 | --------------------- | ----------------------------- |
-| Update AvatarImageUrl | **[C]** memberComprehensive   |
-| Update Nickname       | **[C]** memberComprehensive   |
-| Update Password       | **[RL]** Credentials          |
-| Update BriefIntro     | **[C]** memberComprehensive   |
-| Update Gender         | **[C]** memberComprehensive   |
-| Update Birthday       | **[C]** memberComprehensive   |
+| Update AvatarImageUrl | [C] memberComprehensive       |
+| Update Nickname       | [C] memberComprehensive       |
+| Update Password       | [RL] Credentials              |
+| Update BriefIntro     | [C] memberComprehensive       |
+| Update Gender         | [C] memberComprehensive       |
+| Update Birthday       | [C] memberComprehensive       |
 
 ### 💡Forbid Members frequently updating their avatar image 
 
@@ -1375,7 +1347,7 @@ Only allow updating other info after 30 seconds since last update
 
 | Behaviour                  | Affected tables / collections                                |
 | -------------------------- | ------------------------------------------------------------ |
-| Follow / Unfollow a member | **[RL]** FollowingMemberMapping,<br />**[PRL]** FollowedByMemberMapping,<br />**[PRL]** Notice,<br />**[C]** Notification ***(acc.)***,<br />**[C]** MemberStatistics ***(acc.)*** |
+| Follow / Unfollow a member | [RL] FollowingMemberMapping,<br />[PRL] FollowedByMemberMapping,<br />[PRL] Notice,<br />[C] Notification ***(acc.)***,<br />[C] MemberStatistics ***(acc.)*** |
 
 1. Create a new record / Delete record of ***FollowingMemberMapping*** in **[RL] FollowingMemberMapping**
 
@@ -1436,7 +1408,7 @@ Only allow updating other info after 30 seconds since last update
 
 | Behaviour      | Affected tables / collections                                |
 | -------------- | ------------------------------------------------------------ |
-| Block a member | **[RL]** BlockingMemberMapping,<br />**[PRL]** BlockedByMemberMapping,<br />**[C]** memberStatistics ***(acc.)*** |
+| Block a member | [RL] BlockingMemberMapping,<br />[PRL] BlockedByMemberMapping,<br />[C] memberStatistics ***(acc.)*** |
 
 Mostly same as ▶️Follow/Unfollow a member
 
@@ -1446,7 +1418,7 @@ Mostly same as ▶️Follow/Unfollow a member
 
 | Behaviour                            | Affected tables / collections                                |
 | ------------------------------------ | ------------------------------------------------------------ |
-| Create a comment<br />(Cue a member) | **[C]** commentComprehensive ***(est.)***,<br />**[C]** postComprehensive***.totalCommentCount (acc.)***,<br />**[C]** memberStatistics***.totalCommentCount (acc.)***,<br />**[C]** channelStatistics***.totalCommentCount (acc.)***<br />( Cond. **[PRL]** Notice***.Replied (est.)*** ),<br />( Cond. **[C]** notificationStatistics***.repliedCount (acc.)*** ),<br />( Cond. **[PRL]** Notice***.Cued (est.)*** ),<br />( Cond. **[C]** notificationStatistics***.cuedCount (acc.)*** ),<br />( Cond. **[C]** topicComprehensive***.totalCommentCount (acc.)*** ) |
+| Create a comment<br />(Cue a member) | [C] commentComprehensive ***(est.)***,<br />[C] memberStatistics***.totalCommentCount (acc.)***,<br />[C] postComprehensive***.totalCommentCount (acc.)***,<br />[C] channelStatistics***.totalCommentCount (acc.)***<br />( Cond. [C] topicComprehensive***.totalCommentCount (acc.)*** )<br />( Cond. [PRL] Notice***.Replied (est.)*** ),<br />( Cond. [C] notificationStatistics***.repliedCount (acc.)*** ),<br />( Cond. [PRL] Notice***.Cued (est.)*** ),<br />( Cond. [C] notificationStatistics***.cuedCount (acc.)*** ) |
 
 1. Look up document of ***IPostComprehensive*** in **[C] postComprehensive**
 2. Insert a new document of ***ICommentComprehensive*** in **[C] commentComprehensive** or return  ***"Post not found" error***
@@ -1463,7 +1435,7 @@ Mostly same as ▶️Follow/Unfollow a member
 
 | Behaviour                                                    | Affected tables / collections                                |
 | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| Edit a comment<br />(Only allowed once,<br /> Editing results in losing<br />like / dislike data)🆕 | **[C]** commentComprehensive ***(put.)***,<br />**[C]** memberStatistics***.totalCommentEditCount (acc.)***,<br />( Cond. **[PRL]** NotifyCued ***(est.)*** ),<br />( Cond. **[C]** Notification*.cuedCount* ***(acc.)*** ) |
+| Edit a comment<br />(Only allowed once,<br /> Editing results in losing<br />like / dislike data)🆕 | [C] commentComprehensive ***(put.)***,<br />[C] memberStatistics***.totalCommentEditCount (acc.)***,<br />( Cond. [PRL] Notice***.Cued (est.)*** ),<br />( Cond. [C] notificationStatistics***.cuedCount (acc.)*** ) |
 
 1. Look up comment management (status) in **[C] commentComprehensive**
 
@@ -1487,7 +1459,7 @@ Mostly same as ▶️Follow/Unfollow a member
 
 | Behaviour        | Affected tables / collections                                |
 | ---------------- | ------------------------------------------------------------ |
-| Delete a comment | **[C]** commentComprehensive ***(put.)***,<br />**[C]** memberStatistics***.totalCommentDeleteCount(acc.)*** |
+| Delete a comment | [C] commentComprehensive ***(put.)***,<br />[C] memberStatistics***.totalCommentDeleteCount (acc.)***<br />[C] postComprehensive***.totalCommentDeleteCount (acc.)***<br />[C] channelStatistics***.totalCommentDeleteCount(acc.)***<br />( Cond. [C] topicComprehensive***.totalCommentDeleteCount(acc.)*** ) |
 
 1. Update document (**content, status=-1/-3**) in **[C] commentComprehensive**
 
@@ -1502,25 +1474,25 @@ Mostly same as ▶️Follow/Unfollow a member
 
 | Behaviour                               | Affected tables / collections                                |
 | --------------------------------------- | ------------------------------------------------------------ |
-| Create a subcomment<br />(Cue a member) | **[C]** subcommentComprehensive ***(est.)***,<br />( Cond. **[PRL]** Notice***.Replied (est.)*** ),<br />( Cond. **[C]** notificationStatistics***.repliedCount (acc.)*** ),<br />( Cond. **[PRL]** Notice***.Cued (est.)*** ),<br />( Cond. **[C]** notificationStatistics***.cuedCount (acc.)*** ),<br />**[C]** memberStatistics***.totalCommentCount (acc.)***,<br />**[C]** postComprehensive***.totalCommentCount (acc.)***,<br />**[C]** topicComprehensive***.totalCommentCount (acc.)***,<br />**[C]** channelStatistics***.totalCommentCount (acc.)*** |
+| Create a subcomment<br />(Cue a member) | [C] subcommentComprehensive ***(est.)***,<br />( Cond. [PRL] Notice***.Replied (est.)*** ),<br />( Cond. [C] notificationStatistics***.repliedCount (acc.)*** ),<br />( Cond. [PRL] Notice***.Cued (est.)*** ),<br />( Cond. [C] notificationStatistics***.cuedCount (acc.)*** ),<br />[C] memberStatistics***.totalCommentCount (acc.)***,<br />[C] postComprehensive***.totalCommentCount (acc.)***,<br />[C] topicComprehensive***.totalCommentCount (acc.)***,<br />[C] channelStatistics***.totalCommentCount (acc.)*** |
 
 ### ▶️Edit a subcomment
 
 | Behaviour                                                    | Affected tables / collections                                |
 | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| Edit a subcomment<br />(Only allowed once,<br /> Editing results in losing<br />like / dislike data)🆕 | **[C]** subcommentComprehensive ***(put.)***,<br />**[C]** memberStatistics***.totalCommentEditCount (acc.)***,<br />( Cond. **[PRL]** NotifyCued ***(est.)*** ),<br />( Cond. **[C]** Notification*.cuedCount* ***(acc.)*** ) |
+| Edit a subcomment<br />(Only allowed once,<br /> Editing results in losing<br />like / dislike data)🆕 | [C] subcommentComprehensive ***(put.)***,<br />[C] memberStatistics***.totalCommentEditCount (acc.)***,<br />( Cond. [PRL] NotifyCued ***(est.)*** ),<br />( Cond. [C] Notification*.cuedCount* ***(acc.)*** ) |
 
-### ▶️Delete a comment/subcomment
+### ▶️Delete a subcomment
 
 | Behaviour           | Affected tables / collections                                |
 | ------------------- | ------------------------------------------------------------ |
-| Delete a subcomment | **[C]** subcommentComprehensive ***(put.)***,<br />**[C]** memberStatistics***.totalCommentDeleteCount (acc.)*** |
+| Delete a subcomment | [C] subcommentComprehensive ***(put.)***,<br />[C] memberStatistics***.totalCommentDeleteCount (acc.)*** |
 
 ### ▶️Pin a comment
 
-| Behaviour     | Affected tables / collections                          |
-| ------------- | ------------------------------------------------------ |
-| Pin a comment | **[C]** postComprehensive***.pinnedCommentId (put.)*** |
+| Behaviour     | Affected tables / collections                      |
+| ------------- | -------------------------------------------------- |
+| Pin a comment | [C] postComprehensive***.pinnedCommentId (put.)*** |
 
 ## 📦Attitude
 
@@ -1528,7 +1500,7 @@ Mostly same as ▶️Follow/Unfollow a member
 
 | Behaviour                                                 | Affected tables / collections                                |
 | --------------------------------------------------------- | ------------------------------------------------------------ |
-| Like /<br />Unlike /<br />Dislike /<br />Undislike a post | **[C]** postComprehensive***.totalLiked/DislikedCount (inc./dec.)***,<br />( Cond. **[PRL]** Notice***.Liked (est.)*** ),<br />( Cond. **[C]** notificationStatistics***.likedCount (acc.)*** ),<br />**[C]** attitudePostMapping ***(est./inc.)*** |
+| Like /<br />Unlike /<br />Dislike /<br />Undislike a post | [C] postComprehensive***.totalLiked/DislikedCount (inc./dec.)***,<br />( Cond. [PRL] Notice***.Liked (est.)*** ),<br />( Cond. [C] notificationStatistics***.likedCount (acc.)*** ),<br />[C] attitudePostMapping ***(est./inc.)*** |
 
 *\* [PRL] Notice is accumulate-only; editing, removing is prohibited*
 
@@ -1536,15 +1508,15 @@ Mostly same as ▶️Follow/Unfollow a member
 
 | Behaviour                                                    | Affected tables / collections                                |
 | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| Like /<br />Unlike /<br />Dislike /<br />Undislike a comment /<br />subcomment | **[C]** comment/subcommentComprehensive***.totalLiked/DislikedCount (inc./dec.)***,<br />( Cond. **[PRL]** Notice***.Liked(est.)*** ),<br />( Cond. **[C]** notificationStatistics***.likedCount (acc.)*** ),<br />**[C]** attitudePostMapping ***(est./inc.)*** |
+| Like /<br />Unlike /<br />Dislike /<br />Undislike a comment /<br />subcomment | [C] comment/subcommentComprehensive***.totalLiked/DislikedCount (inc./dec.)***,<br />( Cond. [PRL] Notice***.Liked(est.)*** ),<br />( Cond. [C] notificationStatistics***.likedCount (acc.)*** ),<br />[C] attitudePostMapping ***(est./inc.)*** |
 
 ## 📦Topic
 
-| Behaviour      | Affected tables / collections                                |
-| -------------- | ------------------------------------------------------------ |
-| Create a topic | **[C]** topicComprehensive ***(est.)***,<br />**[C]** channelStatistics***.totalTopicCount (acc.)*** |
-| Refer a topic  | See ▶️Create to a post                                        |
-| Search a topic | **[C]** topicComprehensive***.totalSearchCount (acc.)***     |
+| Behaviour      | Affected tables / collections                        |
+| -------------- | ---------------------------------------------------- |
+| Create a topic | See ▶️Create a post                                   |
+| Refer a topic  | See ▶️Create a post                                   |
+| Search a topic | [C] topicComprehensive***.totalSearchCount (acc.)*** |
 
 ## 📦Post
 
@@ -1552,38 +1524,42 @@ Mostly same as ▶️Follow/Unfollow a member
 
 | Behaviour   | Affected tables / collections                                |
 | ----------- | ------------------------------------------------------------ |
-| View a post | **[RL]** HistoryMapping ***(est.)***,<br />**[C]** postComprehensive***.totalHitCount (acc.)***,<br />**[C]** channelStatistics***.totalHitCount (acc.)***,<br />( Cond. **[C]** topicStatistics ***.totalHitCount (acc.)*** ) |
+| View a post | ( Cond. [RL] HistoryMapping ***(est./put.)*** ),<br />[C] memberStatistics***.totalCreationHitCount (acc.)***,<br />[C] postComprehensive***.totalHitCount (acc.)***,<br />[C] channelStatistics***.totalHitCount (acc.)***,<br />( Cond. [C] topicStatistics ***.totalHitCount (acc.)*** ) |
+
+1. Look up post status in **[C] postComprehensive**
 
 ### ▶️Create a post
 
 | Behaviour     | Affected tables / collections                                |
 | ------------- | ------------------------------------------------------------ |
-| Create a post | **[C]** postComprehensive,<br />**[C]** memberStatistics***.totalCreationCount (acc.)***,<br />**[C]** channelStatistics***.totalPostCount (acc.)***<br />( Cond. **[C]** topicComprehensive***.totalPostCount (acc.)*** ),<br />( Cond. **[PRL]** Notice***.Cued (est.)*** ),<br />( Cond. **[C]** notificationStatistics***.cuedCount (acc.)*** ) |
+| Create a post | [C] postComprehensive,<br />( Cond. [C] topicPostMapping ***(est.)*** )<br />( Cond. [C] topicComprehensive ***(est.)*** )<br />[C] memberStatistics***.totalCreationCount (acc.)***,<br />[C] channelStatistics***.totalPostCount (acc.)***<br />( Cond. [C] topicComprehensive***.totalPostCount (acc.)*** ),<br />( Cond. [PRL] Notice***.Cued (est.)*** ),<br />( Cond. [C] notificationStatistics***.cuedCount (acc.)*** ) |
 
 1. Insert a new document of ***IPostComprehensive*** in **[C] postComprehensive**
-2. Update document (**totalCreationCount**) in **[C] memberStatistics**
-3. Update document (**totalPostCount**) in **[C] channelStatistics**
-4. Skip (if post not belonged to any topics) or Update documents (**totalPostCount**) in **[C] topicComprehensive**
-5. Skip (if blocked by post author) or Create a new record of ***CuedNotice*** in **[PRL] Notice**
-6. Skip (if blocked by post author)  or Update document (**cuedCount**) in **[C] notificationStatistics**
+2. Skip (if this post not belonged to any topics) or Insert a new document of ***ITopicPostMapping*** in **[C] topicPostMapping**
+3. Skip (if this post belongs to no new topics) or Insert a new document of ***ITopicComprehensive***  in **[C] topicComprehensive**, Insert a new document of ***ITopicPostMapping*** in **[C] topicPostMapping**
+4. Update document (**totalCreationCount**) in **[C] memberStatistics**
+5. Update document (**totalPostCount**) in **[C] channelStatistics**
+6. Skip (if this post not belonged to any topics) or Update documents (**totalPostCount**) in **[C] topicComprehensive**
+7. Skip (if blocked by post author) or Create a new record of ***CuedNotice*** in **[PRL] Notice**
+8. Skip (if blocked by post author)  or Update document (**cuedCount**) in **[C] notificationStatistics**
 
 ### ▶️Edit a post
 
 | Behaviour   | Affected tables / collections                                |
 | ----------- | ------------------------------------------------------------ |
-| Edit a post | **[C]** postComprehensive,<br />**[C]** memberComprehensive***.totalCommentEditCount (acc.)***<br />( Cond. **[PRL]** Notice***.Cued (est.)*** ),<br />( Cond. **[C]** notificationStatistics***.cuedCount (acc.)*** ) |
+| Edit a post | [C] postComprehensive,<br />[C] memberComprehensive***.totalCommentEditCount (acc.)***<br />( Cond. [PRL] Notice***.Cued (est.)*** ),<br />( Cond. [C] notificationStatistics***.cuedCount (acc.)*** ) |
 
 ### ▶️Delete a post
 
 | Behaviour     | Affected tables / collections                                |
 | ------------- | ------------------------------------------------------------ |
-| Delete a post | **[C]** postComprehensive,<br />**[C]** memberComprehensive***.totalCreationDeleteCount (acc.)*** |
+| Delete a post | [C] postComprehensive***.status (put.)***,<br />[C] memberStatistics***.totalCreationDeleteCount (acc.)***,<br />[C] channelStatistics***.totalPostDeleteCount (acc.)***,<br />( Cond. [C] topicComprehensive***.totalCreationDeleteCount (acc.)*** ),<br />( Cond. [C] topicPostMapping***.status (put.)***) |
 
 ### ▶️Save a post
 
 | Behaviour   | Affected tables / collections                                |
 | ----------- | ------------------------------------------------------------ |
-| Save a post | **[RL]** SavedMapping,<br />( Cond. **[PRL]** Notice***.Saved (est.)*** ),<br />( Cond. **[C]** notificationStatistics***.savedCount (acc.)*** ),<br />**[C]** memberStatistics***.totalSavedCount(acc.)***,<br />**[C]** postComprehensive***.totalSavedCount(acc.)***,<br />**[C]** topicComprehensive***.totalSavedCount(acc.)***,<br />**[C]** channelStatistics***.totalSavedCount (acc.)*** |
+| Save a post | [RL] SavedMapping,<br />( Cond. [PRL] Notice***.Saved (est.)*** ),<br />( Cond. [C] notificationStatistics***.savedCount (acc.)*** ),<br />[C] memberStatistics***.totalSavedCount(acc.)***,<br />[C] postComprehensive***.totalSavedCount(acc.)***,<br />[C] channelStatistics***.totalSavedCount (acc.)***<br />[C] topicComprehensive***.totalSavedCount(acc.)*** |
 
 
 

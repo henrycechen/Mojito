@@ -275,7 +275,7 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
         }
         if ('resendemail' === processStates.processInProgress) {
             const { providerId, emailAddressB64 } = router.query;
-            const resp = await fetch(`/api/member/behaviour/signup/request?recaptchaResponse=${processStates.recaptchaResponse}`, {
+            const resp = await fetch(`/api/member/signup/request?recaptchaResponse=${processStates.recaptchaResponse}`, {
                 method: 'POST',
                 body: JSON.stringify({
                     providerId,

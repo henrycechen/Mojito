@@ -114,14 +114,14 @@ export function getParagraphsArrayFromRequestBody(requestBody: any): string[] {
 }
 
 //////// Topic ////////
-export function getTopicIdsArrayFromRequestBody(requestBody: any): string[] {
+export function getTopicBase64StringsArrayFromRequestBody(requestBody: any): string[] {
     if ('object' !== typeof requestBody) {
         return [];
     }
-    if (!(undefined !== requestBody['topicIdsArr'] && Array.isArray(requestBody['topicIdsArr']))) {
+    if (!(undefined !== requestBody['topicsArr'] && Array.isArray(requestBody['topicsArr']))) {
         return [];
     }
-    return [...requestBody['topicIdsArr']];
+    return requestBody['topicsArr'].map(topicContent => Buffer.from(topicContent).toString('base64'));
 }
 
 //////// Utilize local storage ////////

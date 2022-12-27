@@ -77,7 +77,7 @@ export default async function CommentInfoIndex(req: NextApiRequest, res: NextApi
                 }
             });
         }
-        //// DELETE /// delete comment ////
+        //// DELETE | delete comment ////
         if ('DELETE' === method) {
             // Step # [T] PostCommentMappingComprehensive
             await commentComprehensiveCollectionClient.updateOne({ postId, commentId }, {

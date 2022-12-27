@@ -156,7 +156,8 @@ const Home = () => {
         getPosts();
     }, [processStates])
     const getPosts = async () => {
-        const resp = await fetch(`/api/post?ranking=${processStates.selectedHotPosts ? 'hotest' : 'newest'}`);
+        //// TODO: test api '/post' moved to '/post/of' //// 
+        const resp = await fetch(`/api/post/of?ranking=${processStates.selectedHotPosts ? 'hotest' : 'newest'}`);
         const _postList = await resp.json();
         setPostList(_postList);
     }

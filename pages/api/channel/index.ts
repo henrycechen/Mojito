@@ -30,7 +30,7 @@ export default async function GetIndex(req: NextApiRequest, res: NextApiResponse
         if (e instanceof SyntaxError) {
             msg = `Was trying parse post channel index string.`;
         } else if (e instanceof RestError) {
-            msg = `Was trying communicating with azure table storage.`;
+            msg = 'Was trying communicating with azure table storage.';
         }
         else {
             msg = `Uncategorized. ${e?.msg}`;

@@ -188,7 +188,7 @@ const SignUp = ({ providers }: any) => {
             return;
         }
         if ('' !== signInCredentialStates.emailAddress && '' !== signInCredentialStates.password) {
-            const resp = await fetch(`/api/member/behaviour/signup?recaptchaResponse=${processStates.recaptchaResponse}`, {
+            const resp = await fetch(`/api/member/signup?recaptchaResponse=${processStates.recaptchaResponse}`, {
                 method: 'POST',
                 body: JSON.stringify({
                     emailAddress: signInCredentialStates.emailAddress,

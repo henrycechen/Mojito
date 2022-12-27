@@ -1,8 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getToken } from "next-auth/jwt"
 
-import { MemberInfo } from '../../../../../lib/types';
-import { response405, response500 } from '../../../../../lib/utils';
+import { MemberInfo } from '../../../../lib/types';
+import { response405, response500 } from '../../../../lib/utils';
 
 
 export default async function Follow(req: NextApiRequest, res: NextApiResponse) {

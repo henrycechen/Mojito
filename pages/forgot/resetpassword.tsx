@@ -131,7 +131,7 @@ const ResetPassword = () => {
         }
         if ('' === processStates.resetPasswordToken) {
             // Post to verify reset password token
-            const resp = await fetch(`/api/member/behaviour/resetpassword/verify?requestInfo=${requestInfo}&recaptchaResponse=${processStates.recaptchaResponse}`);
+            const resp = await fetch(`/api/member/resetpassword/verify?requestInfo=${requestInfo}&recaptchaResponse=${processStates.recaptchaResponse}`);
             if (200 === resp.status) {
                 recaptcha?.reset();
                 const { emailAddress, resetPasswordToken } = await resp.json();
@@ -142,7 +142,7 @@ const ResetPassword = () => {
             }
         } else {
             // Post reset password form
-            const resp = await fetch(`/api/member/behaviour/resetpassword?recaptchaResponse=${processStates.recaptchaResponse}`, {
+            const resp = await fetch(`/api/member/resetpassword?recaptchaResponse=${processStates.recaptchaResponse}`, {
                 method: 'POST',
                 body: JSON.stringify({
                     emailAddress: processStates.emailAddress,

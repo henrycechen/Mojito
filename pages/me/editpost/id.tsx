@@ -303,6 +303,7 @@ const EditPost = () => {
             imageUrlArr: []
         }
         try {
+            //// TODO: update required as new api rules appied
             const resp = await axios.post('/api/post/create', post);
             const { data: postId } = resp;
             if ('string' === typeof postId && '' !== postId) {

@@ -103,7 +103,7 @@ export default NextAuth({
             if (!Object.keys(loginProviderIdMapping).includes(provider)) {
                 return '/signin?error=UnrecognizedProvider';
             }
-            const providerId = loginProviderIdMapping[provider];
+            const providerId: string = loginProviderIdMapping[provider];
             //// Declare DB client ////
             const atlasDbClient = AtlasDatabaseClient();
             //// [1] Login with Mojito member system ////

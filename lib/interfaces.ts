@@ -186,7 +186,24 @@ export interface IChannelStatistics extends IAtlasCollectionDocument {
 
 // [C] topicComprehensive
 export interface ITopicComprehensive extends IAtlasCollectionDocument {
+    topicId: string; // base64 string from topic content string
+    channelId: string;
+    createdTime: number; // create time of this document (topic est.)
+    status: number;
+    totalPostCount: number;
+    totalHitCount: number; // total hit count of total posts of this topic
+    totalCommentCount: number;
+    totalSavedCount: number;
+    totalSearchCount: number;
+}
 
+// [C] topicPostMapping
+export interface ITopicPostMapping extends IAtlasCollectionDocument {
+    topicId: string;
+    postId: string;
+    channelId: string;
+    createdTime: number; // created time of this document (post est. time)
+    status: number;
 }
 
 // [C] postComprehensive

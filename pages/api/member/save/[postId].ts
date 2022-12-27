@@ -5,10 +5,13 @@ import { MemberInfo } from '../../../../lib/types';
 import { response405, response500 } from '../../../../lib/utils';
 
 
-export default async function Save(req: NextApiRequest, res: NextApiResponse) {
+export default async function SavePost(req: NextApiRequest, res: NextApiResponse) {
     const { method } = req;
-    // GET - Follow request
-    // PUT - Unfollow request
+    
+    
+    // POST | save post
+
+
     // req.query.id - following member id
     if ('POST' !== method) {
         response405(req, res);

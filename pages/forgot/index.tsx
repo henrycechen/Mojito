@@ -91,7 +91,7 @@ const Forgot = () => {
             return;
         }
         if ('' !== emailAddress) {
-            const resp = await fetch(`/api/member/behaviour/resetpassword/request?emailAddress=${emailAddress}&recaptchaResponse=${processStates.recaptchaResponse}`, { method: 'POST' });
+            const resp = await fetch(`/api/member/resetpassword/request?emailAddress=${emailAddress}&recaptchaResponse=${processStates.recaptchaResponse}`, { method: 'POST' });
             if (200 === resp.status) {
                 setProcessStates({
                     ...processStates,
