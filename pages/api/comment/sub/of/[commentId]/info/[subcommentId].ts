@@ -4,7 +4,7 @@ import { getToken } from "next-auth/jwt"
 import { MemberInfo } from '../../../../../../../lib/types';
 import { response405, response500 } from '../../../../../../../lib/utils';
 
-export default async function SubcommentInfoIndex(req: NextApiRequest, res: NextApiResponse) {
+export default async function SubcommentInfo(req: NextApiRequest, res: NextApiResponse) {
     const { method } = req;
     if (!['GET', 'POST', 'PUT', 'DELETE'].includes(method ?? '')) {
         response405(req, res);

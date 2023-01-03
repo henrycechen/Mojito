@@ -4,11 +4,11 @@ import { RestError } from '@azure/data-tables';
 import { MongoError } from 'mongodb';
 import CryptoJS from 'crypto-js';
 
-import AzureTableClient from '../../../../../modules/AzureTableClient';
-import AtlasDatabaseClient from '../../../../../modules/AtlasDatabaseClient';
+import AzureTableClient from '../../../../modules/AzureTableClient';
+import AtlasDatabaseClient from '../../../../modules/AtlasDatabaseClient';
 
-import { verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500, log, verifyEmailAddress } from '../../../../../lib/utils';
-import { IMojitoMemberSystemLoginCredentials, ILoginJournal } from '../../../../../lib/interfaces';
+import { verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500, log, verifyEmailAddress } from '../../../../lib/utils';
+import { IMojitoMemberSystemLoginCredentials, ILoginJournal } from '../../../../lib/interfaces';
 
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
 const salt = process.env.APP_PASSWORD_SALT ?? '';
@@ -91,9 +91,9 @@ export default async function ResetPassword(req: NextApiRequest, res: NextApiRes
         }
         // Step #4 update enitity (ILoginCredentials) in [RL] Credentials
         await credentialsTableClient.upsertEntity<IMojitoMemberSystemLoginCredentials>({ partitionKey: emailAddressHash, rowKey: 'MojitoMemberSystem', PasswordHash: CryptoJS.SHA256(password + salt).toString(), MemberId: memberId }, 'Merge');
-        //// Response 200 ////
         res.status(200).send('Password upserted');
         // Step #5 write journal (ILoginJournal) in [C] loginJournal
+        await atlasDbClient.connect();
         const loginJournalCollectionClient = atlasDbClient.db('journal').collection<ILoginJournal>('login');
         await loginJournalCollectionClient.insertOne({
             memberId,
@@ -119,7 +119,6 @@ export default async function ResetPassword(req: NextApiRequest, res: NextApiRes
             response500(res, msg);
         }
         log(msg, e);
-        atlasDbClient
         await atlasDbClient.close();
         return;
     }

@@ -6,9 +6,9 @@ import { getToken } from 'next-auth/jwt';
 import AzureTableClient from '../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from '../../../../modules/AtlasDatabaseClient';
 
-import { INoticeInfo, INotificationStatistics, IMemberStatistics, IChannelStatistics, ITopicComprehensive, IPostComprehensive, ITopicPostMapping } from '../../../../lib/interfaces';
+import { INoticeInfo, INotificationStatistics, IMemberStatistics, IChannelStatistics, ITopicComprehensive, ITopicPostMapping, IPostComprehensive } from '../../../../lib/interfaces';
 import { ChannelInfo } from '../../../../lib/types';
-import { getRandomIdStr, getRandomIdStrL, getNicknameFromToken, getImageUrlsArrayFromRequestBody, getParagraphsArrayFromRequestBody, verifyUrl, response405, response500, log, getTopicBase64StringsArrayFromRequestBody } from '../../../../lib/utils';
+import { getRandomIdStr, getRandomIdStrL, getNicknameFromToken,getTopicBase64StringsArrayFromRequestBody, getImageUrlsArrayFromRequestBody, getParagraphsArrayFromRequestBody, verifyUrl, response405, response500, log } from '../../../../lib/utils';
 
 const domain = process.env.NEXT_PUBLIC_APP_DOMAIN;
 
@@ -16,6 +16,7 @@ const domain = process.env.NEXT_PUBLIC_APP_DOMAIN;
 // Use 'api/post/info/[postId]' to GET comment info
 //
 // Post info required:
+// - token: JWT
 // - title
 // - channelId
 //
@@ -34,7 +35,7 @@ export default async function CreatePost(req: NextApiRequest, res: NextApiRespon
     //// Verify post title ////
     const { title } = req.body;
     if (!('string' === typeof title && '' !== title)) {
-        res.status(400).send('Improper post title');
+        res.status(400).send('Improper or blank post title');
         return;
     }
     ////Verify channel id ////
@@ -47,10 +48,7 @@ export default async function CreatePost(req: NextApiRequest, res: NextApiRespon
     try {
         channelDict = await fetch(`${domain}/api/channel/dictionary`).then(resp => resp.json()).catch(e => { throw e });
     } catch (e) {
-        let msg = `Was trying retrieving channel dictionary.`;
-        response500(res, msg);
-        log(msg, e);
-        return;
+        throw new Error(`Was trying retrieving channel dictionary.`);
     }
     if (!Object.hasOwn(channelDict, channelId)) {
         res.status(400).send('Channel id not found');
@@ -59,7 +57,7 @@ export default async function CreatePost(req: NextApiRequest, res: NextApiRespon
     //// Declare DB client ////
     const atlasDbClient = AtlasDatabaseClient();
     try {
-        atlasDbClient.connect();
+        await atlasDbClient.connect();
 
         //// Check member status ////
 
@@ -69,13 +67,12 @@ export default async function CreatePost(req: NextApiRequest, res: NextApiRespon
         const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberStatistics>('member');
         const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne<IMemberStatistics>({ memberId });
         if (null === memberComprehensiveQueryResult) {
-            res.status(500).send('Member not found');
-            log(`Member was tring creating comment (member id: ${memberId}) but have no document (of IMemberComprehensive) in [C] memberComprehensive`);
-            return;
+            throw new Error(`Member was trying creating comment but have no document (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
         }
         const { status: memberStatus, allowCommenting } = memberComprehensiveQueryResult;
         if (!(0 < memberStatus && allowCommenting)) {
             res.status(403).send('Creating posts is not allowed for this member');
+            await atlasDbClient.close();
             return;
         }
 
@@ -88,6 +85,7 @@ export default async function CreatePost(req: NextApiRequest, res: NextApiRespon
         // Step #2.3 insert document (of IPostComprehensive) in [C] postComprehensive
         const postComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IPostComprehensive>('post');
         const postComprehensiveInsertResult = await postComprehensiveCollectionClient.insertOne({
+            //// info ////
             postId,
             memberId,
             createdTime: new Date().getTime(),
@@ -97,21 +95,25 @@ export default async function CreatePost(req: NextApiRequest, res: NextApiRespon
             channelId, // required
             topicIdsArr,
             pinnedCommentId: null,
-            edited: null,
+            //// management ////
             status: 200,
+            //// statistics ////
             totalHitCount: 0,
             totalLikedCount: 0,
             totalDislikedCount: 0,
             totalCommentCount: 0,
-            totalSavedCount: 0
+            totalCommentDeleteCount: 0,
+            totalSavedCount: 0,
+            totalUnsavedCount: 0,
+            totalEditCount: 0,
+            //// edite record ////
+            edited: []
         });
         if (!postComprehensiveInsertResult.acknowledged) {
-            log(`Failed to insert document (of IPostComprehensive, member id: ${memberId}) in [C] postComprehensive`);
-            res.status(500).send('Failed to create post');
-            return;
-        } else {
-            res.status(200).send(postId);
+            throw new Error(`Failed to insert document (of IPostComprehensive, member id: ${memberId}) in [C] postComprehensive`);
         }
+        res.status(200).send(postId);
+
 
         //// Update statistics ////
 
@@ -148,13 +150,15 @@ export default async function CreatePost(req: NextApiRequest, res: NextApiRespon
                         channelId,
                         createdTime: new Date().getTime(), // create time of this document (topic est.)
                         status: 200,
-                        totalPostCount: 1, // this post
                         totalHitCount: 1,
+                        totalPostCount: 1, // this post
+                        totalPostDeleteCount: 0,
                         totalCommentCount: 0,
+                        totalCommentDeleteCount: 0,
                         totalSavedCount: 0,
                         totalSearchCount: 0
                     },
-                    //// [!] update document if found ////
+                    //// [!] update total post count (of ItopicComprehensive) if found ////
                     $inc: {
                         totalPostCount: 1
                     }

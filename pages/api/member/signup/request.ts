@@ -3,15 +3,15 @@ import { RestError } from '@azure/data-tables';
 import { MongoError } from 'mongodb';
 import CryptoJS from 'crypto-js';
 
-import AzureTableClient from '../../../../../modules/AzureTableClient';
-import AzureEmailCommunicationClient from '../../../../../modules/AzureEmailCommunicationClient';
-import AtlasDatabaseClient from '../../../../../modules/AtlasDatabaseClient';
+import AzureTableClient from '../../../../modules/AzureTableClient';
+import AzureEmailCommunicationClient from '../../../../modules/AzureEmailCommunicationClient';
+import AtlasDatabaseClient from '../../../../modules/AtlasDatabaseClient';
 
-import { IVerifyEmailAddressCredentials, IMemberComprehensive } from '../../../../../lib/interfaces';
-import { LangConfigs, EmailMessage, VerifyEmailAddressRequestInfo } from '../../../../../lib/types';
-import { getRandomHexStr, verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500, log } from '../../../../../lib/utils';
-import { composeVerifyEmailAddressEmailContent } from '../../../../../lib/email';
-import { loginProviderIdMapping } from '../../../auth/[...nextauth]';
+import { IVerifyEmailAddressCredentials, IMemberComprehensive } from '../../../../lib/interfaces';
+import { LangConfigs, EmailMessage, VerifyEmailAddressRequestInfo } from '../../../../lib/types';
+import { getRandomHexStr, verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500, log } from '../../../../lib/utils';
+import { composeVerifyEmailAddressEmailContent } from '../../../../lib/email';
+import { loginProviderIdMapping } from '../../auth/[...nextauth]';
 
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
 
@@ -118,6 +118,7 @@ export default async function RequestVerificationEmail(req: NextApiRequest, res:
         // Step #4.2 verify member status
         if (0 !== status) {
             res.status(409).send('Request for re-send verification email cannot be fulfilled');
+            await atlasDbClient.close();
             return;
         }
         // Step #3.4 create a new email address verification token
@@ -142,7 +143,18 @@ export default async function RequestVerificationEmail(req: NextApiRequest, res:
         const mailClient = AzureEmailCommunicationClient();
         await mailClient.send(emailMessage);
     } catch (e: any) {
-        
+        let msg;
+        if (e instanceof RestError) {
+            msg = 'Was trying communicating with azure table storage.';
+        } else if (e instanceof MongoError) {
+            msg = 'Was trying communicating with atlas mongodb.';
+        } else {
+            msg = `Uncategorized. ${e?.msg}`;
+        }
+        if (!res.headersSent) {
+            response500(res, msg);
+        }
+        log(msg, e);
         await atlasDbClient.close();
         return;
     }

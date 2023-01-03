@@ -1,4 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { ICommentComprehensive, IPostComprehensive, IRestrictedCommentComprehensive, IRestrictedPostComprehensive, ISubcommentComprehensive, IRestrictedSubommentComprehensive } from './interfaces';
 import { ProcessStates } from './types';
 
 //////// Create random string ////////
@@ -92,6 +93,74 @@ export function getContentBrief(content: any, length = 21): string {
     return content;
 }
 
+//////// Comment ////////
+export function getRestrictedFromCommentComprehensive(commentComprehensive: ICommentComprehensive): IRestrictedCommentComprehensive {
+    const { status } = commentComprehensive;
+    if ('number' === typeof status && 0 > status) {
+        return {
+            commentId: commentComprehensive.commentId, // 16 characters, UPPERCASE
+            postId: commentComprehensive.postId,
+            memberId: commentComprehensive.memberId,
+            createdTime: commentComprehensive.createdTime, // created time of this document (comment est.)
+            content: null,
+            status: status,
+            totalLikedCount: commentComprehensive.totalLikedCount,
+            totalDislikedCount: commentComprehensive.totalDislikedCount,
+            totalSubcommentCount: commentComprehensive.totalSubcommentCount,
+            editedTime: null
+        }
+    }
+    const restricted: IRestrictedCommentComprehensive = { ...commentComprehensive, editedTime: null };
+    delete restricted['edited'];
+    if ('number' === typeof status && 1 === status % 100) {
+        const { edited } = commentComprehensive;
+        if (Array.isArray(edited) && edited.length !== 0) {
+            const lastEdit = edited[edited.length - 1];
+            restricted.editedTime = lastEdit.editedTime;
+        }
+    }
+    return restricted;
+}
+
+//////// Subcomment ////////
+export function getRestrictedFromSubommentComprehensive(subcommentComprehensive: ISubcommentComprehensive): IRestrictedSubommentComprehensive {
+    const { status } = subcommentComprehensive;
+    if ('number' === typeof status && 0 > status) {
+        return {
+            subcommentId: subcommentComprehensive.subcommentId, // 16 characters, UPPERCASE
+            commentId: subcommentComprehensive.commentId, // 16 characters, UPPERCASE
+            memberId: subcommentComprehensive.memberId,
+            createdTime: subcommentComprehensive.createdTime, // created time of this document (comment est.)
+            content: null,
+            status: status,
+            totalLikedCount: subcommentComprehensive.totalLikedCount,
+            totalDislikedCount: subcommentComprehensive.totalDislikedCount,
+            editedTime: null
+        }
+    }
+    const restricted: IRestrictedSubommentComprehensive = { ...subcommentComprehensive, editedTime: null };
+    delete restricted['edited'];
+    if ('number' === typeof status && 1 === status % 100) {
+        const { edited } = subcommentComprehensive;
+        if (Array.isArray(edited) && edited.length !== 0) {
+            const lastEdit = edited[edited.length - 1];
+            restricted.editedTime = lastEdit.editedTime;
+        }
+    }
+    return restricted;
+}
+
+//////// Topic ////////
+export function getTopicBase64StringsArrayFromRequestBody(requestBody: any): string[] {
+    if ('object' !== typeof requestBody) {
+        return [];
+    }
+    if (!(undefined !== requestBody['topicsArr'] && Array.isArray(requestBody['topicsArr']))) {
+        return [];
+    }
+    return requestBody['topicsArr'].map(topicContent => Buffer.from(topicContent).toString('base64'));
+}
+
 //////// Post ////////
 export function getImageUrlsArrayFromRequestBody(requestBody: any): string[] {
     if ('object' !== typeof requestBody) {
@@ -113,16 +182,41 @@ export function getParagraphsArrayFromRequestBody(requestBody: any): string[] {
     return [...requestBody['paragraphsArr']];
 }
 
-//////// Topic ////////
-export function getTopicBase64StringsArrayFromRequestBody(requestBody: any): string[] {
-    if ('object' !== typeof requestBody) {
-        return [];
+export function getRestrictedFromPostComprehensive(postComprehensive: IPostComprehensive): IRestrictedPostComprehensive {
+    const { status } = postComprehensive;
+    if ('number' === typeof status && 0 > status) {
+        return {
+            postId: postComprehensive.postId,
+            memberId: postComprehensive.memberId,
+            createdTime: postComprehensive.createdTime,
+            title: null,
+            imageUrlsArr: [],
+            paragraphsArr: [],
+            channelId: postComprehensive.channelId,
+            topicIdsArr: [],
+            pinnedCommentId: null,
+            status: status,
+            totalHitCount: postComprehensive.totalHitCount,
+            totalLikedCount: postComprehensive.totalLikedCount,
+            totalDislikedCount: postComprehensive.totalDislikedCount,
+            totalCommentCount: postComprehensive.totalCommentCount,
+            totalSavedCount: postComprehensive.totalSavedCount,
+            editedTime: null
+        }
     }
-    if (!(undefined !== requestBody['topicsArr'] && Array.isArray(requestBody['topicsArr']))) {
-        return [];
+    const restricted: IRestrictedPostComprehensive = { ...postComprehensive, editedTime: null };
+    delete restricted['edited'];
+    if ('number' === typeof status && 1 === status % 100) {
+        const { edited } = postComprehensive;
+        if (Array.isArray(edited) && edited.length !== 0) {
+            const lastEdit = edited[edited.length - 1];
+            restricted.editedTime = lastEdit.editedTime;
+        }
     }
-    return requestBody['topicsArr'].map(topicContent => Buffer.from(topicContent).toString('base64'));
+    return restricted;
 }
+
+
 
 //////// Utilize local storage ////////
 export function updateLocalStorage(storageName: string) {

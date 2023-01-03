@@ -43,11 +43,6 @@ export interface IResetPasswordCredentials extends ICredentials {
     ResetPasswordToken: string;
 }
 
-export interface IMemberMapping extends IAzureTableEntity {
-    partitionKey: string; // member id (subject)
-    rowKey: string; // member id (object)
-}
-
 // [PRL] Notice
 export interface INoticeInfo extends IAzureTableEntity {
     partitionKey: string; // notified member id
@@ -59,6 +54,13 @@ export interface INoticeInfo extends IAzureTableEntity {
     PostTitle?: string;
     CommentId?: string;
     CommentBrief?: string;
+}
+
+// [RL] HistoryMapping
+export interface IMemberPostMapping extends IAzureTableEntity {
+    partitionKey: string; // member id
+    rowKey: string; // post id
+    IsActive: boolean;
 }
 
 //////// Atlas Collection Entity ////////
@@ -117,6 +119,7 @@ export interface IMemberStatistics extends IAtlasCollectionDocument {
     totalCreationLikedCount: number; // info page required
     totalCreationDislikedCount: number;
     totalSavedCount: number;
+    totalUnsavedCount: number;
     totalCommentLikedCount: number;
     totalCommentDislikedCount: number;
     totalFollowedByCount: number; // info page required
@@ -146,16 +149,25 @@ export interface IAttitudePostMapping extends IAtlasCollectionDocument {
 
 // [C] commentComprehensive
 export interface ICommentComprehensive extends IAtlasCollectionDocument {
+    //// info ////
     commentId: string; // 16 characters, UPPERCASE
     postId: string;
     memberId: string;
     createdTime: number; // created time of this document (comment est.)
     content: string;
+
+    //// management ////
     status: number;
-    edited: IEditedCommentComprehensive | null;
+
+    //// statistics ////
     totalLikedCount: number;
     totalDislikedCount: number;
     totalSubcommentCount: number;
+    totalSubcommentDeleteCount: number;
+    totalEditCount: number;
+
+    //// edit record ////
+    edited: IEditedCommentComprehensive[];
 }
 
 export interface IEditedCommentComprehensive extends IAtlasCollectionDocument {
@@ -166,6 +178,26 @@ export interface IEditedCommentComprehensive extends IAtlasCollectionDocument {
     totalSubcommentCountBeforeEdit?: number;
 }
 
+export interface IRestrictedCommentComprehensive extends IAtlasCollectionDocument {
+    //// info ////
+    commentId: string; // 16 characters, UPPERCASE
+    postId: string;
+    memberId: string;
+    createdTime: number; // created time of this document (comment est.)
+    content: string|null;
+
+    //// management ////
+    status: number;
+
+    //// statistics ////
+    totalLikedCount: number;
+    totalDislikedCount: number;
+    totalSubcommentCount: number;
+
+    //// edit record ////
+    editedTime: number | null;
+}
+
 // [C] subcommentComprehensive
 export interface ISubcommentComprehensive extends IAtlasCollectionDocument {
     subcommentId: string; // 16 characters, UPPERCASE
@@ -174,9 +206,29 @@ export interface ISubcommentComprehensive extends IAtlasCollectionDocument {
     createdTime: number; // created time of this document (subcomment est.)
     content: string;
     status: number;
-    edited: IEditedCommentComprehensive | null;
+    edited: IEditedCommentComprehensive[];
+    totalEditCount: number;
     totalLikedCount: number;
     totalDislikedCount: number;
+}
+
+export interface IRestrictedSubommentComprehensive extends IAtlasCollectionDocument {
+    //// info ////
+    subcommentId: string; // 16 characters, UPPERCASE
+    commentId: string; // 16 characters, UPPERCASE
+    memberId: string;
+    createdTime: number; // created time of this document (comment est.)
+    content: string|null;
+
+    //// management ////
+    status: number;
+
+    //// statistics ////
+    totalLikedCount: number;
+    totalDislikedCount: number;
+
+    //// edit record ////
+    editedTime: number | null;
 }
 
 // [C] channelStatistics
@@ -190,11 +242,14 @@ export interface ITopicComprehensive extends IAtlasCollectionDocument {
     channelId: string;
     createdTime: number; // create time of this document (topic est.)
     status: number;
-    totalPostCount: number;
     totalHitCount: number; // total hit count of total posts of this topic
-    totalCommentCount: number;
-    totalSavedCount: number;
     totalSearchCount: number;
+    totalPostCount: number;
+    totalPostDeleteCount: number;
+    totalCommentCount: number;
+    totalCommentDeleteCount: number;
+    totalSavedCount: number;
+    totalUnsavedCount: number;
 }
 
 // [C] topicPostMapping
@@ -208,6 +263,7 @@ export interface ITopicPostMapping extends IAtlasCollectionDocument {
 
 // [C] postComprehensive
 export interface IPostComprehensive extends IAtlasCollectionDocument {
+    //// info ////
     postId: string; // 10 characters, UPPERCASE
     memberId: string;
     createdTime: number; // created time of this document (post est.)
@@ -217,22 +273,57 @@ export interface IPostComprehensive extends IAtlasCollectionDocument {
     channelId: string;
     topicIdsArr: string[];
     pinnedCommentId: string | null;
-    edited: IEditedPostComprehensive | null;
+
+    //// management ////
     status: number;
+
+    //// statistics ////
+    totalHitCount: number; // viewed times accumulator
+    totalLikedCount: number;
+    totalDislikedCount: number;
+    totalCommentCount: number;
+    totalCommentDeleteCount: number;
+    totalSavedCount: number;
+    totalUnsavedCount: number;
+    totalEditCount: number;
+
+    //// edit record ////
+    edited: IEditedPostComprehensive[];
+}
+
+export interface IEditedPostComprehensive extends IAtlasCollectionDocument {
+    editedTime: number;
+    titleBeforeEdited: string;
+    imageUrlsArrBeforeEdited: string[];
+    paragraphsArrBeforeEdited: string[];
+    channelIdBeforeEdited: string;
+    topicIdsArrBeforeEdited: string[];
+    totalLikedCountBeforeEdit: number;
+    totalDislikedCountBeforeEdit: number;
+}
+
+export interface IRestrictedPostComprehensive extends IAtlasCollectionDocument {
+    //// info ////
+    postId: string; // 10 characters, UPPERCASE
+    memberId: string;
+    createdTime: number; // created time of this document (post est.)
+    title: string | null;
+    imageUrlsArr: string[];
+    paragraphsArr: string[];
+    channelId: string;
+    topicIdsArr: string[];
+    pinnedCommentId: string | null;
+
+    //// management ////
+    status: number;
+
+    //// statistics ////
     totalHitCount: number; // viewed times accumulator
     totalLikedCount: number;
     totalDislikedCount: number;
     totalCommentCount: number;
     totalSavedCount: number;
-}
 
-export interface IEditedPostComprehensive extends IAtlasCollectionDocument {
-    editedTime: number;
-    title: string;
-    imageUrlsArr: string[];
-    paragraphsArr: string[];
-    channelId: string;
-    topicIdsArr: string[];
-    likedCountBeforeEdit: number;
-    dislikedCountBeforeEdit: number;
+    //// edit record ////
+    editedTime: number | null;
 }

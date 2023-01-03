@@ -3,11 +3,11 @@ import { RestError } from '@azure/data-tables';
 import { MongoError } from 'mongodb';
 import CryptoJS from 'crypto-js';
 
-import AzureTableClient from '../../../../../modules/AzureTableClient';
-import AtlasDatabaseClient from '../../../../../modules/AtlasDatabaseClient';
+import AzureTableClient from '../../../../modules/AzureTableClient';
+import AtlasDatabaseClient from '../../../../modules/AtlasDatabaseClient';
 
-import { verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500, log, verifyEmailAddress } from '../../../../../lib/utils';
-import { INotificationStatistics, IMemberComprehensive, IMemberStatistics, ILoginJournal } from '../../../../../lib/interfaces';
+import { verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500, log, verifyEmailAddress } from '../../../../lib/utils';
+import { INotificationStatistics, IMemberComprehensive, IMemberStatistics, ILoginJournal } from '../../../../lib/interfaces';
 
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
 
@@ -93,22 +93,17 @@ export default async function VerifyToken(req: NextApiRequest, res: NextApiRespo
         const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne<IMemberComprehensive>({ memberId, providerId });
         if (null === memberComprehensiveQueryResult) {
             //// [!] document not found ////
-            const msg = 'Member management (document of IMemberComprehensive) not found in [C] memberComprehensive';
-            response500(res, msg);
-            log(msg);
-            return;
+            throw new Error(`Member management (document of IMemberComprehensive, member id: ${memberId}) not found in [C] memberComprehensive`);
         }
         const { status } = memberComprehensiveQueryResult;
         if ('number' !== typeof status) {
             //// [!] member status (property of IMemberComprehensive) not found or status (code) error ////
-            const msg = 'Member status (property of IMemberComprehensive) error in [C] memberComprehensive';
-            response500(res, msg)
-            log(msg);
-            return;
+            throw new Error(`Member status (of IMemberComprehensive, member id: ${memberId}) error in [C] memberComprehensive`);
         }
         // Step #4.5 verify member status
         if (0 !== status) {
             res.status(409).send('Request for activating member cannot be fulfilled');
+            await atlasDbClient.close();
             return;
         }
         // Step #5 update status code (IMemberComprehensive) in [C] memberComprehensive
@@ -124,10 +119,7 @@ export default async function VerifyToken(req: NextApiRequest, res: NextApiRespo
             }
         }, { upsert: true });
         if (!memberComprehensiveCollectionUpdateResult.acknowledged) {
-            const msg = `Was trying updating document (IMemberComprehensive) in [C] memberComprehensive for member id: ${memberId}`;
-            response500(res, msg);
-            log(msg);
-            return;
+            throw new Error(`Was trying updating document (IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
         }
         // Step #6 insert document (IMemberStatistics) in [C] memberStatistics
         const memberStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IMemberStatistics>('member');
@@ -157,10 +149,7 @@ export default async function VerifyToken(req: NextApiRequest, res: NextApiRespo
             totalFollowedByCount: 0, // info page required
         });
         if (!memberStatisticsCollectionInsertResult.acknowledged) {
-            const msg = `Was trying inserting document (IMemberStatistics) in [C] memberStatistics for member id: ${memberId}`;
-            response500(res, msg);
-            log(msg);
-            return;
+            throw new Error(`Was trying inserting document (IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`)
         }
         // Step #7 insert document (INotification) in [C] notificationStatistics
         const notificationStatisticsCollectionClient = atlasDbClient.db('statistics').collection<INotificationStatistics>('notification');
@@ -173,12 +162,8 @@ export default async function VerifyToken(req: NextApiRequest, res: NextApiRespo
             followedCound: 0,
         });
         if (!notificationCollectionInsertResult.acknowledged) {
-            const msg = `Was trying inserting document (INotification) in [C] notificationStatistics for member id: ${memberId}`;
-            response500(res, msg);
-            log(msg);
-            return;
+            throw new Error(`Was trying inserting document (INotification, member id: ${memberId}) in [C] notificationStatistics`);
         }
-        //// Response 200 ////
         res.status(200).send('Email address verified');
         // Step #8 write journal (ILoginJournal) in [C] loginJournal
         const loginJournalCollectionClient = atlasDbClient.db('journal').collection<ILoginJournal>('login');

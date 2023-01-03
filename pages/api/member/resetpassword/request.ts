@@ -2,13 +2,13 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { RestError } from '@azure/data-tables';
 import CryptoJS from 'crypto-js';
 
-import AzureTableClient from '../../../../../modules/AzureTableClient';
-import AzureEmailCommunicationClient from '../../../../../modules/AzureEmailCommunicationClient';
+import AzureTableClient from '../../../../modules/AzureTableClient';
+import AzureEmailCommunicationClient from '../../../../modules/AzureEmailCommunicationClient';
 
-import { IResetPasswordCredentials } from '../../../../../lib/interfaces';
-import { LangConfigs, EmailMessage, ResetPasswordRequestInfo } from '../../../../../lib/types';
-import { getRandomHexStr, verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500, log } from '../../../../../lib/utils';
-import { composeResetPasswordEmailContent } from '../../../../../lib/email';
+import { IResetPasswordCredentials } from '../../../../lib/interfaces';
+import { LangConfigs, EmailMessage, ResetPasswordRequestInfo } from '../../../../lib/types';
+import { getRandomHexStr, verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500, log } from '../../../../lib/utils';
+import { composeResetPasswordEmailContent } from '../../../../lib/email';
 
 const appSecret = process.env.APP_AES_SECRET ?? '';
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';

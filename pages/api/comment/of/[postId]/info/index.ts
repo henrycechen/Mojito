@@ -7,15 +7,14 @@ import AzureTableClient from '../../../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from '../../../../../../modules/AtlasDatabaseClient';
 
 import { INoticeInfo, INotificationStatistics, IMemberStatistics, ICommentComprehensive, IChannelStatistics, ITopicComprehensive, IPostComprehensive, } from '../../../../../../lib/interfaces';
-import { MemberInfo } from '../../../../../../lib/types';
 import { getRandomIdStrL, getNicknameFromToken, getContentBrief, verifyId, response405, response500, log, } from '../../../../../../lib/utils';
 
 // This interface only accepts POST (create comment) method
 // Use 'api/comment/of/[postId]/info/[commentId]' to GET comment info
 //
 // Info required:
-// content: string;
-// cuedMemberIdsArr: string[] | undefined;
+// token: JWT
+// content: string
 //
 export default async function CreateComment(req: NextApiRequest, res: NextApiResponse) {
     const { method } = req;
@@ -39,16 +38,15 @@ export default async function CreateComment(req: NextApiRequest, res: NextApiRes
     //// Verify comment content ////
     const { content } = req.body;
     if (!('string' === content && '' !== content)) {
-        res.status(400).send('Improper comment content');
+        res.status(400).send('Improper or blank comment content');
         return;
     }
     //// Declare DB client ////
     const atlasDbClient = AtlasDatabaseClient();
     try {
-        atlasDbClient.connect();
+        await atlasDbClient.connect();
 
         //// Check member status ////
-
 
         // Step #1.1 prepare member id (of comment author)
         const { sub: memberId } = token;
@@ -56,29 +54,29 @@ export default async function CreateComment(req: NextApiRequest, res: NextApiRes
         const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberStatistics>('member');
         const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne<IMemberStatistics>({ memberId });
         if (null === memberComprehensiveQueryResult) {
-            res.status(500).send('Member not found');
-            log(`Member was tring creating comment (member id: ${memberId}) but have no document (of IMemberComprehensive) in [C] memberComprehensive`);
-            return;
+            throw new Error(`Member was tring creating comment but have no document (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
         }
         const { status: memberStatus, allowCommenting } = memberComprehensiveQueryResult;
         if (!(0 < memberStatus && allowCommenting)) {
             res.status(403).send('Creating comments is not allowed for this member');
+            await atlasDbClient.close();
             return;
         }
 
         //// Check post status ////
-
 
         // Step #2 look up post id (IPostComprehensive) in [C] postComprehensive
         const postComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IPostComprehensive>('post');
         const postComprehensiveQueryResult = await postComprehensiveCollectionClient.findOne<IPostComprehensive>({ postId });
         if (null === postComprehensiveQueryResult) {
             res.status(404).send('post not found');
+            await atlasDbClient.close();
             return;
         }
         const { status: postStatus } = postComprehensiveQueryResult;
         if (0 > postStatus) {
             res.status(403).send('Commenting is not allowed for this post');
+            await atlasDbClient.close();
             return;
         }
 
@@ -94,23 +92,22 @@ export default async function CreateComment(req: NextApiRequest, res: NextApiRes
             memberId,
             createdTime: new Date().getTime(),
             content, // required
-            edited: null,
+            edited: [],
             status: 200,
             totalLikedCount: 0,
             totalDislikedCount: 0,
-            totalSubcommentCount: 0
+            totalSubcommentCount: 0,
+            totalSubcommentDeleteCount: 0,
+            totalEditCount: 0
         });
         if (!commentComprehensiveInsertResult.acknowledged) {
-            log(`Failed to insert document (of ICommentComprehensive, member id: ${memberId}) in [C] postComprehensive`);
-            res.status(500).send('Failed to create comment');
-            return;
-        } else {
-            res.status(200).send(commentId);
+            throw new Error(`Failed to insert document (of ICommentComprehensive, member id: ${memberId}) in [C] postComprehensive`);
         }
+        res.status(200).send(commentId);
 
         //// Update statistics ////
 
-        // Step #3.1 update total comment count (IMemberStatistics) in [C] memberStatistics
+        // Step #3.1 update total comment count (of IMemberStatistics) in [C] memberStatistics
         const memberStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IMemberStatistics>('member');
         const memberStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId }, {
             $inc: {
@@ -120,7 +117,7 @@ export default async function CreateComment(req: NextApiRequest, res: NextApiRes
         if (!memberStatisticsUpdateResult.acknowledged) {
             log(`Document (ICommentComprehensive, comment id: ${commentId}) inserted in [C] commentComprehensive successfully but failed to update totalCommentCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`);
         }
-        // Step #3.2 update total comment count (IPostComprehensive) in [C] postComprehensive
+        // Step #3.2 update total comment count (of IPostComprehensive) in [C] postComprehensive
         const postComprehensiveUpdateResult = await postComprehensiveCollectionClient.updateOne({ postId }, {
             $inc: {
                 totalCommentCount: 1
@@ -129,7 +126,7 @@ export default async function CreateComment(req: NextApiRequest, res: NextApiRes
         if (!postComprehensiveUpdateResult.acknowledged) {
             log(`Document (ICommentComprehensive, comment id: ${commentId}) was inserted in [C] commentComprehensive successfully but failed to update totalCommentCount (of IPostComprehensive, post id: ${postId}, member id: ${memberId}) in [C] postComprehensive`);
         }
-        // Step #3.3 update total comment count (IChannelStatistics) in [C] channelStatistics
+        // Step #3.3 update total comment count (of IChannelStatistics) in [C] channelStatistics
         const { channelId } = postComprehensiveQueryResult;
         const channelStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IChannelStatistics>('channel');
         const channelStatisticsUpdateResult = await channelStatisticsCollectionClient.updateOne({ channelId }, {
@@ -140,7 +137,7 @@ export default async function CreateComment(req: NextApiRequest, res: NextApiRes
         if (!channelStatisticsUpdateResult.acknowledged) {
             log(`Document (ICommentComprehensive, comment id: ${commentId}) inserted in [C] commentComprehensive successfully but failed to update totalCommentCount (of IChannelStatistics, channel id: ${channelId}) in [C] channelStatistics`);
         }
-        // Step #3.4 (cond.) update total comment count (ITopicComprehensive) in [C] topicComprehensive
+        // Step #3.4 (cond.) update total comment count (of ITopicComprehensive) in [C] topicComprehensive
         const { topicIdsArr } = postComprehensiveQueryResult;
         if (Array.isArray(topicIdsArr) && topicIdsArr.length !== 0) {
             const topicComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<ITopicComprehensive>('topic');
@@ -208,7 +205,7 @@ export default async function CreateComment(req: NextApiRequest, res: NextApiRes
                 if (!_blockingMemberMappingQueryResult.value) {
                     //// [!] comment author has not been blocked by cued member ////
                     const noticeId = getRandomIdStrL(true);
-                    // Step #5.2 upsert record (of INoticeInfo.Cued) in [PRL] Notice
+                    // Step #5.3 upsert record (of INoticeInfo.Cued) in [PRL] Notice
                     const noticeTableClient = AzureTableClient('Notice');
                     noticeTableClient.upsertEntity<INoticeInfo>({
                         partitionKey: memberId_cued,
@@ -221,7 +218,7 @@ export default async function CreateComment(req: NextApiRequest, res: NextApiRes
                         CommentId: commentId,
                         CommentBrief: getContentBrief(content)
                     }, 'Replace');
-                    // Step #5.3 update cued count (INotificationStatistics) (of cued member) in [C] notificationStatistics
+                    // Step #5.4 update cued count (INotificationStatistics) (of cued member) in [C] notificationStatistics
                     const notificationStatisticsUpdateResult = await notificationStatisticsCollectionClient.updateOne({ memberId: memberId_cued }, {
                         $inc: {
                             cuedCount: 1

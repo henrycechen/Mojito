@@ -3,14 +3,14 @@ import { RestError } from '@azure/data-tables';
 import { MongoError } from 'mongodb';
 import CryptoJS from 'crypto-js';
 
-import AzureTableClient from '../../../../../modules/AzureTableClient';
-import AzureEmailCommunicationClient from '../../../../../modules/AzureEmailCommunicationClient';
-import AtlasDatabaseClient from '../../../../../modules/AtlasDatabaseClient';
+import AzureTableClient from '../../../../modules/AzureTableClient';
+import AzureEmailCommunicationClient from '../../../../modules/AzureEmailCommunicationClient';
+import AtlasDatabaseClient from '../../../../modules/AtlasDatabaseClient';
 
-import { IMojitoMemberSystemLoginCredentials, IVerifyEmailAddressCredentials, IMemberComprehensive, ILoginJournal } from '../../../../../lib/interfaces';
-import { LangConfigs, EmailMessage, VerifyEmailAddressRequestInfo } from '../../../../../lib/types';
-import { getRandomIdStr, verifyEmailAddress, verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500, log, getRandomHexStr } from '../../../../../lib/utils';
-import { composeVerifyEmailAddressEmailContent } from '../../../../../lib/email';
+import { IMojitoMemberSystemLoginCredentials, IVerifyEmailAddressCredentials, IMemberComprehensive, ILoginJournal } from '../../../../lib/interfaces';
+import { LangConfigs, EmailMessage, VerifyEmailAddressRequestInfo } from '../../../../lib/types';
+import { getRandomIdStr, verifyEmailAddress, verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500, log, getRandomHexStr } from '../../../../lib/utils';
+import { composeVerifyEmailAddressEmailContent } from '../../../../lib/email';
 
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
 const salt = process.env.APP_PASSWORD_SALT ?? '';
@@ -109,7 +109,6 @@ export default async function SignUp(req: NextApiRequest, res: NextApiResponse) 
             log(msg);
             return;
         }
-        //// Response 200 ////
         res.status(200).send('Member established');
         // Step #5 write journal (ILoginJournal) in [C] loginJournal
         const loginJournalCollectionClient = atlasDbClient.db('journal').collection<ILoginJournal>('login');
@@ -136,7 +135,19 @@ export default async function SignUp(req: NextApiRequest, res: NextApiResponse) 
         const mailClient = AzureEmailCommunicationClient();
         await mailClient.send(emailMessage);
     } catch (e: any) {
-
+        let msg;
+        if (e instanceof RestError) {
+            msg = 'Was trying communicating with azure table storage.';
+        } else if (e instanceof MongoError) {
+            msg = 'Was trying communicating with atlas mongodb.';
+        } else {
+            msg = `Uncategorized. ${e?.msg}`;
+        }
+        if (!res.headersSent) {
+            response500(res, msg);
+        }
+        log(msg, e);
+        await atlasDbClient.close();
         return;
     }
 }

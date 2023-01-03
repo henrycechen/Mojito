@@ -474,6 +474,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
     totalCreationLikedCount: number; // info page required
     totalCreationDislikedCount: number;
     totalSavedCount: number;
+    totalUnsavedCount: number;
     totalCommentLikedCount: number;
     totalCommentDislikedCount: number;
     totalFollowedByCount: number; // info page required
@@ -567,12 +568,14 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
     totalLikedCount: number;
     totalDislikedCount: number;
     totalSubcommentCount: number;
+    totalSubcommentDeleteCount: number;
+    totalEditCount: number;
 }
 ```
 
 ### [C] subcommentComprehensive
 
-```json
+```typescript
 {
     _id: string; // mongodb obejct id
     
@@ -595,6 +598,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
     //// statistics ////
     totalLikedCount: number;
     totalDislikedCount: number;
+    totalEditCount: number;
 }
 ```
 
@@ -630,6 +634,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
     totalCommentCount: number; // subcomment included
     totalCommentDeleteCount: number;
     totalSavedCount: number;
+    totalUnavedCount: number;
     totalTopicCount: number;
 }
 ```
@@ -668,7 +673,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 
 ### [C] topicComprehensive
 
-```json
+```typescript
 {
     _id: ObjectIdStr; // mongodb obejct id
     
@@ -682,12 +687,13 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
     
     //// total statistics ////
     totalHitCount: number; // total hit count of total posts of this topic
+    totalSearchCount: number;
     totalPostCount: number;
     totalPostDeleteCount: number;
     totalCommentCount: number;
     totalCommentDeleteCount: number;
     totalSavedCount: number;
-    totalSearchCount: number;
+    totalUnsavedCount: number;
 }
 ```
 
@@ -813,14 +819,18 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 	channelId: string;
 	topicIdsArr: string[];
 	pinnedCommentId: string;
-    edited: {
-        editedTime: number;
-        title: string;
-        imageUrlsArr: string[];
-		paragraphsArr: string[];
-        channelId: string;
-		topicIdsArr: string[];
-    } | null
+    edited: [
+        {
+            editedTime: number;
+            titleBeforeEdited: string;
+            imageUrlsArrBeforeEdited: string[];
+            paragraphsArrBeforeEdited: string[];
+            channelIdBeforeEdited: string;
+            topicIdsArrBeforeEdited: string[];
+            totalLikedCountBeforeEdit: number;
+            totalDislikedCountBeforeEdit: number;
+    	}
+	] | null
 
     //// management ////
     status: number;
@@ -832,6 +842,8 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
     totalCommentCount: number;
     totalCommentDeleteCount: number;
     totalSavedCount: number;
+	totalUnsavedCount: number;
+	totalEditCount: number;
 }
 ```
 
@@ -1441,7 +1453,7 @@ Mostly same as ▶️Follow/Unfollow a member
 
 2. Verify comment status
 
-3. Update document (**content, status=201**) in **[C] commentComprehensive** or return ***"Comment cannot be edited" error (status<0)***
+3. Update document (**content, status=201, totalEditCount (acc.)**) in **[C] commentComprehensive** or return ***"Method not allowed" error (status<0)***
 
    ```
    201 [有更改]/[Edited]
@@ -1459,7 +1471,7 @@ Mostly same as ▶️Follow/Unfollow a member
 
 | Behaviour        | Affected tables / collections                                |
 | ---------------- | ------------------------------------------------------------ |
-| Delete a comment | [C] commentComprehensive ***(put.)***,<br />[C] memberStatistics***.totalCommentDeleteCount (acc.)***<br />[C] postComprehensive***.totalCommentDeleteCount (acc.)***<br />[C] channelStatistics***.totalCommentDeleteCount(acc.)***<br />( Cond. [C] topicComprehensive***.totalCommentDeleteCount(acc.)*** ) |
+| Delete a comment | [C] commentComprehensive ***(put.)***,<br />[C] memberStatistics***.totalCommentDeleteCount (acc.)***<br />[C] postComprehensive***.totalCommentDeleteCount (acc.)***<br />[C] topicComprehensive***.totalCommentDeleteCount (acc.)***<br />[C] channelStatistics***.totalCommentDeleteCount(acc.)***<br />( Cond. [C] topicComprehensive***.totalCommentDeleteCount(acc.)*** ) |
 
 1. Update document (**content, status=-1/-3**) in **[C] commentComprehensive**
 
@@ -1486,7 +1498,7 @@ Mostly same as ▶️Follow/Unfollow a member
 
 | Behaviour           | Affected tables / collections                                |
 | ------------------- | ------------------------------------------------------------ |
-| Delete a subcomment | [C] subcommentComprehensive ***(put.)***,<br />[C] memberStatistics***.totalCommentDeleteCount (acc.)*** |
+| Delete a subcomment | [C] subcommentComprehensive ***(put.)***,<br />[C] memberStatistics***.totalCommentDeleteCount (acc.)***<br />[C] commentComprehensive***.totalSubcommentDeleteCount (acc.)***,<br />[C] postComprehensive***.totalCommentDeleteCount (acc.)***<br />[C] topicComprehensive***.totalCommentDeleteCount (acc.)***<br />[C] channelStatistics***.totalCommentDeleteCount(acc.)***<br />( Cond. [C] topicComprehensive***.totalCommentDeleteCount(acc.)*** ) |
 
 ### ▶️Pin a comment
 
@@ -1557,9 +1569,10 @@ Mostly same as ▶️Follow/Unfollow a member
 
 ### ▶️Save a post
 
-| Behaviour   | Affected tables / collections                                |
-| ----------- | ------------------------------------------------------------ |
-| Save a post | [RL] SavedMapping,<br />( Cond. [PRL] Notice***.Saved (est.)*** ),<br />( Cond. [C] notificationStatistics***.savedCount (acc.)*** ),<br />[C] memberStatistics***.totalSavedCount(acc.)***,<br />[C] postComprehensive***.totalSavedCount(acc.)***,<br />[C] channelStatistics***.totalSavedCount (acc.)***<br />[C] topicComprehensive***.totalSavedCount(acc.)*** |
+| Behaviour     | Affected tables / collections                                |
+| ------------- | ------------------------------------------------------------ |
+| Save a post   | [RL] SavedMapping,<br />( Cond. [PRL] Notice***.Saved (est.)*** ),<br />( Cond. [C] notificationStatistics***.savedCount (acc.)*** ),<br />[C] memberStatistics***.totalSavedCount(acc.)***,<br />[C] postComprehensive***.totalSavedCount(acc.)***,<br />[C] channelStatistics***.totalSavedCount (acc.)***<br />( Cond.[C] topicComprehensive***.totalSavedCount(acc.)*** ) |
+| Unsave a post | [C] memberStatistics***.totalUnsavedCount(acc.)***,<br />[C] postComprehensive***.totalUnsavedCount(acc.)***,<br />[C] channelStatistics***.totalUnsavedCount (acc.)***<br />( Cond. [C] topicComprehensive***.totalUnsavedCount(acc.) )*** |
 
 
 
