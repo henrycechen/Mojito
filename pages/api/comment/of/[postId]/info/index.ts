@@ -30,8 +30,8 @@ export default async function CreateComment(req: NextApiRequest, res: NextApiRes
         return;
     }
     //// Verify post id ////
-    const { postId } = req.query;
-    if (!('string' === typeof postId && verifyId(postId, 10))) {
+    const { isValid, id: postId } = verifyId(req.query?.id);
+    if (!isValid) {
         res.status(400).send('Invalid post id');
         return;
     }
@@ -95,7 +95,9 @@ export default async function CreateComment(req: NextApiRequest, res: NextApiRes
             edited: [],
             status: 200,
             totalLikedCount: 0,
+            totalUndoLikedCount: 0,
             totalDislikedCount: 0,
+            totalUndoDislikedCount: 0,
             totalSubcommentCount: 0,
             totalSubcommentDeleteCount: 0,
             totalEditCount: 0
@@ -164,12 +166,11 @@ export default async function CreateComment(req: NextApiRequest, res: NextApiRes
         const blockingMemberMappingQueryResult = await blockingMemberMappingQuery.next();
         if (!blockingMemberMappingQueryResult.value) {
             //// [!] comment author has not been blocked by post author ////
-            const noticeId = getRandomIdStrL(true);
             // Step #4.2 upsert record (INoticeInfo.Replied) in [PRL] Notice
             const noticeTableClient = AzureTableClient('Notice');
             await noticeTableClient.upsertEntity<INoticeInfo>({
                 partitionKey: memberId_post,
-                rowKey: noticeId,
+                rowKey: commentId,
                 Category: 'Replied',
                 InitiateId: memberId,
                 Nickname: getNicknameFromToken(token),
@@ -186,7 +187,7 @@ export default async function CreateComment(req: NextApiRequest, res: NextApiRes
                 }
             });
             if (!notificationStatisticsUpdateResult.acknowledged) {
-                log(`Document (ICommentComprehensive, comment id: ${commentId}) inserted in [C] commentComprehensive successfully but failed to update repliedCount (of INotificationStatistics, member id: ${memberId_post}) in [C] notificationStatistics`);
+                log(`Document (ICommentComprehensive, comment id: ${commentId}) inserted in [C] commentComprehensive successfully but failed to update replied count (of INotificationStatistics, member id: ${memberId_post}) in [C] notificationStatistics`);
             }
         }
 
@@ -204,12 +205,11 @@ export default async function CreateComment(req: NextApiRequest, res: NextApiRes
                 const _blockingMemberMappingQueryResult = await _blockingMemberMappingQuery.next();
                 if (!_blockingMemberMappingQueryResult.value) {
                     //// [!] comment author has not been blocked by cued member ////
-                    const noticeId = getRandomIdStrL(true);
                     // Step #5.3 upsert record (of INoticeInfo.Cued) in [PRL] Notice
                     const noticeTableClient = AzureTableClient('Notice');
                     noticeTableClient.upsertEntity<INoticeInfo>({
                         partitionKey: memberId_cued,
-                        rowKey: noticeId,
+                        rowKey: commentId, // entity id
                         Category: 'Cued',
                         InitiateId: memberId,
                         Nickname: getNicknameFromToken(token),

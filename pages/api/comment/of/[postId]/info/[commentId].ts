@@ -16,17 +16,23 @@ export default async function CommentInfo(req: NextApiRequest, res: NextApiRespo
         response405(req, res);
         return;
     }
-    const { postId, commentId } = req.query;
-    //// Verify post id and comment id ////
-    if (!('string' === typeof postId && 'string' === typeof commentId && verifyId(postId, 16) && verifyId(commentId, 16))) {
-        res.status(400).send('Invalid post id or comment id');
+    //// Verify post id ////
+    const { id: postId, isValid: isValidPostId } = verifyId(req.query?.postId);
+    if (!isValidPostId) {
+        res.status(400).send('Invalid post id id');
+        return;
+    }
+    //// Verify comment id ////
+    const { id: commentId, isValid: isValidCommentId } = verifyId(req.query?.commentId);
+    if (!isValidCommentId) {
+        res.status(400).send('Invalid comment id');
         return;
     }
     //// Declare DB client ////
     const atlasDbClient = AtlasDatabaseClient();
     try {
         atlasDbClient.connect();
-        //// Look up comment status (ICommentComprehensive) in [C] commentComprehensive
+        //// Look up comment status (of ICommentComprehensive) in [C] commentComprehensive
         const commentComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<ICommentComprehensive>('comment');
         const commentComprehensiveQueryResult = await commentComprehensiveCollectionClient.findOne<ICommentComprehensive>({ postId, commentId });
         if (null === commentComprehensiveQueryResult) {
@@ -70,6 +76,7 @@ export default async function CommentInfo(req: NextApiRequest, res: NextApiRespo
         if (0 > postStatus) {
             res.status(405).send('Method not allowed due to post deleted');
             await atlasDbClient.close();
+            return;
         }
 
         //// PUT | edit ////
@@ -88,7 +95,7 @@ export default async function CommentInfo(req: NextApiRequest, res: NextApiRespo
                 }
             });
             if (!commentUpdateResult.acknowledged) {
-                throw new Error(`Failed to update document (of ICommentComprehensive, comment id: ${commentId}, post id: ${postId}) in [C] commentComprehensive`);
+                throw new Error(`Failed to update content and totalEditCount (of ICommentComprehensive, comment id: ${commentId}, post id: ${postId}) in [C] commentComprehensive`);
             }
             res.status(200).send('Edit success');
 
@@ -102,7 +109,7 @@ export default async function CommentInfo(req: NextApiRequest, res: NextApiRespo
                 }
             });
 
-            //// (Cond.) Handle cue ////
+            //// (Cond.) Handle notify.cue ////
 
             // Step #4.1 verify cued member ids array
             const { cuedMemberIdsArr } = req.body;

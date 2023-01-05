@@ -1,8 +1,10 @@
-# Mojito New Zealand 莫希托新西兰
+# The Mojito App 莫希托
 
 8 September 2022 | Established
 
 27 October 2022 | Domain name announced
+
+4 January 2023 | Logo registeration applied
 
 [toc]
 
@@ -214,7 +216,7 @@ type ResetPasswordRequestInfo = {
 
 | PartitionKey        | RowKey   | Category | InitiateId  | PostId | PostTitle | CommentId | CommentBrief |
 | ------------------- | -------- | -------- | ----------- | ------ | --------- | --------- | ------------ |
-| NotifiedMemberIdStr | NoticeId | `"Cued"` | MemberIdStr | string | string    | string    | string       |
+| NotifiedMemberIdStr | EntityId | `"Cued"` | MemberIdStr | string | string    | string    | string       |
 
 ```
 - WebMaster在帖子“WebMaster在Mojito发的第一篇帖子”中提到了您
@@ -225,7 +227,7 @@ type ResetPasswordRequestInfo = {
 
 | PartitionKey        | RowKey   | Category    | InitiateId  | PostId | PostTitle | CommentId | CommentBrief |
 | ------------------- | -------- | ----------- | ----------- | ------ | --------- | --------- | ------------ |
-| NotifiedMemberIdStr | NoticeId | `"Replied"` | MemberIdStr | string | string    | string    | string       |
+| NotifiedMemberIdStr | EntityId | `"Replied"` | MemberIdStr | string | string    | string    | string       |
 
 ```
 - WebMaster回复了您的帖子“WebMaster在Mojito发的第一篇帖子”
@@ -234,9 +236,9 @@ type ResetPasswordRequestInfo = {
 
 #### Liked (❤️)
 
-| PartitionKey        | RowKey   | Category  | InitiateId  | PostId | PostTitle | CommentId | CommentBrief |
-| ------------------- | -------- | --------- | ----------- | ------ | --------- | --------- | ------------ |
-| NotifiedMemberIdStr | NoticeId | `"Liked"` | MemberIdStr | string | string    | string    | string       |
+| PartitionKey        | RowKey   | Category  | InitiateId  | PostId | PostTitle | CommentId? | CommentBrief? |
+| ------------------- | -------- | --------- | ----------- | ------ | --------- | ---------- | ------------- |
+| NotifiedMemberIdStr | EntityId | `"Liked"` | MemberIdStr | string | string    | string     | string        |
 
 ```
 - WebMaster喜欢了您的帖子“WebMaster在Mojito发的第一篇帖子”
@@ -247,7 +249,7 @@ type ResetPasswordRequestInfo = {
 
 | PartitionKey        | RowKey   | Category   | InitiateId  | PostId | PostTitle |
 | ------------------- | -------- | ---------- | ----------- | ------ | --------- |
-| NotifiedMemberIdStr | NoticeId | `"Pinned"` | MemberIdStr | string | string    |
+| NotifiedMemberIdStr | EntityId | `"Pinned"` | MemberIdStr | string | string    |
 
 ```
 - WebMaster置顶了您在“WebMaster在Mojito发的第一篇帖子”中发表的评论“可喜可贺可惜可...”
@@ -257,7 +259,7 @@ type ResetPasswordRequestInfo = {
 
 | PartitionKey        | RowKey   | Category  | InitiateId  | PostId | PostTitle |
 | ------------------- | -------- | --------- | ----------- | ------ | --------- |
-| NotifiedMemberIdStr | NoticeId | `"Saved"` | MemberIdStr | string | string    |
+| NotifiedMemberIdStr | EntityId | `"Saved"` | MemberIdStr | string | string    |
 
 ```
 - WebMaster收藏了“WebMaster在Mojito发的第一篇帖子”中提到了您
@@ -267,7 +269,7 @@ type ResetPasswordRequestInfo = {
 
 | PartitionKey        | RowKey   | Category     | InitiateId  |
 | ------------------- | -------- | ------------ | ----------- |
-| NotifiedMemberIdStr | NoticeId | `"Followed"` | MemberIdStr |
+| NotifiedMemberIdStr | EntityId | `"Followed"` | MemberIdStr |
 
 ```
 - WebMaster关注了您
@@ -401,7 +403,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
     _id: string;  // mongodb obejct id
     
     //// info ////
-    memberId: string; // 10 characters, UPPERCASE
+    memberId: string; //  7 ~ 8 characters, UPPERCASE, begin with 'M'
     providerId?: string; // "MojitoMemberSystem" | "GitHubOAuth" | ...
     registeredTime?: number;// new Date().getTime()
     verifiedTime?: number;
@@ -454,30 +456,48 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
     _id: string; // mongodb obejct id
     memberId: string;
     
-    //// total statistics ////
     // creation
     totalCreationCount: number; // info page required
+    totalCreationHitCount: number;
     totalCreationEditCount: number;
     totalCreationDeleteCount: number;
+    totalCreationLikedCount: number; // info page required
+    totalCreationUndoLikedCount: number;
+    totalCreationDislikedCount: number;
+    totalCreationUndoDislikedCount: number;
+    totalCreationSavedCount: number; // info page required
+    totalCreationUndoSavedCount: number;
+    
+    // attitude
+    totalLikeCount: number;
+    totalUndoLikeCount: number;
+    totalDislikeCount: number;
+    totalUndoDislikeCount: number;
+    
     // comment
     totalCommentCount: number;
     totalCommentEditCount: number;
     totalCommentDeleteCount: number;
-    // attitude
-    totalLikeCount: number;
-    totalDislikeCount: number;
+    totalCommentLikedCount: number;
+    totalCommentUndoLikedCount: number;
+    totalCommentDislikedCount: number;
+    totalCommentUndoDislikedCount: number;
+    
+    // post
+    totalSavedCount: number;
+    totalUndoSavedCount: number;
+    
     // on other members
     totalFollowingCount: number;
-    totalBlockedCount: number;
+    totalUndoFollowingCount: number;
+    totalBlockingCount: number;
+    totalUndoBlockingCount: number;
+    
     // by other members
-    totalCreationHitCount: number;
-    totalCreationLikedCount: number; // info page required
-    totalCreationDislikedCount: number;
-    totalSavedCount: number;
-    totalUnsavedCount: number;
-    totalCommentLikedCount: number;
-    totalCommentDislikedCount: number;
     totalFollowedByCount: number; // info page required
+    totalUndoFollowedByCount: number;
+    totalBlockedByCount: number;
+    totalUndoBlockedByCount: number;
 }
 ```
 
@@ -528,12 +548,13 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
     memberId: string;
     postId: string; // divided by post id
     attitude: number; // -1 | 0 | 1
-    attitudeCommentMapping: {
+    commentAttitudeMapping: {
         [key: commentIdStr]: number // -1 | 0 | 1
     };
-    attitudeSubcommentMapping: {
+    subcommentAttitudeMapping: {
         [key: subcommentIdStr]: number // -1 | 0 | 1
-    }
+    };
+    editTime: number;
 }
 ```
 
@@ -548,11 +569,25 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
      _id: string; // mongodb obejct id
     
     //// info ////
-    commentId: string; // 16 characters, UPPERCASE
+    commentId: string; // 12 ~ 13 characters, UPPERCASE, begin with 'C'
     postId: string;
     memberId: string;
     createdTime: number; // created time of this document (comment est.)
     content: string;
+    
+	//// management ////
+    status: number;
+    
+    //// statistics ////
+    totalLikedCount: number;
+    totalUndoLikedCount: number;
+    totalDislikedCount: number;
+    totalUndoDislikedCount: number;
+    totalSubcommentCount: number;
+    totalSubcommentDeleteCount: number;
+    totalEditCount: number;
+    
+    //// edit info ////
     edited: {
         editedTime: number; // 201: edited | -1/-3: removed
         content: string;
@@ -560,16 +595,6 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
         totalDislikedCountBeforeEdit: number;
         totalSubcommentCountBeforeEdit: number;
     } | null
-    
-	//// management ////
-    status: number;
-    
-    //// statistics ////
-    totalLikedCount: number;
-    totalDislikedCount: number;
-    totalSubcommentCount: number;
-    totalSubcommentDeleteCount: number;
-    totalEditCount: number;
 }
 ```
 
@@ -580,7 +605,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
     _id: string; // mongodb obejct id
     
     //// info ////
-    subcommentId: string; // 16 characters, UPPERCASE
+    subcommentId: string; // 12 ~ 13 characters, UPPERCASE, begin with 'D'
     commentId: string;
     memberId: string;
     createdTime: number; // created time of this document (subcomment est.)
@@ -597,7 +622,9 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
     
     //// statistics ////
     totalLikedCount: number;
+    totalUndoLikedCount: number;
     totalDislikedCount: number;
+    totalUndoDislikedCount: number;
     totalEditCount: number;
 }
 ```
@@ -629,13 +656,15 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
     
     //// total statistics ////
     totalHitCount: number;
+    totalTopicCount: number;
     totalPostCount: number;
     totalPostDeleteCount: number;
+    totalLikedCount: number;
+    totalUndoLikedCount: number;
     totalCommentCount: number; // subcomment included
     totalCommentDeleteCount: number;
     totalSavedCount: number;
     totalUnavedCount: number;
-    totalTopicCount: number;
 }
 ```
 
@@ -690,10 +719,12 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
     totalSearchCount: number;
     totalPostCount: number;
     totalPostDeleteCount: number;
+    totalLikedCount: number;
+    totalUndoLikedCount: number;
     totalCommentCount: number;
     totalCommentDeleteCount: number;
     totalSavedCount: number;
-    totalUnsavedCount: number;
+    totalUndoSavedCount: number;
 }
 ```
 
@@ -810,7 +841,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
     _id: ObjectId; // mongodb obejct id
     
     //// info ////
-    postId: string; // 10 characters, UPPERCASE
+    postId: string; // 9 ~ 10 characters, UPPERCASE, begin with 'P'
     memberId: string;
     createdTime: number; // created time of this document (post est.)
     title: string;
@@ -819,6 +850,23 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 	channelId: string;
 	topicIdsArr: string[];
 	pinnedCommentId: string;
+
+    //// management ////
+    status: number;
+
+    //// total statistics ////
+	totalHitCount: number; // viewed times accumulator
+    totalLikedCount: number;
+	totalUndolikedCount: number;
+    totalDislikedCount: number;
+	totalUndoDislikedCount: number;
+    totalCommentCount: number;
+    totalCommentDeleteCount: number;
+    totalSavedCount: number;
+	totalUndoSavedCount: number;
+	totalEditCount: number;
+    
+    //// edit info ////
     edited: [
         {
             editedTime: number;
@@ -831,19 +879,6 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
             totalDislikedCountBeforeEdit: number;
     	}
 	] | null
-
-    //// management ////
-    status: number;
-
-    //// total statistics ////
-	totalHitCount: number; // viewed times accumulator
-    totalLikedCount: number;
-    totalDislikedCount: number;
-    totalCommentCount: number;
-    totalCommentDeleteCount: number;
-    totalSavedCount: number;
-	totalUnsavedCount: number;
-	totalEditCount: number;
 }
 ```
 
@@ -1424,6 +1459,32 @@ Only allow updating other info after 30 seconds since last update
 
 Mostly same as ▶️Follow/Unfollow a member
 
+## 📦Attitude
+
+### ▶️Get attitude on a post/comment/subcomment
+
+| Behaviour    | Affected tables / collections |
+| ------------ | ----------------------------- |
+| Get attitude | [C] attitudeComprehensive     |
+
+### ▶️Express attitude on a post
+
+| Behaviour    | Affected tables / collections                                |
+| ------------ | ------------------------------------------------------------ |
+| Like         | [C] attitudeComprehensive,<br />[C] memberStatistics***.totalLikeCount (inc.)***,<br />[C] memberStatistics***.totalCreationLikedCount (inc. of the post author)***,<br />[C] postComprehensive***.totalLikedCount (inc.)***,<br />[C] channelStatistics***.totalLikedCount (inc.)***,<br />( Cond. [C] topicComprehensive***.totalLikedCount (inc.)*** ),<br />( Cond. [PRL] Notice***.Liked (est.)*** ),<br />( Cond. [C] notificationStatistics***.likedCount (acc.)*** ) |
+| Undo like    | [C] attitudeComprehensive,<br />[C] memberStatistics***.totalUndoLikeCount (inc.)***,<br />[C] memberStatistics***.totalCreationUndoLikedCount (inc. of the post author)***,<br />[C] postComprehensive***.totalUndolikedCount (inc.)***,<br />[C] channelStatistics***.totalUndoLikedCount (inc.)***,<br />( Cond. [C] topicComprehensive***.totalUndoLikedCount (inc.)*** ) |
+| Dislike      | [C] attitudeComprehensive,<br />[C] memberStatistics***.totalDislikeCount (inc.)***,<br />[C] memberStatistics***.totalCreationDislikedCount (inc. of the post author)***,<br />[C] postComprehensive***.totalDislikedCount (inc.)*** |
+| Undo dislike | [C] attitudeComprehensive,<br />[C] memberStatistics***.totalUndoDislikeCount (inc.)***,<br />[C] memberStatistics***.totalCreationUndoDislikedCount (inc. of the post author)***,<br />[C] postComprehensive***.totalUndoDislikedCount (inc.)*** |
+
+### ▶️Express attitude on a comment/subcomment
+
+| Behaviour    | Affected tables / collections                                |
+| ------------ | ------------------------------------------------------------ |
+| Like         | [C] attitudeComprehensive,<br />[C] memberStatistics***.totalLikeCount (inc.)***,<br />[C] memberStatistics***.totalCommentLikedCount (inc. of the comment author)***<br />[C] comment/subcommentComprehensive***.totalLikedCount (inc.)***,<br />( Cond. [PRL] Notice***.Liked (est.)*** ),<br />( Cond. [C] notificationStatistics***.likedCount (acc.)*** ) |
+| Undo like    | [C] attitudeComprehensive,<br />[C] memberStatistics***.totalUndoDislikeCount (inc.)***,<br />[C] memberStatistics***.totalCommentUndoLikedCount (inc. of the comment author)***<br />[C] comment/subcommentComprehensive***.totalUndoLikedCount (inc.)*** |
+| Dislike      | [C] attitudeComprehensive,<br />[C] memberStatistics***.totalDislikeCount (inc.)***,<br />[C] memberStatistics***.totalCommentDislikedCount (inc. of the comment author)***<br />[C] comment/subcommentComprehensive***.totalDislikedCount (inc.)*** |
+| Undo dislike | [C] attitudeComprehensive,<br />[C] memberStatistics***.totalUndoDislikeCount (inc.)***,<br />[C] memberStatistics***.totalCommentUndoDislikedCount (inc. of the comment author)***<br />[C] comment/subcommentComprehensive***.totalUndoDislikedCount (inc.)*** |
+
 ## 📦Comment
 
 ### ▶️Create a comment
@@ -1505,22 +1566,6 @@ Mostly same as ▶️Follow/Unfollow a member
 | Behaviour     | Affected tables / collections                      |
 | ------------- | -------------------------------------------------- |
 | Pin a comment | [C] postComprehensive***.pinnedCommentId (put.)*** |
-
-## 📦Attitude
-
-### ▶️Express attitude on a post
-
-| Behaviour                                                 | Affected tables / collections                                |
-| --------------------------------------------------------- | ------------------------------------------------------------ |
-| Like /<br />Unlike /<br />Dislike /<br />Undislike a post | [C] postComprehensive***.totalLiked/DislikedCount (inc./dec.)***,<br />( Cond. [PRL] Notice***.Liked (est.)*** ),<br />( Cond. [C] notificationStatistics***.likedCount (acc.)*** ),<br />[C] attitudePostMapping ***(est./inc.)*** |
-
-*\* [PRL] Notice is accumulate-only; editing, removing is prohibited*
-
-### ▶️Express attitude on a comment/subcomment
-
-| Behaviour                                                    | Affected tables / collections                                |
-| ------------------------------------------------------------ | ------------------------------------------------------------ |
-| Like /<br />Unlike /<br />Dislike /<br />Undislike a comment /<br />subcomment | [C] comment/subcommentComprehensive***.totalLiked/DislikedCount (inc./dec.)***,<br />( Cond. [PRL] Notice***.Liked(est.)*** ),<br />( Cond. [C] notificationStatistics***.likedCount (acc.)*** ),<br />[C] attitudePostMapping ***(est./inc.)*** |
 
 ## 📦Topic
 

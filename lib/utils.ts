@@ -1,18 +1,15 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { ICommentComprehensive, IPostComprehensive, IRestrictedCommentComprehensive, IRestrictedPostComprehensive, ISubcommentComprehensive, IRestrictedSubommentComprehensive } from './interfaces';
+import { IAttitudeComprehensive, IAttitideMapping, ICommentComprehensive, IRestrictedCommentComprehensive, IRestrictedPostComprehensive, ISubcommentComprehensive, IRestrictedSubommentComprehensive, IPostComprehensive } from './interfaces';
 import { ProcessStates } from './types';
 
-//////// Create random string ////////
-//
 //  Rules of creating random IDs / names
 //
 //  IDs
-//  - Member id : 10 characters, UPPERCASE
-//  - Post id : 10 characters, UPPERCASE
-//  - Topic id : 16 characters, UPPERCASE
-//  - Comment id : 16 characters, UPPERCASE
-//  - Subcomment id : 16 characters, UPPERCASE
-//  - Notice id : 16 characters, UPPERCASE
+//  - Member id : 7 ~ 8 characters, UPPERCASE, begin with 'M'
+//  - Post id : 9 ~ 10 characters, UPPERCASE, begin with 'P'
+//  - Topic id : base64 string from topic content string, begin with 'T'
+//  - Comment id : 12 ~ 13 characters, UPPERCASE, begin with 'C'
+//  - Subcomment id : 12 ~ 13 characters, UPPERCASE, begin with 'D'
 //
 //  Names
 //  - Image filename : 10 characters, lowercase
@@ -21,6 +18,15 @@ import { ProcessStates } from './types';
 //  - Verify email address token: 8 characters Hex, UPPERCASE
 //  - Reset password token: 8 characters Hex, UPPERCASE
 //
+export function createId(catergory: 'member' | 'post' | 'comment' | 'subcomment'): string {
+    switch (catergory) {
+        case 'member': return 'M' + Math.floor(Math.random() * Math.pow(10, 10)).toString(35).toUpperCase(); // Length of 8 (1 + 7)
+        case 'post': return 'P' + Math.floor(Math.random() * Math.pow(10, 13)).toString(35).toUpperCase(); // Length of 10 (1 + 9)
+        case 'comment': return 'C' + Math.floor(Math.random() * Math.pow(10, 7)).toString(35).toUpperCase() + Math.floor(Math.random() * Math.pow(10, 8)).toString(35).toUpperCase(); // Length of 12 (1 + 11)
+        case 'subcomment': return 'D' + Math.floor(Math.random() * Math.pow(10, 7)).toString(35).toUpperCase() + Math.floor(Math.random() * Math.pow(10, 8)).toString(35).toUpperCase(); // Length of 12 (1 + 11)
+    }
+}
+
 export function getRandomIdStr(useUpperCase: boolean = false): string { // Length of 10
     if (useUpperCase) {
         return Math.floor(Math.random() * Math.pow(10, 15)).toString(35).toUpperCase();
@@ -36,6 +42,7 @@ export function getRandomIdStrL(useUpperCase: boolean = false): string { // Leng
         return Math.floor(Math.random() * Math.pow(10, 12)).toString(35) + Math.floor(Math.random() * Math.pow(10, 12)).toString(35);
     }
 }
+
 
 export function getRandomHexStr(useUpperCase: boolean = false): string { // Length of 8 (Hex)
     if (useUpperCase) {
@@ -93,25 +100,44 @@ export function getContentBrief(content: any, length = 21): string {
     return content;
 }
 
-//////// Comment ////////
-export function getRestrictedFromCommentComprehensive(commentComprehensive: ICommentComprehensive): IRestrictedCommentComprehensive {
-    const { status } = commentComprehensive;
-    if ('number' === typeof status && 0 > status) {
+//////// Attitude ////////
+export function getMappingFromAttitudeComprehensive(attitudeComprehensive: IAttitudeComprehensive | null): IAttitideMapping {
+    if (null === attitudeComprehensive) {
         return {
-            commentId: commentComprehensive.commentId, // 16 characters, UPPERCASE
-            postId: commentComprehensive.postId,
-            memberId: commentComprehensive.memberId,
-            createdTime: commentComprehensive.createdTime, // created time of this document (comment est.)
-            content: null,
-            status: status,
-            totalLikedCount: commentComprehensive.totalLikedCount,
-            totalDislikedCount: commentComprehensive.totalDislikedCount,
-            totalSubcommentCount: commentComprehensive.totalSubcommentCount,
-            editedTime: null
+            attitude: 0,
+            commentAttitudeMapping: {},
+            subcommentAttitudeMapping: {}
         }
     }
-    const restricted: IRestrictedCommentComprehensive = { ...commentComprehensive, editedTime: null };
-    delete restricted['edited'];
+    return {
+        attitude: attitudeComprehensive.attitude,
+        commentAttitudeMapping: { ...attitudeComprehensive.commentAttitudeMapping },
+        subcommentAttitudeMapping: { ...attitudeComprehensive.subcommentAttitudeMapping }
+    }
+}
+
+//////// Comment ////////
+export function getRestrictedFromCommentComprehensive(commentComprehensive: ICommentComprehensive): IRestrictedCommentComprehensive {
+    const { status, totalLikedCount, totalUndoLikedCount, totalDislikedCount, totalUndoDislikedCount, totalSubcommentCount, totalSubcommentDeleteCount } = commentComprehensive;
+    const totalLiked = totalLikedCount - totalUndoLikedCount;
+    const totalDisliked = totalDislikedCount - totalUndoDislikedCount;
+    const totalSubcomment = totalSubcommentCount - totalSubcommentDeleteCount;
+    const restricted: IRestrictedCommentComprehensive = {
+        commentId: commentComprehensive.commentId, // 16 characters, UPPERCASE
+        postId: commentComprehensive.postId,
+        memberId: commentComprehensive.memberId,
+        createdTime: commentComprehensive.createdTime, // created time of this document (comment est.)
+        content: null,
+        status: status,
+        totalLikedCount: totalLiked,
+        totalDislikedCount: totalDisliked,
+        totalSubcommentCount: totalSubcomment,
+        editedTime: null
+    }
+    if ('number' === typeof status && 0 > status) {
+        return restricted;
+    }
+    restricted.content = commentComprehensive.content;
     if ('number' === typeof status && 1 === status % 100) {
         const { edited } = commentComprehensive;
         if (Array.isArray(edited) && edited.length !== 0) {
@@ -124,22 +150,24 @@ export function getRestrictedFromCommentComprehensive(commentComprehensive: ICom
 
 //////// Subcomment ////////
 export function getRestrictedFromSubommentComprehensive(subcommentComprehensive: ISubcommentComprehensive): IRestrictedSubommentComprehensive {
-    const { status } = subcommentComprehensive;
+    const { status, totalLikedCount, totalUndoLikedCount, totalDislikedCount, totalUndoDislikedCount } = subcommentComprehensive;
+    const totalLiked = totalLikedCount - totalUndoLikedCount;
+    const totalDisliked = totalDislikedCount - totalUndoDislikedCount;
+    const restricted: IRestrictedSubommentComprehensive = {
+        subcommentId: subcommentComprehensive.subcommentId, // 16 characters, UPPERCASE
+        commentId: subcommentComprehensive.commentId, // 16 characters, UPPERCASE
+        memberId: subcommentComprehensive.memberId,
+        createdTime: subcommentComprehensive.createdTime, // created time of this document (comment est.)
+        content: null,
+        status: status,
+        totalLikedCount: totalLiked,
+        totalDislikedCount: totalDisliked,
+        editedTime: null
+    };
     if ('number' === typeof status && 0 > status) {
-        return {
-            subcommentId: subcommentComprehensive.subcommentId, // 16 characters, UPPERCASE
-            commentId: subcommentComprehensive.commentId, // 16 characters, UPPERCASE
-            memberId: subcommentComprehensive.memberId,
-            createdTime: subcommentComprehensive.createdTime, // created time of this document (comment est.)
-            content: null,
-            status: status,
-            totalLikedCount: subcommentComprehensive.totalLikedCount,
-            totalDislikedCount: subcommentComprehensive.totalDislikedCount,
-            editedTime: null
-        }
+        return restricted;
     }
-    const restricted: IRestrictedSubommentComprehensive = { ...subcommentComprehensive, editedTime: null };
-    delete restricted['edited'];
+    restricted.content = subcommentComprehensive.content;
     if ('number' === typeof status && 1 === status % 100) {
         const { edited } = subcommentComprehensive;
         if (Array.isArray(edited) && edited.length !== 0) {
@@ -158,7 +186,7 @@ export function getTopicBase64StringsArrayFromRequestBody(requestBody: any): str
     if (!(undefined !== requestBody['topicsArr'] && Array.isArray(requestBody['topicsArr']))) {
         return [];
     }
-    return requestBody['topicsArr'].map(topicContent => Buffer.from(topicContent).toString('base64'));
+    return requestBody['topicsArr'].map(topicContent => 'T' + Buffer.from(topicContent).toString('base64'));
 }
 
 //////// Post ////////
@@ -183,29 +211,45 @@ export function getParagraphsArrayFromRequestBody(requestBody: any): string[] {
 }
 
 export function getRestrictedFromPostComprehensive(postComprehensive: IPostComprehensive): IRestrictedPostComprehensive {
-    const { status } = postComprehensive;
+    ``
+    const { status, totalLikedCount, totalUndoLikedCount, totalDislikedCount, totalUndoDislikedCount, totalCommentCount, totalCommentDeleteCount, totalSavedCount, totalUndoSavedCount } = postComprehensive;
+    const totalLiked = totalLikedCount - totalUndoLikedCount;
+    const totalDisliked = totalDislikedCount - totalUndoDislikedCount;
+    const totalComment = totalCommentCount - totalCommentDeleteCount;
+    const totalSaved = totalSavedCount - totalUndoSavedCount;
+    const restricted: IRestrictedPostComprehensive = {
+        //// info ////
+        postId: postComprehensive.postId,
+        memberId: postComprehensive.memberId,
+        createdTime: postComprehensive.createdTime,
+        title: null,
+        imageUrlsArr: [],
+        paragraphsArr: [],
+        channelId: postComprehensive.channelId,
+        topicIdsArr: [],
+        pinnedCommentId: null,
+
+        //// management ////
+        status: status,
+
+        //// statistics ////
+        totalHitCount: postComprehensive.totalHitCount,
+        totalLikedCount: totalLiked,
+        totalDislikedCount: totalDisliked,
+        totalCommentCount: totalComment,
+        totalSavedCount: totalSaved,
+
+        //// edit info ////
+        editedTime: null,
+    };
     if ('number' === typeof status && 0 > status) {
-        return {
-            postId: postComprehensive.postId,
-            memberId: postComprehensive.memberId,
-            createdTime: postComprehensive.createdTime,
-            title: null,
-            imageUrlsArr: [],
-            paragraphsArr: [],
-            channelId: postComprehensive.channelId,
-            topicIdsArr: [],
-            pinnedCommentId: null,
-            status: status,
-            totalHitCount: postComprehensive.totalHitCount,
-            totalLikedCount: postComprehensive.totalLikedCount,
-            totalDislikedCount: postComprehensive.totalDislikedCount,
-            totalCommentCount: postComprehensive.totalCommentCount,
-            totalSavedCount: postComprehensive.totalSavedCount,
-            editedTime: null
-        }
+        return restricted;
     }
-    const restricted: IRestrictedPostComprehensive = { ...postComprehensive, editedTime: null };
-    delete restricted['edited'];
+    restricted.title = postComprehensive.title;
+    restricted.imageUrlsArr.push(...postComprehensive.imageUrlsArr);
+    restricted.paragraphsArr.push(...postComprehensive.paragraphsArr);
+    restricted.topicIdsArr.push(...postComprehensive.topicIdsArr);
+    restricted.pinnedCommentId = postComprehensive.pinnedCommentId;
     if ('number' === typeof status && 1 === status % 100) {
         const { edited } = postComprehensive;
         if (Array.isArray(edited) && edited.length !== 0) {
@@ -215,8 +259,6 @@ export function getRestrictedFromPostComprehensive(postComprehensive: IPostCompr
     }
     return restricted;
 }
-
-
 
 //////// Utilize local storage ////////
 export function updateLocalStorage(storageName: string) {
@@ -254,16 +296,61 @@ export function verifyPassword(password: any): boolean {
     return regex.test(password);
 }
 
-export function verifyId(id: any, length: number): boolean {
-    if (undefined === id) {
-        return false;
+export function verifyId(id: any) {
+    if (!(undefined !== id && 'string' !== typeof id)) {
+        return {
+            isValid: false,
+            category: undefined,
+            id: undefined
+        }
     }
-    if ('string' !== typeof id) {
-        return false;
+    const ref = `${id}`.toUpperCase();
+    const cat = ref.slice(0, 1);
+    if (!(new RegExp(/[MPTCD]/).test(cat))) {
+        return {
+            isValid: false,
+            category: undefined,
+            id: undefined
+        }
     }
-    const str = `^[a-zA-Z0-9]{${length - 2},${length}}$`;
-    const regex = new RegExp(`^[a-zA-Z0-9]{${length - 2},${length}}$`);
-    return regex.test(id);
+    const idc = ref.split(cat)[1];
+    switch (cat) {
+        case 'M':
+            if (new RegExp(`^[A-Z0-9]{7,8}$`).test(idc)) {
+                return { isValid: false, category: 'member', id: undefined }
+            } else {
+                return { isValid: true, category: 'member', id: ref }
+            }
+        case 'P':
+            if (new RegExp(`^[A-Z0-9]{9,10}$`).test(idc)) {
+                return { isValid: false, category: 'post', id: undefined }
+            } else {
+                return { isValid: true, category: 'post', id: ref }
+            }
+        case 'T':
+            if (new RegExp(`^[A-Z0-9]{5,6}$`).test(idc)) {
+                return { isValid: false, category: 'topic', id: undefined }
+            } else {
+                return { isValid: true, category: 'topic', id: ref }
+            }
+        case 'C':
+            if (new RegExp(`^[A-Z0-9]{12,13}$`).test(idc)) {
+                return { isValid: false, category: 'comment', id: undefined }
+            } else {
+                return { isValid: true, category: 'comment', id: ref }
+            }
+        case 'D':
+            if (new RegExp(`^[A-Z0-9]{12,13}$`).test(idc)) {
+                return { isValid: false, category: 'subcomment', id: undefined }
+            } else {
+                return { isValid: true, category: 'subcomment', id: ref }
+            }
+        default: return {
+            isValid: false,
+            category: undefined,
+            id: undefined
+        }
+    }
 }
 
 export function verifyUrl(url: any): boolean {

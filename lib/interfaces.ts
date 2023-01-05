@@ -46,7 +46,7 @@ export interface IResetPasswordCredentials extends ICredentials {
 // [PRL] Notice
 export interface INoticeInfo extends IAzureTableEntity {
     partitionKey: string; // notified member id
-    rowKey: string; // notify id
+    rowKey: string; // entity id (post / comment / subcomment id)
     Category: 'Cued' | 'Replied' | 'Liked' | 'Pinned' | 'Saved' | 'Followed';
     InitiateId: string; // initiate member id
     Nickname: string; // initiate member nickname
@@ -100,29 +100,49 @@ export interface IMemberComprehensive extends IAtlasCollectionDocument {
 // [C] memberStatistics
 export interface IMemberStatistics extends IAtlasCollectionDocument {
     memberId: string;
+
     // creation
     totalCreationCount: number; // info page required
+    totalCreationHitCount: number;
     totalCreationEditCount: number;
     totalCreationDeleteCount: number;
+    totalCreationLikedCount: number; // info page required
+    totalCreationUndoLikedCount: number;
+    totalCreationDislikedCount: number;
+    totalCreationUndoDislikedCount: number;
+    totalCreationSavedCount: number; // info page required
+    totalCreationUndoSavedCount: number;
+
+    // attitude
+    totalLikeCount: number;
+    totalUndoLikeCount: number;
+    totalDislikeCount: number;
+    totalUndoDislikeCount: number;
+
     // comment
     totalCommentCount: number;
     totalCommentEditCount: number;
     totalCommentDeleteCount: number;
-    // attitude
-    totalLikeCount: number;
-    totalDislikeCount: number;
+    totalCommentLikedCount: number;
+    totalCommentUndoLikedCount: number;
+    totalCommentDislikedCount: number;
+    totalCommentUndoDislikedCount: number;
+
+    // post
+    totalSavedCount: number;
+    totalUndoSavedCount: number;
+
     // on other members
     totalFollowingCount: number;
-    totalBlockedCount: number;
+    totalUndoFollowingCount: number;
+    totalBlockingCount: number;
+    totalUndoBlockingCount: number;
+
     // by other members
-    totalCreationHitCount: number;
-    totalCreationLikedCount: number; // info page required
-    totalCreationDislikedCount: number;
-    totalSavedCount: number;
-    totalUnsavedCount: number;
-    totalCommentLikedCount: number;
-    totalCommentDislikedCount: number;
     totalFollowedByCount: number; // info page required
+    totalUndoFollowedByCount: number;
+    totalBlockedByCount: number;
+    totalUndoBlockedByCount: number;
 }
 
 // [C] loginJournal
@@ -134,15 +154,25 @@ export interface ILoginJournal extends IAtlasCollectionDocument {
     message: string; // short message, e.g., 'Attempted login while email address not verified.'
 }
 
-// [C] attitudePostMapping
-export interface IAttitudePostMapping extends IAtlasCollectionDocument {
+// [C] attitudeComprehensive
+export interface IAttitudeComprehensive extends IAtlasCollectionDocument {
     memberId: string;
-    postId?: string; // divided by post id
+    postId: string; // divided by post id
     attitude: number; // -1 | 0 | 1
-    attitudeCommentMapping: {
+    commentAttitudeMapping: {
         [key: string]: number
     };
-    attitudeSubcommentMapping: {
+    subcommentAttitudeMapping: {
+        [key: string]: number
+    }
+}
+
+export interface IAttitideMapping extends IAtlasCollectionDocument {
+    attitude: number; // -1 | 0 | 1
+    commentAttitudeMapping: {
+        [key: string]: number
+    };
+    subcommentAttitudeMapping: {
         [key: string]: number
     }
 }
@@ -161,12 +191,14 @@ export interface ICommentComprehensive extends IAtlasCollectionDocument {
 
     //// statistics ////
     totalLikedCount: number;
+    totalUndoLikedCount: number;
     totalDislikedCount: number;
+    totalUndoDislikedCount: number;
     totalSubcommentCount: number;
     totalSubcommentDeleteCount: number;
     totalEditCount: number;
 
-    //// edit record ////
+    //// edit info ////
     edited: IEditedCommentComprehensive[];
 }
 
@@ -184,7 +216,7 @@ export interface IRestrictedCommentComprehensive extends IAtlasCollectionDocumen
     postId: string;
     memberId: string;
     createdTime: number; // created time of this document (comment est.)
-    content: string|null;
+    content: string | null;
 
     //// management ////
     status: number;
@@ -194,22 +226,31 @@ export interface IRestrictedCommentComprehensive extends IAtlasCollectionDocumen
     totalDislikedCount: number;
     totalSubcommentCount: number;
 
-    //// edit record ////
+    //// edit info ////
     editedTime: number | null;
 }
 
 // [C] subcommentComprehensive
 export interface ISubcommentComprehensive extends IAtlasCollectionDocument {
+    //// info ////
     subcommentId: string; // 16 characters, UPPERCASE
     commentId: string;
     memberId: string;
     createdTime: number; // created time of this document (subcomment est.)
     content: string;
+
+    //// management ////
     status: number;
-    edited: IEditedCommentComprehensive[];
-    totalEditCount: number;
+
+    //// statistics ////
     totalLikedCount: number;
+    totalUndoLikedCount: number;
     totalDislikedCount: number;
+    totalUndoDislikedCount: number;
+    totalEditCount: number;
+
+    //// edit info ////
+    edited: IEditedCommentComprehensive[];
 }
 
 export interface IRestrictedSubommentComprehensive extends IAtlasCollectionDocument {
@@ -218,7 +259,7 @@ export interface IRestrictedSubommentComprehensive extends IAtlasCollectionDocum
     commentId: string; // 16 characters, UPPERCASE
     memberId: string;
     createdTime: number; // created time of this document (comment est.)
-    content: string|null;
+    content: string | null;
 
     //// management ////
     status: number;
@@ -227,29 +268,50 @@ export interface IRestrictedSubommentComprehensive extends IAtlasCollectionDocum
     totalLikedCount: number;
     totalDislikedCount: number;
 
-    //// edit record ////
+    //// edit info ////
     editedTime: number | null;
 }
 
 // [C] channelStatistics
 export interface IChannelStatistics extends IAtlasCollectionDocument {
+    //// info ////
+    channelId: string; // pre-defined channel id
+    createdTime: number;
 
+    //// total statistics ////
+    totalHitCount: number;
+    totalTopicCount: number;
+    totalPostCount: number;
+    totalPostDeleteCount: number;
+    totalLikedCount: number;
+    totalUndoLikedCount: number;
+    totalCommentCount: number; // subcomment included
+    totalCommentDeleteCount: number;
+    totalSavedCount: number;
+    totalUnavedCount: number;
 }
 
 // [C] topicComprehensive
 export interface ITopicComprehensive extends IAtlasCollectionDocument {
+    //// info ////
     topicId: string; // base64 string from topic content string
     channelId: string;
     createdTime: number; // create time of this document (topic est.)
+    
+    //// management ////
     status: number;
+    
+    //// total statistics ////
     totalHitCount: number; // total hit count of total posts of this topic
     totalSearchCount: number;
     totalPostCount: number;
     totalPostDeleteCount: number;
+    totalLikedCount: number;
+    totalUndoLikedCount: number;
     totalCommentCount: number;
     totalCommentDeleteCount: number;
     totalSavedCount: number;
-    totalUnsavedCount: number;
+    totalUndoSavedCount: number;
 }
 
 // [C] topicPostMapping
@@ -280,14 +342,16 @@ export interface IPostComprehensive extends IAtlasCollectionDocument {
     //// statistics ////
     totalHitCount: number; // viewed times accumulator
     totalLikedCount: number;
+    totalUndoLikedCount: number;
     totalDislikedCount: number;
+    totalUndoDislikedCount: number;
     totalCommentCount: number;
     totalCommentDeleteCount: number;
     totalSavedCount: number;
-    totalUnsavedCount: number;
+    totalUndoSavedCount: number;
     totalEditCount: number;
 
-    //// edit record ////
+    //// edit info ////
     edited: IEditedPostComprehensive[];
 }
 
@@ -324,6 +388,6 @@ export interface IRestrictedPostComprehensive extends IAtlasCollectionDocument {
     totalCommentCount: number;
     totalSavedCount: number;
 
-    //// edit record ////
+    //// edit info ////
     editedTime: number | null;
 }

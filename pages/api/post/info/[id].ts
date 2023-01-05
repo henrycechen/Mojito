@@ -8,7 +8,6 @@ import AzureTableClient from '../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from '../../../../modules/AtlasDatabaseClient';
 
 import { INoticeInfo, IMemberPostMapping, INotificationStatistics, IMemberStatistics, IChannelStatistics, ITopicComprehensive, ITopicPostMapping, IPostComprehensive, IEditedPostComprehensive } from '../../../../lib/interfaces';
-// import { PostInfo } from '../../../../lib/types';
 import { getRandomIdStrL, getNicknameFromToken, getTopicBase64StringsArrayFromRequestBody, getRestrictedFromPostComprehensive, getImageUrlsArrayFromRequestBody, getParagraphsArrayFromRequestBody, verifyId, response405, response500, log } from '../../../../lib/utils';
 
 const domain = process.env.NEXT_PUBLIC_APP_DOMAIN;
@@ -19,9 +18,9 @@ export default async function PostInfo(req: NextApiRequest, res: NextApiResponse
         response405(req, res);
         return;
     }
-    const { postId } = req.query;
+    const { isValid, id: postId } = verifyId(req.query?.id);
     //// Verify post id ////
-    if (!('string' === typeof postId && verifyId(postId, 10))) {
+    if (!isValid) {
         res.status(400).send('Invalid post id');
         return;
     }
@@ -29,7 +28,7 @@ export default async function PostInfo(req: NextApiRequest, res: NextApiResponse
     const atlasDbClient = AtlasDatabaseClient();
     try {
         await atlasDbClient.connect();
-        //// Look up post status (IPostComprehensive) in [C] postComprehensive
+        // Look up post status (IPostComprehensive) in [C] postComprehensive
         const postComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IPostComprehensive>('post');
         const postComprehensiveQueryResult = await postComprehensiveCollectionClient.findOne({ postId });
         if (null === postComprehensiveQueryResult) {
@@ -42,7 +41,7 @@ export default async function PostInfo(req: NextApiRequest, res: NextApiResponse
         const token = await getToken({ req });
         const { memberId: memberId_post } = postComprehensiveQueryResult;
 
-        //// GET | info ////
+        //// GET | post info ////
         if ('GET' === method) {
             res.status(200).send(getRestrictedFromPostComprehensive(postComprehensiveQueryResult));
 
@@ -65,7 +64,7 @@ export default async function PostInfo(req: NextApiRequest, res: NextApiResponse
                 }
             });
             if (!memberStatisticsUpdateResult.acknowledged) {
-                log(`Failed to update total creation hit count (of IMemberStatistics, member id: ${memberId_post}) in [C] memberStatistics`);
+                log(`Failed to update totalCreationHitCount (of IMemberStatistics, member id: ${memberId_post}) in [C] memberStatistics`);
             }
             // Step #3 update total hit count (of IPostComprehensive) in [C] postComprehensive
             const postComprehensiveUpdateResult = await postComprehensiveCollectionClient.updateOne({ postId }, {
@@ -74,7 +73,7 @@ export default async function PostInfo(req: NextApiRequest, res: NextApiResponse
                 }
             });
             if (!postComprehensiveUpdateResult.acknowledged) {
-                log(`Failed to update total hit count (of IPostComprehensive, post id: ${postId}) in [C] postComprehensive`);
+                log(`Failed to update totalHitCount (of IPostComprehensive, post id: ${postId}) in [C] postComprehensive`);
             }
             // Step #4 update total hit count (of IChannelStatistics) in [C] channelStatistics
             const { channelId } = postComprehensiveQueryResult;
@@ -98,7 +97,7 @@ export default async function PostInfo(req: NextApiRequest, res: NextApiResponse
                         }
                     });
                     if (!topicComprehensiveUpdateResult.acknowledged) {
-                        log(`Failed to update total hit count (of ITopicStatistics, topic id:${topicId}, post id: ${postId}) in [C] topicStatistics`);
+                        log(`Failed to update totalHitCount (of ITopicStatistics, topic id:${topicId}, post id: ${postId}) in [C] topicStatistics`);
                     }
                 }
             }
@@ -121,9 +120,10 @@ export default async function PostInfo(req: NextApiRequest, res: NextApiResponse
         if (0 > postStatus) {
             res.status(405).send('Method not allowed due to post deleted');
             await atlasDbClient.close();
+            return;
         }
 
-        //// PUT | edit ////
+        //// PUT | edit post ////
         if ('PUT' === method) {
             // Step #1.1 verify title
             const { title } = req.body;
@@ -135,6 +135,7 @@ export default async function PostInfo(req: NextApiRequest, res: NextApiResponse
             const { channelId } = req.body;
             if (!('string' === typeof channelId && '' !== channelId)) {
                 res.status(400).send('Improper channel id');
+                await atlasDbClient.close();
                 return;
             }
             let channelDict: any;
@@ -145,6 +146,7 @@ export default async function PostInfo(req: NextApiRequest, res: NextApiResponse
             }
             if (!Object.hasOwn(channelDict, channelId)) {
                 res.status(400).send('Channel id not found');
+                await atlasDbClient.close();
                 return;
             }
             // Step #2 explicitly get topic id from request body (topic content strings)
@@ -179,12 +181,12 @@ export default async function PostInfo(req: NextApiRequest, res: NextApiResponse
                     totalEditCount: 1
                 },
                 $push: {
-                    //// edit record ////
+                    //// edit info ////
                     edited: editedInfo
                 }
             });
             if (!postComprehensiveUpdateResult.acknowledged) {
-                throw new Error(`Failed to update document (of IPostComprehensive, post id: ${postId}) in [C] postComprehensive`);
+                throw new Error(`Failed to update {...postInfo}, totalEditCount and editedInfo (of IPostComprehensive, post id: ${postId}) in [C] postComprehensive`);
             }
             res.status(200).send('Edit success');
 
@@ -260,7 +262,7 @@ export default async function PostInfo(req: NextApiRequest, res: NextApiResponse
                 }
             }
 
-            //// (Cond.) Handle cue ////
+            //// (Cond.) Handle notify.cue ////
 
             // Step #7.1 verify cued member ids array
             const { cuedMemberIdsArr } = req.body;
@@ -275,12 +277,11 @@ export default async function PostInfo(req: NextApiRequest, res: NextApiResponse
                     const _blockingMemberMappingQueryResult = await _blockingMemberMappingQuery.next();
                     if (!_blockingMemberMappingQueryResult.value) {
                         //// [!] comment author has not been blocked by cued member ////
-                        const noticeId = getRandomIdStrL(true);
                         // Step #7.3 upsert record (of INoticeInfo.Cued) in [PRL] Notice
                         const noticeTableClient = AzureTableClient('Notice');
                         noticeTableClient.upsertEntity<INoticeInfo>({
                             partitionKey: memberId_cued,
-                            rowKey: noticeId,
+                            rowKey: postId, // entity id
                             Category: 'Cued',
                             InitiateId: memberId_post,
                             Nickname: getNicknameFromToken(token),
@@ -300,6 +301,8 @@ export default async function PostInfo(req: NextApiRequest, res: NextApiResponse
                 }
             }
         }
+
+        //// DELETE | delete post ////
 
         if ('DELETE' === method) {
             // Step #1 update post status (of IPostComprehensive) [C] postComprehensive

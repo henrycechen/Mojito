@@ -8,7 +8,7 @@ import AtlasDatabaseClient from '../../../../modules/AtlasDatabaseClient';
 
 import { INoticeInfo, INotificationStatistics, IMemberStatistics, IChannelStatistics, ITopicComprehensive, ITopicPostMapping, IPostComprehensive } from '../../../../lib/interfaces';
 import { ChannelInfo } from '../../../../lib/types';
-import { getRandomIdStr, getRandomIdStrL, getNicknameFromToken,getTopicBase64StringsArrayFromRequestBody, getImageUrlsArrayFromRequestBody, getParagraphsArrayFromRequestBody, verifyUrl, response405, response500, log } from '../../../../lib/utils';
+import { getRandomIdStr, getRandomIdStrL, getNicknameFromToken, getTopicBase64StringsArrayFromRequestBody, getImageUrlsArrayFromRequestBody, getParagraphsArrayFromRequestBody, verifyUrl, response405, response500, log } from '../../../../lib/utils';
 
 const domain = process.env.NEXT_PUBLIC_APP_DOMAIN;
 
@@ -100,11 +100,13 @@ export default async function CreatePost(req: NextApiRequest, res: NextApiRespon
             //// statistics ////
             totalHitCount: 0,
             totalLikedCount: 0,
+            totalUndoLikedCount: 0,
             totalDislikedCount: 0,
+            totalUndoDislikedCount: 0,
             totalCommentCount: 0,
             totalCommentDeleteCount: 0,
             totalSavedCount: 0,
-            totalUnsavedCount: 0,
+            totalUndoSavedCount: 0,
             totalEditCount: 0,
             //// edite record ////
             edited: []
@@ -153,9 +155,12 @@ export default async function CreatePost(req: NextApiRequest, res: NextApiRespon
                         totalHitCount: 1,
                         totalPostCount: 1, // this post
                         totalPostDeleteCount: 0,
+                        totalLikedCount: 0,
+                        totalUndoLikedCount: 0,
                         totalCommentCount: 0,
                         totalCommentDeleteCount: 0,
                         totalSavedCount: 0,
+                        totalUndoSavedCount: 0,
                         totalSearchCount: 0
                     },
                     //// [!] update total post count (of ItopicComprehensive) if found ////
@@ -180,7 +185,7 @@ export default async function CreatePost(req: NextApiRequest, res: NextApiRespon
             }
         }
 
-        //// (Cond.) Handle cue ////
+        //// (Cond.) Handle notify.cue ////
 
         // Step #4.1 verify cued member ids array
         const { cuedMemberIdsArr } = req.body;
@@ -195,12 +200,11 @@ export default async function CreatePost(req: NextApiRequest, res: NextApiRespon
                 const _blockingMemberMappingQueryResult = await _blockingMemberMappingQuery.next();
                 if (!_blockingMemberMappingQueryResult.value) {
                     //// [!] comment author has not been blocked by cued member ////
-                    const noticeId = getRandomIdStrL(true);
                     // Step #4.2 upsert record (INoticeInfo.Cued) in [PRL] Notice
                     const noticeTableClient = AzureTableClient('Notice');
                     noticeTableClient.upsertEntity<INoticeInfo>({
                         partitionKey: memberId_cued,
-                        rowKey: noticeId,
+                        rowKey: postId, // entity id
                         Category: 'Cued',
                         InitiateId: memberId,
                         Nickname: getNicknameFromToken(token),
