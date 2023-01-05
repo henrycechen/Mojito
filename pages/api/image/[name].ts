@@ -25,7 +25,7 @@ export default async function Image(req: NextApiRequest, res: NextApiResponse) {
             res.status(404).send('Image not found');
         }
     } catch (e) {
-        response500(res, `Was tring to retrieve blob (image). ${e}`);
+        response500(res, `Was trying to retrieve blob (image). ${e}`);
         return;
     }
 

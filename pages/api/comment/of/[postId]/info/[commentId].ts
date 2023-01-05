@@ -191,7 +191,7 @@ export default async function CommentInfo(req: NextApiRequest, res: NextApiRespo
             if (Array.isArray(topicIdsArr) && topicIdsArr.length !== 0) {
                 const topicComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<ITopicComprehensive>('topic');
                 for await (const topicId of topicIdsArr) {
-                    // Step #5.1 update topic statistics or insert document (of ITopicComprehensive) in [C] topicComprehensive
+                    // Step #5.1 update topic statistics or insert a new document (of ITopicComprehensive) in [C] topicComprehensive
                     const topicComprehensiveUpdateResult = await topicComprehensiveCollectionClient.updateOne({ topicId }, { $inc: { totalCommentDeleteCount: 1 } });
                     if (!topicComprehensiveUpdateResult.acknowledged) {
                         log(`Document (ICommentComprehensive, comment id: ${commentId}) updated (deleted, status -1) in [C] commentComprehensive successfully but failed to update totalCommentDeleteCount (of ITopicComprehensive, topic id: ${topicId}) in [C] topicComprehensive`);

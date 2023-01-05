@@ -300,8 +300,8 @@ export function verifyId(id: any) {
     if (!(undefined !== id && 'string' !== typeof id)) {
         return {
             isValid: false,
-            category: undefined,
-            id: undefined
+            category: '',
+            id: ''
         }
     }
     const ref = `${id}`.toUpperCase();
@@ -309,46 +309,46 @@ export function verifyId(id: any) {
     if (!(new RegExp(/[MPTCD]/).test(cat))) {
         return {
             isValid: false,
-            category: undefined,
-            id: undefined
+            category: '',
+            id: ''
         }
     }
     const idc = ref.split(cat)[1];
     switch (cat) {
         case 'M':
             if (new RegExp(`^[A-Z0-9]{7,8}$`).test(idc)) {
-                return { isValid: false, category: 'member', id: undefined }
+                return { isValid: false, category: 'member', id: '' }
             } else {
                 return { isValid: true, category: 'member', id: ref }
             }
         case 'P':
             if (new RegExp(`^[A-Z0-9]{9,10}$`).test(idc)) {
-                return { isValid: false, category: 'post', id: undefined }
+                return { isValid: false, category: 'post', id: '' }
             } else {
                 return { isValid: true, category: 'post', id: ref }
             }
         case 'T':
             if (new RegExp(`^[A-Z0-9]{5,6}$`).test(idc)) {
-                return { isValid: false, category: 'topic', id: undefined }
+                return { isValid: false, category: 'topic', id: '' }
             } else {
                 return { isValid: true, category: 'topic', id: ref }
             }
         case 'C':
             if (new RegExp(`^[A-Z0-9]{12,13}$`).test(idc)) {
-                return { isValid: false, category: 'comment', id: undefined }
+                return { isValid: false, category: 'comment', id: '' }
             } else {
                 return { isValid: true, category: 'comment', id: ref }
             }
         case 'D':
             if (new RegExp(`^[A-Z0-9]{12,13}$`).test(idc)) {
-                return { isValid: false, category: 'subcomment', id: undefined }
+                return { isValid: false, category: 'subcomment', id: '' }
             } else {
                 return { isValid: true, category: 'subcomment', id: ref }
             }
         default: return {
             isValid: false,
-            category: undefined,
-            id: undefined
+            category: '',
+            id: ''
         }
     }
 }

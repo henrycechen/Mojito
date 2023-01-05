@@ -16,13 +16,28 @@ export default async function CancelMembership(req: NextApiRequest, res: NextApi
     //// Verify identity ////
     const token = await getToken({ req });
     if (!(token && token?.sub)) {
-        // called by member him/herself
         res.status(400).send('Invalid identity');
         return;
     }
     const { sub: memberId } = token;
     const atlasDbClient = AtlasDatabaseClient();
-   
+    try {
+
+    } catch (e) {
+        let msg;
+        if (e instanceof MongoError) {
+            msg = 'Was trying communicating with atlas mongodb.';
+        } else {
+            msg = `Uncategorized. ${e?.msg}`;
+        }
+        if (!res.headersSent) {
+            response500(res, msg);
+        }
+        log(msg, e);
+        await atlasDbClient.close();
+        return;
+    }
+
 
     await atlasDbClient.close();
     res.send('attitude on comment, ok');

@@ -162,9 +162,6 @@ export interface IAttitudeComprehensive extends IAtlasCollectionDocument {
     commentAttitudeMapping: {
         [key: string]: number
     };
-    subcommentAttitudeMapping: {
-        [key: string]: number
-    }
 }
 
 export interface IAttitideMapping extends IAtlasCollectionDocument {
@@ -172,15 +169,12 @@ export interface IAttitideMapping extends IAtlasCollectionDocument {
     commentAttitudeMapping: {
         [key: string]: number
     };
-    subcommentAttitudeMapping: {
-        [key: string]: number
-    }
 }
 
 // [C] commentComprehensive
 export interface ICommentComprehensive extends IAtlasCollectionDocument {
     //// info ////
-    commentId: string; // 16 characters, UPPERCASE
+    commentId: string; // 12 ~ 13 characters, UPPERCASE, begin with 'C'
     postId: string;
     memberId: string;
     createdTime: number; // created time of this document (comment est.)
@@ -212,7 +206,7 @@ export interface IEditedCommentComprehensive extends IAtlasCollectionDocument {
 
 export interface IRestrictedCommentComprehensive extends IAtlasCollectionDocument {
     //// info ////
-    commentId: string; // 16 characters, UPPERCASE
+    commentId: string; //12 ~ 13 characters, UPPERCASE, begin with 'C'
     postId: string;
     memberId: string;
     createdTime: number; // created time of this document (comment est.)
@@ -233,8 +227,9 @@ export interface IRestrictedCommentComprehensive extends IAtlasCollectionDocumen
 // [C] subcommentComprehensive
 export interface ISubcommentComprehensive extends IAtlasCollectionDocument {
     //// info ////
-    subcommentId: string; // 16 characters, UPPERCASE
-    commentId: string;
+    commentId: string; // 12 ~ 13 characters, UPPERCASE, begin with 'D'
+    parentId: string; // parent comment id
+    postId: string;
     memberId: string;
     createdTime: number; // created time of this document (subcomment est.)
     content: string;
@@ -255,8 +250,8 @@ export interface ISubcommentComprehensive extends IAtlasCollectionDocument {
 
 export interface IRestrictedSubommentComprehensive extends IAtlasCollectionDocument {
     //// info ////
-    subcommentId: string; // 16 characters, UPPERCASE
-    commentId: string; // 16 characters, UPPERCASE
+    commentId: string; // 12 ~ 13 characters, UPPERCASE, begin with 'D'
+    parentId: string; // parent comment id
     memberId: string;
     createdTime: number; // created time of this document (comment est.)
     content: string | null;
@@ -297,10 +292,10 @@ export interface ITopicComprehensive extends IAtlasCollectionDocument {
     topicId: string; // base64 string from topic content string
     channelId: string;
     createdTime: number; // create time of this document (topic est.)
-    
+
     //// management ////
     status: number;
-    
+
     //// total statistics ////
     totalHitCount: number; // total hit count of total posts of this topic
     totalSearchCount: number;

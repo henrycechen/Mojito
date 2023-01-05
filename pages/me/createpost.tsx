@@ -336,7 +336,7 @@ const CreatePost = () => {
                         uploadedList.push(i)
                         setUploadedImageIndexList(uploadedList);
                     } catch (e) {
-                        console.log(`Was tring uploading ${img.url}. ${e}`);
+                        console.log(`Was trying uploading ${img.url}. ${e}`);
                         setProcessStates({ ...processStates, alertSeverity: 'error', alertContent: langConfigs.imagesUploadFailed[lang], displayAlert: true });
                         return;
                     }
@@ -370,7 +370,7 @@ const CreatePost = () => {
             }
             return;
         } catch (e) {
-            console.log(`Was tring publishing post. ${e}`);
+            console.log(`Was trying publishing post. ${e}`);
             setProcessStates({ ...processStates, alertSeverity: 'error', alertContent: langConfigs.postPublishFailed[lang], displayAlert: true });
             return;
         }

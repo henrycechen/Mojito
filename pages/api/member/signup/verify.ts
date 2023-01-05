@@ -121,37 +121,58 @@ export default async function VerifyToken(req: NextApiRequest, res: NextApiRespo
         if (!memberComprehensiveCollectionUpdateResult.acknowledged) {
             throw new Error(`Was trying updating document (IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
         }
-        // Step #6 insert document (IMemberStatistics) in [C] memberStatistics
+        // Step #6 insert a new document (IMemberStatistics) in [C] memberStatistics
         const memberStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IMemberStatistics>('member');
         const memberStatisticsCollectionInsertResult = await memberStatisticsCollectionClient.insertOne({
             memberId,
+
             // creation
             totalCreationCount: 0, // info page required
+            totalCreationHitCount: 0,
             totalCreationEditCount: 0,
             totalCreationDeleteCount: 0,
+            totalCreationLikedCount: 0, // info page required
+            totalCreationUndoLikedCount: 0,
+            totalCreationDislikedCount: 0,
+            totalCreationUndoDislikedCount: 0,
+            totalCreationSavedCount: 0, // info page required
+            totalCreationUndoSavedCount: 0,
+
+            // attitude
+            totalLikeCount: 0,
+            totalUndoLikeCount: 0,
+            totalDislikeCount: 0,
+            totalUndoDislikeCount: 0,
+
             // comment
             totalCommentCount: 0,
             totalCommentEditCount: 0,
             totalCommentDeleteCount: 0,
-            // attitude
-            totalLikeCount: 0,
-            totalDislikeCount: 0,
+            totalCommentLikedCount: 0,
+            totalCommentUndoLikedCount: 0,
+            totalCommentDislikedCount: 0,
+            totalCommentUndoDislikedCount: 0,
+
+            // post
+            totalSavedCount: 0,
+            totalUndoSavedCount: 0,
+
             // on other members
             totalFollowingCount: 0,
-            totalBlockedCount: 0,
+            totalUndoFollowingCount: 0,
+            totalBlockingCount: 0,
+            totalUndoBlockingCount: 0,
+
             // by other members
-            totalCreationHitCount: 0,
-            totalCreationLikedCount: 0, // info page required
-            totalCreationDislikedCount: 0,
-            totalSavedCount: 0,
-            totalCommentLikedCount: 0,
-            totalCommentDislikedCount: 0,
             totalFollowedByCount: 0, // info page required
+            totalUndoFollowedByCount: 0,
+            totalBlockedByCount: 0,
+            totalUndoBlockedByCount: 0
         });
         if (!memberStatisticsCollectionInsertResult.acknowledged) {
             throw new Error(`Was trying inserting document (IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`)
         }
-        // Step #7 insert document (INotification) in [C] notificationStatistics
+        // Step #7 insert a new document (INotification) in [C] notificationStatistics
         const notificationStatisticsCollectionClient = atlasDbClient.db('statistics').collection<INotificationStatistics>('notification');
         const notificationCollectionInsertResult = await notificationStatisticsCollectionClient.insertOne({
             memberId,

@@ -247,7 +247,7 @@ export default async function PostInfo(req: NextApiRequest, res: NextApiResponse
                         if (!topicComprehensiveUpdateResult.acknowledged) {
                             log(`Document (IPostComprehensive, post id: ${postId}) inserted in [C] postComprehensive successfully but failed to update totalPostCount (of ITopicComprehensive, topic id: ${topicId}) in [C] topicComprehensive`);
                         }
-                        // Step #6.3 insert document (of ITopicPostMapping) in [C] topicPostMapping
+                        // Step #6.3 insert a new document (of ITopicPostMapping) in [C] topicPostMapping
                         const topicPostMappingInsertResult = await topicPostMappingCollectionClient.updateOne({ topicId, postId }, {
                             topicId,
                             postId,
@@ -345,12 +345,12 @@ export default async function PostInfo(req: NextApiRequest, res: NextApiResponse
                 const topicComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<ITopicComprehensive>('topic');
                 const topicPostMappingCollectionClient = atlasDbClient.db('mapping').collection<ITopicPostMapping>('topic-post');
                 for await (const topicId of topicIdsArr) {
-                    // Step #4.1 update topic statistics or insert document (of ITopicComprehensive) in [C] topicComprehensive
+                    // Step #4.1 update topic statistics or insert a new document (of ITopicComprehensive) in [C] topicComprehensive
                     const topicComprehensiveUpdateResult = await topicComprehensiveCollectionClient.updateOne({ topicId }, { $inc: { totalPostDeleteCount: 1 } });
                     if (!topicComprehensiveUpdateResult.acknowledged) {
                         log(`Document (IPostComprehensive, post id: ${postId}) updated (deleted, status -1) in [C] postComprehensive successfully but failed to update totalPostDeleteCount (of ITopicComprehensive, topic id: ${topicId}) in [C] topicComprehensive`);
                     }
-                    // Step #4.2 insert document (of ITopicPostMapping) in [C] topicPostMapping
+                    // Step #4.2 insert a new document (of ITopicPostMapping) in [C] topicPostMapping
                     const topicPostMappingInsertResult = await topicPostMappingCollectionClient.updateOne({ topicId, postId }, { $set: { status: -1 } });
                     if (!topicPostMappingInsertResult.acknowledged) {
                         log(`Document (ITopicPostMapping, post id: ${postId}) updated (deleted, status -1) in [C] postComprehensive successfully but failed to update document (of ITopicPostMapping, topic id: ${topicId}, status -1) in [C] topicPostMapping`);

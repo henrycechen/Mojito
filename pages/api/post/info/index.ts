@@ -82,7 +82,7 @@ export default async function CreatePost(req: NextApiRequest, res: NextApiRespon
         const postId = getRandomIdStr(true);
         // Step #2.2 explicitly get topic id from request body (topic content strings)
         const topicIdsArr = getTopicBase64StringsArrayFromRequestBody(req.body);
-        // Step #2.3 insert document (of IPostComprehensive) in [C] postComprehensive
+        // Step #2.3 insert a new document (of IPostComprehensive) in [C] postComprehensive
         const postComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IPostComprehensive>('post');
         const postComprehensiveInsertResult = await postComprehensiveCollectionClient.insertOne({
             //// info ////
@@ -144,7 +144,7 @@ export default async function CreatePost(req: NextApiRequest, res: NextApiRespon
             const topicComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<ITopicComprehensive>('topic');
             const topicPostMappingCollectionClient = atlasDbClient.db('mapping').collection<ITopicPostMapping>('topic-post');
             for await (const topicId of topicIdsArr) {
-                // Step #3.3.1 update topic statistics or insert document (of ITopicComprehensive) in [C] topicComprehensive
+                // Step #3.3.1 update topic statistics or insert a new document (of ITopicComprehensive) in [C] topicComprehensive
                 const topicComprehensiveUpdateResult = await topicComprehensiveCollectionClient.updateOne({ topicId }, {
                     //// [!] create new topic comprehensive document if no found ////
                     $set: {
@@ -171,7 +171,7 @@ export default async function CreatePost(req: NextApiRequest, res: NextApiRespon
                 if (!topicComprehensiveUpdateResult.acknowledged) {
                     log(`Document (IPostComprehensive, post id: ${postId}) inserted in [C] postComprehensive successfully but failed to update totalPostCount (of ITopicComprehensive, topic id: ${topicId}) in [C] topicComprehensive`);
                 }
-                // Step #3.3.2 insert document (of ITopicPostMapping) in [C] topicPostMapping
+                // Step #3.3.2 insert a new document (of ITopicPostMapping) in [C] topicPostMapping
                 const topicPostMappingInsertResult = await topicPostMappingCollectionClient.insertOne({
                     topicId,
                     postId,

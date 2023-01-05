@@ -9,8 +9,7 @@ import AtlasDatabaseClient from '../../../../../../modules/AtlasDatabaseClient';
 import { INoticeInfo, INotificationStatistics, IMemberStatistics, ICommentComprehensive, IChannelStatistics, ITopicComprehensive, IPostComprehensive, } from '../../../../../../lib/interfaces';
 import { getRandomIdStrL, getNicknameFromToken, getContentBrief, verifyId, response405, response500, log, } from '../../../../../../lib/utils';
 
-// This interface only accepts POST (create comment) method
-// Use 'api/comment/of/[postId]/info/[commentId]' to GET comment info
+// This interface only accepts POST requests
 //
 // Info required:
 // token: JWT
@@ -54,7 +53,7 @@ export default async function CreateComment(req: NextApiRequest, res: NextApiRes
         const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberStatistics>('member');
         const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne<IMemberStatistics>({ memberId });
         if (null === memberComprehensiveQueryResult) {
-            throw new Error(`Member was tring creating comment but have no document (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
+            throw new Error(`Member was trying creating comment but have no document (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
         }
         const { status: memberStatus, allowCommenting } = memberComprehensiveQueryResult;
         if (!(0 < memberStatus && allowCommenting)) {
@@ -84,7 +83,7 @@ export default async function CreateComment(req: NextApiRequest, res: NextApiRes
 
         // Step #3.1 create a new comment id
         const commentId = getRandomIdStrL(true);
-        // Step #3.2 insert document (of ICommentComprehensive) in [C] commentComprehensive
+        // Step #3.2 insert a new document (of ICommentComprehensive) in [C] commentComprehensive
         const commentComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<ICommentComprehensive>('comment');
         const commentComprehensiveInsertResult = await commentComprehensiveCollectionClient.insertOne({
             postId,

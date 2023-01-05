@@ -469,10 +469,10 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
     totalCreationUndoSavedCount: number;
     
     // attitude
-    totalLikeCount: number;
-    totalUndoLikeCount: number;
-    totalDislikeCount: number;
-    totalUndoDislikeCount: number;
+    totalLikedCount: number;
+    totalUndoLikedCount: number;
+    totalDislikedCount: number;
+    totalUndoDislikedCount: number;
     
     // comment
     totalCommentCount: number;
@@ -551,10 +551,6 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
     commentAttitudeMapping: {
         [key: commentIdStr]: number // -1 | 0 | 1
     };
-    subcommentAttitudeMapping: {
-        [key: subcommentIdStr]: number // -1 | 0 | 1
-    };
-    editTime: number;
 }
 ```
 
@@ -605,8 +601,9 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
     _id: string; // mongodb obejct id
     
     //// info ////
-    subcommentId: string; // 12 ~ 13 characters, UPPERCASE, begin with 'D'
-    commentId: string;
+    commentId: string; // 12 ~ 13 characters, UPPERCASE, begin with 'D'
+    parentId: string;
+    postId: string;
     memberId: string;
     createdTime: number; // created time of this document (subcomment est.)
     content: string;
@@ -1467,23 +1464,23 @@ Mostly same as ▶️Follow/Unfollow a member
 | ------------ | ----------------------------- |
 | Get attitude | [C] attitudeComprehensive     |
 
-### ▶️Express attitude on a post
-
-| Behaviour    | Affected tables / collections                                |
-| ------------ | ------------------------------------------------------------ |
-| Like         | [C] attitudeComprehensive,<br />[C] memberStatistics***.totalLikeCount (inc.)***,<br />[C] memberStatistics***.totalCreationLikedCount (inc. of the post author)***,<br />[C] postComprehensive***.totalLikedCount (inc.)***,<br />[C] channelStatistics***.totalLikedCount (inc.)***,<br />( Cond. [C] topicComprehensive***.totalLikedCount (inc.)*** ),<br />( Cond. [PRL] Notice***.Liked (est.)*** ),<br />( Cond. [C] notificationStatistics***.likedCount (acc.)*** ) |
-| Undo like    | [C] attitudeComprehensive,<br />[C] memberStatistics***.totalUndoLikeCount (inc.)***,<br />[C] memberStatistics***.totalCreationUndoLikedCount (inc. of the post author)***,<br />[C] postComprehensive***.totalUndolikedCount (inc.)***,<br />[C] channelStatistics***.totalUndoLikedCount (inc.)***,<br />( Cond. [C] topicComprehensive***.totalUndoLikedCount (inc.)*** ) |
-| Dislike      | [C] attitudeComprehensive,<br />[C] memberStatistics***.totalDislikeCount (inc.)***,<br />[C] memberStatistics***.totalCreationDislikedCount (inc. of the post author)***,<br />[C] postComprehensive***.totalDislikedCount (inc.)*** |
-| Undo dislike | [C] attitudeComprehensive,<br />[C] memberStatistics***.totalUndoDislikeCount (inc.)***,<br />[C] memberStatistics***.totalCreationUndoDislikedCount (inc. of the post author)***,<br />[C] postComprehensive***.totalUndoDislikedCount (inc.)*** |
-
 ### ▶️Express attitude on a comment/subcomment
 
 | Behaviour    | Affected tables / collections                                |
 | ------------ | ------------------------------------------------------------ |
-| Like         | [C] attitudeComprehensive,<br />[C] memberStatistics***.totalLikeCount (inc.)***,<br />[C] memberStatistics***.totalCommentLikedCount (inc. of the comment author)***<br />[C] comment/subcommentComprehensive***.totalLikedCount (inc.)***,<br />( Cond. [PRL] Notice***.Liked (est.)*** ),<br />( Cond. [C] notificationStatistics***.likedCount (acc.)*** ) |
-| Undo like    | [C] attitudeComprehensive,<br />[C] memberStatistics***.totalUndoDislikeCount (inc.)***,<br />[C] memberStatistics***.totalCommentUndoLikedCount (inc. of the comment author)***<br />[C] comment/subcommentComprehensive***.totalUndoLikedCount (inc.)*** |
-| Dislike      | [C] attitudeComprehensive,<br />[C] memberStatistics***.totalDislikeCount (inc.)***,<br />[C] memberStatistics***.totalCommentDislikedCount (inc. of the comment author)***<br />[C] comment/subcommentComprehensive***.totalDislikedCount (inc.)*** |
-| Undo dislike | [C] attitudeComprehensive,<br />[C] memberStatistics***.totalUndoDislikeCount (inc.)***,<br />[C] memberStatistics***.totalCommentUndoDislikedCount (inc. of the comment author)***<br />[C] comment/subcommentComprehensive***.totalUndoDislikedCount (inc.)*** |
+| Like         | [C] attitudeComprehensive,<br />[C] memberStatistics***.totalLikedCount (inc.)***,<br />[C] memberStatistics***.totalCommentLikedCount (inc. of the comment author)***<br />[C] comment/subcommentComprehensive***.totalLikedCount (inc.)***,<br />( Cond. [PRL] Notice***.Liked (est.)*** ),<br />( Cond. [C] notificationStatistics***.likedCount (acc.)*** ) |
+| Undo like    | [C] attitudeComprehensive,<br />[C] memberStatistics***.totalUndoLikedCount (inc.)***,<br />[C] memberStatistics***.totalCommentUndoLikedCount (inc. of the comment author)***<br />[C] comment/subcommentComprehensive***.totalUndoLikedCount (inc.)*** |
+| Dislike      | [C] attitudeComprehensive,<br />[C] memberStatistics***.totalDislikedCount (inc.)***,<br />[C] memberStatistics***.totalCommentDislikedCount (inc. of the comment author)***<br />[C] comment/subcommentComprehensive***.totalDislikedCount (inc.)*** |
+| Undo dislike | [C] attitudeComprehensive,<br />[C] memberStatistics***.totalUndoDislikedCount (inc.)***,<br />[C] memberStatistics***.totalCommentUndoDislikedCount (inc. of the comment author)***<br />[C] comment/subcommentComprehensive***.totalUndoDislikedCount (inc.)*** |
+
+### ▶️Express attitude on a post
+
+| Behaviour    | Affected tables / collections                                |
+| ------------ | ------------------------------------------------------------ |
+| Like         | [C] attitudeComprehensive,<br />[C] memberStatistics***.totalLikedCount (inc.)***,<br />[C] memberStatistics***.totalCreationLikedCount (inc. of the post author)***,<br />[C] postComprehensive***.totalLikedCount (inc.)***,<br />[C] channelStatistics***.totalLikedCount (inc.)***,<br />( Cond. [C] topicComprehensive***.totalLikedCount (inc.)*** ),<br />( Cond. [PRL] Notice***.Liked (est.)*** ),<br />( Cond. [C] notificationStatistics***.likedCount (acc.)*** ) |
+| Undo like    | [C] attitudeComprehensive,<br />[C] memberStatistics***.totalUndoLikedCount (inc.)***,<br />[C] memberStatistics***.totalCreationUndoLikedCount (inc. of the post author)***,<br />[C] postComprehensive***.totalUndoLikedCount (inc.)***,<br />[C] channelStatistics***.totalUndoLikedCount (inc.)***,<br />( Cond. [C] topicComprehensive***.totalUndoLikedCount (inc.)*** ) |
+| Dislike      | [C] attitudeComprehensive,<br />[C] memberStatistics***.totalDislikedCount (inc.)***,<br />[C] memberStatistics***.totalCreationDislikedCount (inc. of the post author)***,<br />[C] postComprehensive***.totalDislikedCount (inc.)*** |
+| Undo dislike | [C] attitudeComprehensive,<br />[C] memberStatistics***.totalUndoDislikedCount (inc.)***,<br />[C] memberStatistics***.totalCreationUndoDislikedCount (inc. of the post author)***,<br />[C] postComprehensive***.totalUndoDislikedCount (inc.)*** |
 
 ## 📦Comment
 
