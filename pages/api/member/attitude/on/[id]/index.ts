@@ -6,10 +6,8 @@ import { MongoError } from 'mongodb';
 import AzureTableClient from '../../../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from "../../../../../../modules/AtlasDatabaseClient";
 
-import { INoticeInfo, INotificationStatistics, IMemberStatistics, IAttitudeComprehensive, ICommentComprehensive, IChannelStatistics, ITopicComprehensive, ITopicPostMapping, IPostComprehensive } from '../../../../../../lib/interfaces';
-
-import { MemberInfo } from '../../../../../../lib/types';
-import { getRandomIdStr, getRandomIdStrL, getNicknameFromToken, getMappingFromAttitudeComprehensive, getRestrictedFromCommentComprehensive, getTopicBase64StringsArrayFromRequestBody, getImageUrlsArrayFromRequestBody, getParagraphsArrayFromRequestBody, verifyId, response405, response500, log } from '../../../../../../lib/utils';
+import { INoticeInfo, INotificationStatistics, IMemberStatistics, IAttitudeComprehensive, IChannelStatistics, ITopicComprehensive, IPostComprehensive } from '../../../../../../lib/interfaces';
+import { getNicknameFromToken, getMappingFromAttitudeComprehensive, verifyId, response405, response500, log } from '../../../../../../lib/utils';
 
 // This interface accepts GET and POST requests
 //
@@ -63,7 +61,7 @@ export default async function AttitudeOnPost(req: NextApiRequest, res: NextApiRe
                 res.status(400).send('Invalid post id');
                 return;
             }
-            atlasDbClient.connect();
+            await atlasDbClient.connect();
             const attitudeComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IAttitudeComprehensive>('attitude');
             const attitudeComprehensiveQueryResult = await attitudeComprehensiveCollectionClient.findOne({ memberId, postId });
             res.status(200).send(getMappingFromAttitudeComprehensive(attitudeComprehensiveQueryResult));

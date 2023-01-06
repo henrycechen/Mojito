@@ -3,13 +3,11 @@ import { getToken } from 'next-auth/jwt'
 import { RestError } from '@azure/data-tables';
 import { MongoError } from 'mongodb';
 
-import AzureTableClient from '../../../../../../../modules/AzureTableClient';
-import AtlasDatabaseClient from "../../../../../../../modules/AtlasDatabaseClient";
+import AzureTableClient from '../../../../../../../../modules/AzureTableClient';
+import AtlasDatabaseClient from "../../../../../../../../modules/AtlasDatabaseClient";
 
-import { INoticeInfo, INotificationStatistics, IMemberStatistics, IAttitudeComprehensive, ICommentComprehensive, IChannelStatistics, ITopicComprehensive, ITopicPostMapping, IPostComprehensive } from '../../../../../../../lib/interfaces';
-
-import { MemberInfo } from '../../../../../../../lib/types';
-import { getRandomIdStr, getRandomIdStrL, getNicknameFromToken, getContentBrief, getMappingFromAttitudeComprehensive, getRestrictedFromCommentComprehensive, getTopicBase64StringsArrayFromRequestBody, getImageUrlsArrayFromRequestBody, getParagraphsArrayFromRequestBody, verifyId, response405, response500, log } from '../../../../../../../lib/utils';
+import { INoticeInfo, INotificationStatistics, IMemberStatistics, IAttitudeComprehensive, IPostComprehensive } from '../../../../../../../../lib/interfaces';
+import { getNicknameFromToken, getContentBrief, verifyId, response405, response500, log } from '../../../../../../../../lib/utils';
 
 // This interface only accepts POST requests
 //
@@ -31,13 +29,14 @@ export default async function AttitudeOnComment(req: NextApiRequest, res: NextAp
         res.status(400).send('Invalid identity');
         return;
     }
+    // FIXME: using new comment layout
     const { isValid, category, id: commentId } = verifyId(req.query?.id);
     //// Verify comment / subcomment id ////
     if (!isValid) {
         res.status(400).send('Invalid comment or subcomment id');
         return;
     }
-    const { isValid: isValidPostId, id: postId } = verifyId(req.query?.id);
+    const { isValid: isValidPostId, id: postId } = verifyId(req.query?.parentId);
     //// Verify post id ////
     if (!isValidPostId) {
         res.status(400).send('Invalid post id');
@@ -52,7 +51,7 @@ export default async function AttitudeOnComment(req: NextApiRequest, res: NextAp
     //// Declare DB client ////
     const atlasDbClient = AtlasDatabaseClient();
     try {
-        atlasDbClient.connect();
+        await atlasDbClient.connect();
         // Step #1.1 prepare member id
         const { sub: memberId } = token;
         // Step #1.2 look up document (of IMemberComprehensive) in [C] memberComprehensive
@@ -71,13 +70,13 @@ export default async function AttitudeOnComment(req: NextApiRequest, res: NextAp
         // Step #2.1 look up document (of IPostComprehensive) in [C] postComprehensive
         const postComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IPostComprehensive>('post');
         const postComprehensiveQueryResult = await postComprehensiveCollectionClient.findOne({ postId });
-        if (null === memberComprehensiveQueryResult) {
+        if (null === postComprehensiveQueryResult) {
             res.status(404).send('Post not found');
             await atlasDbClient.close();
             return;
         }
         // Step #2.2 verify post status (of IPostComprehensive)
-        const { status: postStatus } = memberComprehensiveQueryResult;
+        const { status: postStatus } = postComprehensiveQueryResult;
         if (0 > postStatus) {
             res.status(403).send('Method not allowed due to post deleted');
             await atlasDbClient.close();
@@ -85,7 +84,7 @@ export default async function AttitudeOnComment(req: NextApiRequest, res: NextAp
         }
         // Step #3.1 look up document (of IPostComprehensive) in [C] postComprehensive
         const commentComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection(category);
-        const commentComprehensiveQueryResult = await commentComprehensiveCollectionClient.findOne({ commentId: commentId });
+        const commentComprehensiveQueryResult = await commentComprehensiveCollectionClient.findOne({ commentId });
         if (null === commentComprehensiveQueryResult) {
             res.status(404).send('Comment not found');
             await atlasDbClient.close();
@@ -240,7 +239,7 @@ export default async function AttitudeOnComment(req: NextApiRequest, res: NextAp
                 await noticeTableClient.upsertEntity<INoticeInfo>({
                     partitionKey: memberId_comment, // notified member id, in this case, comment author
                     rowKey: commentId, // entity id, in this case, comment id
-                    Category: 'Liked',
+                    Category: 'like',
                     InitiateId: memberId,
                     Nickname: getNicknameFromToken(token),
                     PostId: postId,

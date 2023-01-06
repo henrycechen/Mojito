@@ -4,6 +4,8 @@ import { getToken } from 'next-auth/jwt'
 
 import AtlasDatabaseClient from "../../../../modules/AtlasDatabaseClient";
 
+import { INoticeInfo, INotificationStatistics, IMemberStatistics, IAttitudeComprehensive, ICommentComprehensive, IChannelStatistics, ITopicComprehensive, ITopicPostMapping, IPostComprehensive } from '../../../../lib/interfaces';
+
 import { response405, response500, log } from '../../../../lib/utils';
 
 
@@ -22,8 +24,20 @@ export default async function CancelMembership(req: NextApiRequest, res: NextApi
     const { sub: memberId } = token;
     const atlasDbClient = AtlasDatabaseClient();
     try {
-
-    } catch (e) {
+        await atlasDbClient.connect();
+        const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberStatistics>('member');
+        const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne({ memberId });
+        if (null === memberComprehensiveQueryResult) {
+            throw new Error(`Member was trying expressing attitude but have no document (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
+        }
+        // Step #1.3 verify member status (of IMemberComprehensive)
+        const { status: memberStatus } = memberComprehensiveQueryResult;
+        if (0 > memberStatus) {
+            res.status(403).send('Method not allowed due to member suspended');
+            await atlasDbClient.close();
+            return;
+        }
+    } catch (e: any) {
         let msg;
         if (e instanceof MongoError) {
             msg = 'Was trying communicating with atlas mongodb.';

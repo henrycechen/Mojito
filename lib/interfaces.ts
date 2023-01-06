@@ -1,3 +1,6 @@
+// import common interfaces
+// import { INoticeInfo, IMemberPostMapping, IMemberComprehensive, IRestrictedMemberInfo, IMemberStatistics, ILoginJournal, INotificationStatistics, IAttitudeComprehensive, IAttitideMapping, ICommentComprehensive, IEditedCommentComprehensive, IRestrictedCommentComprehensive, IChannelStatistics, ITopicComprehensive, ITopicPostMapping, IPostComprehensive, IEditedPostComprehensive, IRestrictedPostComprehensive } from '../../../../lib/interfaces';
+
 //////// Process States ////////
 export interface IProcessStates {
     [key: string]: any
@@ -46,13 +49,11 @@ export interface IResetPasswordCredentials extends ICredentials {
 // [PRL] Notice
 export interface INoticeInfo extends IAzureTableEntity {
     partitionKey: string; // notified member id
-    rowKey: string; // entity id (post / comment / subcomment id)
-    Category: 'Cued' | 'Replied' | 'Liked' | 'Pinned' | 'Saved' | 'Followed';
+    rowKey: string; // notice id
+    Category: 'cue' | 'reply' | 'like' | 'pin' | 'save' | 'follow';
     InitiateId: string; // initiate member id
     Nickname: string; // initiate member nickname
-    PostId?: string;
     PostTitle?: string;
-    CommentId?: string;
     CommentBrief?: string;
 }
 
@@ -66,16 +67,6 @@ export interface IMemberPostMapping extends IAzureTableEntity {
 //////// Atlas Collection Entity ////////
 export interface IAtlasCollectionDocument {
     [key: string]: any;
-}
-
-// [C] notificationStatistics
-export interface INotificationStatistics extends IAtlasCollectionDocument {
-    memberId: string; // member id
-    cuedCount?: number; // cued times accumulated from last count reset
-    repliedCount?: number;
-    likedCount?: number;
-    savedCount?: number;
-    followedCound?: number;
 }
 
 // [C] memberComprehensive
@@ -95,6 +86,11 @@ export interface IMemberComprehensive extends IAtlasCollectionDocument {
     status?: number;
     allowPosting?: boolean;
     allowCommenting?: boolean;
+}
+
+export interface IRestrictedMemberInfo {
+    memberId: string;
+    nickname: string;
 }
 
 // [C] memberStatistics
@@ -154,6 +150,16 @@ export interface ILoginJournal extends IAtlasCollectionDocument {
     message: string; // short message, e.g., 'Attempted login while email address not verified.'
 }
 
+// [C] notificationStatistics
+export interface INotificationStatistics extends IAtlasCollectionDocument {
+    memberId: string; // member id
+    cuedCount?: number; // cued times accumulated from last count reset
+    repliedCount?: number;
+    likedCount?: number;
+    savedCount?: number;
+    followedCound?: number;
+}
+
 // [C] attitudeComprehensive
 export interface IAttitudeComprehensive extends IAtlasCollectionDocument {
     memberId: string;
@@ -174,11 +180,13 @@ export interface IAttitideMapping extends IAtlasCollectionDocument {
 // [C] commentComprehensive
 export interface ICommentComprehensive extends IAtlasCollectionDocument {
     //// info ////
-    commentId: string; // 12 ~ 13 characters, UPPERCASE, begin with 'C'
+    commentId: string; // 12 ~ 13 characters, UPPERCASE, comment id begin with 'C', subcomment id begin with 'D'
+    parentId: string; //  post id (comment entities) or comment id (subcomment entities)
     postId: string;
     memberId: string;
-    createdTime: number; // created time of this document (comment est.)
+    createdTime: number; // created time of this document
     content: string;
+    cuedMemberInfoArr: IRestrictedMemberInfo[];
 
     //// management ////
     status: number;
@@ -188,8 +196,8 @@ export interface ICommentComprehensive extends IAtlasCollectionDocument {
     totalUndoLikedCount: number;
     totalDislikedCount: number;
     totalUndoDislikedCount: number;
-    totalSubcommentCount: number;
-    totalSubcommentDeleteCount: number;
+    totalSubcommentCount?: number; // for comment entities only
+    totalSubcommentDeleteCount?: number; // for comment entities only
     totalEditCount: number;
 
     //// edit info ////
@@ -198,7 +206,9 @@ export interface ICommentComprehensive extends IAtlasCollectionDocument {
 
 export interface IEditedCommentComprehensive extends IAtlasCollectionDocument {
     editedTime: number;
-    content: string;
+    contentBeforeEdit: string;
+    cuedMemberInfoArrBeforeEdit: IRestrictedMemberInfo[];
+    //// Statistics ////
     totalLikedCountBeforeEdit: number;
     totalDislikedCountBeforeEdit: number;
     totalSubcommentCountBeforeEdit?: number;
@@ -206,11 +216,12 @@ export interface IEditedCommentComprehensive extends IAtlasCollectionDocument {
 
 export interface IRestrictedCommentComprehensive extends IAtlasCollectionDocument {
     //// info ////
-    commentId: string; //12 ~ 13 characters, UPPERCASE, begin with 'C'
+    commentId: string; //12 ~ 13 characters, UPPERCASE, comment id begin with 'C', subcomment id begin with 'D'
     postId: string;
     memberId: string;
-    createdTime: number; // created time of this document (comment est.)
+    createdTime: number; // created time of this document
     content: string | null;
+    cuedMemberInfoArr: IRestrictedMemberInfo[];
 
     //// management ////
     status: number;
@@ -218,53 +229,10 @@ export interface IRestrictedCommentComprehensive extends IAtlasCollectionDocumen
     //// statistics ////
     totalLikedCount: number;
     totalDislikedCount: number;
-    totalSubcommentCount: number;
+    totalSubcommentCount?: number; // for comment entities only
 
     //// edit info ////
-    editedTime: number | null;
-}
-
-// [C] subcommentComprehensive
-export interface ISubcommentComprehensive extends IAtlasCollectionDocument {
-    //// info ////
-    commentId: string; // 12 ~ 13 characters, UPPERCASE, begin with 'D'
-    parentId: string; // parent comment id
-    postId: string;
-    memberId: string;
-    createdTime: number; // created time of this document (subcomment est.)
-    content: string;
-
-    //// management ////
-    status: number;
-
-    //// statistics ////
-    totalLikedCount: number;
-    totalUndoLikedCount: number;
-    totalDislikedCount: number;
-    totalUndoDislikedCount: number;
-    totalEditCount: number;
-
-    //// edit info ////
-    edited: IEditedCommentComprehensive[];
-}
-
-export interface IRestrictedSubommentComprehensive extends IAtlasCollectionDocument {
-    //// info ////
-    commentId: string; // 12 ~ 13 characters, UPPERCASE, begin with 'D'
-    parentId: string; // parent comment id
-    memberId: string;
-    createdTime: number; // created time of this document (comment est.)
-    content: string | null;
-
-    //// management ////
-    status: number;
-
-    //// statistics ////
-    totalLikedCount: number;
-    totalDislikedCount: number;
-
-    //// edit info ////
-    editedTime: number | null;
+    editedTime?: number;
 }
 
 // [C] channelStatistics
@@ -327,6 +295,7 @@ export interface IPostComprehensive extends IAtlasCollectionDocument {
     title: string;
     imageUrlsArr: string[];
     paragraphsArr: string[];
+    cuedMemberInfoArr: IRestrictedMemberInfo[];
     channelId: string;
     topicIdsArr: string[];
     pinnedCommentId: string | null;
@@ -352,11 +321,12 @@ export interface IPostComprehensive extends IAtlasCollectionDocument {
 
 export interface IEditedPostComprehensive extends IAtlasCollectionDocument {
     editedTime: number;
-    titleBeforeEdited: string;
-    imageUrlsArrBeforeEdited: string[];
-    paragraphsArrBeforeEdited: string[];
-    channelIdBeforeEdited: string;
-    topicIdsArrBeforeEdited: string[];
+    titleBeforeEdit: string;
+    imageUrlsArrBeforeEdit: string[];
+    paragraphsArrBeforeEdit: string[];
+    cuedMemberInfoArrBeforeEdit: IRestrictedMemberInfo[];
+    channelIdBeforeEdit: string;
+    topicIdsArrBeforeEdit: string[];
     totalLikedCountBeforeEdit: number;
     totalDislikedCountBeforeEdit: number;
 }
@@ -369,6 +339,7 @@ export interface IRestrictedPostComprehensive extends IAtlasCollectionDocument {
     title: string | null;
     imageUrlsArr: string[];
     paragraphsArr: string[];
+    cuedMemberInfoArr: IRestrictedMemberInfo[];
     channelId: string;
     topicIdsArr: string[];
     pinnedCommentId: string | null;

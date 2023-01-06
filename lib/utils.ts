@@ -1,15 +1,21 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { IAttitudeComprehensive, IAttitideMapping, ICommentComprehensive, IRestrictedCommentComprehensive, IRestrictedPostComprehensive, ISubcommentComprehensive, IRestrictedSubommentComprehensive, IPostComprehensive } from './interfaces';
+import { IRestrictedMemberInfo, IAttitudeComprehensive, IAttitideMapping, ICommentComprehensive, IRestrictedCommentComprehensive, IRestrictedPostComprehensive, IPostComprehensive } from './interfaces';
 import { ProcessStates } from './types';
+
+// import common utils for API
+// import { createId, createNoticeId, getRandomIdStr, getRandomIdStrL, getRandomHexStr, timeStampToString, getNicknameFromToken, getContentBrief, getMappingFromAttitudeComprehensive, createCommentComprehensive, provideCommentComprehensiveUpdate, getRestrictedFromCommentComprehensive, getTopicBase64StringsArrayFromRequestBody, getImageUrlsArrayFromRequestBody, getParagraphsArrayFromRequestBody, getRestrictedFromPostComprehensive, verifyEmailAddress, verifyPassword, verifyId, verifyUrl, verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500, log } from '../../../../lib/utils';
+
+// import common utils for Client
+// import { updateLocalStorage, restoreFromLocalStorage} from '../../../../lib/utils';
 
 //  Rules of creating random IDs / names
 //
 //  IDs
-//  - Member id : 7 ~ 8 characters, UPPERCASE, begin with 'M'
-//  - Post id : 9 ~ 10 characters, UPPERCASE, begin with 'P'
+//  - Member id : 8 ~ 9 characters, UPPERCASE, begin with 'M'
+//  - Notice id : 6 ~ 7 characters, UPPERCASE, begin with 'N'
 //  - Topic id : base64 string from topic content string, begin with 'T'
-//  - Comment id : 12 ~ 13 characters, UPPERCASE, begin with 'C'
-//  - Subcomment id : 12 ~ 13 characters, UPPERCASE, begin with 'D'
+//  - Comment id : 12 ~ 13 characters, UPPERCASE, comment begin with 'C', subcomment begin with 'D'
+//  - Post id : 10 ~ 11 characters, UPPERCASE, begin with 'P'
 //
 //  Names
 //  - Image filename : 10 characters, lowercase
@@ -18,12 +24,24 @@ import { ProcessStates } from './types';
 //  - Verify email address token: 8 characters Hex, UPPERCASE
 //  - Reset password token: 8 characters Hex, UPPERCASE
 //
-export function createId(catergory: 'member' | 'post' | 'comment' | 'subcomment'): string {
+export function createId(catergory: 'member' | 'notice' | 'comment' | 'subcomment' | 'post'): string {
     switch (catergory) {
-        case 'member': return 'M' + Math.floor(Math.random() * Math.pow(10, 10)).toString(35).toUpperCase(); // Length of 8 (1 + 7)
-        case 'post': return 'P' + Math.floor(Math.random() * Math.pow(10, 13)).toString(35).toUpperCase(); // Length of 10 (1 + 9)
-        case 'comment': return 'C' + Math.floor(Math.random() * Math.pow(10, 7)).toString(35).toUpperCase() + Math.floor(Math.random() * Math.pow(10, 8)).toString(35).toUpperCase(); // Length of 12 (1 + 11)
-        case 'subcomment': return 'D' + Math.floor(Math.random() * Math.pow(10, 7)).toString(35).toUpperCase() + Math.floor(Math.random() * Math.pow(10, 8)).toString(35).toUpperCase(); // Length of 12 (1 + 11)
+        case 'member': return 'M' + Math.floor(Math.random() * Math.pow(10, 11)).toString(35).toUpperCase();
+        case 'notice': return 'N' + Math.floor(Math.random() * Math.pow(10, 8)).toString(35).toUpperCase();
+        case 'comment': return 'C' + Math.floor(Math.random() * Math.pow(10, 8)).toString(35).toUpperCase() + Math.floor(Math.random() * Math.pow(10, 9)).toString(35).toUpperCase();
+        case 'subcomment': return 'D' + Math.floor(Math.random() * Math.pow(10, 8)).toString(35).toUpperCase() + Math.floor(Math.random() * Math.pow(10, 9)).toString(35).toUpperCase();
+        case 'post': return 'P' + Math.floor(Math.random() * Math.pow(10, 14)).toString(35).toUpperCase();
+    }
+}
+
+export function createNoticeId(category: 'cue' | 'reply' | 'like' | 'pin' | 'save' | 'follow', initiateId: string, postId = '', commentId = ''): string {
+    switch (category) {
+        case 'cue': return `C-${initiateId}${!postId ? '' : '-' + postId}${!commentId ? '' : '-' + commentId}`;
+        case 'reply': return `R-${initiateId}${!postId ? '' : '-' + postId}${!commentId ? '' : '-' + commentId}`;
+        case 'like': return `L-${initiateId}${!postId ? '' : '-' + postId}${!commentId ? '' : '-' + commentId}`;
+        case 'pin': return `P-${initiateId}${!postId ? '' : '-' + postId}${!commentId ? '' : '-' + commentId}`;
+        case 'save': return `S-${initiateId}${!postId ? '' : '-' + postId}`;
+        case 'follow': return 'F-' + initiateId;
     }
 }
 
@@ -43,20 +61,11 @@ export function getRandomIdStrL(useUpperCase: boolean = false): string { // Leng
     }
 }
 
-
 export function getRandomHexStr(useUpperCase: boolean = false): string { // Length of 8 (Hex)
     if (useUpperCase) {
         return Math.floor(Math.random() * Math.pow(10, 10)).toString(16).toUpperCase();
     } else {
         return Math.floor(Math.random() * Math.pow(10, 10)).toString(16);
-    }
-}
-
-export function getRandomHexStrS(useUpperCase: boolean = false): string {
-    if (useUpperCase) {
-        return Math.floor(Math.random() * Math.pow(10, 5)).toString(16).toUpperCase();
-    } else {
-        return Math.floor(Math.random() * Math.pow(10, 5)).toString(16);
     }
 }
 
@@ -76,6 +85,11 @@ export function timeStampToString(timeStamp: any): string {
 }
 
 //////// Nickname ////////
+/**
+ * 
+ * @param token JWT
+ * @returns nickname | 'MojitoMemberM1234ABCD'
+ */
 export function getNicknameFromToken(token: any): string {
     if (token.hasOwnProperty('name')) {
         return token.name;
@@ -83,7 +97,7 @@ export function getNicknameFromToken(token: any): string {
         let id = `${token.sub}`;
         return 'MojitoMember ' + id.slice(0, 4);
     }
-    return 'MojitoMember ' + getRandomHexStrS(true);
+    return 'MojitoMember ' + getRandomHexStr(true);
 }
 
 //////// Content ////////
@@ -117,62 +131,77 @@ export function getMappingFromAttitudeComprehensive(attitudeComprehensive: IAtti
 }
 
 //////// Comment ////////
+export function createCommentComprehensive(commentId: string, parentId: string, postId: string, memberId: string, content: string, cuedMemberInfoArr: any): ICommentComprehensive {
+    const arr = [];
+    if (Array.isArray(cuedMemberInfoArr) && cuedMemberInfoArr.length !== 0) {
+        arr.push(...cuedMemberInfoArr);
+    }
+    const comment: ICommentComprehensive = {
+        commentId,
+        parentId,
+        postId,
+        memberId,
+        createdTime: new Date().getTime(),
+        content, // required
+        cuedMemberInfoArr: arr,
+        status: 200,
+        totalLikedCount: 0,
+        totalUndoLikedCount: 0,
+        totalDislikedCount: 0,
+        totalUndoDislikedCount: 0,
+        totalEditCount: 0,
+        edited: []
+    }
+    if ('C' === commentId.slice(0, 1)) {
+        comment.totalSubcommentCount = 0
+        comment.totalSubcommentDeleteCount = 0
+    }
+    return comment;
+}
+
+type UpdateCommentComprehensive = {
+    content: string;
+    cuedMemberInfoArr?: IRestrictedCommentComprehensive[];
+}
+
+export function provideCommentComprehensiveUpdate(content: string, cuedMemberInfoArr: any): UpdateCommentComprehensive {
+    const updated: UpdateCommentComprehensive = { content };
+    if (Array.isArray(cuedMemberInfoArr) && cuedMemberInfoArr.length !== 0) {
+        updated.cuedMemberInfoArr = [...cuedMemberInfoArr];
+    }
+    return updated;
+}
+
 export function getRestrictedFromCommentComprehensive(commentComprehensive: ICommentComprehensive): IRestrictedCommentComprehensive {
-    const { status, totalLikedCount, totalUndoLikedCount, totalDislikedCount, totalUndoDislikedCount, totalSubcommentCount, totalSubcommentDeleteCount } = commentComprehensive;
-    const totalLiked = totalLikedCount - totalUndoLikedCount;
-    const totalDisliked = totalDislikedCount - totalUndoDislikedCount;
-    const totalSubcomment = totalSubcommentCount - totalSubcommentDeleteCount;
+    const { status, totalLikedCount, totalUndoLikedCount, totalDislikedCount, totalUndoDislikedCount } = commentComprehensive;
     const restricted: IRestrictedCommentComprehensive = {
-        commentId: commentComprehensive.commentId, // 16 characters, UPPERCASE
+        commentId: commentComprehensive.commentId, // 12 ~ 13 characters, UPPERCASE, begin with 'C'
         postId: commentComprehensive.postId,
         memberId: commentComprehensive.memberId,
         createdTime: commentComprehensive.createdTime, // created time of this document (comment est.)
         content: null,
+        cuedMemberInfoArr: [],
         status: status,
-        totalLikedCount: totalLiked,
-        totalDislikedCount: totalDisliked,
-        totalSubcommentCount: totalSubcomment,
-        editedTime: null
+        totalLikedCount: totalLikedCount - totalUndoLikedCount,
+        totalDislikedCount: totalDislikedCount - totalUndoDislikedCount
+    }
+    const { totalSubcommentCount, totalSubcommentDeleteCount } = commentComprehensive;
+    if (('number' === typeof totalSubcommentCount) && ('number' === typeof totalSubcommentDeleteCount)) {
+        if (0 > totalSubcommentCount - totalSubcommentDeleteCount) {
+            restricted.totalSubcommentCount = 0
+        } else {
+            restricted.totalSubcommentCount = totalSubcommentCount - totalSubcommentDeleteCount;
+        }
     }
     if ('number' === typeof status && 0 > status) {
         return restricted;
     }
     restricted.content = commentComprehensive.content;
+    restricted.cuedMemberInfoArr.push(...commentComprehensive.cuedMemberInfoArr);
     if ('number' === typeof status && 1 === status % 100) {
         const { edited } = commentComprehensive;
         if (Array.isArray(edited) && edited.length !== 0) {
-            const lastEdit = edited[edited.length - 1];
-            restricted.editedTime = lastEdit.editedTime;
-        }
-    }
-    return restricted;
-}
-
-//////// Subcomment ////////
-export function getRestrictedFromSubommentComprehensive(subcommentComprehensive: ISubcommentComprehensive): IRestrictedSubommentComprehensive {
-    const { status, totalLikedCount, totalUndoLikedCount, totalDislikedCount, totalUndoDislikedCount } = subcommentComprehensive;
-    const totalLiked = totalLikedCount - totalUndoLikedCount;
-    const totalDisliked = totalDislikedCount - totalUndoDislikedCount;
-    const restricted: IRestrictedSubommentComprehensive = {
-        subcommentId: subcommentComprehensive.subcommentId, // 16 characters, UPPERCASE
-        commentId: subcommentComprehensive.commentId, // 16 characters, UPPERCASE
-        memberId: subcommentComprehensive.memberId,
-        createdTime: subcommentComprehensive.createdTime, // created time of this document (comment est.)
-        content: null,
-        status: status,
-        totalLikedCount: totalLiked,
-        totalDislikedCount: totalDisliked,
-        editedTime: null
-    };
-    if ('number' === typeof status && 0 > status) {
-        return restricted;
-    }
-    restricted.content = subcommentComprehensive.content;
-    if ('number' === typeof status && 1 === status % 100) {
-        const { edited } = subcommentComprehensive;
-        if (Array.isArray(edited) && edited.length !== 0) {
-            const lastEdit = edited[edited.length - 1];
-            restricted.editedTime = lastEdit.editedTime;
+            restricted.editedTime = edited[edited.length - 1].editedTime;
         }
     }
     return restricted;
@@ -225,6 +254,7 @@ export function getRestrictedFromPostComprehensive(postComprehensive: IPostCompr
         title: null,
         imageUrlsArr: [],
         paragraphsArr: [],
+        cuedMemberInfoArr: [],
         channelId: postComprehensive.channelId,
         topicIdsArr: [],
         pinnedCommentId: null,
@@ -248,6 +278,7 @@ export function getRestrictedFromPostComprehensive(postComprehensive: IPostCompr
     restricted.title = postComprehensive.title;
     restricted.imageUrlsArr.push(...postComprehensive.imageUrlsArr);
     restricted.paragraphsArr.push(...postComprehensive.paragraphsArr);
+    restricted.cuedMemberInfoArr.push(...postComprehensive.cuedMemberInfoArr);
     restricted.topicIdsArr.push(...postComprehensive.topicIdsArr);
     restricted.pinnedCommentId = postComprehensive.pinnedCommentId;
     if ('number' === typeof status && 1 === status % 100) {
@@ -297,7 +328,7 @@ export function verifyPassword(password: any): boolean {
 }
 
 export function verifyId(id: any) {
-    if (!(undefined !== id && 'string' !== typeof id)) {
+    if (!(undefined !== id && 'string' === typeof id)) {
         return {
             isValid: false,
             category: '',
@@ -306,44 +337,45 @@ export function verifyId(id: any) {
     }
     const ref = `${id}`.toUpperCase();
     const cat = ref.slice(0, 1);
-    if (!(new RegExp(/[MPTCD]/).test(cat))) {
+    if (!(new RegExp(/[CDMNPT]/).test(cat))) {
         return {
             isValid: false,
             category: '',
             id: ''
         }
     }
-    const idc = ref.split(cat)[1];
     switch (cat) {
         case 'M':
-            if (new RegExp(`^[A-Z0-9]{7,8}$`).test(idc)) {
+            if (new RegExp(`^[A-Z0-9]{8,9}$`).test(ref)) {
                 return { isValid: false, category: 'member', id: '' }
             } else {
                 return { isValid: true, category: 'member', id: ref }
             }
-        case 'P':
-            if (new RegExp(`^[A-Z0-9]{9,10}$`).test(idc)) {
-                return { isValid: false, category: 'post', id: '' }
+        case 'N':
+            if (new RegExp(`^[A-Z0-9]{6,7}$`).test(ref)) {
+                return { isValid: false, category: 'notice', id: '' }
             } else {
-                return { isValid: true, category: 'post', id: ref }
+                return { isValid: true, category: 'notice', id: ref }
             }
         case 'T':
-            if (new RegExp(`^[A-Z0-9]{5,6}$`).test(idc)) {
-                return { isValid: false, category: 'topic', id: '' }
-            } else {
-                return { isValid: true, category: 'topic', id: ref }
-            }
+            return { isValid: true, category: 'topic', id: ref }
         case 'C':
-            if (new RegExp(`^[A-Z0-9]{12,13}$`).test(idc)) {
+            if (new RegExp(`^[A-Z0-9]{12,13}$`).test(ref)) {
                 return { isValid: false, category: 'comment', id: '' }
             } else {
                 return { isValid: true, category: 'comment', id: ref }
             }
         case 'D':
-            if (new RegExp(`^[A-Z0-9]{12,13}$`).test(idc)) {
+            if (new RegExp(`^[A-Z0-9]{12,13}$`).test(ref)) {
                 return { isValid: false, category: 'subcomment', id: '' }
             } else {
                 return { isValid: true, category: 'subcomment', id: ref }
+            }
+        case 'P':
+            if (new RegExp(`^[A-Z0-9]{10,11}$`).test(ref)) {
+                return { isValid: false, category: 'post', id: '' }
+            } else {
+                return { isValid: true, category: 'post', id: ref }
             }
         default: return {
             isValid: false,

@@ -74,8 +74,6 @@ Azure Web App / [Vercel](https://vercel.com/pricing)
 
 
 
-
-
 ## File Storage
 
 ### 💡[Design] 
@@ -90,10 +88,6 @@ Azure Web App / [Vercel](https://vercel.com/pricing)
 | ---------- | ----------- | ----------------------- | --------- | -------- |
 | Dev&Test   | **Hot**     | $0.0342 per GB          | $0.1223   | $0.0098  |
 | Production | **Hot**     | $0.0342 per GB          | $0.1223   | $0.0098  |
-
-
-
-
 
 
 
@@ -129,16 +123,14 @@ type ResetPasswordRequestInfo = {
 
 
 
-
-
-
-
 # Tables (Azure Storage)
 
 \* Terms:
 
 - [RL]: Relation record table
 - [PRL]: Passive Relation record table (side-affected by operations on the corresponding RL table)
+
+
 
 ## 📘Member
 
@@ -200,23 +192,21 @@ type ResetPasswordRequestInfo = {
 
 
 
-
-
 ## 📘Notification
 
-| Property     | Type   | Desc                     |
-| ------------ | ------ | ------------------------ |
-| NoticeId     | string | 16 characters, UPPERCASE |
-| PostTitle    | string |                          |
-| CommentBrief | string | maximum 21 characters    |
+| Property     | Type   | Desc                                                         |
+| ------------ | ------ | ------------------------------------------------------------ |
+| NoticeId     | string | combined id strings, 10 ~ 36 characters, UPPERCASE, begin with Notice category code (e.g., 'C', cued) |
+| PostTitle    | string |                                                              |
+| CommentBrief | string | maximum 21 characters                                        |
 
 ### [PRL] Notice
 
 #### Cued (@)
 
-| PartitionKey        | RowKey   | Category | InitiateId  | PostId | PostTitle | CommentId | CommentBrief |
-| ------------------- | -------- | -------- | ----------- | ------ | --------- | --------- | ------------ |
-| NotifiedMemberIdStr | EntityId | `"Cued"` | MemberIdStr | string | string    | string    | string       |
+| PartitionKey        | RowKey   | Category | InitiateId  | Nickname | PostTitle | CommentBrief? |
+| ------------------- | -------- | -------- | ----------- | -------- | --------- | ------------- |
+| NotifiedMemberIdStr | NoticeId | `"cue"`  | MemberIdStr | string   | string    | string        |
 
 ```
 - WebMaster在帖子“WebMaster在Mojito发的第一篇帖子”中提到了您
@@ -225,9 +215,9 @@ type ResetPasswordRequestInfo = {
 
 #### Replied (↩️)
 
-| PartitionKey        | RowKey   | Category    | InitiateId  | PostId | PostTitle | CommentId | CommentBrief |
-| ------------------- | -------- | ----------- | ----------- | ------ | --------- | --------- | ------------ |
-| NotifiedMemberIdStr | EntityId | `"Replied"` | MemberIdStr | string | string    | string    | string       |
+| PartitionKey        | RowKey   | Category  | InitiateId  | Nickname | PostTitle | CommentBrief? |
+| ------------------- | -------- | --------- | ----------- | -------- | --------- | ------------- |
+| NotifiedMemberIdStr | NoticeId | `"reply"` | MemberIdStr | string   | string    | string        |
 
 ```
 - WebMaster回复了您的帖子“WebMaster在Mojito发的第一篇帖子”
@@ -236,9 +226,9 @@ type ResetPasswordRequestInfo = {
 
 #### Liked (❤️)
 
-| PartitionKey        | RowKey   | Category  | InitiateId  | PostId | PostTitle | CommentId? | CommentBrief? |
-| ------------------- | -------- | --------- | ----------- | ------ | --------- | ---------- | ------------- |
-| NotifiedMemberIdStr | EntityId | `"Liked"` | MemberIdStr | string | string    | string     | string        |
+| PartitionKey        | RowKey   | Category | InitiateId  | Nickname | PostTitle | CommentBrief? |
+| ------------------- | -------- | -------- | ----------- | -------- | --------- | ------------- |
+| NotifiedMemberIdStr | NoticeId | `"like"` | MemberIdStr | string   | string    | string        |
 
 ```
 - WebMaster喜欢了您的帖子“WebMaster在Mojito发的第一篇帖子”
@@ -247,9 +237,9 @@ type ResetPasswordRequestInfo = {
 
 #### Pinned (⬆️)
 
-| PartitionKey        | RowKey   | Category   | InitiateId  | PostId | PostTitle |
-| ------------------- | -------- | ---------- | ----------- | ------ | --------- |
-| NotifiedMemberIdStr | EntityId | `"Pinned"` | MemberIdStr | string | string    |
+| PartitionKey        | RowKey   | Category | InitiateId  | Nickname | PostTitle | CommentBrief |
+| ------------------- | -------- | -------- | ----------- | -------- | --------- | ------------ |
+| NotifiedMemberIdStr | NoticeId | `"pin"`  | MemberIdStr | string   | string    | string       |
 
 ```
 - WebMaster置顶了您在“WebMaster在Mojito发的第一篇帖子”中发表的评论“可喜可贺可惜可...”
@@ -257,9 +247,9 @@ type ResetPasswordRequestInfo = {
 
 #### Saved (💾)
 
-| PartitionKey        | RowKey   | Category  | InitiateId  | PostId | PostTitle |
-| ------------------- | -------- | --------- | ----------- | ------ | --------- |
-| NotifiedMemberIdStr | EntityId | `"Saved"` | MemberIdStr | string | string    |
+| PartitionKey        | RowKey   | Category | InitiateId  | Nickname | PostTitle |
+| ------------------- | -------- | -------- | ----------- | -------- | --------- |
+| NotifiedMemberIdStr | NoticeId | `"save"` | MemberIdStr | string   | string    |
 
 ```
 - WebMaster收藏了“WebMaster在Mojito发的第一篇帖子”中提到了您
@@ -267,15 +257,13 @@ type ResetPasswordRequestInfo = {
 
 #### Followed (🔔)
 
-| PartitionKey        | RowKey   | Category     | InitiateId  |
-| ------------------- | -------- | ------------ | ----------- |
-| NotifiedMemberIdStr | EntityId | `"Followed"` | MemberIdStr |
+| PartitionKey        | RowKey   | Category   | InitiateId  | Nickname |
+| ------------------- | -------- | ---------- | ----------- | -------- |
+| NotifiedMemberIdStr | NoticeId | `"follow"` | MemberIdStr | string   |
 
 ```
 - WebMaster关注了您
 ```
-
-
 
 
 
@@ -308,8 +296,6 @@ type ResetPasswordRequestInfo = {
 | PartitionKey | RowKey      | InedxValue                |
 | ------------ | ----------- | ------------------------- |
 | `"Index"`    | `"default"` | string, stringified array |
-
-
 
 
 
@@ -347,15 +333,9 @@ type ResetPasswordRequestInfo = {
 
 
 
-
-
 ## Reference
 
 - Microsoft - Design for Querying [Link](https://learn.microsoft.com/en-us/azure/storage/tables/table-storage-design-for-query)
-
-
-
-
 
 
 
@@ -365,30 +345,11 @@ type ResetPasswordRequestInfo = {
 
 \* Terms:
 
-- [C]: Collection
+- \[C\]: Collection
 
 ```shell
 mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statistics-dev" --apiVersion 1 --username dbmaster
 ```
-
-## 📗Notification
-
-### [C] notificationStatistics
-
-```typescript
-{
-    _id: ObjectId;
-    
-    memberId: string;
-    cuedCount: number; // accumulated from last reset
-    repliedCount: number;
-    likedCount: number;
-    savedCount: number;
-    followedCount: number;
-}
-```
-
-
 
 
 
@@ -403,7 +364,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
     _id: string;  // mongodb obejct id
     
     //// info ////
-    memberId: string; //  7 ~ 8 characters, UPPERCASE, begin with 'M'
+    memberId: string; // 8 ~ 9 characters, UPPERCASE, begin with 'M'
     providerId?: string; // "MojitoMemberSystem" | "GitHubOAuth" | ...
     registeredTime?: number;// new Date().getTime()
     verifiedTime?: number;
@@ -421,7 +382,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 }
 ```
 
-### 💡MemberStatus Codes
+### 💡Member Status Code
 
 | Code     | Explanation                                             |
 | -------- | ------------------------------------------------------- |
@@ -432,20 +393,9 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 | **200**  | **Email address verified or third party login, normal** |
 | **≥400** | **Restricted to certain content or behaviour**          |
 
-### [C] loginJournal
+### 💡Type CuedMemberInfo
 
-`mojito-statistics-dev.journal.login`
 
-```typescript
-{
-    _id: string; // mongodb obejct id
-    memberId: string;
-   	category: 'error' | 'success';
-    providerId: 'MojitoMemberSystem' | string; // LoginProviderId
-    timestamp: string; // new Date().toISOString()
-    message: string; // short message, e.g., 'Attempted login while email address not verified.'
-}
-```
 
 ### [C] memberStatistics
 
@@ -533,7 +483,38 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 }
 ```
 
+### [C] loginJournal
 
+`mojito-statistics-dev.journal.login`
+
+```typescript
+{
+    _id: string; // mongodb obejct id
+    memberId: string;
+   	category: 'error' | 'success';
+    providerId: 'MojitoMemberSystem' | string; // LoginProviderId
+    timestamp: string; // new Date().toISOString()
+    message: string; // short message, e.g., 'Attempted login while email address not verified.'
+}
+```
+
+
+
+## 📗Notification
+
+### [C] notificationStatistics
+
+```typescript
+{
+    _id: ObjectId;
+    memberId: string;
+    cuedCount: number; // accumulated from last reset
+    repliedCount: number;
+    likedCount: number;
+    savedCount: number;
+    followedCount: number;
+}
+```
 
 
 
@@ -565,11 +546,13 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
      _id: string; // mongodb obejct id
     
     //// info ////
-    commentId: string; // 12 ~ 13 characters, UPPERCASE, begin with 'C'
+    commentId: string; // 12 ~ 13 characters, UPPERCASE, comment id begin with 'C', subcomment id begin with 'D'
+    parentId: string; // post or comment id
     postId: string;
     memberId: string;
     createdTime: number; // created time of this document (comment est.)
     content: string;
+    cuedMemberComprehensivesArr: ICuedMemberComprehensive[];
     
 	//// management ////
     status: number;
@@ -579,54 +562,64 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
     totalUndoLikedCount: number;
     totalDislikedCount: number;
     totalUndoDislikedCount: number;
-    totalSubcommentCount: number;
-    totalSubcommentDeleteCount: number;
+    totalSubcommentCount: number; // for comment entities only
+    totalSubcommentDeleteCount: number; // for comment entities only
     totalEditCount: number;
     
     //// edit info ////
-    edited: {
-        editedTime: number; // 201: edited | -1/-3: removed
-        content: string;
-        totalLikedCountBeforeEdit: number;
-        totalDislikedCountBeforeEdit: number;
-        totalSubcommentCountBeforeEdit: number;
-    } | null
+    edited: IEditedCommentComprehensive[];
 }
 ```
 
-### [C] subcommentComprehensive
+### 💡Type CuedMemberComprehensive
+
+```typescript
+{
+    memberId: string;
+    nickname: string;
+}
+```
+
+### 💡Type EditedCommentComprehensive
+
+```typescript
+{
+    editedTime: number;
+    contentBeforeEdite: string;
+    cuedMemberComprehensivesArrBeforeEdit: ICuedMemberComprehensive[];
+    totalLikedCountBeforeEdit: number;
+    totalDislikedCountBeforeEdit: number;
+    totalSubcommentCountBeforeEdit?: number;
+}
+```
+
+### 💡Type RestrictedCommentComprehensive
 
 ```typescript
 {
     _id: string; // mongodb obejct id
     
-    //// info ////
-    commentId: string; // 12 ~ 13 characters, UPPERCASE, begin with 'D'
-    parentId: string;
+     //// info ////
+    commentId: string; //12 ~ 13 characters, UPPERCASE, comment id begin with 'C', subcomment id begin with 'D'
     postId: string;
     memberId: string;
-    createdTime: number; // created time of this document (subcomment est.)
-    content: string;
-    edited: {
-        editedTime: number; // 201: edited | -1/-3: removed
-        content: string;
-        totalLikedCountBeforeEdit: number;
-        totalDislikedCountBeforeEdit: number;
-    } | null
-    
-	//// management ////
-    commentStatus: number;
-    
+    createdTime: number; // created time of this document (comment est.)
+    content: string | null;
+
+    //// management ////
+    status: number;
+
     //// statistics ////
     totalLikedCount: number;
-    totalUndoLikedCount: number;
     totalDislikedCount: number;
-    totalUndoDislikedCount: number;
-    totalEditCount: number;
+    totalSubcommentCount?: number; // for comment entities only
+
+    //// edit info ////
+    editedTime: number | null;
 }
 ```
 
-### 💡Comment & SubcommentStatus Code
+### 💡Comment Status Code
 
 | Code    | Explanation00                          |
 | ------- | -------------------------------------- |
@@ -634,8 +627,6 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 | -1      | Deactivated (removed)                  |
 | **200** | **Normal**                             |
 | 201     | Normal, edited                         |
-
-
 
 
 
@@ -693,8 +684,6 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 
 
 
-
-
 ## 📗Topic
 
 ### [C] topicComprehensive
@@ -704,7 +693,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
     _id: ObjectIdStr; // mongodb obejct id
     
     //// info ////
-    topicId: string; // base64 string from topic content string
+    topicId: string; // base64 string from topic content string，content string length no longer than 10
     channelId: string;
     createdTime: number; // create time of this document (topic est.)
     
@@ -777,8 +766,6 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 
 
 
-
-
 ## 📗TopicRanking
 
 ### [C] topicRankingStatistics
@@ -825,10 +812,6 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 
 
 
-
-
-
-
 ## 📗Post
 
 ### [C] postComprehensive
@@ -838,12 +821,13 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
     _id: ObjectId; // mongodb obejct id
     
     //// info ////
-    postId: string; // 9 ~ 10 characters, UPPERCASE, begin with 'P'
+    postId: string; // 10 ~ 11 characters, UPPERCASE, begin with 'P'
     memberId: string;
     createdTime: number; // created time of this document (post est.)
     title: string;
     imageUrlsArr: string[];
 	paragraphsArr: string[];
+    cuedMemberComprehensivesArr: ICuedMemberComprehensive[];
 	channelId: string;
 	topicIdsArr: string[];
 	pinnedCommentId: string;
@@ -864,22 +848,58 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 	totalEditCount: number;
     
     //// edit info ////
-    edited: [
-        {
-            editedTime: number;
-            titleBeforeEdited: string;
-            imageUrlsArrBeforeEdited: string[];
-            paragraphsArrBeforeEdited: string[];
-            channelIdBeforeEdited: string;
-            topicIdsArrBeforeEdited: string[];
-            totalLikedCountBeforeEdit: number;
-            totalDislikedCountBeforeEdit: number;
-    	}
-	] | null
+    edited: IEditedPostComprehensive[];
 }
 ```
 
-### 💡PostStatus Codes
+### 💡EditedPostComprehensive
+
+```typescript
+{
+    editedTime: number;
+    titleBeforeEdit: string;
+    imageUrlsArrBeforeEdit: string[];
+    paragraphsArrBeforeEdit: string[];
+    cuedMemberComprehensivesArrBeforeEdit: ICuedMemberComprehensive[];
+    channelIdBeforeEdit: string;
+    topicIdsArrBeforeEdit: string[];
+    totalLikedCountBeforeEdit: number;
+    totalDislikedCountBeforeEdit: number;
+}
+```
+
+### 💡Type RestrictedPostComprehensive
+
+```typescript
+{
+    //// info ////
+    postId: string; // 10 characters, UPPERCASE
+    memberId: string;
+    createdTime: number; // created time of this document (post est.)
+    title: string | null;
+    imageUrlsArr: string[];
+    paragraphsArr: string[];
+    cuedMemberComprehensivesArr: ICuedMemberComprehensive[];
+    channelId: string;
+    topicIdsArr: string[];
+    pinnedCommentId: string | null;
+
+    //// management ////
+    status: number;
+
+    //// statistics ////
+    totalHitCount: number; // viewed times accumulator
+    totalLikedCount: number;
+    totalDislikedCount: number;
+    totalCommentCount: number;
+    totalSavedCount: number;
+
+    //// edit info ////
+    editedTime: number | null;
+}
+```
+
+### 💡Post Status Codes
 
 | Code     | Explanation                            |
 | -------- | -------------------------------------- |
@@ -915,8 +935,6 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
     totalSavedCount: number;
 }
 ```
-
-
 
 
 
@@ -973,13 +991,9 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 
 
 
-
-
 ## Reference
 
 - MongoDB - Find a document [Link](https://www.mongodb.com/docs/drivers/node/current/usage-examples/find/)
-
-
 
 
 
@@ -993,6 +1007,8 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 - acc: Accumulate
 - inc: Increase
 - dec: Decrease
+
+
 
 ## 📦Signup & Login
 
@@ -1289,6 +1305,8 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
    }
    ```
 
+
+
 ## 📦Member Info
 
 ### ▶️Request for password reset
@@ -1385,6 +1403,8 @@ Only allow updating other info after 30 seconds since last update
 您更新太频繁了，请稍候片刻再重试
 ```
 
+
+
 ## 📦Behaviour on other Members
 
 ### ▶️Follow/Unfollow a member
@@ -1456,6 +1476,8 @@ Only allow updating other info after 30 seconds since last update
 
 Mostly same as ▶️Follow/Unfollow a member
 
+
+
 ## 📦Attitude
 
 ### ▶️Get attitude on a post/comment/subcomment
@@ -1482,13 +1504,15 @@ Mostly same as ▶️Follow/Unfollow a member
 | Dislike      | [C] attitudeComprehensive,<br />[C] memberStatistics***.totalDislikedCount (inc.)***,<br />[C] memberStatistics***.totalCreationDislikedCount (inc. of the post author)***,<br />[C] postComprehensive***.totalDislikedCount (inc.)*** |
 | Undo dislike | [C] attitudeComprehensive,<br />[C] memberStatistics***.totalUndoDislikedCount (inc.)***,<br />[C] memberStatistics***.totalCreationUndoDislikedCount (inc. of the post author)***,<br />[C] postComprehensive***.totalUndoDislikedCount (inc.)*** |
 
+
+
 ## 📦Comment
 
-### ▶️Create a comment
+### ▶️Create a comment / subcomment
 
 | Behaviour                            | Affected tables / collections                                |
 | ------------------------------------ | ------------------------------------------------------------ |
-| Create a comment<br />(Cue a member) | [C] commentComprehensive ***(est.)***,<br />[C] memberStatistics***.totalCommentCount (acc.)***,<br />[C] postComprehensive***.totalCommentCount (acc.)***,<br />[C] channelStatistics***.totalCommentCount (acc.)***<br />( Cond. [C] topicComprehensive***.totalCommentCount (acc.)*** )<br />( Cond. [PRL] Notice***.Replied (est.)*** ),<br />( Cond. [C] notificationStatistics***.repliedCount (acc.)*** ),<br />( Cond. [PRL] Notice***.Cued (est.)*** ),<br />( Cond. [C] notificationStatistics***.cuedCount (acc.)*** ) |
+| Create a comment<br />(Cue a member) | [C] commentComprehensive ***(est.)***,<br />[C] memberStatistics***.totalCommentCount (acc.)***,<br />( Cond. [C] commentComprehensive***.totalSubcommentCount (acc.)*** )<br />[C] postComprehensive***.totalCommentCount (acc.)***,<br />[C] channelStatistics***.totalCommentCount (acc.)***<br />( Cond. [C] topicComprehensive***.totalCommentCount (acc.)*** )<br />( Cond. [PRL] Notice***.Replied (est.)*** ),<br />( Cond. [C] notificationStatistics***.repliedCount (acc.)*** ),<br />( Cond. [PRL] Notice***.Cued (est.)*** ),<br />( Cond. [C] notificationStatistics***.cuedCount (acc.)*** ) |
 
 1. Look up document of ***IPostComprehensive*** in **[C] postComprehensive**
 2. Insert a new document of ***ICommentComprehensive*** in **[C] commentComprehensive** or return  ***"Post not found" error***
@@ -1501,7 +1525,7 @@ Mostly same as ▶️Follow/Unfollow a member
 9. Skip (if blocked by post author) or Create a new record of ***CuedNotice*** in **[PRL] Notice**
 10. Skip (if blocked by post author)  or Update document (**cuedCount**) in **[C] notificationStatistics**
 
-### ▶️Edit a comment
+### ▶️Edit a comment / subcomment
 
 | Behaviour                                                    | Affected tables / collections                                |
 | ------------------------------------------------------------ | ------------------------------------------------------------ |
@@ -1525,11 +1549,11 @@ Mostly same as ▶️Follow/Unfollow a member
 
 *\* Edit actions are only allowed once. Once performed would result in losing like/dislike data*
 
-### ▶️Delete a comment
+### ▶️Delete a comment / subcomment
 
 | Behaviour        | Affected tables / collections                                |
 | ---------------- | ------------------------------------------------------------ |
-| Delete a comment | [C] commentComprehensive ***(put.)***,<br />[C] memberStatistics***.totalCommentDeleteCount (acc.)***<br />[C] postComprehensive***.totalCommentDeleteCount (acc.)***<br />[C] topicComprehensive***.totalCommentDeleteCount (acc.)***<br />[C] channelStatistics***.totalCommentDeleteCount(acc.)***<br />( Cond. [C] topicComprehensive***.totalCommentDeleteCount(acc.)*** ) |
+| Delete a comment | [C] commentComprehensive ***(put.)***,<br />[C] memberStatistics***.totalCommentDeleteCount (acc.)***<br />( Cond. [C] commentComprehensive***.totalSubcommentDeleteCount (acc.)*** )<br />[C] postComprehensive***.totalCommentDeleteCount (acc.)***<br />[C] channelStatistics***.totalCommentDeleteCount(acc.)***<br />( Cond. [C] topicComprehensive***.totalCommentDeleteCount(acc.)*** ) |
 
 1. Update document (**content, status=-1/-3**) in **[C] commentComprehensive**
 
@@ -1540,29 +1564,13 @@ Mostly same as ▶️Follow/Unfollow a member
 
 2. Update document (**totalCommentEditCount++**) in **[C] memberStatistics**
 
-### ▶️Create a subcomment / Reply to a comment
-
-| Behaviour                               | Affected tables / collections                                |
-| --------------------------------------- | ------------------------------------------------------------ |
-| Create a subcomment<br />(Cue a member) | [C] subcommentComprehensive ***(est.)***,<br />( Cond. [PRL] Notice***.Replied (est.)*** ),<br />( Cond. [C] notificationStatistics***.repliedCount (acc.)*** ),<br />( Cond. [PRL] Notice***.Cued (est.)*** ),<br />( Cond. [C] notificationStatistics***.cuedCount (acc.)*** ),<br />[C] memberStatistics***.totalCommentCount (acc.)***,<br />[C] postComprehensive***.totalCommentCount (acc.)***,<br />[C] topicComprehensive***.totalCommentCount (acc.)***,<br />[C] channelStatistics***.totalCommentCount (acc.)*** |
-
-### ▶️Edit a subcomment
-
-| Behaviour                                                    | Affected tables / collections                                |
-| ------------------------------------------------------------ | ------------------------------------------------------------ |
-| Edit a subcomment<br />(Only allowed once,<br /> Editing results in losing<br />like / dislike data)🆕 | [C] subcommentComprehensive ***(put.)***,<br />[C] memberStatistics***.totalCommentEditCount (acc.)***,<br />( Cond. [PRL] NotifyCued ***(est.)*** ),<br />( Cond. [C] Notification*.cuedCount* ***(acc.)*** ) |
-
-### ▶️Delete a subcomment
-
-| Behaviour           | Affected tables / collections                                |
-| ------------------- | ------------------------------------------------------------ |
-| Delete a subcomment | [C] subcommentComprehensive ***(put.)***,<br />[C] memberStatistics***.totalCommentDeleteCount (acc.)***<br />[C] commentComprehensive***.totalSubcommentDeleteCount (acc.)***,<br />[C] postComprehensive***.totalCommentDeleteCount (acc.)***<br />[C] topicComprehensive***.totalCommentDeleteCount (acc.)***<br />[C] channelStatistics***.totalCommentDeleteCount(acc.)***<br />( Cond. [C] topicComprehensive***.totalCommentDeleteCount(acc.)*** ) |
-
 ### ▶️Pin a comment
 
 | Behaviour     | Affected tables / collections                      |
 | ------------- | -------------------------------------------------- |
 | Pin a comment | [C] postComprehensive***.pinnedCommentId (put.)*** |
+
+
 
 ## 📦Topic
 
@@ -1571,6 +1579,8 @@ Mostly same as ▶️Follow/Unfollow a member
 | Create a topic | See ▶️Create a post                                   |
 | Refer a topic  | See ▶️Create a post                                   |
 | Search a topic | [C] topicComprehensive***.totalSearchCount (acc.)*** |
+
+
 
 ## 📦Post
 
@@ -1620,9 +1630,13 @@ Mostly same as ▶️Follow/Unfollow a member
 
 # APIs
 
+
+
 ## 🛠️Notification
 
 GET|`/api/notification/[id]`
+
+
 
 ## 🛠️Member
 
@@ -1645,6 +1659,8 @@ POST|`/api/member/behaviour/follow/[id]`
 POST|`/api/member/behaviour/block/[id]`
 
 GET|`/api/member/behaviour/resetpassword/request?emaillAddress=`
+
+
 
 ## 🛠️Comment
 
@@ -1676,6 +1692,8 @@ PUT|`/api/subcomment/of/[commentId]/info/[subcommentId]`
 
 DELETE|`/api/subcomment/of/[commentId]/info/[subcommentId]`
 
+
+
 ## 🛠️Channel
 
 ### Info & Statistics
@@ -1686,6 +1704,8 @@ GET|`/api/channel/dictionary`
 
 GET|`/api/channel/index`
 
+
+
 ## 🛠️Topic
 
 ### Info & Statistics
@@ -1695,6 +1715,8 @@ GET| `/api/topic/[id]`
 GET| `/api/topic/of/channel/[id]`
 
 POST| `/api/topic/index`
+
+
 
 ## 🛠️Post
 
@@ -1724,6 +1746,8 @@ POST|`/api/post/behaviour/attitude/[id]`
 
 # Mail
 
+
+
 ## Use Azure Communication Service to send emails
 
 ## Send an email
@@ -1731,8 +1755,6 @@ POST|`/api/post/behaviour/attitude/[id]`
 ```shell
 npm i @azure/communication-email
 ```
-
-
 
 [Reference](https://learn.microsoft.com/en-us/azure/communication-services/quickstarts/email/send-email?pivots=programming-language-javascript)
 
@@ -1840,15 +1862,21 @@ console.log('response', response.data);
 
 # Db & Storage
 
+
+
 ## Using Azure Data Tables Api
 
 ```
 npm install @azure/data-tables
 ```
 
+
+
 ## Docs Reference
 
 [Reference](https://www.npmjs.com/package/@azure/data-tables/v/13.0.0)
+
+
 
 ## `&` Used in no-standard CSS
 
@@ -1883,11 +1911,15 @@ a:hover {
 
 # Authenticate & Authorize
 
+
+
 ## NextAuth.js
 
 [Reference](https://next-auth.js.org/)
 
 [Example](https://github.com/nextauthjs/next-auth-example)
+
+
 
 ## Use JWT
 
@@ -1918,8 +1950,6 @@ Demo
     ```
 
     
-
-
 
 ```typescript
 export default async function Verify(req: NextApiRequest, res: NextApiResponse) {
@@ -2185,9 +2215,9 @@ export default async function Verify(req: NextApiRequest, res: NextApiResponse) 
 
 
 
-
-
 # Anti-Robot
+
+
 
 ## ReCAPTCHA
 
@@ -2289,9 +2319,11 @@ VTJGc2RHVmtYMS9HQWQydEQ1aFJMUXlmUDhoYXJlZzJjNW0vMEJ3SCttcFhhUXdTZFF3RGtyNjN4OXcx
 
 
 
+
+
 # Error Definitions
 
-|Number|M
+
 
 
 
@@ -2343,7 +2375,40 @@ Simply add to `tsconfig.json`
 
 
 
+
+
+# Test
+
+
+
+## Generate test id
+
+```typescript
+'TEST-' + Math.floor(Math.random() * Math.pow(10, 10)).toString(35).toUpperCase()
+```
+
+```typescript
+//// FIXME: TEST-3G29WQD ////
+const a = await noticeTableClient.upsertEntity<INoticeInfo>({
+    partitionKey: notifiedMemberId,
+    rowKey: createNoticeId('reply', memberId, postId, commentId),
+    Category: 'reply',
+    InitiateId: memberId,
+    Nickname: getNicknameFromToken(token),
+    PostTitle: title,
+    CommentBrief: getContentBrief(content)
+}, 'Replace');
+console.log(`TEST-3G29WQD: path='/api/comment/on/[id]/index.ts/' result: ` + a.version);
+//// FIXME: TEST-3G29WQD ////
+```
+
+
+
+
+
 # TypeScript
+
+
 
 ## Type VS Interface
 
@@ -2363,6 +2428,8 @@ Simply add to `tsconfig.json`
 >
 > [Reference](https://stackoverflow.com/questions/37233735/interfaces-vs-types-in-typescript)
 
+
+
 ## Extending types with interfaces/extends vs Intersecction types
 
 >  Extending types with interfaces/extends is suggested over creating intersection types.
@@ -2376,6 +2443,8 @@ Simply add to `tsconfig.json`
 ```typescript
 let a = number | null;
 ```
+
+
 
 ## Literal Type
 
@@ -2401,6 +2470,8 @@ let customer = getCustomer(0);
 console.log(customer?.birthday?.getFullYear())
 ```
 
+
+
 ## Optional * operator
 
 ```typescript
@@ -2415,6 +2486,8 @@ log?.('a'); // optional call
 
 
 # Reference
+
+
 
 ## UI - Img Slides - Carousel
 
