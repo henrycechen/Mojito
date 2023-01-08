@@ -1,5 +1,6 @@
+import { MongoClient } from 'mongodb';
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { IRestrictedMemberInfo, IAttitudeComprehensive, IAttitideMapping, ICommentComprehensive, IRestrictedCommentComprehensive, IRestrictedPostComprehensive, IPostComprehensive } from './interfaces';
+import { IMemberComprehensive, IRestrictedMemberInfo, IAttitudeComprehensive, IAttitideMapping, ICommentComprehensive, IRestrictedCommentComprehensive, IRestrictedPostComprehensive, IPostComprehensive, } from './interfaces';
 import { ProcessStates } from './types';
 
 // import common utils for API
@@ -84,7 +85,7 @@ export function timeStampToString(timeStamp: any): string {
     return `${(diff / 3600000).toFixed()}小时${(mins / 60000).toFixed()}分钟前`
 }
 
-//////// Nickname ////////
+//////// JWT ////////
 /**
  * 
  * @param token JWT
@@ -101,12 +102,9 @@ export function getNicknameFromToken(token: any): string {
 }
 
 //////// Content ////////
-export function getContentBrief(content: any, length = 21): string {
-    if ('string' !== typeof content) {
-        return '';
-    }
-    if (content.length === 0) {
-        return '';
+export function getContentBrief(content: any, length = 21): string | undefined {
+    if (!('string' === typeof content && '' !== content)) {
+        return undefined;
     }
     if (content.length > 21) {
         return content.slice(0, 21) + '...';
@@ -115,6 +113,60 @@ export function getContentBrief(content: any, length = 21): string {
 }
 
 //////// Attitude ////////
+export function createAttitudeComprehensive(memberId: string, postId: string, id: string, attitude: number): IAttitudeComprehensive {
+    let att = 0;
+    if ([-1, 0, 1].includes(attitude)) {
+        att = attitude;
+    }
+    const cat = id.slice(0, 1);
+    if ('P' === cat) {
+        return {
+            memberId,
+            postId,
+            attitude: att,
+            commentAttitudeMapping: {}
+        }
+    }
+    if (['C', 'D'].includes(cat)) {
+        return {
+            memberId,
+            postId,
+            attitude: 0,
+            commentAttitudeMapping: { [id]: att }
+        }
+    }
+    return {
+        memberId,
+        postId,
+        attitude: 0,
+        commentAttitudeMapping: {}
+    }
+}
+
+type AttitudeComprehensiveUpdate = {
+    attitude?: number;
+    commentAttitudeMapping?: { [key: string]: number };
+}
+
+export function provideAttitudeComprehensiveUpdate(id: string, attitude: number): AttitudeComprehensiveUpdate {
+    let att = 0;
+    if ([-1, 0, 1].includes(attitude)) {
+        att = attitude;
+    }
+    const cat = id.slice(0, 1);
+    if ('P' === cat) {
+        return {
+            attitude: att
+        }
+    }
+    if (['C', 'D'].includes(cat)) {
+        return {
+            commentAttitudeMapping: { [id]: att }
+        }
+    }
+    return {}
+}
+
 export function getMappingFromAttitudeComprehensive(attitudeComprehensive: IAttitudeComprehensive | null): IAttitideMapping {
     if (null === attitudeComprehensive) {
         return {
@@ -396,12 +448,12 @@ export function verifyUrl(url: any): boolean {
     return regex.test(url);
 }
 
-type VerifyRecaptchaResult = {
+type VerifyResult = {
     status: number;
     message: string;
 }
 
-export async function verifyRecaptchaResponse(recaptchaServerSecret: string, recaptchaResponse: any): Promise<VerifyRecaptchaResult> {
+export async function verifyRecaptchaResponse(recaptchaServerSecret: string, recaptchaResponse: any): Promise<VerifyResult> {
     try {
         if ('string' !== typeof recaptchaResponse || '' === recaptchaResponse) {
             return {

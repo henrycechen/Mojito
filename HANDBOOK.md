@@ -269,33 +269,42 @@ type ResetPasswordRequestInfo = {
 
 ## 📘Channel
 
-| ChannelId                    | ChannelNameStr | 中文   | Svg Icon Reference |
-| ---------------------------- | -------------- | ------ | ------------------ |
-| recommend<br />(🚫Not-in-use) | Recommended    | 推荐   |                    |
-| food                         | Food           | 美食   | RestaurantIcon     |
-| shopping                     | Shopping       | 好物   | GradeIcon          |
-| hobby                        | Hobby          | 兴趣   | NightlifeIcon      |
-| sports                       | Sports         | 运动   | SportsTennisIcon   |
-| travel                       | Travel         | 旅行   | AirplaneTicketIcon |
-| photography                  | Photography    | 摄影   | PhotoCameraIcon    |
-| life                         | Life           | 生活   | FamilyRestroomIcon |
-| pets                         | Pets           | 萌宠   | PetsIcon           |
-| automobile                   | Automobile     | 汽车   | TimeToLeaveIcon    |
-| realestate                   | Realestate     | 不动产 | HouseIcon          |
-| furnishing                   | Furnishing     | 家装   | YardIcon           |
-| invest                       | Invest         | 投资   | MonetizationOnIcon |
-| event                        | Event          | 时事   | NewspaperIcon      |
-| all                          | All            | 全部   |                    |
+| ChannelId                    | ChannelNameStr | 繁體 |        | Svg Icon Reference |
+| ---------------------------- | -------------- | ---- | ------ | ------------------ |
+| recommend<br />(🚫Not-in-use) | Recommended    | 推薦 | 推荐   |                    |
+| food                         | Food           |      | 美食   | RestaurantIcon     |
+| shopping                     | Shopping       |      | 好物   | GradeIcon          |
+| hobby                        | Hobby          | 興趣 | 兴趣   | NightlifeIcon      |
+| event                        | Event          | 活動 | 活动   |                    |
+| sports                       | Sports         | 運動 | 运动   | SportsTennisIcon   |
+| travel                       | Travel         |      | 旅行   | AirplaneTicketIcon |
+| photography                  | Photography    | 攝影 | 摄影   | PhotoCameraIcon    |
+| work                         | Work           |      | 工作   |                    |
+| life                         | Life           |      | 生活   | FamilyRestroomIcon |
+| pets                         | Pets           | 寵物 | 萌宠   | PetsIcon           |
+| automobile                   | Automobile     | 汽車 | 汽车   | TimeToLeaveIcon    |
+| realestate                   | Realestate     | 房建 | 不动产 | HouseIcon          |
+| furnishing                   | Furnishing     | 裝潢 | 家装   | YardIcon           |
+| invest                       | Invest         | 投資 | 投资   | MonetizationOnIcon |
+| politics                     | Politics       | 時政 | 时事   | NewspaperIcon      |
+| chat                         | Chat           | 閑聊 | 灌水   |                    |
+| all                          | All            |      | 全部   |                    |
+
+```
+["food","shopping","hobby","event","sports","travel","photography","work","life","pets","automobile","realestate","furnishing","invest","politics","chat"]
+```
+
+
 
 ### [T] ChannelInfo
 
-| PartitionKey | RowKey       | CH     | EN     | SvgIconPath |
-| ------------ | ------------ | ------ | ------ | ----------- |
-| `"Info"`     | ChannelIdStr | string | string | string      |
+| PartitionKey | RowKey       | ZH-TW  | ZH-CH  | EN     | SvgIconPath |
+| ------------ | ------------ | ------ | ------ | ------ | ----------- |
+| `"Info"`     | ChannelIdStr | string | string | string | string      |
 
 | PartitionKey | RowKey      | InedxValue                |
 | ------------ | ----------- | ------------------------- |
-| `"Index"`    | `"default"` | string, stringified array |
+| `"IdArray"`  | `"default"` | string, stringified array |
 
 
 
@@ -1490,10 +1499,10 @@ Mostly same as ▶️Follow/Unfollow a member
 
 | Behaviour    | Affected tables / collections                                |
 | ------------ | ------------------------------------------------------------ |
-| Like         | [C] attitudeComprehensive,<br />[C] memberStatistics***.totalLikedCount (inc.)***,<br />[C] memberStatistics***.totalCommentLikedCount (inc. of the comment author)***<br />[C] comment/subcommentComprehensive***.totalLikedCount (inc.)***,<br />( Cond. [PRL] Notice***.Liked (est.)*** ),<br />( Cond. [C] notificationStatistics***.likedCount (acc.)*** ) |
-| Undo like    | [C] attitudeComprehensive,<br />[C] memberStatistics***.totalUndoLikedCount (inc.)***,<br />[C] memberStatistics***.totalCommentUndoLikedCount (inc. of the comment author)***<br />[C] comment/subcommentComprehensive***.totalUndoLikedCount (inc.)*** |
-| Dislike      | [C] attitudeComprehensive,<br />[C] memberStatistics***.totalDislikedCount (inc.)***,<br />[C] memberStatistics***.totalCommentDislikedCount (inc. of the comment author)***<br />[C] comment/subcommentComprehensive***.totalDislikedCount (inc.)*** |
-| Undo dislike | [C] attitudeComprehensive,<br />[C] memberStatistics***.totalUndoDislikedCount (inc.)***,<br />[C] memberStatistics***.totalCommentUndoDislikedCount (inc. of the comment author)***<br />[C] comment/subcommentComprehensive***.totalUndoDislikedCount (inc.)*** |
+| Like         | [C] attitudeComprehensive,<br />[C] memberStatistics***.totalLikedCount (inc.)***,<br />[C] memberStatistics***.totalCommentLikedCount (inc. of the comment author)***<br />[C] commentComprehensive***.totalLikedCount (inc.)***,<br />( Cond. [PRL] Notice***.Liked (est.)*** ),<br />( Cond. [C] notificationStatistics***.likedCount (acc.)*** ) |
+| Undo like    | [C] attitudeComprehensive,<br />[C] memberStatistics***.totalUndoLikedCount (inc.)***,<br />[C] memberStatistics***.totalCommentUndoLikedCount (inc. of the comment author)***<br />[C] commentComprehensive***.totalUndoLikedCount (inc.)*** |
+| Dislike      | [C] attitudeComprehensive,<br />[C] memberStatistics***.totalDislikedCount (inc.)***,<br />[C] memberStatistics***.totalCommentDislikedCount (inc. of the comment author)***<br />[C] commentComprehensive***.totalDislikedCount (inc.)*** |
+| Undo dislike | [C] attitudeComprehensive,<br />[C] memberStatistics***.totalUndoDislikedCount (inc.)***,<br />[C] memberStatistics***.totalCommentUndoDislikedCount (inc. of the comment author)***<br />[C] commentComprehensive***.totalUndoDislikedCount (inc.)*** |
 
 ### ▶️Express attitude on a post
 

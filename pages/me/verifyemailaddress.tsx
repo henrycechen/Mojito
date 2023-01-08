@@ -12,22 +12,26 @@ import Copyright from '../../ui/Copyright';
 import BackToHomeButtonGroup from '../../ui/BackToHomeButtonGroup';
 
 const recaptchaClientKey = process.env.NEXT_PUBLIC_INVISIABLE_RECAPTCHA_SITE_KEY ?? '';
-const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'ch';
+const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
     accountverify: {
-        ch: '正在激活您的账户...',
+        tw: '正在激活您的账户...',
+        cn: '正在激活您的账户...',
         en: 'Activating your account...'
     },
     recaptchaLang: {
-        ch: 'zh-CN',
+        tw: 'zh-TW',
+        cn: 'zh-CN',
         en: 'en'
     },
     goodResult: {
-        ch: '账户已激活😄现在就返回主页登录吧~',
+        tw: '账户已激活😄现在就返回主页登录吧~',
+        cn: '账户已激活😄现在就返回主页登录吧~',
         en: 'All set😄 Ready to go!'
     },
     badResult: {
-        ch: '账户激活失败😥请稍后重试或者联系我们的管理员',
+        tw: '账户激活失败😥请稍后重试或者联系我们的管理员',
+        cn: '账户激活失败😥请稍后重试或者联系我们的管理员',
         en: 'Failed to activate your account😥 Please try again later or contact our Webmaster'
     }
 }

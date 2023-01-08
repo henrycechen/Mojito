@@ -71,7 +71,7 @@ export default async function CommentIndexByParentId(req: NextApiRequest, res: N
         const { sub: initiateId } = token;
         await atlasDbClient.connect();
         // Step #1.1 look up document (of IMemberComprehensive) in [C] memberComprehensive
-        const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberStatistics>('member');
+        const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
         const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne({ memberId: initiateId });
         if (null === memberComprehensiveQueryResult) {
             throw new Error(`Member was trying creating comment but have no document (of IMemberComprehensive, member id: ${initiateId}) in [C] memberComprehensive`);
@@ -267,7 +267,23 @@ export default async function CommentIndexByParentId(req: NextApiRequest, res: N
         await atlasDbClient.close();
         return;
     } catch (e: any) {
-
+        let msg;
+        if (e instanceof SyntaxError) {
+            res.status(400).send('Improperly normalized request info');
+            return;
+        } else if (e instanceof RestError) {
+            msg = 'Was trying communicating with azure table storage.';
+        } else if (e instanceof MongoError) {
+            msg = 'Was trying communicating with atlas mongodb.';
+        } else {
+            msg = `Uncategorized. ${e?.msg}`;
+        }
+        if (!res.headersSent) {
+            response500(res, msg);
+        }
+        log(msg, e);
+        await atlasDbClient.close();
+        return;
     }
 
 }

@@ -16,10 +16,11 @@ import { loginProviderIdMapping } from '../../auth/[...nextauth]';
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
 
 const domain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? '';
-const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'ch';
+const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
     emailSubject: {
-        ch: '验证您的 Mojito 账户',
+        tw: '验证您的 Mojito 账户',
+        cn: '验证您的 Mojito 账户',
         en: 'Verify your Mojito Member'
     }
 }

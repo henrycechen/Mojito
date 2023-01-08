@@ -12,6 +12,7 @@ import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
 
 import { signIn, signOut, getProviders, getSession, getCsrfToken, useSession } from 'next-auth/react'
+import { LangConfigs, SignInCredentialStates } from '../lib/types';
 
 
 import { useRouter } from 'next/router';
@@ -36,14 +37,16 @@ export async function getServerSideProps(context: NextPageContext) {
 /**
  * Language settings
  */
-const lang = 'ch';
-const langConfig = {
+const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
+const langConfig: LangConfigs = {
     appSignout: {
-        ch: '确认要登出吗？',
+        tw: '确认要登出吗？',
+        cn: '确认要登出吗？',
         en: 'Confirm to sign out?'
     },
     confirm: {
-        ch: '登出',
+        tw: '登出',
+        cn: '登出',
         en: 'Sign out'
     }
 
@@ -57,7 +60,7 @@ const SignOut = () => {
     const router = useRouter();
     // React.useEffect(() => { if (!session) router.push('/') }, []);
     console.log(session?.user);
-    
+
 
     const handleSubmit = (event: React.FormEvent) => {
         event.preventDefault();

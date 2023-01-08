@@ -83,7 +83,7 @@ export interface IMemberComprehensive extends IAtlasCollectionDocument {
     briefIntro?: string;
     gender?: -1 | 0 | 1;
     birthday?: string;
-    status?: number;
+    status: number;
     allowPosting?: boolean;
     allowCommenting?: boolean;
 }

@@ -1,4 +1,6 @@
-export type LangConfigs = { [key: string]: any };
+export type LangConfigs = { 
+    [key: string]: any
+ };
 
 // States
 export type SignInCredentialStates = {

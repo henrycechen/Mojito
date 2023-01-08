@@ -21,46 +21,56 @@ import BackToHomeButtonGroup from '../../ui/BackToHomeButtonGroup';
 
 const domain = process.env.NEXT_PUBLIC_APP_DOMAIN;
 const recaptchaClientKey = process.env.NEXT_PUBLIC_INVISIABLE_RECAPTCHA_SITE_KEY ?? '';
-const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'ch';
+const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
     submit: {
-        ch: '确认',
+        tw: '确认',
+        cn: '确认',
         en: 'Confirm'
     },
     pleaseEnterEmailAddress: {
-        ch: '请输入注册 Mojito 账户时使用的邮件地址',
+        tw: '请输入注册 Mojito 账户时使用的邮件地址',
+        cn: '请输入注册 Mojito 账户时使用的邮件地址',
         en: 'Please enter the email address you used to register your Mojito account'
     },
     emailAddress: {
-        ch: '邮件地址',
+        tw: '邮件地址',
+        cn: '邮件地址',
         en: 'Email address'
     },
     invalidEmailAddressError: {
-        ch: '无效的邮件地址',
+        tw: '无效的邮件地址',
+        cn: '无效的邮件地址',
         en: 'Invalid email address'
     },
     recaptchaLang: {
-        ch: 'zh-CN',
+        tw: 'zh-CN',
+        cn: 'zh-CN',
         en: 'en'
     },
     recaptchaNotVerifiedError: {
-        ch: '请告诉我们您不是机器人😎',
+        tw: '请告诉我们您不是机器人😎',
+        cn: '请告诉我们您不是机器人😎',
         en: 'Please tell us if you are not a robot😎'
     },
     recaptchaError: {
-        ch: '我们的人机验证系统出了些问题🤯...请尝试刷新或联系我们的管理员',
+        tw: '我们的人机验证系统出了些问题🤯...请尝试刷新或联系我们的管理员',
+        cn: '我们的人机验证系统出了些问题🤯...请尝试刷新或联系我们的管理员',
         en: 'Something went wrong with our CAPTCHA🤯...Please try to refresh or contact our Webmaster'
     },
     memberIdNotFoundError: {
-        ch: '看起来我们没有您的注册信息😧',
+        tw: '看起来我们没有您的注册信息😧',
+        cn: '看起来我们没有您的注册信息😧',
         en: 'We do not seem to have your registration information😧'
     },
     goodResult: {
-        ch: '一封含有重置密码的邮件已发到您注册时使用的邮箱中，请检查收件箱🙂',
+        tw: '一封含有重置密码的邮件已发到您注册时使用的邮箱中，请检查收件箱🙂',
+        cn: '一封含有重置密码的邮件已发到您注册时使用的邮箱中，请检查收件箱🙂',
         en: 'An email containing a reset password has been sent to the email address you used to register, please check your inbox🙂'
     },
     badResult: {
-        ch: '我们的服务器出了些问题🤯...请稍后重试或者联系我们的管理员',
+        tw: '我们的服务器出了些问题🤯...请稍后重试或者联系我们的管理员',
+        cn: '我们的服务器出了些问题🤯...请稍后重试或者联系我们的管理员',
         en: 'Something went wrong with our server 🤯... Please try again later or contact our Webmaster'
     }
 }

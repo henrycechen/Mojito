@@ -71,12 +71,28 @@ type CommentState = {
 }
 
 const domain = process.env.NEXT_PUBLIC_APP_DOMAIN;
-const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'ch';
+const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
-    title: { ch: '撰写新主题', en: 'Create a new post' },
-    editPost: { ch: '编辑帖子', en: '' },
-    follow: { ch: '关注', en: 'Follow' },
-    hotPostRecommend: { ch: '的热门帖子', en: '' }
+    title: {
+        tw: '撰寫新主題帖',
+        cn: '撰写新主题帖',
+        en: 'Create a new post'
+    },
+    editPost: {
+        tw: '編輯帖',
+        cn: '编辑帖',
+        en: 'Edit post'
+    },
+    follow: {
+        tw: '关注',
+        cn: '关注',
+        en: 'Follow'
+    },
+    hotPostRecommend: {
+        tw: '的热门帖子',
+        cn: '的热门帖子',
+        en: ''
+    }
 }
 
 // get post info server-side

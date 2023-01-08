@@ -15,7 +15,7 @@ import { verifyId, response405, response500, log } from '../../../../lib/utils';
 // token: JWT;
 // postId: string;
 //
-export default async function SavePost(req: NextApiRequest, res: NextApiResponse) {
+export default async function SavePostById(req: NextApiRequest, res: NextApiResponse) {
     const { method } = req;
     if ('POST' !== method) {
         response405(req, res);

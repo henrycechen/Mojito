@@ -1,9 +1,9 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { RestError } from '@azure/data-tables';
 
-import AzureTableClient from '../../../modules/AzureTableClient';
-import { ChannelInfo } from '../../../lib/types';
-import { response405, response500, log } from '../../../lib/utils';
+import AzureTableClient from '../../../../modules/AzureTableClient';
+import { ChannelInfo } from '../../../../lib/types';
+import { response405, response500, log } from '../../../../lib/utils';
 
 
 export default async function GetDictionary(req: NextApiRequest, res: NextApiResponse) {
@@ -16,7 +16,7 @@ export default async function GetDictionary(req: NextApiRequest, res: NextApiRes
         // [!] No idenitity ban for this API
         // Step #1 look up channels from [Table]
         const channelInfoTableClient = AzureTableClient('ChannelInfo');
-        const channelInfoQuery = channelInfoTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq 'ChannelInfo' and IsActive eq true` } });
+        const channelInfoQuery = channelInfoTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq 'Info' and IsActive eq true` } });
         // [!] attemp to reterieve entity makes the probability of causing RestError
         let channelInfoQueryResult = await channelInfoQuery.next();
         if (!channelInfoQueryResult.value) {
@@ -25,11 +25,12 @@ export default async function GetDictionary(req: NextApiRequest, res: NextApiRes
         }
         const channelInfo: { [key: string]: ChannelInfo } = {};
         do {
-            const { rowKey, CH, EN, SvgIconPath } = channelInfoQueryResult.value
+            const { rowKey, TW, CN, EN, SvgIconPath } = channelInfoQueryResult.value
             channelInfo[rowKey] = {
                 id: rowKey,
                 name: {
-                    ch: CH,
+                    tw: TW,
+                    cn: CN,
                     en: EN
                 },
                 svgIconPath: SvgIconPath

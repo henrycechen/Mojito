@@ -35,62 +35,76 @@ interface PasswordStates {
 
 const domain = process.env.NEXT_PUBLIC_APP_DOMAIN;
 const recaptchaClientKey = process.env.NEXT_PUBLIC_INVISIABLE_RECAPTCHA_SITE_KEY ?? '';
-const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'ch';
+const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
     submit: {
-        ch: '确认',
+        tw: '确认',
+        cn: '确认',
         en: 'Confirm'
     },
     tokenCheck: {
-        ch: '正在检查令牌...',
+        tw: '正在检查令牌...',
+        cn: '正在检查令牌...',
         en: 'Checking token...'
     },
     tokenError: {
-        ch: '令牌出错了😥请重新发起修改密码请求',
+        tw: '令牌出错了😥请重新发起修改密码请求',
+        cn: '令牌出错了😥请重新发起修改密码请求',
         en: 'Invalid token😥 Please resubmit change password request'
     },
     tokenExpired: {
-        ch: '令牌逾期或已被使用过😥请重新发起修改密码请求',
+        tw: '令牌逾期或已被使用过😥请重新发起修改密码请求',
+        cn: '令牌逾期或已被使用过😥请重新发起修改密码请求',
         en: 'Token expired😥 Please resubmit change password request'
     },
     backToHome: {
-        ch: '返回主页',
+        tw: '返回主页',
+        cn: '返回主页',
         en: 'Back to home'
     },
     resetPassword: {
-        ch: '设置新密码',
+        tw: '设置新密码',
+        cn: '设置新密码',
         en: 'Set your new password'
     },
     password: {
-        ch: '新密码',
+        tw: '新密码',
+        cn: '新密码',
         en: 'New password'
     },
     repeatPassword: {
-        ch: '重复输入新密码',
+        tw: '重复输入新密码',
+        cn: '重复输入新密码',
         en: 'Repeat new password'
     },
     passwordInstructions: {
-        ch: '安全性要求：密码长度不小于八个字符，并需包含大小写字母、数字和特殊字符',
+        tw: '安全性要求：密码长度不小于八个字符，并需包含大小写字母、数字和特殊字符',
+        cn: '安全性要求：密码长度不小于八个字符，并需包含大小写字母、数字和特殊字符',
         en: 'Security requirements: Password must contain at least eight characters, at least one number and both lower and uppercase letters and special characters'
     },
     passwordNotSatisfiedError: {
-        ch: '新密码不符合安全性要求',
+        tw: '新密码不符合安全性要求',
+        cn: '新密码不符合安全性要求',
         en: 'Passwords do not satisfy the security requirements'
     },
     passwordNotMatchError: {
-        ch: '两次输入的密码不相符',
+        tw: '两次输入的密码不相符',
+        cn: '两次输入的密码不相符',
         en: 'Passwords not match'
     },
     recaptchaLang: {
-        ch: 'zh-CN',
+        tw: 'zh-CN',
+        cn: 'zh-CN',
         en: 'en'
     },
     goodResult: {
-        ch: '新密码设置成功😄现在就返回主页登录吧~',
+        tw: '新密码设置成功😄现在就返回主页登录吧~',
+        cn: '新密码设置成功😄现在就返回主页登录吧~',
         en: 'All set😄 Ready to go!'
     },
     badResult: {
-        ch: '新密码设置失败😥请稍后重试或者联系我们的管理员',
+        tw: '新密码设置失败😥请稍后重试或者联系我们的管理员',
+        cn: '新密码设置失败😥请稍后重试或者联系我们的管理员',
         en: 'Failed to set new password😥 Please try again later or contact our Webmaster'
     }
 }

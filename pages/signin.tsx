@@ -47,76 +47,93 @@ export async function getServerSideProps(context: NextPageContext) {
 }
 
 const recaptchaClientKey = process.env.NEXT_PUBLIC_INVISIABLE_RECAPTCHA_SITE_KEY ?? '';
-const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'ch';
+const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
     signIn: {
-        ch: '登入',
+        tw: '登入',
+        cn: '登入',
         en: 'Sign in'
     },
     emailAddress: {
-        ch: '邮件地址',
+        tw: '邮件地址',
+        cn: '邮件地址',
         en: 'Email'
     },
     password: {
-        ch: '密码',
+        tw: '密码',
+        cn: '密码',
         en: 'Password'
     },
     appSignin:
     {
-        ch: '使用 Mojito 账户登录',
+        tw: '使用 Mojito 账户登录',
+        cn: '使用 Mojito 账户登录',
         en: 'Use Mojito Account to sign in'
     },
     thirdPartySignin: {
-        ch: (partyName: string) => `使用 ${partyName} 账户登录`,
+        tw: (partyName: string) => `使用 ${partyName} 账户登录`,
+        cn: (partyName: string) => `使用 ${partyName} 账户登录`,
         en: (partyName: string) => `Use ${partyName} Account to sign in`,
     },
     forgetPassword: {
-        ch: '忘记密码了？',
+        tw: '忘记密码了？',
+        cn: '忘记密码了？',
         en: 'Forgot password?'
     },
     resendVerificationEmail: {
-        ch: '重新发送验证邮件',
+        tw: '重新发送验证邮件',
+        cn: '重新发送验证邮件',
         en: 'Re-send verification email'
     },
     appSignup: {
-        ch: '没有Mojito账户？现在就注册吧',
+        tw: '没有Mojito账户？现在就注册吧',
+        cn: '没有Mojito账户？现在就注册吧',
         en: 'Don\' have a Mojito account? Sign up now'
     },
     recaptchaLang: {
-        ch: 'zh-CN',
+        tw: 'zh-TW',
+        cancelIdleCallback: 'zh-CN',
         en: 'en'
     },
     errors: {
         RecaptchaNotVerifiedError: {
-            ch: ['请告诉我们您不是机器人😎', ''],
+            tw: ['请告诉我们您不是机器人😎', ''],
+            cn: ['请告诉我们您不是机器人😎', ''],
             en: ['Please tell us if you are not a robot😎', '']
         },
         CredentialsSignin: {
-            ch: ['邮件地址与密码不匹配，请再尝试一下', ''],
+            tw: ['邮件地址与密码不匹配，请再尝试一下', ''],
+            cn: ['邮件地址与密码不匹配，请再尝试一下', ''],
             en: ['Member and password do not match', ', please try again', '']
         },
         EmailAddressVerificationRequired: {
-            ch: ['您需要对您的账户完成邮箱验证', '，如有问题请联系我们的管理员，'],
+            tw: ['您需要对您的账户完成邮箱验证', '，如有问题请联系我们的管理员，'],
+            cn: ['您需要对您的账户完成邮箱验证', '，如有问题请联系我们的管理员，'],
             en: ['You will need to complete email address verification before signin', ', please try again later or contact our Webmaster']
         },
         InappropriateEmailAddress: {
-            ch: ['第三方平台提供的账户信息不能满足我们的要求，请尝试其他的账户或登录方式', '，如有问题请联系我们的管理员'],
+            tw: ['第三方平台提供的账户信息不能满足我们的要求，请尝试其他的账户或登录方式', '，如有问题请联系我们的管理员'],
+            cn: ['第三方平台提供的账户信息不能满足我们的要求，请尝试其他的账户或登录方式', '，如有问题请联系我们的管理员'],
             en: ['The information supplied by the third-party signin provider do not meet our requirements, please try signing in with another account or method', ', please try again later or contact our Webmaster']
         },
         DefectiveMember: {
-            ch: ['您的账户存在错误', '，请联系我们的管理员'],
+            tw: ['您的账户存在错误', '，请联系我们的管理员'],
+            cn: ['您的账户存在错误', '，请联系我们的管理员'],
             en: ['An error occurred with your member', ', please contact our Webmaster']
         },
         MemberSuspendedOrDeactivated: {
-            ch: ['您的账户已停用或已被注销', '，如有问题请联系我们的管理员'],
+            tw: ['您的账户已停用或已被注销', '，如有问题请联系我们的管理员'],
+            cn: ['您的账户已停用或已被注销', '，如有问题请联系我们的管理员'],
             en: ['Your member has been suspended or deactivated', ', please try again later or contact our Webmaster']
         },
         UnrecognizedProvider: {
-            ch: ['您尝试使用我们不支持的第三方账户登录', '，请使用Mojito账户或我们支持的登录方式，如有问题请联系我们的管理员'],
+            tw: ['您尝试使用我们不支持的第三方账户登录', '，请使用Mojito账户或我们支持的登录方式，如有问题请联系我们的管理员'],
+            cn: ['您尝试使用我们不支持的第三方账户登录', '，请使用Mojito账户或我们支持的登录方式，如有问题请联系我们的管理员'],
             en: ['The third-party signin provider you tried signin with is not supported by us', ', please try signing in with Mojito account or other methods we supported or contact our Webmaster']
         },
         ThirdPartyProviderSignin: {
-            ch: ['第三方账户登录遇到了一些问题', '，请稍后重试或者联系我们的管理员'],
+            tw: ['第三方账户登录遇到了一些问题', '，请稍后重试或者联系我们的管理员'],
+            cn: ['第三方账户登录遇到了一些问题', '，请稍后重试或者联系我们的管理员'],
             en: ['Third-party Account sign in unsuccessful', ', please try again later or contact our Webmaster']
         }
     }

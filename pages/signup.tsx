@@ -40,87 +40,107 @@ export async function getServerSideProps() {
 }
 
 const recaptchaClientKey = process.env.NEXT_PUBLIC_INVISIABLE_RECAPTCHA_SITE_KEY ?? '';
-const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'ch';
+const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
     signUp: {
-        ch: '注册',
+        tw: '注册',
+        cn: '注册',
         en: 'Sign up'
     },
     emailAddress: {
-        ch: '邮件地址',
+        tw: '邮件地址',
+        cn: '邮件地址',
         en: 'Email address'
     },
     password: {
-        ch: '密码',
+        tw: '密码',
+        cn: '密码',
         en: 'Password'
     },
     repeatPassword: {
-        ch: '重复输入密码',
+        tw: '重复输入密码',
+        cn: '重复输入密码',
         en: 'Re-enter password'
     },
     appSignup: {
-        ch: '没有Mojito账户？现在就注册吧',
+        tw: '没有Mojito账户？现在就注册吧',
+        cn: '没有Mojito账户？现在就注册吧',
         en: 'Don\' have a Mojito account? Sign up now'
     },
     thirdPartySignUp: {
-        ch: (partyName: string) => `使用 ${partyName} 账户注册`,
+        tw: (partyName: string) => `使用 ${partyName} 账户注册`,
+        cn: (partyName: string) => `使用 ${partyName} 账户注册`,
         en: (partyName: string) => `Use ${partyName} Account to sign up`,
     },
     forgotPassword: {
-        ch: '忘记密码了？',
+        tw: '忘记密码了？',
+        cn: '忘记密码了？',
         en: 'Forgot password?'
     },
     appSignin:
     {
-        ch: '已经有Mojito账户了？现在就登录吧',
+        tw: '已经有Mojito账户了？现在就登录吧',
+        cn: '已经有Mojito账户了？现在就登录吧',
         en: 'Have a Mojito account? Sign in now'
     },
     recaptchaLang: {
-        ch: 'zh-CN',
+        tw: 'zh-TW',
+        cn: 'zh-CN',
         en: 'en'
     },
     recaptchaNotVerifiedError: {
-        ch: '请告诉我们您不是机器人😎',
+        tw: '请告诉我们您不是机器人😎',
+        cn: '请告诉我们您不是机器人😎',
         en: 'Please tell us if you are not a robot😎'
     },
     recaptchaError: {
-        ch: '我们的人机验证系统出了些问题🤯...请尝试刷新或联系我们的管理员',
+        tw: '我们的人机验证系统出了些问题🤯...请尝试刷新或联系我们的管理员',
+        cn: '我们的人机验证系统出了些问题🤯...请尝试刷新或联系我们的管理员',
         en: 'Something went wrong with our CAPTCHA🤯...Please try to refresh or contact our Webmaster'
     },
     emailAddressNotSatisfiedError: {
-        ch: '邮件地址不符合格式',
+        tw: '邮件地址不符合格式',
+        cn: '邮件地址不符合格式',
         en: 'Email address does not match the format'
     },
     passwordNotSatisfiedError: {
-        ch: '密码不符合安全性要求',
+        tw: '密码不符合安全性要求',
+        cn: '密码不符合安全性要求',
         en: 'Passwords do not satisfy the security requirements'
     },
     passwordNotMatchError: {
-        ch: '两次输入的密码不相符',
+        tw: '两次输入的密码不相符',
+        cn: '两次输入的密码不相符',
         en: 'Passwords not match'
     },
     loginCredentialsExistError: {
-        ch: '邮件地址已被用于注册',
+        tw: '邮件地址已被用于注册',
+        cn: '邮件地址已被用于注册',
         en: 'Email address has already been used for registration'
     },
     goodResult: {
-        ch: '账户注册成功😄一封验证邮件已发送到注册时使用的邮箱😉验证邮箱后就可以登录啦~',
+        tw: '账户注册成功😄一封验证邮件已发送到注册时使用的邮箱😉验证邮箱后就可以登录啦~',
+        cn: '账户注册成功😄一封验证邮件已发送到注册时使用的邮箱😉验证邮箱后就可以登录啦~',
         en: 'Well done😄 A verification email has been sent to the address for registration😉 After verifying your email address you will have full access'
     },
     badResult: {
-        ch: '账户注册失败😥请稍后重试或者联系我们的管理员',
+        tw: '账户注册失败😥请稍后重试或者联系我们的管理员',
+        cn: '账户注册失败😥请稍后重试或者联系我们的管理员',
         en: 'Failed to register😥 Please try again later or contact our Webmaster'
     },
     goodResendEmailResult: {
-        ch: '一封验证邮件已发送到注册时使用的邮箱😉验证邮箱后就可以登录啦~',
+        tw: '一封验证邮件已发送到注册时使用的邮箱😉验证邮箱后就可以登录啦~',
+        cn: '一封验证邮件已发送到注册时使用的邮箱😉验证邮箱后就可以登录啦~',
         en: 'A verification email has been sent to the address for registration😉 After verifying your email address you will have full access'
     },
     cannotResendEmailResult: {
-        ch: '您的账户存在问题或已停用或注销因而不能发送验证邮件😥如有问题请联系我们的管理员，',
+        tw: '您的账户存在问题或已停用或注销因而不能发送验证邮件😥如有问题请联系我们的管理员，',
+        cn: '您的账户存在问题或已停用或注销因而不能发送验证邮件😥如有问题请联系我们的管理员，',
         en: 'An error occurred with your member or your member has been suspended or deactivated😥 If there is any problem please contact our Webmaster'
     },
     badResendEmailResult: {
-        ch: '验证邮件发送失败😥请稍后重试或者联系我们的管理员',
+        tw: '验证邮件发送失败😥请稍后重试或者联系我们的管理员',
+        cn: '验证邮件发送失败😥请稍后重试或者联系我们的管理员',
         en: 'Failed to re-send verification email😥 Please try again later or contact our Webmaster'
     }
 }

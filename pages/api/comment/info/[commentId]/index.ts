@@ -7,9 +7,7 @@ import AzureTableClient from '../../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from "../../../../../modules/AtlasDatabaseClient";
 
 import { INoticeInfo, IMemberPostMapping, INotificationStatistics, IMemberComprehensive, IRestrictedMemberInfo, IMemberStatistics, ILoginJournal, IAttitudeComprehensive, IAttitideMapping, ICommentComprehensive, IEditedCommentComprehensive, IRestrictedCommentComprehensive, IChannelStatistics, ITopicComprehensive, ITopicPostMapping, IPostComprehensive, IEditedPostComprehensive, IRestrictedPostComprehensive } from '../../../../../lib/interfaces';
-
 import { createId, createNoticeId, getRandomIdStr, getRandomIdStrL, getRandomHexStr, timeStampToString, getNicknameFromToken, getContentBrief, createCommentComprehensive, provideCommentComprehensiveUpdate, getRestrictedFromCommentComprehensive, getTopicBase64StringsArrayFromRequestBody, getImageUrlsArrayFromRequestBody, getParagraphsArrayFromRequestBody, getRestrictedFromPostComprehensive, verifyEmailAddress, verifyPassword, verifyId, verifyUrl, verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500, log } from '../../../../../lib/utils';
-
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
 
 
@@ -55,7 +53,7 @@ export default async function CommentIndexByCommentId(req: NextApiRequest, res: 
                 return;
             }
             await atlasDbClient.connect();
-            const commentComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<ICommentComprehensive>(category);
+            const commentComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<ICommentComprehensive>('comment');
             const commentComprehensiveQueryResult = await commentComprehensiveCollectionClient.findOne({ commentId });
             if (null === commentComprehensiveQueryResult) {
                 res.status(404).send('Comment not found');
@@ -87,6 +85,19 @@ export default async function CommentIndexByCommentId(req: NextApiRequest, res: 
             return;
         }
         const { sub: memberId } = token;
+        await atlasDbClient.connect();
+        //// Verify member status ////
+        const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
+        const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne({ memberId });
+        if (null === memberComprehensiveQueryResult) {
+            throw new Error(`Member was trying creating comment but have no document (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
+        }
+        const { status: memberStatus } = memberComprehensiveQueryResult;
+        if (0 > memberStatus) {
+            res.status(403).send('Method not allowed due to member suspended');
+            await atlasDbClient.close();
+            return;
+        }
         //// PUT | edit comment ////
         if ('PUT' === method) {
             // Step #1 verify parent id category
@@ -100,22 +111,7 @@ export default async function CommentIndexByCommentId(req: NextApiRequest, res: 
                 res.status(400).send('Improper or blank content');
                 return;
             }
-            await atlasDbClient.connect();
-            // Step #2 verify status
-            // Step #2.1.1 look up document (of IMemberComprehensive) in [C] memberComprehensive
-            const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberStatistics>('member');
-            const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne({ memberId });
-            if (null === memberComprehensiveQueryResult) {
-                throw new Error(`Member was trying creating comment but have no document (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
-            }
-            // Step #2.1.2 verify member status (of IMemberComprehensive)
-            const { status: memberStatus } = memberComprehensiveQueryResult;
-            if (0 > memberStatus) {
-                res.status(403).send('Method not allowed due to member suspended');
-                await atlasDbClient.close();
-                return;
-            }
-            // Step #2.2.1 look up document (of ICommentComprehensive) in [C] commentComprehensive
+            // Step #3.1 look up document (of ICommentComprehensive) in [C] commentComprehensive
             const commentComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<ICommentComprehensive>('comment');
             const commentComprehensiveQueryResult = await commentComprehensiveCollectionClient.findOne({ commentId });
             if (null === commentComprehensiveQueryResult) {
@@ -123,14 +119,14 @@ export default async function CommentIndexByCommentId(req: NextApiRequest, res: 
                 await atlasDbClient.close();
                 return;
             }
-            // Step #2.2.2 (cond.) verify comment status (of ICommentComprehensive)
+            // Step #3.2 verify comment status (of ICommentComprehensive)
             const { status: commentStatus, postId } = commentComprehensiveQueryResult;
             if (0 > commentStatus) {
                 res.status(403).send('Method not allowed due to comment deleted');
                 await atlasDbClient.close();
                 return;
             }
-            // Step #2.3.1 look up document (of IPostComprehensive) in [C] postComprehensive
+            // Step #3.3 look up document (of IPostComprehensive) in [C] postComprehensive
             const postComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IPostComprehensive>('post');
             const postComprehensiveQueryResult = await postComprehensiveCollectionClient.findOne({ postId });
             if (null === postComprehensiveQueryResult) {
@@ -138,22 +134,22 @@ export default async function CommentIndexByCommentId(req: NextApiRequest, res: 
                 await atlasDbClient.close();
                 return;
             }
-            // Step #2.3.2 verify post status (of IPostComprehensive)
+            // Step #3.4 verify post status (of IPostComprehensive)
             const { status: postStatus } = postComprehensiveQueryResult;
             if (0 > postStatus) {
                 res.status(403).send('Method not allowed due to post deleted');
                 await atlasDbClient.close();
                 return;
             }
-            // Status all good
-            // Step #3 update document (of ICommentComprehensive) in [C] commentComprehensive
+            //// Status all good ////
+            // Step #4 update document (of ICommentComprehensive) in [C] commentComprehensive
             const commentComprehensiveInsertResult = await commentComprehensiveCollectionClient.updateOne({ commentId }, { $set: provideCommentComprehensiveUpdate(content, req.body?.cuedMemberInfoArr) });
             if (!commentComprehensiveInsertResult.acknowledged) {
                 throw new Error(`Failed to update document (of ICommentComprehensive, comment id: ${commentId}, post id: ${postId}) in [C] commentComprehensive`);
             }
             res.status(200).send(commentId);
             //// Update statistics ////
-            // Step #4 update totalCommentEditCount (of IMemberStatistics) in [C] memberStatistics
+            // Step #5 update totalCommentEditCount (of IMemberStatistics) in [C] memberStatistics
             const memberStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IMemberStatistics>('member');
             const memberStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId }, {
                 $inc: {
@@ -183,7 +179,7 @@ export default async function CommentIndexByCommentId(req: NextApiRequest, res: 
                         const noticeTableClient = AzureTableClient('Notice');
                         noticeTableClient.upsertEntity<INoticeInfo>({
                             partitionKey: memberId_cued,
-                            rowKey: createNoticeId('cue', memberId, postId, commentId), // entity id
+                            rowKey: createNoticeId('cue', memberId, postId, commentId), // combined id string
                             Category: 'cue',
                             InitiateId: memberId,
                             Nickname: getNicknameFromToken(token),
@@ -211,7 +207,6 @@ export default async function CommentIndexByCommentId(req: NextApiRequest, res: 
                 res.status(400).send('Invalid comment id');
                 return;
             }
-            await atlasDbClient.connect();
             // Step #1.1 look up document (of ICommentComprehensive) in [C] commentComprehensive
             const commentComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<ICommentComprehensive>(category);
             const commentComprehensiveQueryResult = await commentComprehensiveCollectionClient.findOne({ commentId });
@@ -248,21 +243,21 @@ export default async function CommentIndexByCommentId(req: NextApiRequest, res: 
                     log(`Document (ICommentComprehensive, comment id: ${commentId}) updated (deleted, status -1) in [C] commentComprehensive successfully but failed to update totalSubcommentDeleteCount (of ICommentComprehensive, comment id: ${parentId}) in [C] commentComprehensive`);
                 }
             }
-            // Step #3.3 update total comment delete count (of IPostComprehensive) in [C] postComprehensive
+            // Step #3.3 update totalCommentDeleteCount (of IPostComprehensive) in [C] postComprehensive
             const { postId } = commentComprehensiveQueryResult;
             const postComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IPostComprehensive>('post');
             const postComprehensiveUpdateResult = await postComprehensiveCollectionClient.findOneAndUpdate({ postId }, { $inc: { totalCommentDeleteCount: 1 } });
             if (!postComprehensiveUpdateResult.ok) {
                 log(`Document (ICommentComprehensive, comment id: ${commentId}) updated (deleted, status -1) in [C] commentComprehensive successfully but failed to update totalCommentDeleteCount (of IPostComprehensive, post id: ${postId}) in [C] postComprehensive`);
             }
-            // Step #3.4 update total comment delete count (of IChannelStatistics) in [C] channelStatistics
+            // Step #3.4 update totalCommentDeleteCount (of IChannelStatistics) in [C] channelStatistics
             const channelId = postComprehensiveUpdateResult.value?.channelId;
             const channelStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IChannelStatistics>('channel');
             const channelStatisticsUpdateResult = await channelStatisticsCollectionClient.updateOne({ channelId }, { $inc: { totalCommentDeleteCount: 1 } });
             if (!channelStatisticsUpdateResult.acknowledged) {
                 log(`Document (ICommentComprehensive, comment id: ${commentId}) updated (deleted, status -1) in [C] commentComprehensive successfully but failed to update totalCommentDeleteCount (of IChannelStatistics, channel id: ${channelId}) in [C] channelStatistics`);
             }
-            // Step #3.55 (cond.) update total comment delete count (of ITopicComprehensive) [C] topicComprehensive
+            // Step #3.55 (cond.) update totalCommentDeleteCount (of ITopicComprehensive) [C] topicComprehensive
             const topicIdsArr = postComprehensiveUpdateResult.value?.topicIdsArr;
             if (Array.isArray(topicIdsArr) && topicIdsArr.length !== 0) {
                 const topicComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<ITopicComprehensive>('topic');
@@ -278,7 +273,23 @@ export default async function CommentIndexByCommentId(req: NextApiRequest, res: 
             return;
         }
     } catch (e: any) {
-
+        let msg;
+        if (e instanceof SyntaxError) {
+            res.status(400).send('Improperly normalized request info');
+            return;
+        } else if (e instanceof RestError) {
+            msg = 'Was trying communicating with azure table storage.';
+        } else if (e instanceof MongoError) {
+            msg = 'Was trying communicating with atlas mongodb.';
+        } else {
+            msg = `Uncategorized. ${e?.msg}`;
+        }
+        if (!res.headersSent) {
+            response500(res, msg);
+        }
+        log(msg, e);
+        await atlasDbClient.close();
+        return;
     }
 
 }

@@ -14,9 +14,16 @@ export async function getStaticProps() {
     return {
         props: {
             errorMessage: {
-                ch: [
-                    '我们的服务器遇到了一些技术难题😟',
-                    '可能有些Bugs出现在了我们的服务器代码中🤯',
+                tw: [
+                    '我們遭遇了一些技術難題😟',
+                    '也許有些Bugs出現在了我們的伺服器軟體中🤯',
+                    '我們的伺服器遭遇了一些不可抗力🥲',
+                    '我們的伺服器剛剛在發呆😴',
+                    '我們的伺服器在和它的朋友們喝Mojito😳'
+                ][Math.floor(Math.random() * 5)],
+                cn: [
+                    '我们遇到了一些技术难题😟',
+                    '可能有些Bugs出现在了我们的服务器程序中🤯',
                     '我们的服务器遭遇了某些不可抗力🥲',
                     '我们的服务器刚刚开小差了😴',
                     '我们的服务器正在和它的朋友们喝Mojito😳'
@@ -27,18 +34,21 @@ export async function getStaticProps() {
     }
 }
 
-const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'ch';
+const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
     title: {
-        ch: '出错啦',
+        tw: '出錯啦',
+        cn: '出错啦',
         en: 'Opps'
     },
     accessDenniedError: {
-        ch: '您的账户需要验证或已被注销',
+        tw: '您的賬戶需要驗證電郵或已被注銷',
+        cn: '您的账户需要验证邮箱或已被注销',
         en: 'Your account needs verification or has been canceled'
     },
     backToHome: {
-        ch: '返回主页',
+        tw: '返回主頁',
+        cn: '返回主页',
         en: 'Back to home'
     }
 }

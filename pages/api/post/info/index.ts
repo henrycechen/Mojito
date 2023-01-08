@@ -6,13 +6,13 @@ import { getToken } from 'next-auth/jwt';
 import AzureTableClient from '../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from '../../../../modules/AtlasDatabaseClient';
 
-import { INoticeInfo, INotificationStatistics, IMemberStatistics, IChannelStatistics, ITopicComprehensive, ITopicPostMapping, IPostComprehensive } from '../../../../lib/interfaces';
+import { INoticeInfo, INotificationStatistics, IMemberStatistics, IChannelStatistics, ITopicComprehensive, ITopicPostMapping, IPostComprehensive, IMemberComprehensive } from '../../../../lib/interfaces';
 import { ChannelInfo } from '../../../../lib/types';
 import { getRandomIdStr, getRandomIdStrL, getNicknameFromToken, getTopicBase64StringsArrayFromRequestBody, getImageUrlsArrayFromRequestBody, getParagraphsArrayFromRequestBody, verifyUrl, response405, response500, log } from '../../../../lib/utils';
 
 const domain = process.env.NEXT_PUBLIC_APP_DOMAIN;
 
-// This interface only accepts post (create post) method
+// This interface only accepts POST method
 // Use 'api/post/info/[postId]' to GET comment info
 //
 // Post info required:
@@ -64,8 +64,8 @@ export default async function CreatePost(req: NextApiRequest, res: NextApiRespon
         // Step #1.1 prepare member id (of post author)
         const { sub: memberId } = token;
         // Step #1.2 look up member status (IMemberComprehensive) in [C] memberComprehensive
-        const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberStatistics>('member');
-        const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne<IMemberStatistics>({ memberId });
+        const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
+        const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne<IMemberComprehensive>({ memberId });
         if (null === memberComprehensiveQueryResult) {
             throw new Error(`Member was trying creating comment but have no document (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
         }

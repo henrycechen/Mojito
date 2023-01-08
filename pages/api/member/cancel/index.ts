@@ -4,7 +4,7 @@ import { getToken } from 'next-auth/jwt'
 
 import AtlasDatabaseClient from "../../../../modules/AtlasDatabaseClient";
 
-import { INoticeInfo, INotificationStatistics, IMemberStatistics, IAttitudeComprehensive, ICommentComprehensive, IChannelStatistics, ITopicComprehensive, ITopicPostMapping, IPostComprehensive } from '../../../../lib/interfaces';
+import { INoticeInfo, INotificationStatistics, IMemberStatistics, IAttitudeComprehensive, ICommentComprehensive, IChannelStatistics, ITopicComprehensive, ITopicPostMapping, IPostComprehensive, IMemberComprehensive } from '../../../../lib/interfaces';
 
 import { response405, response500, log } from '../../../../lib/utils';
 
@@ -25,7 +25,7 @@ export default async function CancelMembership(req: NextApiRequest, res: NextApi
     const atlasDbClient = AtlasDatabaseClient();
     try {
         await atlasDbClient.connect();
-        const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberStatistics>('member');
+        const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
         const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne({ memberId });
         if (null === memberComprehensiveQueryResult) {
             throw new Error(`Member was trying expressing attitude but have no document (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);

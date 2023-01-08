@@ -38,7 +38,7 @@ import { useTheme } from '@emotion/react';
 import { useRouter } from 'next/router';
 
 import { ProcessStates, Helper, ChannelDictionary, ChannelInfo, LangConfigs } from '../lib/types';
-import {  updateLocalStorage, restoreFromLocalStorage } from '../lib/utils';
+import { updateLocalStorage, restoreFromLocalStorage } from '../lib/utils';
 import { CenterlizedBox, ResponsiveCard, StyledSwitch, TextButton } from '../ui/Styled';
 import Navbar from '../ui/Navbar';
 
@@ -70,7 +70,24 @@ type PostInfo = {
     timestamp: string;
 }
 
-const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'ch';
+const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
+const langConfigs: LangConfigs = {
+    allPosts: {
+        tw: '全部',
+        cn: '全部',
+        en: 'All posts'
+    },
+    hotPosts: {
+        tw: '熱帖',
+        cn: '最热',
+        en: 'Hotest'
+    },
+    newPosts: {
+        tw: '新帖',
+        cn: '最新',
+        en: 'Newest'
+    }
+}
 
 const Home = () => {
     const { data: session, status } = useSession();
@@ -252,7 +269,7 @@ const Home = () => {
                                     </ListItemIcon>
                                     <ListItemText>
                                         <Typography>
-                                            {'全部'}
+                                            {langConfigs.allPosts[lang]}
                                         </Typography>
                                     </ListItemText>
                                 </MenuItem>
@@ -282,7 +299,7 @@ const Home = () => {
                         <ResponsiveCard sx={{ padding: 0, paddingY: 2, paddingLeft: 2 }}>
                             <FormControlLabel
                                 control={<StyledSwitch sx={{ ml: 1 }} checked={processStates.selectedHotPosts} />}
-                                label={processStates.selectedHotPosts ? '最热' : '最新'}
+                                label={processStates.selectedHotPosts ? langConfigs.hotPosts[lang] : langConfigs.newPosts[lang]}
                                 onChange={handleSwitchChange}
                                 sx={{ marginRight: 0 }}
                             />
@@ -304,14 +321,14 @@ const Home = () => {
                         <Box minWidth={110}>
                             <FormControlLabel
                                 control={<StyledSwitch sx={{ ml: 1 }} checked={processStates.selectedHotPosts} />}
-                                label={processStates.selectedHotPosts ? '最热' : '最新'}
+                                label={processStates.selectedHotPosts ? langConfigs.hotPosts[lang] : langConfigs.newPosts[lang]}
                                 onChange={handleSwitchChange}
                             />
                         </Box>
                         {/* the "all" button */}
                         <Button variant={'all' === processStates.selectedChannelId ? 'contained' : 'text'} size='small' onClick={handleChannelSelect('all')}>
                             <Typography variant='body2' color={'all' === processStates.selectedChannelId ? 'white' : "text.secondary"} sx={{ backgroundColor: 'primary' }}>
-                                {'全部'}
+                                {langConfigs.allPosts[lang]}
                             </Typography>
                         </Button>
                         {/* other channels */}

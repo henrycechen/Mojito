@@ -10,14 +10,16 @@ import Copyright from '../ui/Copyright';
 import { LangConfigs } from '../lib/types';
 import BackToHomeButtonGroup from '../ui/BackToHomeButtonGroup';
 
-const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'ch';
+const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
     title: {
-        ch: '权限不足',
+        tw: '您的权限不足',
+        cn: '您的权限不足',
         en: 'Forbidden'
     },
     requireSignUpOrSignIn: {
-        ch: '请先注册或登录后再重试🙂',
+        tw: '请注冊或登入后嘗試🙂',
+        cn: '请注册或登入后重试🙂',
         en: 'Please sign up or sign in before trying again🙂'
     }
 }

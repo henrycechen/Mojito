@@ -5,11 +5,12 @@ import Typography from '@mui/material/Typography';
 import { LangConfigs } from '../lib/types';
 
 const appName = process.env['APP_FULL_NAME'] ?? 'Mojito New Zealand';
-const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'ch';
+const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
 
     guidelines: {
-        ch: '社区准则',
+        tw: '社區準則',
+        cn: '社区准则',
         en: 'community guidelines'
     }
 }

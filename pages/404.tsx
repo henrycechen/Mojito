@@ -9,14 +9,16 @@ import { LangConfigs } from '../lib/types';
 import BackToHomeButtonGroup from '../ui/BackToHomeButtonGroup';
 
 const domain = process.env.NEXT_PUBLIC_APP_DOMAIN;
-const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'ch';
+const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
     msg: {
-        ch: '很抱歉，你要找的页面不见了...',
+        tw: '很抱歉，你要找的頁面不見了...',
+        cn: '很抱歉，你要找的页面不见了...',
         en: 'Sorry, we can not find the page you\'re looking for'
     },
     backToHome: {
-        ch: '返回主页',
+        tw: '返回主頁',
+        cn: '返回主页',
         en: 'Back to home'
     }
 }

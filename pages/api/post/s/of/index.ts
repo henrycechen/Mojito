@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { response405 } from '../../../../lib/utils';
+import { response405 } from '../../../../../lib/utils';
 
 export default function Post(req: NextApiRequest, res: NextApiResponse) {
     const { method } = req;

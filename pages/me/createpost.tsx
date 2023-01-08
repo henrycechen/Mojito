@@ -70,38 +70,91 @@ type UploadStates = {
     uploadPrecent: number;
 }
 
-const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'ch';
+const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
-    title: { ch: '撰写新主题', en: 'Create a new post' },
-    titlePlaceholder: { ch: '标题', en: 'Title' },
-    contentPlaceholder: { ch: '写点什么吧~', en: 'What\'s on your mind?' },
-    addATopic: { ch: '添加一个话题 #', en: 'Add a topic #' },
-    cueAMember: { ch: '提及一位会员 @', en: 'Cue a member @' },
-    cueAMemberTitle: { ch: '选择你想 Cue 的会员', en: 'Choose a member' },
-    cueAMemberSelect: { ch: '会员', en: 'Member' },
-    addMember: { ch: '添加', en: 'Add' },
-    uploadImage: { ch: '添加图片', en: 'Add photos' },
-    postChannel: { ch: '频道', en: 'Choose a channel' },
-    choosePostChannel: { ch: '选择一个频道', en: 'Choose a channel' },
-    submit: { ch: '发布', en: 'Publish' },
+    title: {
+        tw: '撰写新主题',
+        cn: '撰写新主题',
+        en: 'Create a new post'
+    },
+    titlePlaceholder: {
+        tw: '标题',
+        cn: '标题',
+        en: 'Title'
+    },
+    contentPlaceholder: {
+        tw: '写点什么吧~',
+        cn: '写点什么吧~',
+        en: 'What\'s on your mind?'
+    },
+    addATopic: {
+        tw: '添加一个话题 #',
+        cn: '添加一个话题 #',
+        en: 'Add a topic #'
+    },
+    cueAMember: {
+        tw: '提及一位会员 @',
+        cn: '提及一位会员 @',
+        en: 'Cue a member @'
+    },
+    cueAMemberTitle: {
+        tw: '选择你想 Cue 的会员',
+        cn: '选择你想 Cue 的会员',
+        en: 'Choose a member'
+    },
+    cueAMemberSelect: {
+        tw: '会员',
+        cn: '会员',
+        en: 'Member'
+    },
+    addMember: {
+        tw: '添加',
+        cn: '添加',
+        en: 'Add'
+    },
+    uploadImage: {
+        tw: '添加图片',
+        cn: '添加图片',
+        en: 'Add photos'
+    },
+    postChannel: {
+        tw: '频道',
+        cn: '频道',
+        en: 'Choose a channel'
+    },
+    choosePostChannel: {
+        tw: '选择一个频道',
+        cn: '选择一个频道',
+        en: 'Choose a channel'
+    },
+    submit: {
+        tw: '发布',
+        cn: '发布',
+        en: 'Publish'
+    },
     imagesUploading: {
-        ch: '上传图片中，请勿关闭或离开页面😉',
+        tw: '上传图片中，请勿关闭或离开页面😉',
+        cn: '上传图片中，请勿关闭或离开页面😉',
         en: 'Uploading photos, please do not close or leave this page😉'
     },
     imagesUploadSuccess: {
-        ch: '图片上传完成😄正在发布主题帖',
+        tw: '图片上传完成😄正在发布主题帖',
+        cn: '图片上传完成😄正在发布主题帖',
         en: 'Photo upload complete😄 Publishing your post'
     },
     imagesUploadFailed: {
-        ch: '图片上传失败😟请尝试重新发布主题帖',
+        tw: '图片上传失败😟请尝试重新发布主题帖',
+        cn: '图片上传失败😟请尝试重新发布主题帖',
         en: 'Photo upload failed😟 Please try to re-publish your post'
     },
     postPublishSuccess: {
-        ch: '发布成功😄正在跳转到主题帖页面',
+        tw: '发布成功😄正在跳转到主题帖页面',
+        cn: '发布成功😄正在跳转到主题帖页面',
         en: 'Publishing success😄 Redirecting to your post page'
     },
     postPublishFailed: {
-        ch: '主题帖发布失败😟请尝试重新发布主题帖',
+        tw: '主题帖发布失败😟请尝试重新发布主题帖',
+        cn: '主题帖发布失败😟请尝试重新发布主题帖',
         en: 'Post publishing failed😟 Please try to re-publish your post'
     }
 

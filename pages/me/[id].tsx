@@ -58,7 +58,7 @@ import { useTheme } from '@emotion/react';
 import { useRouter } from 'next/router';
 
 import { ProcessStates, Helper, ChannelDictionary, ChannelInfo, LangConfigs } from '../../lib/types';
-import {  updateLocalStorage, restoreFromLocalStorage } from '../../lib/utils';
+import { updateLocalStorage, restoreFromLocalStorage } from '../../lib/utils';
 import { CenterlizedBox, ResponsiveCard, StyledSwitch, TextButton } from '../../ui/Styled';
 import Navbar from '../../ui/Navbar';
 
@@ -96,29 +96,113 @@ type PostInfo = {
     timestamp: string;
 }
 
-const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'ch';
+const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
-    cat_message: { ch: '消息', en: 'Message' },
-    cat_posts_short: { ch: '帖子', en: 'Posts' },
-    cat_posts_long: { ch: '我的帖子', en: 'My Posts' },
-    cat_saved: { ch: '收藏', en: 'Saved' },
-    cat_liked: { ch: '赞过', en: 'Liked' },
-    cat_history_short: { ch: '历史', en: 'History' },
-    cat_history_long: { ch: '历史记录', en: 'History' },
-    cat_settings: { ch: '设置', en: 'Settings' },
-    submit: { ch: '提交', en: 'Submit' },
-    settings_newNickname: { ch: '新昵称', en: 'New nickname' },
-    settings_password: { ch: '新密码', en: 'New password' },
-    settings_repeat_assword: { ch: '重复输入新密码', en: 'Repeat new password' },
-    settings_briefIntro: { ch: '简介', en: 'Brief intro' },
-    settings_introduceYourself: { ch: '简单介绍一下自己吧~', en: 'Tell us something about yourself :)' },
-    settings_gender: { ch: '性别', en: 'Gender' },
-    settings_female: { ch: '女生', en: 'Girl' },
-    settings_male: { ch: '男生', en: 'Boy' },
-    settings_secret: { ch: '保密', en: 'Secret' },
-    settings_date: { ch: '您的生日', en: 'Birthday' },
-    settings_memberId: { ch: 'Mojito 账户ID', en: 'Mojito Member ID' },
-    settings_registerDate: { ch: '注册时间', en: 'Register date' },
+    cat_message: {
+        tw: '消息',
+        cn: '消息',
+        en: 'Message'
+    },
+    cat_posts_short: {
+        tw: '帖子',
+        cn: '帖子',
+        en: 'Posts'
+    },
+    cat_posts_long: {
+        tw: '我的帖子',
+        cn: '我的帖子',
+        en: 'My Posts'
+    },
+    cat_saved: {
+        tw: '收藏',
+        cn: '收藏',
+        en: 'Saved'
+    },
+    cat_liked: {
+        tw: '赞过',
+        cn: '赞过',
+        en: 'Liked'
+    },
+    cat_history_short: {
+        tw: '历史',
+        cn: '历史',
+        en: 'History'
+    },
+    cat_history_long: {
+        tw: '历史记录',
+        cn: '历史记录',
+        en: 'History'
+    },
+    cat_settings: {
+        tw: '设置',
+        cn: '设置',
+        en: 'Settings'
+    },
+    submit: {
+        tw: '提交',
+        cn: '提交',
+        en: 'Submit'
+    },
+    settings_newNickname: {
+        tw: '新昵称',
+        cn: '新昵称',
+        en: 'New nickname'
+    },
+    settings_password: {
+        tw: '新密码',
+        cn: '新密码',
+        en: 'New password'
+    },
+    settings_repeat_assword: {
+        tw: '重复输入新密码',
+        cn: '重复输入新密码',
+        en: 'Repeat new password'
+    },
+    settings_briefIntro: {
+        tw: '简介',
+        cn: '简介',
+        en: 'Brief intro'
+    },
+    settings_introduceYourself: {
+        tw: '简单介绍一下自己吧~',
+        cn: '简单介绍一下自己吧~',
+        en: 'Tell us something about yourself :)'
+    },
+    settings_gender: {
+        tw: '性别',
+        cn: '性别',
+        en: 'Gender'
+    },
+    settings_female: {
+        tw: '女生',
+        cn: '女生',
+        en: 'Girl'
+    },
+    settings_male: {
+        tw: '男生',
+        cn: '男生',
+        en: 'Boy'
+    },
+    settings_secret: {
+        tw: '保密',
+        cn: '保密',
+        en: 'Secret'
+    },
+    settings_date: {
+        tw: '您的生日',
+        cn: '您的生日',
+        en: 'Birthday'
+    },
+    settings_memberId: {
+        tw: 'Mojito 账户ID',
+        cn: 'Mojito 账户ID',
+        en: 'Mojito Member ID'
+    },
+    settings_registerDate: {
+        tw: '注册时间',
+        cn: '注册时间',
+        en: 'Register date'
+    },
 }
 
 const Member = () => {

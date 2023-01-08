@@ -4,10 +4,11 @@ import Typography from '@mui/material/Typography';
 
 import { LangConfigs } from '../lib/types';
 
-const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'ch';
+const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
     about: {
-        ch: '关于我们',
+        tw: '關於我們',
+        cn: '关于我们',
         en: 'About us'
     }
 }

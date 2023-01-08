@@ -31,26 +31,31 @@ import { useRouter } from 'next/router';
 import { ColorModeContext } from './Theme';
 
 const domain = process.env.NEXT_PUBLIC_APP_DOMAIN;
-const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'ch';
+const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
     signIn: {
-        ch: '登入',
+        tw: '登入',
+        cn: '登入',
         en: 'Sign in'
     },
     createPost: {
-        ch: '发帖',
+        tw: '發帖',
+        cn: '发帖',
         en: 'Create post'
     },
     message: {
-        ch: '消息',
+        tw: '消息',
+        cn: '消息',
         en: 'Message'
     },
     member: {
-        ch: '账户',
+        tw: '賬戶',
+        cn: '账户',
         en: 'Account'
     },
     signOut: {
-        ch: '登出',
+        tw: '登出',
+        cn: '登出',
         en: 'Sign out'
     }
 }
