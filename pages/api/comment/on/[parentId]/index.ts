@@ -6,7 +6,7 @@ import { MongoError } from 'mongodb';
 import AzureTableClient from '../../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from "../../../../../modules/AtlasDatabaseClient";
 
-import { INoticeInfo, IMemberPostMapping, INotificationStatistics, IMemberComprehensive,IRestrictedMemberInfo, IMemberStatistics, ILoginJournal, IAttitudeComprehensive, IAttitideMapping, ICommentComprehensive, IEditedCommentComprehensive, IRestrictedCommentComprehensive, IChannelStatistics, ITopicComprehensive, ITopicPostMapping, IPostComprehensive, IEditedPostComprehensive, IRestrictedPostComprehensive } from '../../../../../lib/interfaces';
+import { INoticeInfo, IMemberPostMapping, INotificationStatistics, IMemberComprehensive, IRestrictedMemberInfo, IMemberStatistics, ILoginJournal, IAttitudeComprehensive, IAttitideMapping, ICommentComprehensive, IEditedCommentComprehensive, IRestrictedCommentComprehensive, IChannelStatistics, ITopicComprehensive, ITopicPostMapping, IPostComprehensive, IEditedPostComprehensive, IRestrictedPostComprehensive } from '../../../../../lib/interfaces';
 import { createId, createNoticeId, getRandomIdStr, getRandomIdStrL, getRandomHexStr, timeStampToString, getNicknameFromToken, getContentBrief, createCommentComprehensive, getRestrictedFromCommentComprehensive, getTopicBase64StringsArrayFromRequestBody, getImageUrlsArrayFromRequestBody, getParagraphsArrayFromRequestBody, getRestrictedFromPostComprehensive, verifyEmailAddress, verifyPassword, verifyId, verifyUrl, verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500, log } from '../../../../../lib/utils';
 
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
@@ -79,7 +79,7 @@ export default async function CommentIndexByParentId(req: NextApiRequest, res: N
         // Step #1.2 verify member status (of IMemberComprehensive)
         const { status: memberStatus } = memberComprehensiveQueryResult;
         if (0 > memberStatus) {
-            res.status(403).send('Method not allowed due to member suspended');
+            res.status(403).send('Method not allowed due to member suspended or deactivated');
             await atlasDbClient.close();
             return;
         }
@@ -193,9 +193,9 @@ export default async function CommentIndexByParentId(req: NextApiRequest, res: N
                 }
             }
         }
-        //// Handle reply ////
+        //// Handle reply (cond.) ////
         const { title } = postComprehensiveQueryResult;
-        // Step #6.1 look up member id (IMemberMapping) in [RL] BlockingMemberMapping
+        // Step #6.1 look up record (of IMemberMemberMapping) in [RL] BlockingMemberMapping
         const blockingMemberMappingTableClient = AzureTableClient('BlockingMemberMapping');
         const blockingMemberMappingQuery = blockingMemberMappingTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${notifiedMemberId}' and RowKey eq '${initiateId}'` } });
         //// [!] attemp to reterieve entity makes the probability of causing RestError ////
@@ -216,18 +216,14 @@ export default async function CommentIndexByParentId(req: NextApiRequest, res: N
             }, 'Replace');
             console.log(`TEST-3G29WQD: path='/api/comment/on/[id]/index.ts/' result: ` + a.version);
             //// FIXME: TEST-3G29WQD ////
-            // Step #6.3 update repliedCount (INotificationStatistics) (of post author) in [C] notificationStatistics
+            // Step #6.3 update reply (INotificationStatistics) (of post author) in [C] notificationStatistics
             const notificationStatisticsCollectionClient = atlasDbClient.db('statistics').collection<INotificationStatistics>('notification');
-            const notificationStatisticsUpdateResult = await notificationStatisticsCollectionClient.updateOne({ memberId: notifiedMemberId }, {
-                $inc: {
-                    repliedCount: 1
-                }
-            });
+            const notificationStatisticsUpdateResult = await notificationStatisticsCollectionClient.updateOne({ memberId: notifiedMemberId }, { $inc: { reply: 1 } });
             if (!notificationStatisticsUpdateResult.acknowledged) {
-                log(`Document (ICommentComprehensive, comment id: ${commentId}) inserted in [C] commentComprehensive successfully but failed to repliedCount (of INotificationStatistics, member id: ${notifiedMemberId}) in [C] notificationStatistics`);
+                log(`Document (ICommentComprehensive, comment id: ${commentId}) inserted in [C] commentComprehensive successfully but failed to reply (of INotificationStatistics, member id: ${notifiedMemberId}) in [C] notificationStatistics`);
             }
         }
-        //// Handle cue ////
+        //// Handle notice.cue (cond.) ////
         // Step #7.1 verify cued member ids array
         const { cuedMemberInfoArr } = req.body;
         if (Array.isArray(cuedMemberInfoArr) && cuedMemberInfoArr.length !== 0) {
@@ -236,6 +232,7 @@ export default async function CommentIndexByParentId(req: NextApiRequest, res: N
             const cuedMemberInfoArrSliced = cuedMemberInfoArr.slice(0, 9);
             for await (const cuedMemberInfo of cuedMemberInfoArrSliced) {
                 const { memberId: memberId_cued } = cuedMemberInfo;
+                // look up record (of IMemberMemberMapping) in [RL] BlockingMemberMapping
                 const _blockingMemberMappingQuery = blockingMemberMappingTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${memberId_cued}' and RowKey eq '${initiateId}'` } });
                 //// [!] attemp to reterieve entity makes the probability of causing RestError ////
                 const _blockingMemberMappingQueryResult = await _blockingMemberMappingQuery.next();
@@ -253,11 +250,7 @@ export default async function CommentIndexByParentId(req: NextApiRequest, res: N
                         CommentBrief: getContentBrief(content)
                     }, 'Replace');
                     // Step #7.4 update cued count (INotificationStatistics) (of cued member) in [C] notificationStatistics
-                    const notificationStatisticsUpdateResult = await notificationStatisticsCollectionClient.updateOne({ memberId: memberId_cued }, {
-                        $inc: {
-                            cuedCount: 1
-                        }
-                    });
+                    const notificationStatisticsUpdateResult = await notificationStatisticsCollectionClient.updateOne({ memberId: memberId_cued }, { $inc: { cue: 1 } });
                     if (!notificationStatisticsUpdateResult.acknowledged) {
                         log(`Document (ICommentComprehensive, comment id: ${commentId}) inserted in [C] commentComprehensive successfully but failed to update cuedCount (of INotificationStatistics, member id: ${memberId_cued}) in [C] notificationStatistics`);
                     }

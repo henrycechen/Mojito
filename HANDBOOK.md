@@ -162,33 +162,33 @@ type ResetPasswordRequestInfo = {
 
 \* This table records the following member ids of the partition key (member id)
 
-| PartitionKey | RowKey               |
-| ------------ | -------------------- |
-| MemberIdStr  | FollowingMemberIdStr |
+| PartitionKey | RowKey               | IsActive |
+| ------------ | -------------------- | -------- |
+| MemberIdStr  | FollowingMemberIdStr | boolean  |
 
 ### [PRL] FollowedByMemberMapping
 
 \* This table records the member ids of who have been following the partition key (member id)
 
-| PartitionKey | RowKey                |
-| ------------ | --------------------- |
-| MemberIdStr  | FollowedByMemberIdStr |
+| PartitionKey | RowKey                | IsActive |
+| ------------ | --------------------- | -------- |
+| MemberIdStr  | FollowedByMemberIdStr | boolean  |
 
 ### [RL] BlockingMemberMapping
 
 \* This table records the member ids blocked by the partition key (member id)
 
-| PartitionKey | RowKey              |
-| ------------ | ------------------- |
-| MemberIdStr  | BlockingMemberIdStr |
+| PartitionKey | RowKey              | IsActive |
+| ------------ | ------------------- | -------- |
+| MemberIdStr  | BlockingMemberIdStr | boolean  |
 
 ### [PRL] BlockedByMemberMapping
 
 \* This table records the member ids of who have been blocking the partition key (member id)
 
-| PartitionKey | RowKey               |
-| ------------ | -------------------- |
-| MemberIdStr  | BlockedByMemberIdStr |
+| PartitionKey | RowKey               | IsActive |
+| ------------ | -------------------- | -------- |
+| MemberIdStr  | BlockedByMemberIdStr | boolean  |
 
 
 
@@ -379,6 +379,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
     verifiedTime?: number;
     emailAddress?: string;
     nickname?: string;
+    nicknameBase64?: string;    
   	avatarImageUrl?: string;
     briefIntro?: string;
     gender?: -1 | 0 | 1;
@@ -516,12 +517,13 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 ```typescript
 {
     _id: ObjectId;
-    memberId: string;
-    cuedCount: number; // accumulated from last reset
-    repliedCount: number;
-    likedCount: number;
-    savedCount: number;
-    followedCount: number;
+    memberId?: string; // member id
+    cue?: number; // cued times accumulated from last count reset
+    reply?: number;
+    like?: number;
+    pin?: number;
+    save?: number;
+    follow?: number;
 }
 ```
 
@@ -1418,72 +1420,18 @@ Only allow updating other info after 30 seconds since last update
 
 ### ▶️Follow/Unfollow a member
 
-| Behaviour                  | Affected tables / collections                                |
-| -------------------------- | ------------------------------------------------------------ |
-| Follow / Unfollow a member | [RL] FollowingMemberMapping,<br />[PRL] FollowedByMemberMapping,<br />[PRL] Notice,<br />[C] Notification ***(acc.)***,<br />[C] MemberStatistics ***(acc.)*** |
+| Behaviour            | Affected tables / collections                                |
+| -------------------- | ------------------------------------------------------------ |
+| Follow a member      | [RL] FollowingMemberMapping ***(est.)***,<br />[PRL] FollowedByMemberMapping ***(est.)***,<br />( Cond. [PRL] Notice ),<br />( Cond. [C] Notification ***(acc.)*** ),<br />[C] MemberStatistics***(.totalFollowingCount acc.)***<br />[C] MemberStatistics***(.totalUndoFollowingCount acc. of the member has been followed)*** |
+| Undo follow a member | [RL] FollowingMemberMapping ***(del.)***,<br />[PRL] FollowedByMemberMapping ***(del.)***,<br />[C] MemberStatistics***(.totalFollowingCount acc.)***<br />[C] MemberStatistics***(.totalUndoFollowedByCount acc. of the member has been undo followed)*** |
 
-1. Create a new record / Delete record of ***FollowingMemberMapping*** in **[RL] FollowingMemberMapping**
-
-   ```json
-   {
-       partitionKey: "_", // member id (actor)
-       rowKey: "_", // member id (affected member)
-       IsActive: true
-   }
-   ```
-
-2. Create a new record / Delete record of ***FollowedByMemberMapping*** in **[PRL] FollowedByMemberMapping**
-
-   ```json
-   {
-       partitionKey: "_", // member id (affected member)
-       rowKey: "_", // member id (actor)
-       IsActive: true
-   }
-   ```
-
-3. Create a new record of ***Notice*** in **[PRL] Notice**
-
-   ```json
-   {
-       partitionKey: "_", // member id (affected member)
-       rowKey: "_", // notice id, 10 characters, UPPERCASE
-       InitiateId: "_", // member id of actor
-   }
-   ```
-
-4. Update notification statistics (followedCount) in **[C] notification** *(Follow act only)*
-
-   ```json
-   {
-       memberId: string; // (actor)
-       followedCount: 0 // ++
-   }
-   ```
-
-5. Update member statistics (followedByCount) in **[C] memberStatistics**
-
-   ```json
-   {
-       memberId: string; // (actor)
-       totalFollowingCount: 0 // ++
-   }
-   ```
-
-   ```json
-   {
-       memberId: string; // (affected member)
-       totalFollowedCount: 0 // ++/--
-   }
-   ```
 
 ### ▶️Block/Unblock a member
 
-| Behaviour      | Affected tables / collections                                |
-| -------------- | ------------------------------------------------------------ |
-| Block a member | [RL] BlockingMemberMapping,<br />[PRL] BlockedByMemberMapping,<br />[C] memberStatistics ***(acc.)*** |
-
-Mostly same as ▶️Follow/Unfollow a member
+| Behaviour           | Affected tables / collections                                |
+| ------------------- | ------------------------------------------------------------ |
+| Block a member      | [RL] BlockingMemberMapping ***(est./put.)***,<br />[C] memberStatistics***.totalBlockingCount (acc.)***<br />[C] memberStatistics***.totalBlockedByCount (acc. of the member has been blocked)***,<br />[PRL] BlockedByMemberMapping ***(est./put.)*** |
+| Undo block a member | [RL] BlockingMemberMapping ***(put.)***,<br />[PRL] BlockedByMemberMapping ***(put.)***,<br />[C] memberStatistics***.totalUndoBlockingCount (acc.)***<br />[C] memberStatistics***.totalUndoBlockedByCount (acc. of the member has been blocked)*** |
 
 
 

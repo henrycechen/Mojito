@@ -13,11 +13,10 @@ const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
  * Info required for GET requests
  * 
  * recaptchaResponse: string (query string)
- * token: JWT
- * str: string (query)
+ * fragment: string (query)
 */
 
-export default async function QueryMemberByNicknameBase64(req: NextApiRequest, res: NextApiResponse) {
+export default async function QueryTopicByIdFragment(req: NextApiRequest, res: NextApiResponse) {
     const { method } = req;
     if ('GET' !== method) {
         response405(req, res);
@@ -37,39 +36,34 @@ export default async function QueryMemberByNicknameBase64(req: NextApiRequest, r
     //         return;
     //     }
     // }
-    //// Verify identity ////
-    const token = await getToken({ req });
-    if (!(token && token?.sub)) {
-        res.status(400).send('Invalid identity');
-        return;
-    }
-    const str = req.query?.str;
+    const fragment = req.query?.fragment;
     //// Verify notice category ////
-    if (!('string' === typeof str && new RegExp(/^[-A-Za-z0-9+/]*={0,3}$/).test(str))) {
-        res.status(400).send('Invalid base64 string');
+    if (!('string' === typeof fragment && new RegExp(/^[-A-Za-z0-9+/]*={0,3}$/).test(fragment))) {
+        res.status(400).send('Invalid topic id fragment string');
         return;
     }
     //// Declare DB client ////
     const atlasDbClient = AtlasDatabaseClient();
     try {
-        const { sub: memberId } = token;
-        //// Verify member status ////
-        const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
-        const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.aggregate([
+        const topicComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('topic');
+        const topicComprehensiveQueryResult = await topicComprehensiveCollectionClient.aggregate([
             {
                 $match: { status: { $gt: 0 } }
             },
             {
-                $search: { text: { path: 'nicknameBase64', query: str } }
+                $search: { text: { path: 'topicId', query: fragment } }
             },
             {
                 $limit: 10
             },
             {
-                $project: { _id: 0, memberId: 1, nickname: 1, avatarImageUrl: 1 }
+                $sort: { totalHitCount: 1 }
+            },
+            {
+                $project: { _id: 0, topicId: 1, channelId: 1 }
             }
         ])
-        res.status(200).send(memberComprehensiveQueryResult);
+        res.status(200).send(topicComprehensiveQueryResult);
         await atlasDbClient.close()
     } catch (e: any) {
         let msg;

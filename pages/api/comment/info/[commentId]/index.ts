@@ -94,7 +94,7 @@ export default async function CommentIndexByCommentId(req: NextApiRequest, res: 
         }
         const { status: memberStatus } = memberComprehensiveQueryResult;
         if (0 > memberStatus) {
-            res.status(403).send('Method not allowed due to member suspended');
+            res.status(403).send('Method not allowed due to member suspended or deactivated');
             await atlasDbClient.close();
             return;
         }
@@ -159,10 +159,11 @@ export default async function CommentIndexByCommentId(req: NextApiRequest, res: 
             if (!memberStatisticsUpdateResult.acknowledged) {
                 log(`Document (ICommentComprehensive, comment id: ${commentId}) was updated in [C] commentComprehensive successfully but failed to update totalCommentEditCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`);
             }
-            //// Handle cue ////
+            //// Handle notice.cue (cond.) ////
             // Step #5.1 verify cued member ids array
             const { cuedMemberInfoArr } = req.body;
             if (Array.isArray(cuedMemberInfoArr) && cuedMemberInfoArr.length !== 0) {
+                // look up record (of IMemberMemberMapping) in [RL] BlockingMemberMapping
                 const blockingMemberMappingTableClient = AzureTableClient('BlockingMemberMapping');
                 const notificationStatisticsCollectionClient = atlasDbClient.db('statistics').collection<INotificationStatistics>('notification');
                 const { title } = postComprehensiveQueryResult;
@@ -179,21 +180,17 @@ export default async function CommentIndexByCommentId(req: NextApiRequest, res: 
                         const noticeTableClient = AzureTableClient('Notice');
                         noticeTableClient.upsertEntity<INoticeInfo>({
                             partitionKey: memberId_cued,
-                            rowKey: createNoticeId('cue', memberId, postId, commentId), // combined id string
+                            rowKey: createNoticeId('cue', memberId, postId, commentId), // combined id
                             Category: 'cue',
                             InitiateId: memberId,
                             Nickname: getNicknameFromToken(token),
                             PostTitle: title,
                             CommentBrief: getContentBrief(content)
                         }, 'Replace');
-                        // Step #5.4 update cued count (INotificationStatistics) (of cued member) in [C] notificationStatistics
-                        const notificationStatisticsUpdateResult = await notificationStatisticsCollectionClient.updateOne({ memberId: memberId_cued }, {
-                            $inc: {
-                                cuedCount: 1
-                            }
-                        });
+                        // Step #5.4 update cue (INotificationStatistics) (of cued member) in [C] notificationStatistics
+                        const notificationStatisticsUpdateResult = await notificationStatisticsCollectionClient.updateOne({ memberId: memberId_cued }, { $inc: { cue: 1 } });
                         if (!notificationStatisticsUpdateResult.acknowledged) {
-                            log(`Document (ICommentComprehensive, comment id: ${commentId}) inserted in [C] commentComprehensive successfully but failed to update cuedCount (of INotificationStatistics, member id: ${memberId_cued}) in [C] notificationStatistics`);
+                            log(`Document (ICommentComprehensive, comment id: ${commentId}) inserted in [C] commentComprehensive successfully but failed to update cue (of INotificationStatistics, member id: ${memberId_cued}) in [C] notificationStatistics`);
                         }
                     }
                 }

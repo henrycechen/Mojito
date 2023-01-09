@@ -3,11 +3,11 @@ import { getToken } from 'next-auth/jwt'
 import { RestError } from '@azure/data-tables';
 import { MongoError } from 'mongodb';
 
-import AzureTableClient from '../../../../../../modules/AzureTableClient';
-import AtlasDatabaseClient from "../../../../../../modules/AtlasDatabaseClient";
+import AzureTableClient from '../../../../../modules/AzureTableClient';
+import AtlasDatabaseClient from "../../../../../modules/AtlasDatabaseClient";
 
-import { INoticeInfo, INotificationStatistics, IMemberStatistics, IAttitudeComprehensive, IChannelStatistics, ITopicComprehensive, IPostComprehensive, IMemberComprehensive, ICommentComprehensive } from '../../../../../../lib/interfaces';
-import { getNicknameFromToken, getMappingFromAttitudeComprehensive, verifyId, response405, response500, log, provideAttitudeComprehensiveUpdate, createAttitudeComprehensive, createNoticeId, getContentBrief } from '../../../../../../lib/utils';
+import { INoticeInfo, INotificationStatistics, IMemberStatistics, IAttitudeComprehensive, IChannelStatistics, ITopicComprehensive, IPostComprehensive, IMemberComprehensive, ICommentComprehensive } from '../../../../../lib/interfaces';
+import { getNicknameFromToken, getMappingFromAttitudeComprehensive, verifyId, response405, response500, log, provideAttitudeComprehensiveUpdate, createAttitudeComprehensive, createNoticeId, getContentBrief } from '../../../../../lib/utils';
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
 
 // This interface accepts GET and POST requests
@@ -23,7 +23,7 @@ const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
 // - id: string (query, post or comment id)
 // - attitude: number (body, POST only)
 
-export default async function AttitudeOnPostOrComment(req: NextApiRequest, res: NextApiResponse) {
+export default async function AttitudeOnPostOrCommentById(req: NextApiRequest, res: NextApiResponse) {
     const { method } = req;
     if (!['GET', 'POST'].includes(method ?? '')) {
         response405(req, res);
@@ -68,7 +68,7 @@ export default async function AttitudeOnPostOrComment(req: NextApiRequest, res: 
         }
         const { status: memberStatus } = memberComprehensiveQueryResult;
         if (0 > memberStatus) {
-            res.status(403).send('Method not allowed due to member suspended');
+            res.status(403).send('Method not allowed due to member suspended or deactivated');
             await atlasDbClient.close();
             return;
         }
@@ -307,7 +307,7 @@ export default async function AttitudeOnPostOrComment(req: NextApiRequest, res: 
                         }
                     }
                 }
-                // (Cond.) Handle notify.like ////
+                // Handle notice.like ////
                 const { title } = memberComprehensiveQueryResult;
                 let content: string | undefined;
                 if (['comment', 'subcomment'].includes(category)) {
@@ -324,7 +324,7 @@ export default async function AttitudeOnPostOrComment(req: NextApiRequest, res: 
                     const noticeTableClient = AzureTableClient('Notice');
                     await noticeTableClient.upsertEntity<INoticeInfo>({
                         partitionKey: notifiedMemberId, // notified member id, in this case, comment author
-                        rowKey: createNoticeId('like', memberId, postId, id), // entity id, in this case, comment id
+                        rowKey: createNoticeId('like', memberId, postId, id), // combined id
                         Category: 'like',
                         InitiateId: memberId,
                         Nickname: getNicknameFromToken(token),
@@ -333,11 +333,11 @@ export default async function AttitudeOnPostOrComment(req: NextApiRequest, res: 
                         CommentId: 'post' === category ? undefined : id,
                         CommentBrief: getContentBrief(content)
                     }, 'Replace');
-                    // Step #5 update likedCount (of INotificationStatistics, of post or comment author) in [C] notificationStatistics
+                    // Step #5 update like (of INotificationStatistics, of post or comment author) in [C] notificationStatistics
                     const notificationStatisticsCollectionClient = atlasDbClient.db('statistics').collection<INotificationStatistics>('notification');
-                    const notificationStatisticsUpdateResult = await notificationStatisticsCollectionClient.updateOne({ memberId: notifiedMemberId }, { $inc: { likedCount: 1 } });
+                    const notificationStatisticsUpdateResult = await notificationStatisticsCollectionClient.updateOne({ memberId: notifiedMemberId }, { $inc: { like: 1 } });
                     if (!notificationStatisticsUpdateResult.acknowledged) {
-                        log(`Failed to update likedCount (of INotificationStatistics, member id: ${notifiedMemberId}) in [C] notificationStatistics`);
+                        log(`Failed to update like (of INotificationStatistics, member id: ${notifiedMemberId}) in [C] notificationStatistics`);
                     }
                 }
             }

@@ -172,18 +172,19 @@ export default async function VerifyToken(req: NextApiRequest, res: NextApiRespo
         if (!memberStatisticsCollectionInsertResult.acknowledged) {
             throw new Error(`Was trying inserting document (IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`)
         }
-        // Step #7 insert a new document (INotification) in [C] notificationStatistics
+        // Step #7 insert a new document (INotificationStatistics) in [C] notificationStatistics
         const notificationStatisticsCollectionClient = atlasDbClient.db('statistics').collection<INotificationStatistics>('notification');
         const notificationCollectionInsertResult = await notificationStatisticsCollectionClient.insertOne({
             memberId,
-            cuedCount: 0, // cued times accumulated from last count reset
-            repliedCount: 0,
-            likedCount: 0,
-            savedCount: 0,
-            followedCound: 0,
+            cue: 0, // cued times accumulated from last count reset
+            reply: 0,
+            like: 0,
+            pin: 0,
+            save: 0,
+            follow: 0,
         });
         if (!notificationCollectionInsertResult.acknowledged) {
-            throw new Error(`Was trying inserting document (INotification, member id: ${memberId}) in [C] notificationStatistics`);
+            throw new Error(`Was trying inserting document (of INotificationStatistics, member id: ${memberId}) in [C] notificationStatistics`);
         }
         res.status(200).send('Email address verified');
         // Step #8 write journal (ILoginJournal) in [C] loginJournal

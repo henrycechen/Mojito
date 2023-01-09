@@ -8,6 +8,11 @@ import { INoticeInfo, INotificationStatistics, IMemberStatistics, IAttitudeCompr
 
 import { response405, response500, log } from '../../../../lib/utils';
 
+/** This interface ONLY accepts DELETE requests
+ * 
+ * Info required for POST requests
+ * token: JWT
+*/
 
 export default async function CancelMembership(req: NextApiRequest, res: NextApiResponse) {
     const { method } = req;
@@ -21,22 +26,28 @@ export default async function CancelMembership(req: NextApiRequest, res: NextApi
         res.status(400).send('Invalid identity');
         return;
     }
-    const { sub: memberId } = token;
+    //// Declare DB client ////
     const atlasDbClient = AtlasDatabaseClient();
     try {
+        const { sub: memberId } = token;
         await atlasDbClient.connect();
         const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
-        const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne({ memberId });
+        const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne<IMemberComprehensive>({ memberId });
         if (null === memberComprehensiveQueryResult) {
-            throw new Error(`Member was trying expressing attitude but have no document (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
+            throw new Error(`Member was trying cancel membership but have no document (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
         }
-        // Step #1.3 verify member status (of IMemberComprehensive)
+        // Step #1 verify member status (of IMemberComprehensive)
         const { status: memberStatus } = memberComprehensiveQueryResult;
         if (0 > memberStatus) {
-            res.status(403).send('Method not allowed due to member suspended');
+            res.status(403).send('Method not allowed due to member suspended or deactivated');
             await atlasDbClient.close();
             return;
         }
+        const memberComprehensiveUpdateResult = await memberComprehensiveCollectionClient.updateOne({ memberId }, { $set: { status: -1 } });
+        if (!memberComprehensiveUpdateResult.acknowledged) {
+            res.status(500).send('Cancel insuccess');
+        }
+        res.status(200).send('Cancel success')
     } catch (e: any) {
         let msg;
         if (e instanceof MongoError) {
@@ -51,8 +62,4 @@ export default async function CancelMembership(req: NextApiRequest, res: NextApi
         await atlasDbClient.close();
         return;
     }
-
-
-    await atlasDbClient.close();
-    res.send('attitude on comment, ok');
 }

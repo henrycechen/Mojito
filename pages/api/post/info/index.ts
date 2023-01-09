@@ -185,7 +185,7 @@ export default async function CreatePost(req: NextApiRequest, res: NextApiRespon
             }
         }
 
-        //// (Cond.) Handle notify.cue ////
+        //// Handle notice.cue (cond.) ////
 
         // Step #4.1 verify cued member ids array
         const { cuedMemberIdsArr } = req.body;
@@ -195,6 +195,7 @@ export default async function CreatePost(req: NextApiRequest, res: NextApiRespon
             const cuedMemberIdsArrSliced = cuedMemberIdsArr.slice(0, 9);
             for await (const memberId_cued of cuedMemberIdsArrSliced) {
                 const blockingMemberMappingTableClient = AzureTableClient('BlockingMemberMapping');
+                // look up record (of IMemberMemberMapping) in [RL] BlockingMemberMapping
                 const _blockingMemberMappingQuery = blockingMemberMappingTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${memberId_cued}' and RowKey eq '${memberId}'` } });
                 //// [!] attemp to reterieve entity makes the probability of causing RestError ////
                 const _blockingMemberMappingQueryResult = await _blockingMemberMappingQuery.next();
@@ -205,20 +206,20 @@ export default async function CreatePost(req: NextApiRequest, res: NextApiRespon
                     noticeTableClient.upsertEntity<INoticeInfo>({
                         partitionKey: memberId_cued,
                         rowKey: postId, // entity id
-                        Category: 'Cued',
+                        Category: 'cue',
                         InitiateId: memberId,
                         Nickname: getNicknameFromToken(token),
                         PostId: postId,
                         PostTitle: title,
                     }, 'Replace');
-                    // Step #4.3 update document (INotificationStatistics) (of cued member) in [C] notificationStatistics
+                    // Step #4.3 update cue (of INotificationStatistics) (of cued member) in [C] notificationStatistics
                     const notificationStatisticsUpdateResult = await notificationStatisticsCollectionClient.updateOne({ memberId: memberId_cued }, {
                         $inc: {
-                            cuedCount: 1
+                            cue: 1
                         }
                     });
                     if (!notificationStatisticsUpdateResult.acknowledged) {
-                        log(`Document (IPostComprehensive, post id: ${postId}) inserted in [C] postComprehensive successfully but failed to update cuedCount (of INotificationStatistics, member id: ${memberId_cued}) in [C] notificationStatistics`);
+                        log(`Document (IPostComprehensive, post id: ${postId}) inserted in [C] postComprehensive successfully but failed to update cue (of INotificationStatistics, member id: ${memberId_cued}) in [C] notificationStatistics`);
                     }
                 }
             }

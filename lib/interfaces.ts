@@ -1,5 +1,5 @@
 // import common interfaces
-// import { INoticeInfo, IMemberPostMapping, IMemberComprehensive, IRestrictedMemberInfo, IMemberStatistics, ILoginJournal, INotificationStatistics, IAttitudeComprehensive, IAttitideMapping, ICommentComprehensive, IEditedCommentComprehensive, IRestrictedCommentComprehensive, IChannelStatistics, ITopicComprehensive, ITopicPostMapping, IPostComprehensive, IEditedPostComprehensive, IRestrictedPostComprehensive } from '../../../../lib/interfaces';
+// import { IMemberMemberMapping, INoticeInfo, IMemberPostMapping, IMemberComprehensive, IRestrictedMemberInfo, IMemberStatistics, ILoginJournal, INotificationStatistics, IAttitudeComprehensive, IAttitideMapping, ICommentComprehensive, IEditedCommentComprehensive, IRestrictedCommentComprehensive, IChannelStatistics, ITopicComprehensive, ITopicPostMapping, IPostComprehensive, IEditedPostComprehensive, IRestrictedPostComprehensive } from '../../../../lib/interfaces';
 
 //////// Process States ////////
 export interface IProcessStates {
@@ -46,6 +46,13 @@ export interface IResetPasswordCredentials extends ICredentials {
     ResetPasswordToken: string;
 }
 
+// [RL] & [PRL] ...MemberMapping
+export interface IMemberMemberMapping extends IAzureTableEntity {
+    partitionKey: string; // subject member id
+    rowKey: string; // object member id
+    IsActive: boolean;
+}
+
 // [PRL] Notice
 export interface INoticeInfo extends IAzureTableEntity {
     partitionKey: string; // notified member id
@@ -78,7 +85,7 @@ export interface IMemberComprehensive extends IAtlasCollectionDocument {
     emailAddress?: string;
     memberIndex?: number;
     nickname?: string;
-    nicknameHash?: string; // prevent duplicated nickname when re-naming
+    nicknameBase64?: string; // prevent duplicated nickname when re-naming
     avatarImageUrl?: string;
     briefIntro?: string;
     gender?: -1 | 0 | 1;
@@ -152,12 +159,13 @@ export interface ILoginJournal extends IAtlasCollectionDocument {
 
 // [C] notificationStatistics
 export interface INotificationStatistics extends IAtlasCollectionDocument {
-    memberId: string; // member id
-    cuedCount?: number; // cued times accumulated from last count reset
-    repliedCount?: number;
-    likedCount?: number;
-    savedCount?: number;
-    followedCound?: number;
+    memberId?: string; // member id
+    cue?: number; // cued times accumulated from last count reset
+    reply?: number;
+    like?: number;
+    pin?: number;
+    save?: number;
+    follow?: number;
 }
 
 // [C] attitudeComprehensive

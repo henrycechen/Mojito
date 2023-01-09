@@ -12,7 +12,7 @@ import { getRandomIdStrL, getNicknameFromToken, getTopicBase64StringsArrayFromRe
 
 const domain = process.env.NEXT_PUBLIC_APP_DOMAIN;
 
-export default async function PostInfo(req: NextApiRequest, res: NextApiResponse) {
+export default async function PostInfoById(req: NextApiRequest, res: NextApiResponse) {
     const { method } = req;
     if (!['GET', 'PUT', 'DELETE'].includes(method ?? '')) {
         response405(req, res);
@@ -262,11 +262,12 @@ export default async function PostInfo(req: NextApiRequest, res: NextApiResponse
                 }
             }
 
-            //// (Cond.) Handle notify.cue ////
+            //// Handle notice.cue (cond.) ////
 
             // Step #7.1 verify cued member ids array
             const { cuedMemberIdsArr } = req.body;
             if (Array.isArray(cuedMemberIdsArr) && cuedMemberIdsArr.length !== 0) {
+                // look up record (of IMemberMemberMapping) in [RL] BlockingMemberMapping
                 const blockingMemberMappingTableClient = AzureTableClient('BlockingMemberMapping');
                 const notificationStatisticsCollectionClient = atlasDbClient.db('statistics').collection<INotificationStatistics>('notification');
                 // Step #7.2 maximum 9 members are allowed to cued at one time (in one comment)
@@ -282,20 +283,20 @@ export default async function PostInfo(req: NextApiRequest, res: NextApiResponse
                         noticeTableClient.upsertEntity<INoticeInfo>({
                             partitionKey: memberId_cued,
                             rowKey: postId, // entity id
-                            Category: 'Cued',
+                            Category: 'cue',
                             InitiateId: memberId_post,
                             Nickname: getNicknameFromToken(token),
                             PostId: postId,
                             PostTitle: title,
                         }, 'Replace');
-                        // Step #7.4 update cued count (INotificationStatistics) (of cued member) in [C] notificationStatistics
+                        // Step #7.4 update cue (INotificationStatistics) (of cued member) in [C] notificationStatistics
                         const notificationStatisticsUpdateResult = await notificationStatisticsCollectionClient.updateOne({ memberId: memberId_cued }, {
                             $inc: {
-                                cuedCount: 1
+                                cue: 1
                             }
                         });
                         if (!notificationStatisticsUpdateResult.acknowledged) {
-                            log(`Document (IPostComprehensive, post id: ${postId}) updated in [C] postComprehensive successfully but failed to update cuedCount (of INotificationStatistics, member id: ${memberId_cued}) in [C] notificationStatistics`);
+                            log(`Document (IPostComprehensive, post id: ${postId}) updated in [C] postComprehensive successfully but failed to update cue (of INotificationStatistics, member id: ${memberId_cued}) in [C] notificationStatistics`);
                         }
                     }
                 }
