@@ -1592,18 +1592,18 @@ Only allow updating other info after 30 seconds since last update
 | ----------- | ------------------------------------------------------------ |
 | Edit a post | [C] postComprehensive,<br />[C] memberComprehensive***.totalCommentEditCount (acc.)***<br />( Cond. [C] topicComprehensive***.totalPostCount (acc./dec.)*** ),<br />( Cond. [C] topicPostMapping ***(est./del.)*** )<br />( Cond. [PRL] Notice***.Cued (est.)*** ),<br />( Cond. [C] notificationStatistics***.cuedCount (acc.)*** ) |
 
-### ▶️Delete a post
+### ▶️Delete a creation (post)
 
 | Behaviour     | Affected tables / collections                                |
 | ------------- | ------------------------------------------------------------ |
-| Delete a post | [C] postComprehensive***.status (put.)***,<br />[C] memberStatistics***.totalCreationDeleteCount (acc.)***,<br />[C] channelStatistics***.totalPostDeleteCount (acc.)***,<br />( Cond. [C] topicComprehensive***.totalCreationDeleteCount (acc.)*** ),<br />( Cond. [C] topicPostMapping***.status (put.)***) |
+| Delete a post | [RL] CreationMapping ***(del.)***<br />[C] postComprehensive***.status (put.)***,<br />[C] memberStatistics***.totalCreationDeleteCount (acc.)***,<br />[C] channelStatistics***.totalPostDeleteCount (acc.)***,<br />( Cond. [C] topicComprehensive***.totalPostDeleteCount (acc.)*** ),<br />( Cond. [C] topicPostMapping***.status (put.)***) |
 
 ### ▶️Save a post
 
 | Behaviour     | Affected tables / collections                                |
 | ------------- | ------------------------------------------------------------ |
-| Save a post   | [RL] SavedMapping,<br />( Cond. [PRL] Notice***.Saved (est.)*** ),<br />( Cond. [C] notificationStatistics***.savedCount (acc.)*** ),<br />[C] memberStatistics***.totalSavedCount(acc.)***,<br />[C] postComprehensive***.totalSavedCount(acc.)***,<br />[C] channelStatistics***.totalSavedCount (acc.)***<br />( Cond.[C] topicComprehensive***.totalSavedCount(acc.)*** ) |
-| Unsave a post | [C] memberStatistics***.totalUnsavedCount(acc.)***,<br />[C] postComprehensive***.totalUnsavedCount(acc.)***,<br />[C] channelStatistics***.totalUnsavedCount (acc.)***<br />( Cond. [C] topicComprehensive***.totalUnsavedCount(acc.) )*** |
+| Save a post   | [RL] SavedMapping,<br />[C] memberStatistics***.totalSavedCount (acc.)***,<br />[C] memberStatistics***.totalCreationSavedCount (acc.)***,<br />[C] postComprehensive***.totalSavedCount (acc.)***,<br />[C] channelStatistics***.totalSavedCount (acc.)***<br />( Cond.[C] topicComprehensive***.totalSavedCount (acc.)*** ),<br />( Cond. [PRL] Notice***.Saved (est.)*** ),<br />( Cond. [C] notificationStatistics***.savedCount (acc.)*** ) |
+| Unsave a post | [C] memberStatistics***.totalUndoSavedCount (acc.)***,<br />[C] memberStatistics***.totalCreationUndoSavedCount (acc.)***,<br />[C] postComprehensive***.totalUndoSavedCount(acc.)***,<br />[C] channelStatistics***.totalUndoSavedCount (acc.)***<br />( Cond. [C] topicComprehensive***.totalUndoSavedCount(acc.) )*** |
 
 
 

@@ -8,7 +8,6 @@ import AtlasDatabaseClient from "../../../../../modules/AtlasDatabaseClient";
 
 import { INoticeInfo, IMemberPostMapping, INotificationStatistics, IMemberComprehensive, IRestrictedMemberInfo, IMemberStatistics, ILoginJournal, IAttitudeComprehensive, IAttitideMapping, ICommentComprehensive, IEditedCommentComprehensive, IRestrictedCommentComprehensive, IChannelStatistics, ITopicComprehensive, ITopicPostMapping, IPostComprehensive, IEditedPostComprehensive, IRestrictedPostComprehensive } from '../../../../../lib/interfaces';
 import { createId, createNoticeId, getRandomIdStr, getRandomIdStrL, getRandomHexStr, timeStampToString, getNicknameFromToken, getContentBrief, createCommentComprehensive, getRestrictedFromCommentComprehensive, getTopicBase64StringsArrayFromRequestBody, getImageUrlsArrayFromRequestBody, getParagraphsArrayFromRequestBody, getRestrictedFromPostComprehensive, verifyEmailAddress, verifyPassword, verifyId, verifyUrl, verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500, log } from '../../../../../lib/utils';
-
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
 
 
@@ -22,8 +21,7 @@ const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
 // - cuedMemberInfoArr: IRestrictedMemberInfo[] (body, optional)
 //
 
-
-export default async function CommentIndexByParentId(req: NextApiRequest, res: NextApiResponse) {
+export default async function CreateCommentOnParentId(req: NextApiRequest, res: NextApiResponse) {
     const { method } = req;
     if ('POST' !== method) {
         response405(req, res);
@@ -68,13 +66,13 @@ export default async function CommentIndexByParentId(req: NextApiRequest, res: N
     //// Declare DB client ////
     const atlasDbClient = AtlasDatabaseClient();
     try {
-        const { sub: initiateId } = token;
+        const { sub: memberId } = token;
         await atlasDbClient.connect();
         // Step #1.1 look up document (of IMemberComprehensive) in [C] memberComprehensive
         const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
-        const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne({ memberId: initiateId });
+        const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne({ memberId });
         if (null === memberComprehensiveQueryResult) {
-            throw new Error(`Member was trying creating comment but have no document (of IMemberComprehensive, member id: ${initiateId}) in [C] memberComprehensive`);
+            throw new Error(`Member was trying creating comment but have no document (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
         }
         // Step #1.2 verify member status (of IMemberComprehensive)
         const { status: memberStatus, allowCommenting } = memberComprehensiveQueryResult;
@@ -131,21 +129,21 @@ export default async function CommentIndexByParentId(req: NextApiRequest, res: N
         // Step #3.1 create a new comment id
         const commentId = createId('post' === category ? 'comment' : 'subcomment');
         // Step #3.2 insert a new document (of ICommentComprehensive) in [C] commentComprehensive
-        const commentComprehensiveInsertResult = await commentComprehensiveCollectionClient.insertOne(createCommentComprehensive(commentId, parentId, postId, initiateId, content, req.body?.cuedMemberInfoArr));
+        const commentComprehensiveInsertResult = await commentComprehensiveCollectionClient.insertOne(createCommentComprehensive(commentId, parentId, postId, memberId, content, req.body?.cuedMemberInfoArr));
         if (!commentComprehensiveInsertResult.acknowledged) {
-            throw new Error(`Failed to insert document (of ICommentComprehensive, member id: ${initiateId}, parent id: ${parentId}, post id: ${postId}) in [C] commentComprehensive`);
+            throw new Error(`Failed to insert document (of ICommentComprehensive, member id: ${memberId}, parent id: ${parentId}, post id: ${postId}) in [C] commentComprehensive`);
         }
         res.status(200).send(commentId);
         //// Update statistics ////
         // Step #5.1 update totalCommentCount (of IMemberStatistics) in [C] memberStatistics
         const memberStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IMemberStatistics>('member');
-        const memberStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ initiateId }, {
+        const memberStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId }, {
             $inc: {
                 totalCommentCount: 1
             }
         });
         if (!memberStatisticsUpdateResult.acknowledged) {
-            log(`Document (ICommentComprehensive, comment id: ${commentId}) inserted in [C] commentComprehensive successfully but failed to update totalCommentCount (of IMemberStatistics, member id: ${initiateId}) in [C] memberStatistics`);
+            log(`Document (ICommentComprehensive, comment id: ${commentId}) inserted in [C] commentComprehensive successfully but failed to update totalCommentCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`);
         }
         // Step #5.2 (cond.) totalSubcommentCount (of ICommentComprehensive) in [C] commentComprehensive (parent comment)
         if ('C' === commentId.slice(0, 1)) {
@@ -193,66 +191,68 @@ export default async function CommentIndexByParentId(req: NextApiRequest, res: N
                 }
             }
         }
-        //// Handle reply (cond.) ////
-        const { title } = postComprehensiveQueryResult;
-        // Step #6.1 look up record (of IMemberMemberMapping) in [RL] BlockingMemberMapping
-        const blockingMemberMappingTableClient = AzureTableClient('BlockingMemberMapping');
-        const blockingMemberMappingQuery = blockingMemberMappingTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${notifiedMemberId}' and RowKey eq '${initiateId}'` } });
-        //// [!] attemp to reterieve entity makes the probability of causing RestError ////
-        const blockingMemberMappingQueryResult = await blockingMemberMappingQuery.next();
-        if (!blockingMemberMappingQueryResult.value) {
-            //// [!] comment author has not been blocked by post / comment author ////
-            // Step #6.2 upsert record (INoticeInfo.Replied) in [PRL] Notice
-            const noticeTableClient = AzureTableClient('Notice');
-            //// FIXME: TEST-3G29WQD ////
-            const a = await noticeTableClient.upsertEntity<INoticeInfo>({
-                partitionKey: notifiedMemberId,
-                rowKey: createNoticeId('reply', initiateId, postId, commentId),
-                Category: 'reply',
-                InitiateId: initiateId,
-                Nickname: getNicknameFromToken(token),
-                PostTitle: title,
-                CommentBrief: getContentBrief(content)
-            }, 'Replace');
-            console.log(`TEST-3G29WQD: path='/api/comment/on/[id]/index.ts/' result: ` + a.version);
-            //// FIXME: TEST-3G29WQD ////
-            // Step #6.3 update reply (INotificationStatistics) (of post author) in [C] notificationStatistics
-            const notificationStatisticsCollectionClient = atlasDbClient.db('statistics').collection<INotificationStatistics>('notification');
-            const notificationStatisticsUpdateResult = await notificationStatisticsCollectionClient.updateOne({ memberId: notifiedMemberId }, { $inc: { reply: 1 } });
-            if (!notificationStatisticsUpdateResult.acknowledged) {
-                log(`Document (ICommentComprehensive, comment id: ${commentId}) inserted in [C] commentComprehensive successfully but failed to reply (of INotificationStatistics, member id: ${notifiedMemberId}) in [C] notificationStatistics`);
+        if (memberId !== notifiedMemberId) {
+            //// Handle reply (cond.) ////
+            const { title } = postComprehensiveQueryResult;
+            // Step #6.1 look up record (of IMemberMemberMapping) in [RL] BlockingMemberMapping
+            const blockingMemberMappingTableClient = AzureTableClient('BlockingMemberMapping');
+            const blockingMemberMappingQuery = blockingMemberMappingTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${notifiedMemberId}' and RowKey eq '${memberId}'` } });
+            //// [!] attemp to reterieve entity makes the probability of causing RestError ////
+            const blockingMemberMappingQueryResult = await blockingMemberMappingQuery.next();
+            if (!blockingMemberMappingQueryResult.value) {
+                //// [!] comment author has not been blocked by post / comment author ////
+                // Step #6.2 upsert record (INoticeInfo.Replied) in [PRL] Notice
+                const noticeTableClient = AzureTableClient('Notice');
+                //// FIXME: TEST-3G29WQD ////
+                const a = await noticeTableClient.upsertEntity<INoticeInfo>({
+                    partitionKey: notifiedMemberId,
+                    rowKey: createNoticeId('reply', memberId, postId, commentId),
+                    Category: 'reply',
+                    InitiateId: memberId,
+                    Nickname: getNicknameFromToken(token),
+                    PostTitle: title,
+                    CommentBrief: getContentBrief(content)
+                }, 'Replace');
+                console.log(`TEST-3G29WQD: path='/api/comment/on/[id]/index.ts/' result: ` + a.version);
+                //// FIXME: TEST-3G29WQD ////
+                // Step #6.3 update reply (INotificationStatistics) (of post author) in [C] notificationStatistics
+                const notificationStatisticsCollectionClient = atlasDbClient.db('statistics').collection<INotificationStatistics>('notification');
+                const notificationStatisticsUpdateResult = await notificationStatisticsCollectionClient.updateOne({ memberId: notifiedMemberId }, { $inc: { reply: 1 } });
+                if (!notificationStatisticsUpdateResult.acknowledged) {
+                    log(`Document (ICommentComprehensive, comment id: ${commentId}) inserted in [C] commentComprehensive successfully but failed to reply (of INotificationStatistics, member id: ${notifiedMemberId}) in [C] notificationStatistics`);
+                }
             }
-        }
-        //// Handle notice.cue (cond.) ////
-        // Step #7.1 verify cued member ids array
-        const { cuedMemberInfoArr } = req.body;
-        if (Array.isArray(cuedMemberInfoArr) && cuedMemberInfoArr.length !== 0) {
-            const notificationStatisticsCollectionClient = atlasDbClient.db('statistics').collection<INotificationStatistics>('notification');
-            // Step #7.2 maximum 9 members are allowed to cued at one time (in one comment)
-            const cuedMemberInfoArrSliced = cuedMemberInfoArr.slice(0, 9);
-            for await (const cuedMemberInfo of cuedMemberInfoArrSliced) {
-                const { memberId: memberId_cued } = cuedMemberInfo;
-                // look up record (of IMemberMemberMapping) in [RL] BlockingMemberMapping
-                const _blockingMemberMappingQuery = blockingMemberMappingTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${memberId_cued}' and RowKey eq '${initiateId}'` } });
-                //// [!] attemp to reterieve entity makes the probability of causing RestError ////
-                const _blockingMemberMappingQueryResult = await _blockingMemberMappingQuery.next();
-                if (!_blockingMemberMappingQueryResult.value) {
-                    //// [!] comment author has not been blocked by cued member ////
-                    // Step #7.3 upsert record (of INoticeInfo.Cued) in [PRL] Notice
-                    const noticeTableClient = AzureTableClient('Notice');
-                    noticeTableClient.upsertEntity<INoticeInfo>({
-                        partitionKey: memberId_cued,
-                        rowKey: createNoticeId('cue', initiateId, postId, commentId), // entity id
-                        Category: 'cue',
-                        InitiateId: initiateId,
-                        Nickname: getNicknameFromToken(token),
-                        PostTitle: title,
-                        CommentBrief: getContentBrief(content)
-                    }, 'Replace');
-                    // Step #7.4 update cued count (INotificationStatistics) (of cued member) in [C] notificationStatistics
-                    const notificationStatisticsUpdateResult = await notificationStatisticsCollectionClient.updateOne({ memberId: memberId_cued }, { $inc: { cue: 1 } });
-                    if (!notificationStatisticsUpdateResult.acknowledged) {
-                        log(`Document (ICommentComprehensive, comment id: ${commentId}) inserted in [C] commentComprehensive successfully but failed to update cuedCount (of INotificationStatistics, member id: ${memberId_cued}) in [C] notificationStatistics`);
+            //// Handle notice.cue (cond.) ////
+            // Step #7.1 verify cued member ids array
+            const { cuedMemberInfoArr } = req.body;
+            if (Array.isArray(cuedMemberInfoArr) && cuedMemberInfoArr.length !== 0) {
+                const notificationStatisticsCollectionClient = atlasDbClient.db('statistics').collection<INotificationStatistics>('notification');
+                // Step #7.2 maximum 9 members are allowed to cued at one time (in one comment)
+                const cuedMemberInfoArrSliced = cuedMemberInfoArr.slice(0, 9);
+                for await (const cuedMemberInfo of cuedMemberInfoArrSliced) {
+                    const { memberId: memberId_cued } = cuedMemberInfo;
+                    // look up record (of IMemberMemberMapping) in [RL] BlockingMemberMapping
+                    const _blockingMemberMappingQuery = blockingMemberMappingTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${memberId_cued}' and RowKey eq '${memberId}'` } });
+                    //// [!] attemp to reterieve entity makes the probability of causing RestError ////
+                    const _blockingMemberMappingQueryResult = await _blockingMemberMappingQuery.next();
+                    if (!_blockingMemberMappingQueryResult.value) {
+                        //// [!] comment author has not been blocked by cued member ////
+                        // Step #7.3 upsert record (of INoticeInfo.Cued) in [PRL] Notice
+                        const noticeTableClient = AzureTableClient('Notice');
+                        noticeTableClient.upsertEntity<INoticeInfo>({
+                            partitionKey: memberId_cued,
+                            rowKey: createNoticeId('cue', memberId, postId, commentId), // entity id
+                            Category: 'cue',
+                            InitiateId: memberId,
+                            Nickname: getNicknameFromToken(token),
+                            PostTitle: title,
+                            CommentBrief: getContentBrief(content)
+                        }, 'Replace');
+                        // Step #7.4 update cued count (INotificationStatistics) (of cued member) in [C] notificationStatistics
+                        const notificationStatisticsUpdateResult = await notificationStatisticsCollectionClient.updateOne({ memberId: memberId_cued }, { $inc: { cue: 1 } });
+                        if (!notificationStatisticsUpdateResult.acknowledged) {
+                            log(`Document (ICommentComprehensive, comment id: ${commentId}) inserted in [C] commentComprehensive successfully but failed to update cuedCount (of INotificationStatistics, member id: ${memberId_cued}) in [C] notificationStatistics`);
+                        }
                     }
                 }
             }

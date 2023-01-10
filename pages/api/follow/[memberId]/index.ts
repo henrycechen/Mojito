@@ -51,10 +51,15 @@ export default async function FollowOrUndoFollowMemberById(req: NextApiRequest, 
         res.status(400).send('Invalid member id');
         return;
     }
+    const { sub: memberId } = token;
+    if (memberId === memberId_object) {
+        res.status(400).send('Unable to follow oneself');
+        return;
+    }
     //// Declare DB client ////
     const atlasDbClient = AtlasDatabaseClient();
     try {
-        const { sub: memberId } = token;
+        await atlasDbClient.connect()
         //// Verify member status ////
         const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
         const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne({ memberId });
@@ -68,7 +73,7 @@ export default async function FollowOrUndoFollowMemberById(req: NextApiRequest, 
             return;
         }
         let isFollowed: boolean;
-        // Step #1 look up record (of IMemberMemberMapping) in [RL] FollowingMemberMapping
+        // Step #1.1 look up record (of IMemberMemberMapping) in [RL] FollowingMemberMapping
         const followingMemberMappingTableClient = AzureTableClient('FollowingMemberMapping');
         const followingMemberMappingQuery = followingMemberMappingTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${memberId}' and RowKey eq '${memberId_object}'` } });
         //// [!] attemp to reterieve entity makes the probability of causing RestError ////
@@ -78,17 +83,18 @@ export default async function FollowOrUndoFollowMemberById(req: NextApiRequest, 
             // Case [Follow]
             isFollowed = false;
         } else {
-            // verify isActive
-            isFollowed = !!followingMemberMappingQueryResult.value;
+            // Pending
+            isFollowed = !!followingMemberMappingQueryResult.value?.IsActive;
         }
         if (isFollowed) {
-            // Case [Undo Follow]
+            // Case [Undo follow]
+            // Step #2.1 update record (of IMemberMemberMapping) in [C] FollowingMemberMapping
             await followingMemberMappingTableClient.upsertEntity<IMemberMemberMapping>({
                 partitionKey: memberId,
                 rowKey: memberId_object,
                 IsActive: false
             }, 'Replace');
-            // Step #2.1 update totalUndoFollowingCount (of IMemberStatistics) in [C] memberStatistics
+            // Step #2.2 update totalUndoFollowingCount (of IMemberStatistics) in [C] memberStatistics
             const memberStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IMemberStatistics>('member');
             const memberStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId }, {
                 $inc: {
@@ -98,7 +104,7 @@ export default async function FollowOrUndoFollowMemberById(req: NextApiRequest, 
             if (!memberStatisticsUpdateResult.acknowledged) {
                 log(`Failed to update totalUndoFollowingCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`);
             }
-            // Step #2.2 update totalUndoFollowedByCount (of IMemberStatistics) in [C] memberStatistics
+            // Step #2.3 update totalUndoFollowedByCount (of IMemberStatistics) in [C] memberStatistics
             const memberFollowedStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId: memberId_object }, {
                 $inc: {
                     totalUndoFollowedByCount: 1
@@ -140,8 +146,8 @@ export default async function FollowOrUndoFollowMemberById(req: NextApiRequest, 
             //// [!] attemp to reterieve entity makes the probability of causing RestError ////
             const blockingMemberMappingQueryResult = await blockingMemberMappingQuery.next();
             if (!blockingMemberMappingQueryResult.value) {
-                //// [!] member who has expressed attitude has not been blocked by comment author ////
-                // Step #2.4 upsert record (of INoticeInfo.Liked) in [PRL] Notice
+                //// [!] member expressed attitude has not been blocked by target member ////
+                // Step #2.4 upsert record (of INoticeInfo.Follow) in [PRL] Notice
                 const noticeTableClient = AzureTableClient('Notice');
                 await noticeTableClient.upsertEntity<INoticeInfo>({
                     partitionKey: memberId_object, // notified member id, in this case, member having been followed by
@@ -166,7 +172,7 @@ export default async function FollowOrUndoFollowMemberById(req: NextApiRequest, 
             rowKey: memberId,
             IsActive: isFollowed
         }, 'Replace');
-        res.status(200).send(`${isFollowed ? 'Follow' : 'Undo Follow'} success`);
+        res.status(200).send(`${isFollowed ? 'Undo follow' : 'Follow'} success`);
     } catch (e: any) {
         let msg;
         if (e instanceof RestError) {

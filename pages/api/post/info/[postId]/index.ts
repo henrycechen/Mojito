@@ -126,7 +126,7 @@ export default async function PostInfoById(req: NextApiRequest, res: NextApiResp
         //// Verify permission ////
         const { sub: memberId } = token;
         if (authorId !== memberId) {
-            res.status(403).send('Insufficient permissions');
+            res.status(403).send('Identity lack permissions');
             return;
         }
         //// Verify member status ////

@@ -1,11 +1,15 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { getToken } from 'next-auth/jwt';
 import { RestError } from '@azure/data-tables';
+import { MongoError } from 'mongodb';
+
 import CryptoJS from 'crypto-js';
 
 import AzureTableClient from '../../../../modules/AzureTableClient';
-import AzureEmailCommunicationClient from '../../../../modules/AzureEmailCommunicationClient';
+import AtlasDatabaseClient from "../../../../modules/AtlasDatabaseClient";
 
-import { IResetPasswordCredentials } from '../../../../lib/interfaces';
+
+import { IMemberComprehensive, IUpdatePasswordCredentials } from '../../../../lib/interfaces';
 import { LangConfigs, EmailMessage, ResetPasswordRequestInfo } from '../../../../lib/types';
 import { getRandomHexStr, verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500, log } from '../../../../lib/utils';
 import { composeResetPasswordEmailContent } from '../../../../lib/email';
@@ -13,17 +17,16 @@ import { composeResetPasswordEmailContent } from '../../../../lib/email';
 const appSecret = process.env.APP_AES_SECRET ?? '';
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
 
-const domain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? '';
-const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
-const langConfigs: LangConfigs = {
-    emailSubject: {
-        tw: '重置您的账户密码',
-        cn: '重置您的賬戶密碼',
-        en: 'Reset your account password'
-    }
-}
+/** This interface ONLY accepts POST method
+ * Info required for POST request
+ * - recaptchaResponse: string
+ * - token: JWT
+ * 
+ * Info will be returned
+ * - updatePasswordToken: string
+ */
 
-export default async function RequestResetPassword(req: NextApiRequest, res: NextApiResponse) {
+export default async function RequestUpdatePassword(req: NextApiRequest, res: NextApiResponse) {
     const { method } = req;
     if ('POST' !== method) {
         response405(req, res);
@@ -35,6 +38,8 @@ export default async function RequestResetPassword(req: NextApiRequest, res: Nex
         response500(res, `${environmentVariable} not found`);
         return;
     }
+    //// Declare DB client ////
+    const atlasDbClient = AtlasDatabaseClient();
     try {
         const { recaptchaResponse } = req.query;
         // Step #1 verify if it is requested by a bot
@@ -49,6 +54,26 @@ export default async function RequestResetPassword(req: NextApiRequest, res: Nex
                 return;
             }
         }
+        //// Verify identity ////
+        const token = await getToken({ req });
+        if (!(token && token?.sub)) {
+            res.status(400).send('Invalid identity');
+            return;
+        }
+        //// Verify member status ////
+        await atlasDbClient.connect();
+        const { memberId } = token;
+        const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
+        const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne({ memberId });
+        if (null === memberComprehensiveQueryResult) {
+            throw new Error(`Member was trying updating password (of ICommentComprehensive) but have no document (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
+        }
+        const { status: memberStatus, allowCommenting } = memberComprehensiveQueryResult;
+        if (!(0 < memberStatus && allowCommenting)) {
+            res.status(403).send('Method not allowed due to member suspended or deactivated');
+            await atlasDbClient.close();
+            return;
+        }
         // Step #2.1 prepare email address
         const { emailAddress } = req.query;
         if ('string' !== typeof emailAddress || '' === emailAddress) {
@@ -62,39 +87,25 @@ export default async function RequestResetPassword(req: NextApiRequest, res: Nex
         //// [!] attemp to reterieve entity makes the probability of causing RestError ////
         const loginCredentialsQueryResult = await loginCredentialsQuery.next();
         if (!loginCredentialsQueryResult.value) {
-            res.status(404).send('Login credentials record not found');
+            res.status(405).send('Provider of this member is not MojitoMemberSystem');
             return;
         }
         // Step #3.1 create a new reset password verification token
-        const resetPasswordToken = getRandomHexStr(true); // use UPPERCASE
-        const info: ResetPasswordRequestInfo = {
-            emailAddress,
-            resetPasswordToken: resetPasswordToken,
-            expireDate: new Date().getTime() + 15 * 60 * 1000 // set valid time for 15 minutes
-        }
-        // Step #3.2 upsert entity (IResetPasswordCredentials) in [RL] Credentials
-        credentialsTableClient.upsertEntity<IResetPasswordCredentials>({ partitionKey: emailAddressHash, rowKey: 'ResetPassword', ResetPasswordToken: resetPasswordToken }, 'Replace');
-        //// Response 200 ////
-        res.status(200).send('Email sent');
-        // Step #4 send email
-        const emailMessage: EmailMessage = {
-            sender: '<donotreply@mojito.co.nz>',
-            content: {
-                subject: langConfigs.emailSubject[lang],
-                html: composeResetPasswordEmailContent(domain, Buffer.from(JSON.stringify(info)).toString('base64'), lang)
-            },
-            recipients: {
-                to: [{ email: emailAddress }]
-            }
-        }
-        const mailClient = AzureEmailCommunicationClient();
-        await mailClient.send(emailMessage);
+        const updatePasswordToken = getRandomHexStr(true); // use UPPERCASE
+        // Step #3.2 upsert entity (IUpdatePasswordCredentials) in [RL] Credentials
+        credentialsTableClient.upsertEntity<IUpdatePasswordCredentials>({ partitionKey: emailAddressHash, rowKey: 'UpdatePassword', ResetPasswordToken: updatePasswordToken }, 'Replace');
+        res.status(200).send(updatePasswordToken);
+        await atlasDbClient.close();
+        return;
     } catch (e: any) {
-        let msg: string;
-        if (e instanceof TypeError) {
-            msg = 'Was trying decoding recaptcha verification response.';
+        let msg;
+        if (e instanceof SyntaxError) {
+            res.status(400).send('Improperly normalized request info');
+            return;
         } else if (e instanceof RestError) {
             msg = 'Was trying communicating with azure table storage.';
+        } else if (e instanceof MongoError) {
+            msg = 'Was trying communicating with atlas mongodb.';
         } else {
             msg = `Uncategorized. ${e?.msg}`;
         }
@@ -102,6 +113,7 @@ export default async function RequestResetPassword(req: NextApiRequest, res: Nex
             response500(res, msg);
         }
         log(msg, e);
+        await atlasDbClient.close();
         return;
     }
 }

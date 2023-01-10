@@ -45,6 +45,11 @@ export interface IResetPasswordCredentials extends ICredentials {
     rowKey: 'ResetPassword';
     ResetPasswordToken: string;
 }
+export interface IUpdatePasswordCredentials extends ICredentials {
+    partitionKey: string; // email address sh1 hash
+    rowKey: 'UpdatePassword';
+    ResetPasswordToken: string;
+}
 
 // [RL] & [PRL] ...MemberMapping
 export interface IMemberMemberMapping extends IAzureTableEntity {

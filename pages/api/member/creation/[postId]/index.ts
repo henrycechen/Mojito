@@ -6,7 +6,7 @@ import { MongoError } from 'mongodb';
 import AzureTableClient from '../../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from "../../../../../modules/AtlasDatabaseClient";
 
-import { IMemberComprehensive, } from '../../../../../lib/interfaces';
+import { IChannelStatistics, IMemberComprehensive, IMemberPostMapping, IMemberStatistics, IPostComprehensive, ITopicComprehensive, } from '../../../../../lib/interfaces';
 import { verifyId, response405, response500, log } from '../../../../../lib/utils';
 
 /** This interface ONLY accepts DELETE requests
@@ -50,15 +50,61 @@ export default async function DeleteCreationById(req: NextApiRequest, res: NextA
             await atlasDbClient.close();
             return;
         }
-        await atlasDbClient.close();
-        // Delete record (of IMemberPostMapping) in [RL] HistoryMapping
-        const noticeTableClient = AzureTableClient('HistoryMapping');
-        await noticeTableClient.deleteEntity(memberId, postId);
-
-        // TODO: update statistics
-
-
+        //// Verify post status ////
+        const postComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IPostComprehensive>('post');
+        const postComprehensiveQueryResult = await postComprehensiveCollectionClient.findOne({ postId });
+        if (null === postComprehensiveQueryResult) {
+            res.status(404).send('Post not found');
+            await atlasDbClient.close();
+            return;
+        }
+        const { status: postStatus } = postComprehensiveQueryResult;
+        if (0 > postStatus) {
+            res.status(403).send('Method not allowed due to post deleted');
+            await atlasDbClient.close();
+            return;
+        }
+        //// Verify permission ////
+        const { memberId: authorId } = postComprehensiveQueryResult;
+        if (memberId !== authorId) {
+            res.status(403).send('Identity lack permissions');
+            return;
+        }
+        // Step #1.1 update record (of IMemberPostMapping) in [RL] CreationsMapping
+        const noticeTableClient = AzureTableClient('CreationsMapping');
+        await noticeTableClient.upsertEntity<IMemberPostMapping>({ partitionKey: memberId, rowKey: postId, IsActive: false }, 'Merge');
+        // Step #1.2 update status (of IPostComprehensive) in [C] postComprehensive
+        const postComprehensiveUpdateResult = await postComprehensiveCollectionClient.updateOne({ postId }, { $set: { status: -1 } });
+        if (!postComprehensiveUpdateResult.acknowledged) {
+            throw new Error(`Failed to update status (-1, of IPostComprehensive, post id: ${postId}) in [C] postComprehensive`);
+        }
         res.status(200).send('Delete browsing history success');
+        // Step #2.1 update totalCreationDeleteCount (of IMemberStatistics) in [C] memberStatistics
+        const memberStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IMemberStatistics>('member');
+        const memberStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId }, { $inc: { totalCreationDeleteCount: 1 } });
+        if (!memberStatisticsUpdateResult.acknowledged) {
+            log(`Document (IPostComprehensive, post id: ${postId}) updated (deleted, status -1) in [C] postComprehensive successfully but failed to update totalCreationDeleteCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`);
+        }
+        // Step #2.2 update totalPostDeleteCount (of IChannelStatistics) in [C] channelStatistics
+        const { channelId } = postComprehensiveQueryResult;
+        const channelStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IChannelStatistics>('channel');
+        const channelStatisticsUpdateResult = await channelStatisticsCollectionClient.updateOne({ channelId }, { $inc: { totalPostDeleteCount: 1 } });
+        if (!channelStatisticsUpdateResult.acknowledged) {
+            log(`Document (IPostComprehensive, post id: ${postId}) updated (deleted, status -1) in [C] postComprehensive successfully but failed to update totalPostDeleteCount (of IChannelStatistics, channel id: ${channelId}) in [C] channelStatistics`);
+        }
+        // Step #2.3 (cond.) update totalPostDeleteCount (of ITopicComprehensive) in [C] topicComprehensive
+        const { topicIdsArr } = postComprehensiveQueryResult;
+        if (Array.isArray(topicIdsArr) && topicIdsArr.length !== 0) {
+            const topicComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<ITopicComprehensive>('topic');
+            for await (const topicId of topicIdsArr) {
+                const topicComprehensiveUpdateResult = await topicComprehensiveCollectionClient.updateOne({ topicId }, { $inc: { totalPostDeleteCount: 1 } });
+                if (!topicComprehensiveUpdateResult.acknowledged) {
+                    log(`Document (IPostComprehensive, post id: ${postId}) updated (deleted, status -1) in [C] postComprehensive successfully but failed to update totalPostDeleteCount (of ITopicComprehensive, topic id: ${topicId}) in [C] topicComprehensive`);
+                }
+            }
+        }
+        await atlasDbClient.close();
+        return;
     } catch (e: any) {
         let msg;
         if (e instanceof RestError) {

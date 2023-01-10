@@ -1,21 +1,24 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { getToken } from 'next-auth/jwt'
+import { getToken } from 'next-auth/jwt';
 import { RestError } from '@azure/data-tables';
 import { MongoError } from 'mongodb';
 
 import AzureTableClient from '../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from "../../../../modules/AtlasDatabaseClient";
 
-import { IMemberComprehensive, } from '../../../../lib/interfaces';
-import { response405, response500, log } from '../../../../lib/utils';
+import { IMemberComprehensive, IPostComprehensive, IRestrictedPostComprehensive, } from '../../../../lib/interfaces';
+import { response405, response500, log, getRestrictedFromPostComprehensive } from '../../../../lib/utils';
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
 
 /** This interface ONLY accepts GET requests
  * 
  * Info required for GET requests
- * token: JWT
- * quantity: number (query string, optional, maximum 20)
- * positionId: string (query string, the last post id of the last request, optional)
+ * - token: JWT
+ * - quantity: number (query string, optional, maximum 20)
+ * - positionId: string (query string, the last post id of the last request, optional)
+ * 
+ * Info will be returned
+ * - restrictedComprehensiveArr: IRestrictedPostComprehensive[]
 */
 
 export default async function GetBrowsingHistory(req: NextApiRequest, res: NextApiResponse) {
@@ -30,7 +33,6 @@ export default async function GetBrowsingHistory(req: NextApiRequest, res: NextA
         res.status(400).send('Invalid identity');
         return;
     }
-    const category = req.query?.category;
     //// Declare DB client ////
     const atlasDbClient = AtlasDatabaseClient();
     try {
@@ -60,27 +62,22 @@ export default async function GetBrowsingHistory(req: NextApiRequest, res: NextA
             quantity = 20;
         }
         let postIdArr = [];
-        let noticeQueryResult = await historyMappingQuery.next();
-        while ((!noticeQueryResult.value && postIdArr.length < quantity)) {
-            postIdArr.push({
-                noticeId: noticeQueryResult.value.rowKey,
-                category,
-                initiateId: noticeQueryResult.value.InitiateId,
-                nickname: noticeQueryResult.value.Nickname,
-                postTitle: noticeQueryResult.value?.postTitle,
-                commentBreif: noticeQueryResult.value?.commentBreif
-            });
-            noticeQueryResult = await historyMappingQuery.next();
+        let historyMappingQueryResult = await historyMappingQuery.next();
+        while ((historyMappingQueryResult.value && postIdArr.length < quantity)) {
+            postIdArr.push(historyMappingQueryResult.value?.RowKey);
+            historyMappingQueryResult = await historyMappingQuery.next();
         }
-
-
-        //TODO: get post info order by postArray
-
-
-
-
-        res.status(200).send(postIdArr);
+        let restrictedComprehensiveArr: IRestrictedPostComprehensive[] = [];
+        const postComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IPostComprehensive>('post');
+        for await (const postId of postIdArr) {
+            const postComprehensiveQueryResult = await postComprehensiveCollectionClient.findOne({ postId });
+            if (null !== postComprehensiveQueryResult) {
+                restrictedComprehensiveArr.push(getRestrictedFromPostComprehensive(postComprehensiveQueryResult));
+            }
+        }
+        res.status(200).send(restrictedComprehensiveArr);
         await atlasDbClient.close();
+        return;
     } catch (e: any) {
         let msg;
         if (e instanceof RestError) {

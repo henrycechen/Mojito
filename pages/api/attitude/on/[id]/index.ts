@@ -307,37 +307,39 @@ export default async function AttitudeOnPostOrCommentById(req: NextApiRequest, r
                         }
                     }
                 }
-                // Handle notice.like ////
-                const { title } = memberComprehensiveQueryResult;
-                let content: string | undefined;
-                if (['comment', 'subcomment'].includes(category)) {
-                    const commentComprehensiveQueryResult = await commentComprehensiveCollectionClient.findOne({ commentId: id });
-                    content = commentComprehensiveQueryResult?.content;
-                }
-                const blockingMemberMappingTableClient = AzureTableClient('BlockingMemberMapping');
-                const blockingMemberMappingQuery = blockingMemberMappingTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${notifiedMemberId}' and RowKey eq '${memberId}'` } });
-                //// [!] attemp to reterieve entity makes the probability of causing RestError ////
-                const blockingMemberMappingQueryResult = await blockingMemberMappingQuery.next();
-                if (!blockingMemberMappingQueryResult.value) {
-                    //// [!] member who has expressed attitude has not been blocked by comment author ////
-                    // Step #4 upsert record (of INoticeInfo.Liked) in [PRL] Notice
-                    const noticeTableClient = AzureTableClient('Notice');
-                    await noticeTableClient.upsertEntity<INoticeInfo>({
-                        partitionKey: notifiedMemberId, // notified member id, in this case, comment author
-                        rowKey: createNoticeId('like', memberId, postId, id), // combined id
-                        Category: 'like',
-                        InitiateId: memberId,
-                        Nickname: getNicknameFromToken(token),
-                        PostId: postId,
-                        PostTitle: title,
-                        CommentId: 'post' === category ? undefined : id,
-                        CommentBrief: getContentBrief(content)
-                    }, 'Replace');
-                    // Step #5 update like (of INotificationStatistics, of post or comment author) in [C] notificationStatistics
-                    const notificationStatisticsCollectionClient = atlasDbClient.db('statistics').collection<INotificationStatistics>('notification');
-                    const notificationStatisticsUpdateResult = await notificationStatisticsCollectionClient.updateOne({ memberId: notifiedMemberId }, { $inc: { like: 1 } });
-                    if (!notificationStatisticsUpdateResult.acknowledged) {
-                        log(`Failed to update like (of INotificationStatistics, member id: ${notifiedMemberId}) in [C] notificationStatistics`);
+                if (memberId !== notifiedMemberId) {
+                    // Handle notice.like ////
+                    const { title } = memberComprehensiveQueryResult;
+                    let content: string | undefined;
+                    if (['comment', 'subcomment'].includes(category)) {
+                        const commentComprehensiveQueryResult = await commentComprehensiveCollectionClient.findOne({ commentId: id });
+                        content = commentComprehensiveQueryResult?.content;
+                    }
+                    const blockingMemberMappingTableClient = AzureTableClient('BlockingMemberMapping');
+                    const blockingMemberMappingQuery = blockingMemberMappingTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${notifiedMemberId}' and RowKey eq '${memberId}'` } });
+                    //// [!] attemp to reterieve entity makes the probability of causing RestError ////
+                    const blockingMemberMappingQueryResult = await blockingMemberMappingQuery.next();
+                    if (!blockingMemberMappingQueryResult.value) {
+                        //// [!] member who has expressed attitude has not been blocked by comment author ////
+                        // Step #4 upsert record (of INoticeInfo.Liked) in [PRL] Notice
+                        const noticeTableClient = AzureTableClient('Notice');
+                        await noticeTableClient.upsertEntity<INoticeInfo>({
+                            partitionKey: notifiedMemberId, // notified member id, in this case, comment author
+                            rowKey: createNoticeId('like', memberId, postId, id), // combined id
+                            Category: 'like',
+                            InitiateId: memberId,
+                            Nickname: getNicknameFromToken(token),
+                            PostId: postId,
+                            PostTitle: title,
+                            CommentId: 'post' === category ? undefined : id,
+                            CommentBrief: getContentBrief(content)
+                        }, 'Replace');
+                        // Step #5 update like (of INotificationStatistics, of post or comment author) in [C] notificationStatistics
+                        const notificationStatisticsCollectionClient = atlasDbClient.db('statistics').collection<INotificationStatistics>('notification');
+                        const notificationStatisticsUpdateResult = await notificationStatisticsCollectionClient.updateOne({ memberId: notifiedMemberId }, { $inc: { like: 1 } });
+                        if (!notificationStatisticsUpdateResult.acknowledged) {
+                            log(`Failed to update like (of INotificationStatistics, member id: ${notifiedMemberId}) in [C] notificationStatistics`);
+                        }
                     }
                 }
             }

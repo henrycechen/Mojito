@@ -1,4 +1,3 @@
-
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { RestError } from '@azure/data-tables';
 import { MongoError } from 'mongodb';
@@ -7,13 +6,18 @@ import CryptoJS from 'crypto-js';
 import AzureTableClient from '../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from '../../../../modules/AtlasDatabaseClient';
 
-import { verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500, log, verifyEmailAddress } from '../../../../lib/utils';
+import { verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500, log, verifyEmailAddress, verifyPassword } from '../../../../lib/utils';
 import { IMojitoMemberSystemLoginCredentials, ILoginJournal } from '../../../../lib/interfaces';
 
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
 const salt = process.env.APP_PASSWORD_SALT ?? '';
 
-//// [!] {emailAddressHash, resetPasswordToken, password (new)} is required for this api
+/** This interface ONLY accepts POST method
+ * Info required for POST request
+ * - emailAddressHash: string
+ * - resetPasswordToken: string
+ * - password: string
+ */
 
 export default async function ResetPassword(req: NextApiRequest, res: NextApiResponse) {
     const { method } = req;
@@ -45,14 +49,16 @@ export default async function ResetPassword(req: NextApiRequest, res: NextApiRes
                 return;
             }
         }
-        // Step #2 verify request info
-        const requestInfo = req.body;
-        if (null === requestInfo || 'string' !== typeof requestInfo || '' === requestInfo) {
-            res.status(403).send('Invalid request body');
+        // Step #2.1 verify request info
+        const { emailAddress, resetPasswordToken, password } = req.body;
+        if (!('string' === typeof emailAddress && 'string' === typeof resetPasswordToken)) {
+            res.status(400).send('Invalid request info');
             return;
         }
-        const { emailAddress, resetPasswordToken, password } = JSON.parse(requestInfo);
-        //// [!] attemp to parse JSON string to object makes the probability of causing SyntaxError ////
+        // Step #2.2 verify password
+        if (!('string' === typeof password && verifyPassword(password))) {
+            res.status(400).send('Password unsatisfied');
+        }
         // Step #3.1 verify email address
         if (!verifyEmailAddress(emailAddress)) {
             res.status(403).send('Invalid email address');
@@ -81,7 +87,7 @@ export default async function ResetPassword(req: NextApiRequest, res: NextApiRes
         const { ResetPasswordToken: resetPasswordTokenReference, Timestamp: timestamp } = resetPasswordCredentialsQueryResult.value;
         // Step #3.2 verify timestamp
         if (15 * 60 * 1000 < new Date().getTime() - new Date(timestamp).getTime()) {
-            res.status(403).send('Reset password token expired');
+            res.status(408).send('Reset password token expired');
             return;
         }
         // Step #3.3 match reset password tokens
@@ -91,7 +97,7 @@ export default async function ResetPassword(req: NextApiRequest, res: NextApiRes
         }
         // Step #4 update enitity (ILoginCredentials) in [RL] Credentials
         await credentialsTableClient.upsertEntity<IMojitoMemberSystemLoginCredentials>({ partitionKey: emailAddressHash, rowKey: 'MojitoMemberSystem', PasswordHash: CryptoJS.SHA256(password + salt).toString(), MemberId: memberId }, 'Merge');
-        res.status(200).send('Password upserted');
+        res.status(200).send('Password reset');
         // Step #5 write journal (ILoginJournal) in [C] loginJournal
         await atlasDbClient.connect();
         const loginJournalCollectionClient = atlasDbClient.db('journal').collection<ILoginJournal>('login');
@@ -103,6 +109,7 @@ export default async function ResetPassword(req: NextApiRequest, res: NextApiRes
             message: 'Password reset.'
         });
         await atlasDbClient.close();
+        return;
     } catch (e: any) {
         let msg: string;
         if (e instanceof SyntaxError) {

@@ -53,7 +53,7 @@ export default async function DeleteNoticeById(req: NextApiRequest, res: NextApi
         await atlasDbClient.close();
         // Delete record (of INotice) in [PRL] Notice
         const noticeTableClient = AzureTableClient('Notice');
-        await noticeTableClient.deleteEntity(memberId, noticeId);
+        await noticeTableClient.upsertEntity({ partitionKey: memberId, rowKey: noticeId, IsActive: false }, 'Merge');
         res.status(200).send('Delete notice success');
     } catch (e: any) {
         let msg;

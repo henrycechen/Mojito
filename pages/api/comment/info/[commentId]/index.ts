@@ -71,7 +71,7 @@ export default async function GetCommentInfoById(req: NextApiRequest, res: NextA
         const { sub: memberId } = token;
         const { memberId: authorId } = commentComprehensiveQueryResult;
         if (authorId !== memberId) {
-            res.status(403).send('Insufficient permissions');
+            res.status(403).send('Identity lack permissions');
             return;
         }
         //// Verify member status ////
@@ -247,5 +247,4 @@ export default async function GetCommentInfoById(req: NextApiRequest, res: NextA
         await atlasDbClient.close();
         return;
     }
-
 }

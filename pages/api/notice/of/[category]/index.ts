@@ -54,7 +54,7 @@ export default async function GetNoticeByCategory(req: NextApiRequest, res: Next
         }
         await atlasDbClient.close();
         const noticeTableClient = AzureTableClient('Notice');
-        const noticeQuery = noticeTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${memberId}' and Category eq '${category}'` } });
+        const noticeQuery = noticeTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${memberId}' and Category eq '${category}' and IsActive eq true` } });
         //// [!] attemp to reterieve entity makes the probability of causing RestError ////
         let quantity: number;
         if ('string' === typeof req.query?.quantity) {

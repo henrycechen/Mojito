@@ -6,7 +6,7 @@ import { MongoError } from 'mongodb';
 import AzureTableClient from '../../../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from "../../../../../../modules/AtlasDatabaseClient";
 
-import { IMemberComprehensive, } from '../../../../../../lib/interfaces';
+import { IMemberComprehensive, IMemberPostMapping, } from '../../../../../../lib/interfaces';
 import { verifyId, response405, response500, log } from '../../../../../../lib/utils';
 
 /** This interface ONLY accepts DELETE requests
@@ -51,9 +51,9 @@ export default async function DeleteBrowsingHistoryById(req: NextApiRequest, res
             return;
         }
         await atlasDbClient.close();
-        // Delete record (of IMemberPostMapping) in [RL] HistoryMapping
+        // Update record (of IMemberPostMapping) in [RL] HistoryMapping
         const noticeTableClient = AzureTableClient('HistoryMapping');
-        await noticeTableClient.deleteEntity(memberId, postId);
+        await noticeTableClient.updateEntity<IMemberPostMapping>({ partitionKey: memberId, rowKey: postId, IsActive: false }, 'Merge');
         res.status(200).send('Delete browsing history success');
     } catch (e: any) {
         let msg;
