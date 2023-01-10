@@ -13,7 +13,6 @@ const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
  * Info required for GET requests
  * 
  * recaptchaResponse: string (query string)
- * token: JWT
  * str: string (query)
 */
 
@@ -37,12 +36,6 @@ export default async function QueryMemberByNicknameBase64(req: NextApiRequest, r
     //         return;
     //     }
     // }
-    //// Verify identity ////
-    const token = await getToken({ req });
-    if (!(token && token?.sub)) {
-        res.status(400).send('Invalid identity');
-        return;
-    }
     const str = req.query?.str;
     //// Verify notice category ////
     if (!('string' === typeof str && new RegExp(/^[-A-Za-z0-9+/]*={0,3}$/).test(str))) {
@@ -52,7 +45,6 @@ export default async function QueryMemberByNicknameBase64(req: NextApiRequest, r
     //// Declare DB client ////
     const atlasDbClient = AtlasDatabaseClient();
     try {
-        const { sub: memberId } = token;
         //// Verify member status ////
         const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
         const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.aggregate([

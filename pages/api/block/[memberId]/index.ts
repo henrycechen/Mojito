@@ -91,20 +91,12 @@ export default async function BlockOrUndoBlockMemberById(req: NextApiRequest, re
             }, 'Replace');
             // Step #2.1 update totalUndoBlockingCount (of IMemberStatistics) in [C] memberStatistics
             const memberStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IMemberStatistics>('member');
-            const memberStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId }, {
-                $inc: {
-                    totalUndoBlockingCount: 1
-                }
-            });
+            const memberStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId }, { $inc: { totalUndoBlockingCount: 1 } });
             if (!memberStatisticsUpdateResult.acknowledged) {
                 log(`Failed to update totalUndoBlockingCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`);
             }
             // Step #2.2 update totalUndoBlockedByCount (of IMemberStatistics) in [C] memberStatistics
-            const memberBlockedStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId: memberId_object }, {
-                $inc: {
-                    totalUndoBlockedByCount: 1
-                }
-            });
+            const memberBlockedStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId: memberId_object }, { $inc: { totalUndoBlockedByCount: 1 } });
             if (!memberBlockedStatisticsUpdateResult.acknowledged) {
                 log(`Failed to update totalUndoBlockedByCount (of IMemberStatistics, member id: ${memberId_object}) in [C] memberStatistics`);
             }
@@ -117,20 +109,12 @@ export default async function BlockOrUndoBlockMemberById(req: NextApiRequest, re
             }, 'Replace');
             // Step #2.1 update totalBlockingCount (of IMemberStatistics) in [C] memberStatistics
             const memberStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IMemberStatistics>('member');
-            const memberStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId }, {
-                $inc: {
-                    totalBlockingCount: 1
-                }
-            });
+            const memberStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId }, { $inc: { totalBlockingCount: 1 } });
             if (!memberStatisticsUpdateResult.acknowledged) {
                 log(`Failed to update totalBlockingCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`);
             }
             // Step #2.2 update totalBlockedByCount (of IMemberStatistics) in [C] memberStatistics
-            const memberBlockedStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId: memberId_object }, {
-                $inc: {
-                    totalBlockedByCount: 1
-                }
-            });
+            const memberBlockedStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId: memberId_object }, { $inc: { totalBlockedByCount: 1 } });
             if (!memberBlockedStatisticsUpdateResult.acknowledged) {
                 log(`Failed to update totalBlockedByCount (of IMemberStatistics, member id: ${memberId_object}) in [C] memberStatistics`);
             }

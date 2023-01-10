@@ -1,6 +1,6 @@
 import { MongoClient } from 'mongodb';
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { IMemberComprehensive, IRestrictedMemberInfo, IAttitudeComprehensive, IAttitideMapping, ICommentComprehensive, IRestrictedCommentComprehensive, IRestrictedPostComprehensive, IPostComprehensive, } from './interfaces';
+import { IMemberComprehensive, IRestrictedMemberInfo, IAttitudeComprehensive, IAttitideMapping, ICommentComprehensive, IRestrictedCommentComprehensive, IRestrictedPostComprehensive, IPostComprehensive, IEditedPostComprehensive, ITopicComprehensive, } from './interfaces';
 import { ProcessStates } from './types';
 
 // import common utils for API
@@ -211,16 +211,26 @@ export function createCommentComprehensive(commentId: string, parentId: string, 
     return comment;
 }
 
-type UpdateCommentComprehensive = {
+type CommentComprehensiveUpdate = {
     content: string;
-    cuedMemberInfoArr?: IRestrictedCommentComprehensive[];
+    cuedMemberInfoArr?: IRestrictedMemberInfo[];
+    status: 201;
+    totalLikedCount: 0; // reset liked and disliked count
+    totalUndoLikedCount: 0; // reset undo liked and undo disliked count
+    totalDislikedCount: 0;
+    totalUndoDislikedCount: 0;
 }
 
-export function provideCommentComprehensiveUpdate(content: string, cuedMemberInfoArr: any): UpdateCommentComprehensive {
-    const updated: UpdateCommentComprehensive = { content };
-    if (Array.isArray(cuedMemberInfoArr) && cuedMemberInfoArr.length !== 0) {
-        updated.cuedMemberInfoArr = [...cuedMemberInfoArr];
-    }
+export function provideCommentComprehensiveUpdate(content: string, cuedMemberInfoArr: IRestrictedMemberInfo[]): CommentComprehensiveUpdate {
+    const updated: CommentComprehensiveUpdate = {
+        content,
+        cuedMemberInfoArr,
+        status: 201,
+        totalLikedCount: 0, // reset liked and disliked count
+        totalUndoLikedCount: 0, // reset undo liked and undo disliked count
+        totalDislikedCount: 0,
+        totalUndoDislikedCount: 0
+    };
     return updated;
 }
 
@@ -270,6 +280,25 @@ export function getTopicBase64StringsArrayFromRequestBody(requestBody: any): str
     return requestBody['topicsArr'].map(topicContent => 'T' + Buffer.from(topicContent).toString('base64'));
 }
 
+export function provideTopicComprehensive(topicId: string, channelId: string,): ITopicComprehensive {
+    return {
+        topicId, // base64 string from topic content string
+        channelId,
+        createdTime: new Date().getTime(), // create time of this document (topic est.)
+        status: 200,
+        totalHitCount: 1, // total hit count of total posts of this topic
+        totalSearchCount: 0,
+        totalPostCount: 1,
+        totalPostDeleteCount: 0,
+        totalLikedCount: 0,
+        totalUndoLikedCount: 0,
+        totalCommentCount: 0,
+        totalCommentDeleteCount: 0,
+        totalSavedCount: 0,
+        totalUndoSavedCount: 0,
+    }
+}
+
 //////// Post ////////
 export function getImageUrlsArrayFromRequestBody(requestBody: any): string[] {
     if ('object' !== typeof requestBody) {
@@ -289,6 +318,64 @@ export function getParagraphsArrayFromRequestBody(requestBody: any): string[] {
         return [];
     }
     return [...requestBody['paragraphsArr']];
+}
+
+export function getCuedMemberInfoArrayFromRequestBody(requestBody: any): IRestrictedMemberInfo[] {
+    if ('object' !== typeof requestBody) {
+        return [];
+    }
+    if (!(undefined !== requestBody['cuedMemberInfoArr'] && Array.isArray(requestBody['cuedMemberInfoArr']))) {
+        return [];
+    }
+    return [...requestBody['cuedMemberInfoArr']];
+}
+
+type PostComprehensiveUpdate = {
+    //// info ////
+    title: string;
+    imageUrlsArr: string[];
+    paragraphsArr: string[];
+    cuedMemberInfoArr: IRestrictedMemberInfo[];
+    channelId: string;
+    topicIdsArr: string[];
+    //// management ////
+    status: 201;
+    //// statistics ////
+    totalLikedCount: 0; // reset liked and disliked count
+    totalUndoLikedCount: 0; // reset undo liked and undo disliked count
+    totalDislikedCount: 0;
+    totalUndoDislikedCount: 0;
+}
+
+export function providePostComprehensiveUpdate(title: string, imageUrlsArr: string[], paragraphsArr: string[], cuedMemberInfoArr: IRestrictedMemberInfo[], channelId: string, topicIdsArr: string[]): PostComprehensiveUpdate {
+    const updated: PostComprehensiveUpdate = {
+        title,
+        imageUrlsArr,
+        paragraphsArr,
+        cuedMemberInfoArr,
+        channelId,
+        topicIdsArr,
+        status: 201,
+        totalLikedCount: 0,
+        totalUndoLikedCount: 0,
+        totalDislikedCount: 0,
+        totalUndoDislikedCount: 0
+    };
+    return updated;
+}
+
+export function provideEditedPostInfo(postComprehensive: IPostComprehensive): IEditedPostComprehensive {
+    return {
+        editedTime: new Date().getTime(),
+        titleBeforeEdit: postComprehensive.title,
+        imageUrlsArrBeforeEdit: [...postComprehensive.imageUrlsArr],
+        paragraphsArrBeforeEdit: [...postComprehensive.paragraphsArr],
+        cuedMemberInfoArrBeforeEdit: [...postComprehensive.cuedMemberInfoArr],
+        channelIdBeforeEdit: postComprehensive.channelId,
+        topicIdsArrBeforeEdit: [...postComprehensive.topicIdsArr],
+        totalLikedCountBeforeEdit: postComprehensive.totalLikedCount,
+        totalDislikedCountBeforeEdit: postComprehensive.totalDislikedCount,
+    }
 }
 
 export function getRestrictedFromPostComprehensive(postComprehensive: IPostComprehensive): IRestrictedPostComprehensive {

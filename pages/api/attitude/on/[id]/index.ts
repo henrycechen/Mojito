@@ -66,8 +66,8 @@ export default async function AttitudeOnPostOrCommentById(req: NextApiRequest, r
         if (null === memberComprehensiveQueryResult) {
             throw new Error(`Member was trying getting attitude mapping or expressing attitude on a post but have no document (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
         }
-        const { status: memberStatus } = memberComprehensiveQueryResult;
-        if (0 > memberStatus) {
+        const { status: memberStatus, allowCommenting } = memberComprehensiveQueryResult;
+        if (!(0 < memberStatus && allowCommenting)) {
             res.status(403).send('Method not allowed due to member suspended or deactivated');
             await atlasDbClient.close();
             return;

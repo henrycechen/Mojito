@@ -15,7 +15,6 @@ const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
  * Info required for GET requests
  * 
  * recaptchaResponse: string (query string)
- * token: JWT
  * channelId: string (query)
  * quantity: number (body, optional, maximum 20)
 */

@@ -77,8 +77,8 @@ export default async function CommentIndexByParentId(req: NextApiRequest, res: N
             throw new Error(`Member was trying creating comment but have no document (of IMemberComprehensive, member id: ${initiateId}) in [C] memberComprehensive`);
         }
         // Step #1.2 verify member status (of IMemberComprehensive)
-        const { status: memberStatus } = memberComprehensiveQueryResult;
-        if (0 > memberStatus) {
+        const { status: memberStatus, allowCommenting } = memberComprehensiveQueryResult;
+        if (!(0 < memberStatus && allowCommenting)) {
             res.status(403).send('Method not allowed due to member suspended or deactivated');
             await atlasDbClient.close();
             return;
@@ -183,7 +183,7 @@ export default async function CommentIndexByParentId(req: NextApiRequest, res: N
         if (Array.isArray(topicIdsArr) && topicIdsArr.length !== 0) {
             const topicComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<ITopicComprehensive>('topic');
             for await (const topicId of topicIdsArr) {
-                const topicComprehensiveUpdateResult = await topicComprehensiveCollectionClient.updateOne({ postId }, {
+                const topicComprehensiveUpdateResult = await topicComprehensiveCollectionClient.updateOne({ topicId }, {
                     $inc: {
                         totalCommentCount: 1
                     }

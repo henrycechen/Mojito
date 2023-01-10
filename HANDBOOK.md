@@ -725,6 +725,28 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 }
 ```
 
+### 💡Idea of improvement
+
+It could be better for the "count" filed to be counted by statistics scripts, e.g.,
+
+```typescript
+// Step #5 (cond.) update totalHitCount (of ITopicComprehensive) in [C] topicComprehensive
+const { topicIdsArr } = postComprehensiveQueryResult;
+    if (Array.isArray(topicIdsArr) && topicIdsArr.length !== 0) {
+        const topicComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<ITopicComprehensive>('topic');
+        for await (const topicId of topicIdsArr) {
+        const topicComprehensiveUpdateResult = await topicComprehensiveCollectionClient.updateOne({ topicId }, {
+        $inc: {        totalHitCount: 1        }        });
+        if (!topicComprehensiveUpdateResult.acknowledged) {
+        log(`Failed to update totalHitCount (of ITopicStatistics, topic id:${topicId}, post id: ${postId}) in [C] topicStatistics`);
+        }
+    }
+}
+```
+
+1. Instead of accumulate `totalHitCount` by topic id, update all the topic-post mapping using `db.collection.updateMany()`
+2. Utlize statistics scripts to count `hitCount` then accumlate to the `topicComprehensive.totalHitCount`
+
 ### 💡TopicStatus Codes
 
 | Code    | Explanation                            |
@@ -1545,7 +1567,7 @@ Only allow updating other info after 30 seconds since last update
 
 | Behaviour   | Affected tables / collections                                |
 | ----------- | ------------------------------------------------------------ |
-| View a post | ( Cond. [RL] HistoryMapping ***(est./put.)*** ),<br />[C] memberStatistics***.totalCreationHitCount (acc.)***,<br />[C] postComprehensive***.totalHitCount (acc.)***,<br />[C] channelStatistics***.totalHitCount (acc.)***,<br />( Cond. [C] topicStatistics ***.totalHitCount (acc.)*** ) |
+| View a post | ( Cond. [RL] HistoryMapping ***(est./put. of the post viewer)*** ),<br />[C] memberStatistics***.totalCreationHitCount (acc.)***,<br />[C] postComprehensive***.totalHitCount (acc.)***,<br />[C] channelStatistics***.totalHitCount (acc.)***,<br />( Cond. [C] topicStatistics ***.totalHitCount (acc.)*** ) |
 
 1. Look up post status in **[C] postComprehensive**
 
@@ -1553,7 +1575,7 @@ Only allow updating other info after 30 seconds since last update
 
 | Behaviour     | Affected tables / collections                                |
 | ------------- | ------------------------------------------------------------ |
-| Create a post | [C] postComprehensive,<br />( Cond. [C] topicPostMapping ***(est.)*** )<br />( Cond. [C] topicComprehensive ***(est.)*** )<br />[C] memberStatistics***.totalCreationCount (acc.)***,<br />[C] channelStatistics***.totalPostCount (acc.)***<br />( Cond. [C] topicComprehensive***.totalPostCount (acc.)*** ),<br />( Cond. [PRL] Notice***.Cued (est.)*** ),<br />( Cond. [C] notificationStatistics***.cuedCount (acc.)*** ) |
+| Create a post | [C] postComprehensive,<br />[C] memberStatistics***.totalCreationCount (acc.)***,<br />[C] channelStatistics***.totalPostCount (acc.)***<br />( Cond. [C] topicComprehensive***.totalPostCount (acc.)*** ),<br />( Cond. [C] topicPostMapping ***(est.)*** )<br />( Cond. [PRL] Notice***.Cued (est.)*** ),<br />( Cond. [C] notificationStatistics***.cuedCount (acc.)*** ) |
 
 1. Insert a new document of ***IPostComprehensive*** in **[C] postComprehensive**
 2. Skip (if this post not belonged to any topics) or Insert a new document of ***ITopicPostMapping*** in **[C] topicPostMapping**
@@ -1568,7 +1590,7 @@ Only allow updating other info after 30 seconds since last update
 
 | Behaviour   | Affected tables / collections                                |
 | ----------- | ------------------------------------------------------------ |
-| Edit a post | [C] postComprehensive,<br />[C] memberComprehensive***.totalCommentEditCount (acc.)***<br />( Cond. [PRL] Notice***.Cued (est.)*** ),<br />( Cond. [C] notificationStatistics***.cuedCount (acc.)*** ) |
+| Edit a post | [C] postComprehensive,<br />[C] memberComprehensive***.totalCommentEditCount (acc.)***<br />( Cond. [C] topicComprehensive***.totalPostCount (acc./dec.)*** ),<br />( Cond. [C] topicPostMapping ***(est./del.)*** )<br />( Cond. [PRL] Notice***.Cued (est.)*** ),<br />( Cond. [C] notificationStatistics***.cuedCount (acc.)*** ) |
 
 ### ▶️Delete a post
 
