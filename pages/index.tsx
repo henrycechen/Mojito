@@ -342,6 +342,7 @@ const Home = () => {
                             )
                         })}
                     </Stack>
+                    
                     {/* #2 the post mansoy */}
                     <Box ml={1} ref={masonryWrapper}>
                         <Masonry columns={{ xs: 2, sm: 3, md: 3, lg: 3, xl: 4 }}>

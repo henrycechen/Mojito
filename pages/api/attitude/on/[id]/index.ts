@@ -29,6 +29,23 @@ export default async function AttitudeOnPostOrCommentById(req: NextApiRequest, r
         response405(req, res);
         return;
     }
+
+
+
+    
+    // FIXME: test
+    res.send({
+        attitude: 1,
+        commentAttitudeMapping: {
+            C12345ABCDE: -1,
+            D12345ABCDF: 1
+        },
+    })
+
+
+
+
+
     // FIXME: deactived human/bot verification for tests
     //// Verify human/bot ////
     // const { recaptchaResponse } = req.query;
@@ -64,7 +81,7 @@ export default async function AttitudeOnPostOrCommentById(req: NextApiRequest, r
         const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
         const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne({ memberId });
         if (null === memberComprehensiveQueryResult) {
-            throw new Error(`Member was trying getting attitude mapping or expressing attitude on a post but have no document (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
+            throw new Error(`Member attempt to GET attitude mapping or expressing attitude on a post but have no document (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
         }
         const { status: memberStatus, allowCommenting } = memberComprehensiveQueryResult;
         if (!(0 < memberStatus && allowCommenting)) {
@@ -382,9 +399,9 @@ export default async function AttitudeOnPostOrCommentById(req: NextApiRequest, r
     } catch (e: any) {
         let msg;
         if (e instanceof RestError) {
-            msg = 'Was trying communicating with azure table storage.';
+            msg = 'Attempt to communicate with azure table storage.';
         } else if (e instanceof MongoError) {
-            msg = 'Was trying communicating with atlas mongodb.';
+            msg = 'Attempt to communicate with atlas mongodb.';
         } else {
             msg = `Uncategorized. ${e?.msg}`;
         }

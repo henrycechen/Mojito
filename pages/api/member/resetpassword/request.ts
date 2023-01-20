@@ -92,9 +92,9 @@ export default async function RequestResetPassword(req: NextApiRequest, res: Nex
     } catch (e: any) {
         let msg: string;
         if (e instanceof TypeError) {
-            msg = 'Was trying decoding recaptcha verification response.';
+            msg = 'Attempt to decode recaptcha verification response.';
         } else if (e instanceof RestError) {
-            msg = 'Was trying communicating with azure table storage.';
+            msg = 'Attempt to communicate with azure table storage.';
         } else {
             msg = `Uncategorized. ${e?.msg}`;
         }

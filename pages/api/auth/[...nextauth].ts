@@ -92,8 +92,6 @@ export default NextAuth({
     },
     callbacks: {
         async jwt({ token, user, account, profile }: any) {
-            console.log(token);
-
             return token;
         },
         async signIn({ user, account, profile, email, credentials }) {
@@ -156,7 +154,7 @@ export default NextAuth({
                 } catch (e: any) {
                     let msg = ` '/api/auth/[...nextauth]/default/callbacks/signIn?provider=MojitoMemberSystem'`;
                     if (e instanceof MongoError) {
-                        msg = 'Was trying communicating with atlas mongodb.' + msg;
+                        msg = 'Attempt to communicate with atlas mongodb.' + msg;
                         await atlasDbClient.close();
                     } else {
                         msg = `Uncategorized. ${e?.msg}` + msg;
@@ -170,7 +168,7 @@ export default NextAuth({
                 const { name: nickname, email: emailAddress, image: avatarImageUrl } = user;
                 if ('string' !== typeof emailAddress || '' === emailAddress) {
                     // [!] an invalid email address was provided by third-party login provider
-                    log(`Was trying login with ${providerId}, retrieved an invalid email address`);
+                    log(`Attempt to login with ${providerId}, retrieved an invalid email address`);
                     return `/signin?error=InappropriateEmailAddress&providerId=${providerId}`;
                 }
                 const emailAddressHash = CryptoJS.SHA1(emailAddress).toString();
@@ -206,7 +204,7 @@ export default NextAuth({
                         allowCommenting: false
                     });
                     if (!memberComprehensiveCollectionInsertResult.acknowledged) {
-                        log(`Was trying inserting document (MemberComprehensive) for registering with ${providerId}`);
+                        log(`Attempt to insert document (MemberComprehensive) for registering with ${providerId}`);
                         return `/signin?error=ThirdPartyProviderSignin&providerId=${providerId}`;
                     }
                     // Step #A2.6 write journal in [C] loginJournal
@@ -284,9 +282,9 @@ export default NextAuth({
             } catch (e: any) {
                 let msg = ` '/api/auth/[...nextauth]/default/callbacks/signIn/?provider=${provider}'`;
                 if (e instanceof RestError) {
-                    msg = 'Was trying communicating with azure table storage.' + msg;
+                    msg = 'Attempt to communicate with azure table storage.' + msg;
                 } else if (e instanceof MongoError) {
-                    msg = 'Was trying communicating with atlas mongodb.' + msg;
+                    msg = 'Attempt to communicate with atlas mongodb.' + msg;
                 } else {
                     msg = `Uncategorized. ${e?.msg}` + msg;
                 }
@@ -341,7 +339,7 @@ async function verifyLoginCredentials(credentials: LoginRequestInfo): Promise<Me
         if (e instanceof ReferenceError) {
             msg = `${environmentVariable} not found. '/api/auth/[...nextauth]/veriftLoginCredentials'`;
         } else if (e instanceof RestError) {
-            msg = `Was trying communicating with azure table storage. '/api/auth/[...nextauth]/veriftLoginCredentials'`
+            msg = `Attempt to communicate with azure table storage. '/api/auth/[...nextauth]/veriftLoginCredentials'`
         } else {
             msg = `Uncategorized. ${e?.msg} trace='/api/auth/[...nextauth]/veriftLoginCredentials'`;
         }

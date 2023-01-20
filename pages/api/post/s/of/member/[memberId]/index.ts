@@ -34,6 +34,8 @@ export default async function GetPostsByMemberId(req: NextApiRequest, res: NextA
     }
     // Verify channel id (optional)
     const channelId = req.query?.channelId;
+    const token = await getToken({ req });
+
 
     // TODO: aaaaaaaaaaaaaaaa llllllllllllllotttttttttttttttttt dooooooooooooooooooooooooo
 
@@ -45,7 +47,7 @@ export default async function GetPostsByMemberId(req: NextApiRequest, res: NextA
         const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
         const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne({ memberId });
         if (null === memberComprehensiveQueryResult) {
-            throw new Error(`Member was trying getting browsing history records but have no document (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
+            throw new Error(`Member attempt to get browsing history records but have no document (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
         }
         const { status: memberStatus } = memberComprehensiveQueryResult;
         if (0 > memberStatus) {
@@ -90,9 +92,9 @@ export default async function GetPostsByMemberId(req: NextApiRequest, res: NextA
     } catch (e: any) {
         let msg;
         if (e instanceof RestError) {
-            msg = 'Was trying communicating with azure table storage.';
+            msg = 'Attempt to communicate with azure table storage.';
         } else if (e instanceof MongoError) {
-            msg = 'Was trying communicating with atlas mongodb.';
+            msg = 'Attempt to communicate with atlas mongodb.';
         } else {
             msg = `Uncategorized. ${e?.msg}`;
         }

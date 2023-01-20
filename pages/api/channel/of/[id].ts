@@ -34,7 +34,7 @@ export default async function GetList(req: NextApiRequest, res: NextApiResponse)
 
         let msg;
         if (e instanceof RestError) {
-            msg = 'Was trying communicating with azure table storage.';
+            msg = 'Attempt to communicate with azure table storage.';
         } else {
             msg = `Uncategorized. ${e?.msg}`;
         }

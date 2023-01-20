@@ -6,20 +6,20 @@ import { MongoError } from 'mongodb';
 import AzureTableClient from '../../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from "../../../../../modules/AtlasDatabaseClient";
 
-import { INoticeInfo, IMemberPostMapping, INotificationStatistics, IMemberComprehensive, IRestrictedMemberInfo, IMemberStatistics, ILoginJournal, IAttitudeComprehensive, IAttitideMapping, ICommentComprehensive, IEditedCommentComprehensive, IRestrictedCommentComprehensive, IChannelStatistics, ITopicComprehensive, ITopicPostMapping, IPostComprehensive, IEditedPostComprehensive, IRestrictedPostComprehensive } from '../../../../../lib/interfaces';
-import { createId, createNoticeId, getRandomIdStr, getRandomIdStrL, getRandomHexStr, timeStampToString, getNicknameFromToken, getContentBrief, createCommentComprehensive, getRestrictedFromCommentComprehensive, getTopicBase64StringsArrayFromRequestBody, getImageUrlsArrayFromRequestBody, getParagraphsArrayFromRequestBody, getRestrictedFromPostComprehensive, verifyEmailAddress, verifyPassword, verifyId, verifyUrl, verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500, log } from '../../../../../lib/utils';
+import { INoticeInfo, IMemberPostMapping, INotificationStatistics, IMemberComprehensive, IConciseMemberInfo, IMemberStatistics, ILoginJournal, IAttitudeComprehensive, IAttitideMapping, ICommentComprehensive, IEditedCommentComprehensive, IRestrictedCommentComprehensive, IChannelStatistics, ITopicComprehensive, ITopicPostMapping, IPostComprehensive, IEditedPostComprehensive, IRestrictedPostComprehensive } from '../../../../../lib/interfaces';
+import { createId, createNoticeId, getRandomIdStr, getRandomIdStrL, getRandomHexStr, timeToString, getNicknameFromToken, getContentBrief, createCommentComprehensive, getRestrictedFromCommentComprehensive, getTopicBase64StringsArrayFromRequestBody, getImageUrlsArrayFromRequestBody, getParagraphsArrayFromRequestBody, getRestrictedFromPostComprehensive, verifyEmailAddress, verifyPassword, verifyId, verifyUrl, verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500, log } from '../../../../../lib/utils';
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
 
 
-// This interface accepts GET, POST requests
+// This interface accepts POST requests
 //
 // Info required for POST method
 // - recaptchaResponse: string (query string)
 // - token: JWT (cookie)
-// - id(parentId): string (query)
+// - parentId: string (query)
+// - postId: string (body)
 // - content: string (body)
-// - cuedMemberInfoArr: IRestrictedMemberInfo[] (body, optional)
-//
+// - cuedMemberInfoArr: IConciseMemberInfo[] (body, optional)
 
 export default async function CreateCommentOnParentId(req: NextApiRequest, res: NextApiResponse) {
     const { method } = req;
@@ -27,6 +27,30 @@ export default async function CreateCommentOnParentId(req: NextApiRequest, res: 
         response405(req, res);
         return;
     }
+
+    console.log(req.body);
+    // req.body
+    //    {
+    //         "postId": "P1234ABCD",
+    //         "content": "123@JAY",
+    //         "cuedMemberInfoArr": [
+    //             {
+    //                 "memberId": "M1234X001",
+    //                 "nickname": "JAY"
+    //             }
+    //         ]
+    //     }
+
+    const pId = req.query?.parentId ?? '';
+    if ('P' === pId.slice(0, 1)) {
+        res.send(createId('comment'))
+    } else {
+        res.send(createId('subcomment'))
+    }
+
+    return;
+
+
     // FIXME: deactived human/bot verification for tests
     //// Verify human/bot ////
     // const { recaptchaResponse } = req.query;
@@ -72,7 +96,7 @@ export default async function CreateCommentOnParentId(req: NextApiRequest, res: 
         const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
         const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne({ memberId });
         if (null === memberComprehensiveQueryResult) {
-            throw new Error(`Member was trying creating comment but have no document (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
+            throw new Error(`Member Attempt to creating comment but have no document (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
         }
         // Step #1.2 verify member status (of IMemberComprehensive)
         const { status: memberStatus, allowCommenting } = memberComprehensiveQueryResult;
@@ -265,9 +289,9 @@ export default async function CreateCommentOnParentId(req: NextApiRequest, res: 
             res.status(400).send('Improperly normalized request info');
             return;
         } else if (e instanceof RestError) {
-            msg = 'Was trying communicating with azure table storage.';
+            msg = 'Attempt to communicating with azure table storage.';
         } else if (e instanceof MongoError) {
-            msg = 'Was trying communicating with atlas mongodb.';
+            msg = 'Attempt to communicating with atlas mongodb.';
         } else {
             msg = `Uncategorized. ${e?.msg}`;
         }

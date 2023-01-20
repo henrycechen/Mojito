@@ -119,7 +119,7 @@ export default async function VerifyToken(req: NextApiRequest, res: NextApiRespo
             }
         }, { upsert: true });
         if (!memberComprehensiveCollectionUpdateResult.acknowledged) {
-            throw new Error(`Was trying updating document (IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
+            throw new Error(`Attempt to update document (IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
         }
         // Step #6 insert a new document (IMemberStatistics) in [C] memberStatistics
         const memberStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IMemberStatistics>('member');
@@ -170,7 +170,7 @@ export default async function VerifyToken(req: NextApiRequest, res: NextApiRespo
             totalUndoBlockedByCount: 0
         });
         if (!memberStatisticsCollectionInsertResult.acknowledged) {
-            throw new Error(`Was trying inserting document (IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`)
+            throw new Error(`Attempt to insert document (IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`)
         }
         // Step #7 insert a new document (INotificationStatistics) in [C] notificationStatistics
         const notificationStatisticsCollectionClient = atlasDbClient.db('statistics').collection<INotificationStatistics>('notification');
@@ -184,7 +184,7 @@ export default async function VerifyToken(req: NextApiRequest, res: NextApiRespo
             follow: 0,
         });
         if (!notificationCollectionInsertResult.acknowledged) {
-            throw new Error(`Was trying inserting document (of INotificationStatistics, member id: ${memberId}) in [C] notificationStatistics`);
+            throw new Error(`Attempt to insert document (of INotificationStatistics, member id: ${memberId}) in [C] notificationStatistics`);
         }
         res.status(200).send('Email address verified');
         // Step #8 write journal (ILoginJournal) in [C] loginJournal
@@ -203,11 +203,11 @@ export default async function VerifyToken(req: NextApiRequest, res: NextApiRespo
             res.status(400).send('Improperly normalized request info');
             return;
         } else if (e instanceof TypeError) {
-            msg = 'Was trying decoding recaptcha verification response.';
+            msg = 'Attempt to decode recaptcha verification response.';
         } else if (e instanceof RestError) {
-            msg = 'Was trying communicating with azure table storage.';
+            msg = 'Attempt to communicate with azure table storage.';
         } else if (e instanceof MongoError) {
-            msg = 'Was trying communicating with atlas mongodb.';
+            msg = 'Attempt to communicate with atlas mongodb.';
         } else {
             msg = `Uncategorized. ${e?.msg}`;
         }

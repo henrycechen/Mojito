@@ -504,7 +504,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
    	category: 'error' | 'success';
     providerId: 'MojitoMemberSystem' | string; // LoginProviderId
     timestamp: string; // new Date().toISOString()
-    message: string; // short message, e.g., 'Attempted login while email address not verified.'
+    message: string; // short message, e.g., 'Attempted to login while email address not verified.'
 }
 ```
 
@@ -870,6 +870,7 @@ const { topicIdsArr } = postComprehensiveQueryResult;
 
     //// total statistics ////
 	totalHitCount: number; // viewed times accumulator
+    totalMemberHitCount: number;
     totalLikedCount: number;
 	totalUndolikedCount: number;
     totalDislikedCount: number;
@@ -1021,6 +1022,48 @@ const { topicIdsArr } = postComprehensiveQueryResult;
    }
 }
 ```
+
+
+
+## 📗Affair
+
+### [C] affairComprehensive
+
+```typescript
+{
+    _id: ObjectId; // mongodb obejct id
+    
+    //// info ////
+    affairId: string;
+    in
+    referenceId: string; // post or comment id
+    memberId: string;
+    createdTime: number; // created time of this document (post est.)
+    
+    category: number; // 1 ~ 6
+
+    //// management ////
+    status: number;
+
+  	logs: [
+        {
+            timeStamp: string; //
+            status: number;
+            log: string;
+        }
+    ]
+}
+```
+
+### 💡Affair category
+
+| Category | Desc                        |
+| -------- | --------------------------- |
+| 1        | Ads                         |
+| 2        | Abuse                       |
+| 3        | Illegal drugs and substance |
+| 4        | Violence and terrorism      |
+| 5        | Pornography                 |
 
 
 

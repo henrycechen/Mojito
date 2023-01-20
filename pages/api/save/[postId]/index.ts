@@ -9,7 +9,7 @@ import AtlasDatabaseClient from "../../../../modules/AtlasDatabaseClient";
 import { IMemberComprehensive, IMemberPostMapping, IMemberStatistics, INoticeInfo, INotificationStatistics, IChannelStatistics, ITopicComprehensive, IPostComprehensive } from '../../../../lib/interfaces';
 import { verifyId, response405, response500, log, createNoticeId, getNicknameFromToken } from '../../../../lib/utils';
 
-/** This interface ONLY accepts POST method
+/** This interface accepts GET and POST method
  * Info required for POST request
  * - token: JWT
  * - postId: string
@@ -17,10 +17,16 @@ import { verifyId, response405, response500, log, createNoticeId, getNicknameFro
 
 export default async function SaveOrUndoSavePostById(req: NextApiRequest, res: NextApiResponse) {
     const { method } = req;
-    if ('POST' !== method) {
+    if (!['GET', 'POST'].includes(method ?? '')) {
         response405(req, res);
         return;
     }
+    
+    // FIXME: test
+    res.send(true);
+    return
+
+    
     //// Verify identity ////
     const token = await getToken({ req });
     if (!(token && token?.sub)) {
@@ -43,7 +49,7 @@ export default async function SaveOrUndoSavePostById(req: NextApiRequest, res: N
         const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
         const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne({ memberId });
         if (null === memberComprehensiveQueryResult) {
-            throw new Error(`Member was trying saving or undo saving a post but have no document (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
+            throw new Error(`Member attempt to saving or undo saving a post but have no document (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
         }
         const { status: memberStatus } = memberComprehensiveQueryResult;
         if (0 > memberStatus) {
@@ -79,6 +85,13 @@ export default async function SaveOrUndoSavePostById(req: NextApiRequest, res: N
             // Pending
             isSaved = !!savedMappingQueryResult.value?.IsActive;
         }
+        //// GET | verify if saved ////
+        if ('GET' === method) {
+            res.status(200).send(isSaved);
+            await atlasDbClient.close();
+            return;
+        }
+        //// POST | save or undo save ////
         const memberStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IMemberStatistics>('member');
         if (isSaved) {
             // Case [Undo save]
@@ -193,9 +206,9 @@ export default async function SaveOrUndoSavePostById(req: NextApiRequest, res: N
     catch (e: any) {
         let msg;
         if (e instanceof RestError) {
-            msg = 'Was trying communicating with azure table storage.';
+            msg = 'Attempt to communicate with azure table storage.';
         } else if (e instanceof MongoError) {
-            msg = 'Was trying communicating with atlas mongodb.';
+            msg = 'Attempt to communicate with atlas mongodb.';
         } else {
             msg = `Uncategorized. ${e?.msg}`;
         }

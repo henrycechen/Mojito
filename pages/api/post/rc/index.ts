@@ -8,7 +8,7 @@ import AtlasDatabaseClient from '../../../../modules/AtlasDatabaseClient';
 
 import { INoticeInfo, INotificationStatistics, IMemberStatistics, IChannelStatistics, ITopicComprehensive, ITopicPostMapping, IPostComprehensive, IMemberComprehensive } from '../../../../lib/interfaces';
 import { ChannelInfo } from '../../../../lib/types';
-import { getRandomIdStr, getRandomIdStrL, getNicknameFromToken, getTopicBase64StringsArrayFromRequestBody, getImageUrlsArrayFromRequestBody, getParagraphsArrayFromRequestBody, verifyUrl, response405, response500, log, getCuedMemberInfoArrayFromRequestBody, provideTopicComprehensive, createNoticeId } from '../../../../lib/utils';
+import { getRandomIdStr, getRandomIdStrL, getNicknameFromToken, getTopicBase64StringsArrayFromRequestBody, getImageUrlsArrayFromRequestBody, getParagraphsArrayFromRequestBody, verifyUrl, response405, response500, log, getCuedMemberInfoArrayFromRequestBody, provideTopicComprehensive, createNoticeId, createId } from '../../../../lib/utils';
 
 const domain = process.env.NEXT_PUBLIC_APP_DOMAIN;
 
@@ -26,6 +26,11 @@ export default async function CreatePost(req: NextApiRequest, res: NextApiRespon
         response405(req, res);
         return;
     }
+
+    setTimeout(() => { res.send(createId('post')) }, 1000)
+    return;
+
+
     //// Verify identity ////
     const token = await getToken({ req });
     if (!(token && token?.sub)) {
@@ -64,7 +69,7 @@ export default async function CreatePost(req: NextApiRequest, res: NextApiRespon
         const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
         const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne<IMemberComprehensive>({ memberId });
         if (null === memberComprehensiveQueryResult) {
-            throw new Error(`Member was trying creating post but have no document (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
+            throw new Error(`Member attempt to creating post but have no document (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
         }
         const { status: memberStatus, allowPosting } = memberComprehensiveQueryResult;
         if (!(0 < memberStatus && allowPosting)) {
@@ -96,6 +101,7 @@ export default async function CreatePost(req: NextApiRequest, res: NextApiRespon
             status: 200,
             //// statistics ////
             totalHitCount: 0,
+            totalMemberHitCount: 0,
             totalLikedCount: 0,
             totalUndoLikedCount: 0,
             totalDislikedCount: 0,
@@ -154,7 +160,7 @@ export default async function CreatePost(req: NextApiRequest, res: NextApiRespon
         }
         //// Handle notice.cue (cond.) ////
         // Step #4.1 verify cued member ids array
-        if ( cuedMemberInfoArr.length !== 0) {
+        if (cuedMemberInfoArr.length !== 0) {
             const blockingMemberMappingTableClient = AzureTableClient('BlockingMemberMapping');
             const notificationStatisticsCollectionClient = atlasDbClient.db('statistics').collection<INotificationStatistics>('notification');
             // Step #4.2 maximum 9 members are allowed to cued at one time (in one comment)
@@ -198,9 +204,9 @@ export default async function CreatePost(req: NextApiRequest, res: NextApiRespon
             res.status(400).send('Improperly normalized request info');
             return;
         } else if (e instanceof RestError) {
-            msg = 'Was trying communicating with azure table storage.';
+            msg = 'Attempt to communicate with azure table storage.';
         } else if (e instanceof MongoError) {
-            msg = 'Was trying communicating with atlas mongodb.';
+            msg = 'Attempt to communicate with atlas mongodb.';
         } else {
             msg = `Uncategorized. ${e?.msg}`;
         }

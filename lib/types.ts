@@ -1,6 +1,8 @@
-export type LangConfigs = { 
+import { IConciseMemberInfo } from "./interfaces";
+
+export type LangConfigs = {
     [key: string]: any
- };
+};
 
 // States
 export type SignInCredentialStates = {
@@ -36,20 +38,20 @@ export type EmailRecipient = {
 }
 
 // Member
-export type MemberInfo = {
-    id?: string;
+export type TMemberInfo = {
+    memberId?: string;
     nickname?: string;
     avatarImageUrl?: string | undefined;
     briefIntro?: string | undefined;
     gender?: -1 | 0 | 1;
     birthday?: string | undefined;
-    postCounts?: number;
-    commentCounts?: number;
-    followingCounts?: number;
-    followedByCounts?: number;
-    savedCounts?: number;
-    likedCounts?: number;
-    dislikedCounts?: number;
+}
+
+export type TMemberStatistics = {
+    memberId?: string;
+    totalCreationCount?: number; // info page required
+    totalCreationLikedCount?: number; // info page required
+    totalFollowedByCount?: number; // info page required
 }
 
 export type VerifyEmailAddressRequestInfo = {
@@ -64,23 +66,28 @@ export type ResetPasswordRequestInfo = {
     expireDate: number;
 }
 
-// Post
-export type PostInfo = {
+// Comment
+export type CommentInfo = {
     id?: string;
-    memberId?: string;
-    timeStamp?: string;
-    title: string;
-    content: string; // depreacted
-    contentParagraphsArray?: string[];
-    imageUrlArr?: string[];
-    channelId?: string;
-    topicList?: TopicInfo[]; // string => => [type] topic
-    cuedMemberList?: string[]; // string => => [type] member
-    viewedTimes?: number;
+    memberId: string;
+    createTimestamp: string;
+    content: string;
     likedTimes?: number;
     dislikedTimes?: number;
-    savedTimes?: number;
-    commentNumber?: number;
+    commentStatus?: number;
+}
+
+export type TRestrictedCommentInfo = {
+    commentId: string; //12 ~ 13 characters, UPPERCASE, comment id begin with 'C', subcomment id begin with 'D'
+    parentId: string;
+    postId: string;
+    memberId: string;
+    createdTime: number; // created time of this document
+    content: string | null;
+    cuedMemberInfoArr: IConciseMemberInfo[];
+
+    //// management ////
+    status: number;
 }
 
 // Channel
@@ -103,13 +110,39 @@ export type TopicInfo = {
     name: string;
 }
 
-// Comment
-export type CommentInfo = {
-    id?: string;
+
+
+// Post
+export type TRestrictedPostComprehensive = {
+    postId: string; // 10 characters, UPPERCASE
     memberId: string;
-    createTimestamp: string;
-    content: string;
-    likedTimes?: number;
-    dislikedTimes?: number;
-    commentStatus?: number;
+    createdTime: number; // created time of this document (post est.)
+    title: string | null;
+    imageUrlsArr: string[];
+    paragraphsArr: string[];
+    cuedMemberInfoArr: IConciseMemberInfo[];
+    channelId: string;
+    topicIdsArr: string[];
+    pinnedCommentId?: string | null;
+
+    //// management ////
+    status: number;
+
+    //// statistics ////
+    totalHitCount: number; // viewed times accumulator
+    totalLikedCount: number;
+    totalDislikedCount: number;
+    totalCommentCount: number;
+    totalSavedCount: number;
+
+    //// edit info ////
+    editedTime?: number | null;
+}
+
+export type TPostStatistics = {
+    totalHitCount: number; // viewed times accumulator
+    totalLikedCount: number;
+    totalDislikedCount: number;
+    totalCommentCount: number;
+    totalSavedCount: number;
 }

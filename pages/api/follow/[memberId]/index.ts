@@ -10,7 +10,14 @@ import { IMemberMemberMapping, INoticeInfo, INotificationStatistics, IMemberComp
 import { createNoticeId, getNicknameFromToken, verifyId, response405, response500, log, } from '../../../../lib/utils';
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
 
-/** This interface ONLY accepts POST requests
+/** This interface accepts GET and POST requests
+ * 
+ * Info required for GET requests
+ * - token: JWT
+ * 
+ * Info will be returned
+ * - isFollowed: boolean
+ * 
  * 
  * Info required for POST requests
  * 
@@ -21,10 +28,14 @@ const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
 
 export default async function FollowOrUndoFollowMemberById(req: NextApiRequest, res: NextApiResponse) {
     const { method } = req;
-    if ('POST' !== method) {
+    if (!['GET', 'POST'].includes(method ?? '')) {
         response405(req, res);
         return;
     }
+
+    res.send(true);
+    return
+
     // FIXME: deactived human/bot verification for tests
     //// Verify human/bot ////
     // const { recaptchaResponse } = req.query;
@@ -64,7 +75,7 @@ export default async function FollowOrUndoFollowMemberById(req: NextApiRequest, 
         const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
         const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne({ memberId });
         if (null === memberComprehensiveQueryResult) {
-            throw new Error(`Member was trying following or undo following on a member but have no document (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
+            throw new Error(`Member attempt to follow or undo follow on a member but have no document (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
         }
         const { status: memberStatus } = memberComprehensiveQueryResult;
         if (0 > memberStatus) {
@@ -86,6 +97,13 @@ export default async function FollowOrUndoFollowMemberById(req: NextApiRequest, 
             // Pending
             isFollowed = !!followingMemberMappingQueryResult.value?.IsActive;
         }
+        //// GET | verify if followed ////
+        if ('GET' === method) {
+            res.status(200).send(isFollowed);
+            await atlasDbClient.close();
+            return;
+        }
+        //// POST | follow or undo follow ////
         if (isFollowed) {
             // Case [Undo follow]
             // Step #2.1 update record (of IMemberMemberMapping) in [C] FollowingMemberMapping
@@ -176,9 +194,9 @@ export default async function FollowOrUndoFollowMemberById(req: NextApiRequest, 
     } catch (e: any) {
         let msg;
         if (e instanceof RestError) {
-            msg = 'Was trying communicating with azure table storage.';
+            msg = 'Attempt to communicate with azure table storage.';
         } else if (e instanceof MongoError) {
-            msg = 'Was trying communicating with atlas mongodb.';
+            msg = 'Attempt to communicate with atlas mongodb.';
         } else {
             msg = `Uncategorized. ${e?.msg}`;
         }

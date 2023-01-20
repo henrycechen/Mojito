@@ -1,6 +1,6 @@
 import { MongoClient } from 'mongodb';
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { IMemberComprehensive, IRestrictedMemberInfo, IAttitudeComprehensive, IAttitideMapping, ICommentComprehensive, IRestrictedCommentComprehensive, IRestrictedPostComprehensive, IPostComprehensive, IEditedPostComprehensive, ITopicComprehensive, } from './interfaces';
+import { IMemberComprehensive, IConciseMemberInfo, IAttitudeComprehensive, IAttitideMapping, ICommentComprehensive, IRestrictedCommentComprehensive, IRestrictedPostComprehensive, IPostComprehensive, IEditedPostComprehensive, ITopicComprehensive, } from './interfaces';
 import { ProcessStates } from './types';
 
 // import common utils for API
@@ -70,19 +70,35 @@ export function getRandomHexStr(useUpperCase: boolean = false): string { // Leng
     }
 }
 
-export function timeStampToString(timeStamp: any): string {
-    if (!timeStamp) {
-        return '0分钟前';
+export function timeToString(time: any, lang: string): string {
+    let _lang = lang;
+    if (!['tw', 'cn', 'en'].includes(lang)) {
+        _lang = 'tw';
     }
-    const diff = new Date().getTime() - new Date(timeStamp).getTime();
+    const langConfigs = {
+        tw: { min: ' 分鐘前', mins: ' 分鐘前', hour: ' 小時前', hours: ' 小時前', houra: ' 小時', hoursa: ' 小時', day: ' 天前', days: ' 天前' },
+        cn: { min: ' 分钟前', mins: ' 分钟前', hour: ' 小时前', hours: ' 小时前', houra: ' 小时', hoursa: ' 小时', day: ' 天前', days: ' 天前' },
+        en: { min: ' minute', mins: ' minutes', hour: ' hour', hours: ' hours', houra: ' hour', hoursa: ' hours', day: ' day', days: ' days' }
+    }[_lang];
+    if (!time) {
+        return `0${langConfigs?.min}`;
+    }
+    const diff = new Date().getTime() - new Date(time).getTime();
     if (24 * 3600000 < diff) {
-        return `${(diff / (24 * 3600000)).toFixed()}天前`;
+        const d = Math.floor(diff / (24 * 3600000));
+        return `${d}${1 === d ? langConfigs?.day : langConfigs?.days}`;;
     }
     const mins = diff % 3600000;
+    const m = Math.floor(mins / 60000);
     if (mins === diff) {
-        return `${(mins / 60000).toFixed()}分钟前`
+        return `${m}${1 === m ? langConfigs?.min : langConfigs?.mins}`;
     }
-    return `${(diff / 3600000).toFixed()}小时${(mins / 60000).toFixed()}分钟前`
+    const h = Math.floor(diff / 3600000);
+    if (3 > h) {
+        return `${h}${1 === h ? langConfigs?.houra : langConfigs?.hoursa}${m}${1 === m ? langConfigs?.min : langConfigs?.mins}`;
+    } else {
+        return `${h}${1 === h ? langConfigs?.hour : langConfigs?.hours}`;
+    }
 }
 
 //////// JWT ////////
@@ -100,6 +116,24 @@ export function getNicknameFromToken(token: any): string {
     }
     return 'MojitoMember ' + getRandomHexStr(true);
 }
+//////// Member ////////
+export function getNicknameBrief(nickname: any): string {
+    if (!('string' === typeof nickname && '' !== nickname)) {
+        return `'Mojito會員${Math.floor(Math.random() * Math.pow(10, 2)).toString(16).toUpperCase()}`;
+    }
+    if (nickname.length > 10) {
+        return `${nickname.slice(0, 7)}...`;
+    }
+    return nickname;
+}
+
+export function provideCuedMemberInfoArray(cuedMemberInfoDictionary: { [memberId: string]: IConciseMemberInfo }): IConciseMemberInfo[] {
+    const memberIdArr = Object.keys(cuedMemberInfoDictionary);
+    if (0 === memberIdArr.length) {
+        return []
+    }
+    return memberIdArr.map(memberId => cuedMemberInfoDictionary[memberId]);
+}
 
 //////// Content ////////
 export function getContentBrief(content: any, length = 21): string | undefined {
@@ -107,7 +141,7 @@ export function getContentBrief(content: any, length = 21): string | undefined {
         return undefined;
     }
     if (content.length > 21) {
-        return content.slice(0, 21) + '...';
+        return `${content.slice(0, 21)}...`;
     }
     return content;
 }
@@ -171,14 +205,12 @@ export function getMappingFromAttitudeComprehensive(attitudeComprehensive: IAtti
     if (null === attitudeComprehensive) {
         return {
             attitude: 0,
-            commentAttitudeMapping: {},
-            subcommentAttitudeMapping: {}
+            commentAttitudeMapping: {}
         }
     }
     return {
         attitude: attitudeComprehensive.attitude,
         commentAttitudeMapping: { ...attitudeComprehensive.commentAttitudeMapping },
-        subcommentAttitudeMapping: { ...attitudeComprehensive.subcommentAttitudeMapping }
     }
 }
 
@@ -213,7 +245,7 @@ export function createCommentComprehensive(commentId: string, parentId: string, 
 
 type CommentComprehensiveUpdate = {
     content: string;
-    cuedMemberInfoArr?: IRestrictedMemberInfo[];
+    cuedMemberInfoArr: IConciseMemberInfo[];
     status: 201;
     totalLikedCount: 0; // reset liked and disliked count
     totalUndoLikedCount: 0; // reset undo liked and undo disliked count
@@ -221,7 +253,7 @@ type CommentComprehensiveUpdate = {
     totalUndoDislikedCount: 0;
 }
 
-export function provideCommentComprehensiveUpdate(content: string, cuedMemberInfoArr: IRestrictedMemberInfo[]): CommentComprehensiveUpdate {
+export function provideCommentComprehensiveUpdate(content: string, cuedMemberInfoArr: IConciseMemberInfo[]): CommentComprehensiveUpdate {
     const updated: CommentComprehensiveUpdate = {
         content,
         cuedMemberInfoArr,
@@ -241,11 +273,12 @@ export function getRestrictedFromCommentComprehensive(commentComprehensive: ICom
         postId: commentComprehensive.postId,
         memberId: commentComprehensive.memberId,
         createdTime: commentComprehensive.createdTime, // created time of this document (comment est.)
-        content: null,
+        content: '',
         cuedMemberInfoArr: [],
         status: status,
         totalLikedCount: totalLikedCount - totalUndoLikedCount,
-        totalDislikedCount: totalDislikedCount - totalUndoDislikedCount
+        totalDislikedCount: totalDislikedCount - totalUndoDislikedCount,
+        totalSubcommentCount: -1
     }
     const { totalSubcommentCount, totalSubcommentDeleteCount } = commentComprehensive;
     if (('number' === typeof totalSubcommentCount) && ('number' === typeof totalSubcommentDeleteCount)) {
@@ -320,7 +353,7 @@ export function getParagraphsArrayFromRequestBody(requestBody: any): string[] {
     return [...requestBody['paragraphsArr']];
 }
 
-export function getCuedMemberInfoArrayFromRequestBody(requestBody: any): IRestrictedMemberInfo[] {
+export function getCuedMemberInfoArrayFromRequestBody(requestBody: any): IConciseMemberInfo[] {
     if ('object' !== typeof requestBody) {
         return [];
     }
@@ -335,7 +368,7 @@ type PostComprehensiveUpdate = {
     title: string;
     imageUrlsArr: string[];
     paragraphsArr: string[];
-    cuedMemberInfoArr: IRestrictedMemberInfo[];
+    cuedMemberInfoArr: IConciseMemberInfo[];
     channelId: string;
     topicIdsArr: string[];
     //// management ////
@@ -347,7 +380,7 @@ type PostComprehensiveUpdate = {
     totalUndoDislikedCount: 0;
 }
 
-export function providePostComprehensiveUpdate(title: string, imageUrlsArr: string[], paragraphsArr: string[], cuedMemberInfoArr: IRestrictedMemberInfo[], channelId: string, topicIdsArr: string[]): PostComprehensiveUpdate {
+export function providePostComprehensiveUpdate(title: string, imageUrlsArr: string[], paragraphsArr: string[], cuedMemberInfoArr: IConciseMemberInfo[], channelId: string, topicIdsArr: string[]): PostComprehensiveUpdate {
     const updated: PostComprehensiveUpdate = {
         title,
         imageUrlsArr,
@@ -390,7 +423,7 @@ export function getRestrictedFromPostComprehensive(postComprehensive: IPostCompr
         postId: postComprehensive.postId,
         memberId: postComprehensive.memberId,
         createdTime: postComprehensive.createdTime,
-        title: null,
+        title: '',
         imageUrlsArr: [],
         paragraphsArr: [],
         cuedMemberInfoArr: [],
@@ -570,7 +603,7 @@ export async function verifyRecaptchaResponse(recaptchaServerSecret: string, rec
     } catch (e) {
         return {
             status: 500,
-            message: e instanceof TypeError ? `Was trying to reterieve info from ReCAPTCHA response. ${e}` : `Uncategorized Error occurred. ${e}`
+            message: e instanceof TypeError ? `Attempt to reterieve info from ReCAPTCHA response. ${e}` : `Uncategorized Error occurred. ${e}`
         }
     }
 }

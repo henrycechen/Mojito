@@ -66,7 +66,7 @@ export default async function QueryMemberByNicknameBase64(req: NextApiRequest, r
     } catch (e: any) {
         let msg;
         if (e instanceof MongoError) {
-            msg = 'Was trying communicating with atlas mongodb.';
+            msg = 'Attempt to communicate with atlas mongodb.';
         } else {
             msg = `Uncategorized. ${e?.msg}`;
         }

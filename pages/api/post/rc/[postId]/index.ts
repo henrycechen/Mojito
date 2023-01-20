@@ -14,14 +14,70 @@ const domain = process.env.NEXT_PUBLIC_APP_DOMAIN;
 
 /** This interface accepts GET, PUT and DELETE method
  * 
- * Post info required for GET method
+ * Info required for GET method
  * - token: JWT
  * - title: string
  * - channelId: string
  * - topicsArr: string[] (body, optional)
  */
 
-export default async function PostInfoById(req: NextApiRequest, res: NextApiResponse) {
+export default async function GetRestrictedPostComprehensiveById(req: NextApiRequest, res: NextApiResponse) {
+
+
+
+
+
+
+    // TEST DUMMY
+    res.send({
+        postId: 'P1234ABCD',
+        memberId: 'M1234ABCD',
+        createdTime: 1673389239310,
+        title: '《周杰倫的床邊故事》',
+        imageUrlsArr: [
+            'https://img3.chinadaily.com.cn/images/202008/24/5f431dc9a310a85979164989.jpeg',
+            'https://upload.wikimedia.org/wikipedia/zh/b/b2/JayChouBedtimeStories-2016_Cover.jpg'
+        ],
+        paragraphsArr: [
+            `《周杰倫的床邊故事》(英語：Jay Chou's Bedtime Stories)是臺灣男歌手周杰倫的第14張錄音室專輯，2016年6月8日开始预购，6月24日正式發行[2][3]。`,
+            `本專輯為周杰倫與妻子昆凌結婚生子後發行的首張專輯，為周杰倫個人第14張專輯[4]。新專輯以床邊故事命名，專輯設計打造成有聲書概念，訴說10個與眾不同、充滿想像的音樂故事[5][6][7]。專輯中與張惠妹首度合唱，是繼《依然范特西》專輯中的《千里之外》與費玉清的合作後，再次跨公司與線上歌手合唱，並且收錄於專輯中[8][9]`,
+            `這是@WebMaster從維基百科搬過來的...@县长马邦德是@WebMaster的老闆`
+        ],
+        cuedMemberInfoArr: [
+            {memberId: 'M1234XXXX', nickname: 'WebMaster'},
+            {memberId: 'M1234ABCD', nickname: '县长马邦德'},
+        ],
+        channelId: 'hobby',
+        topicIdsArr: [
+            '5ZGo5p2w5Lym', // 周杰伦
+            '6Z+z5LmQ' // 音乐
+        ],
+        pinnedCommentId: '',
+        status: 201,
+        editedTime: 1673479039454,
+
+        totalHitCount: 1480,
+        totalLikedCount: 24,
+        totalDislikedCount: 1,
+        totalCommentCount: 5,
+        totalSavedCount: 12,
+    })
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     const { method } = req;
     if (!['GET', 'PUT', 'DELETE'].includes(method ?? '')) {
         response405(req, res);
@@ -60,7 +116,7 @@ export default async function PostInfoById(req: NextApiRequest, res: NextApiResp
                 const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
                 const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne({ memberId: viewerId });
                 if (null === memberComprehensiveQueryResult) {
-                    throw new Error(`Member was trying creating document (of IMemberPostMapping, browsing history, by viewing a post) but have no document (of IMemberComprehensive, member id: ${viewerId}) in [C] memberComprehensive`);
+                    throw new Error(`Member attempt to create document (of IMemberPostMapping, browsing history, by viewing a post) but have no document (of IMemberComprehensive, member id: ${viewerId}) in [C] memberComprehensive`);
                 }
                 // Step #1.3 verify member status
                 const { status: memberStatus } = memberComprehensiveQueryResult;
@@ -88,6 +144,16 @@ export default async function PostInfoById(req: NextApiRequest, res: NextApiResp
             });
             if (!postComprehensiveUpdateResult.acknowledged) {
                 log(`Failed to update totalHitCount (of IPostComprehensive, post id: ${postId}) in [C] postComprehensive`);
+            }
+            if (token) {
+                const postComprehensiveUpdateResult = await postComprehensiveCollectionClient.updateOne({ postId }, {
+                    $inc: {
+                        totalMemberHitCount: 1
+                    }
+                });
+                if (!postComprehensiveUpdateResult.acknowledged) {
+                    log(`Failed to update totalMemberHitCount (of IPostComprehensive, post id: ${postId}) in [C] postComprehensive`);
+                }
             }
             // Step #4 update totalHitCount (of IChannelStatistics) in [C] channelStatistics
             const { channelId } = postComprehensiveQueryResult;
@@ -133,7 +199,7 @@ export default async function PostInfoById(req: NextApiRequest, res: NextApiResp
         const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
         const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne({ memberId: authorId });
         if (null === memberComprehensiveQueryResult) {
-            throw new Error(`Member was trying editing or deleting document (of IPostComprehensive) but have no document (of IMemberComprehensive, member id: ${authorId}) in [C] memberComprehensive`);
+            throw new Error(`Member attempt to edit or delete document (of IPostComprehensive) but have no document (of IMemberComprehensive, member id: ${authorId}) in [C] memberComprehensive`);
         }
         const { status: memberStatus, allowPosting } = memberComprehensiveQueryResult;
         if (!(0 < memberStatus && allowPosting)) {
@@ -343,9 +409,9 @@ export default async function PostInfoById(req: NextApiRequest, res: NextApiResp
             res.status(400).send('Improperly normalized request info');
             return;
         } else if (e instanceof RestError) {
-            msg = 'Was trying communicating with azure table storage.';
+            msg = 'Attempt to communicate with azure table storage.';
         } else if (e instanceof MongoError) {
-            msg = 'Was trying communicating with atlas mongodb.';
+            msg = 'Attempt to communicate with atlas mongodb.';
         } else {
             msg = `Uncategorized. ${e?.msg}`;
         }

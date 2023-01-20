@@ -28,9 +28,9 @@ export default async function GetIdArray(req: NextApiRequest, res: NextApiRespon
     } catch (e: any) {
         let msg: string;
         if (e instanceof SyntaxError) {
-            msg = `Was trying parse post channel id array string.`;
+            msg = `Attempt to parse post channel id array string.`;
         } else if (e instanceof RestError) {
-            msg = 'Was trying communicating with azure table storage.';
+            msg = 'Attempt to communicate with azure table storage.';
         } else {
             msg = `Uncategorized. ${e?.msg}`;
         }

@@ -3,11 +3,11 @@ import { getToken } from 'next-auth/jwt'
 import { RestError } from '@azure/data-tables';
 import { MongoError } from 'mongodb';
 
-import AzureTableClient from '../../../../../modules/AzureTableClient';
-import AtlasDatabaseClient from "../../../../../modules/AtlasDatabaseClient";
+import AzureTableClient from '../../../../modules/AzureTableClient';
+import AtlasDatabaseClient from "../../../../modules/AtlasDatabaseClient";
 
-import { IChannelStatistics, IMemberComprehensive, IMemberPostMapping, IMemberStatistics, IPostComprehensive, ITopicComprehensive, } from '../../../../../lib/interfaces';
-import { verifyId, response405, response500, log } from '../../../../../lib/utils';
+import { IChannelStatistics, IMemberComprehensive, IMemberPostMapping, IMemberStatistics, IPostComprehensive, ITopicComprehensive, } from '../../../../lib/interfaces';
+import { verifyId, response405, response500, log } from '../../../../lib/utils';
 
 /** This interface ONLY accepts DELETE requests
  * 
@@ -42,7 +42,7 @@ export default async function DeleteCreationById(req: NextApiRequest, res: NextA
         const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
         const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne({ memberId });
         if (null === memberComprehensiveQueryResult) {
-            throw new Error(`Member was trying delete creation but have no document (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
+            throw new Error(`Member attempt to delete creation but have no document (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
         }
         const { status: memberStatus } = memberComprehensiveQueryResult;
         if (0 > memberStatus) {
@@ -108,9 +108,9 @@ export default async function DeleteCreationById(req: NextApiRequest, res: NextA
     } catch (e: any) {
         let msg;
         if (e instanceof RestError) {
-            msg = 'Was trying communicating with azure table storage.';
+            msg = 'Attempt to communicate with azure table storage.';
         } else if (e instanceof MongoError) {
-            msg = 'Was trying communicating with atlas mongodb.';
+            msg = 'Attempt to communicate with atlas mongodb.';
         } else {
             msg = `Uncategorized. ${e?.msg}`;
         }

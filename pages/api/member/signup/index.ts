@@ -105,7 +105,7 @@ export default async function SignUp(req: NextApiRequest, res: NextApiResponse) 
             allowCommenting: false
         });
         if (!memberComprehensiveQueryResult.acknowledged) {
-            const msg = 'Was trying insert document (IMemberComprehensive) in [C] memberComprehensive';
+            const msg = 'Attempt to insert document (IMemberComprehensive) in [C] memberComprehensive';
             response500(res, msg);
             log(msg);
             return;
@@ -138,9 +138,9 @@ export default async function SignUp(req: NextApiRequest, res: NextApiResponse) 
     } catch (e: any) {
         let msg;
         if (e instanceof RestError) {
-            msg = 'Was trying communicating with azure table storage.';
+            msg = 'Attempt to communicate with azure table storage.';
         } else if (e instanceof MongoError) {
-            msg = 'Was trying communicating with atlas mongodb.';
+            msg = 'Attempt to communicate with atlas mongodb.';
         } else {
             msg = `Uncategorized. ${e?.msg}`;
         }

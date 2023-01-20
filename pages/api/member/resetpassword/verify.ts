@@ -57,7 +57,7 @@ export default async function VerifyToken(req: NextApiRequest, res: NextApiRespo
             res.status(400).send('Improperly normalized request info');
             return;
         } else if (e instanceof TypeError) {
-            msg = 'Was trying decoding recaptcha verification response.';
+            msg = 'Attempt to decode recaptcha verification response.';
         } else {
             msg = `Uncategorized. ${e.msg}`;
         }

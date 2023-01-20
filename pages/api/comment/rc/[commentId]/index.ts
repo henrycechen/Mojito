@@ -6,38 +6,45 @@ import { MongoError } from 'mongodb';
 import AzureTableClient from '../../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from "../../../../../modules/AtlasDatabaseClient";
 
-import { INoticeInfo, IMemberPostMapping, INotificationStatistics, IMemberComprehensive, IRestrictedMemberInfo, IMemberStatistics, ILoginJournal, IAttitudeComprehensive, IAttitideMapping, ICommentComprehensive, IEditedCommentComprehensive, IRestrictedCommentComprehensive, IChannelStatistics, ITopicComprehensive, ITopicPostMapping, IPostComprehensive, IEditedPostComprehensive, IRestrictedPostComprehensive } from '../../../../../lib/interfaces';
-import { createId, createNoticeId, getRandomIdStr, getRandomIdStrL, getRandomHexStr, timeStampToString, getNicknameFromToken, getContentBrief, createCommentComprehensive, provideCommentComprehensiveUpdate, getRestrictedFromCommentComprehensive, getTopicBase64StringsArrayFromRequestBody, getImageUrlsArrayFromRequestBody, getParagraphsArrayFromRequestBody, getRestrictedFromPostComprehensive, verifyEmailAddress, verifyPassword, verifyId, verifyUrl, verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500, log, getCuedMemberInfoArrayFromRequestBody } from '../../../../../lib/utils';
+import { INoticeInfo, IMemberPostMapping, INotificationStatistics, IMemberComprehensive, IConciseMemberInfo, IMemberStatistics, ILoginJournal, IAttitudeComprehensive, IAttitideMapping, ICommentComprehensive, IEditedCommentComprehensive, IRestrictedCommentComprehensive, IChannelStatistics, ITopicComprehensive, ITopicPostMapping, IPostComprehensive, IEditedPostComprehensive, IRestrictedPostComprehensive } from '../../../../../lib/interfaces';
+import { createId, createNoticeId, getRandomIdStr, getRandomIdStrL, getRandomHexStr, timeToString, getNicknameFromToken, getContentBrief, createCommentComprehensive, provideCommentComprehensiveUpdate, getRestrictedFromCommentComprehensive, getTopicBase64StringsArrayFromRequestBody, getImageUrlsArrayFromRequestBody, getParagraphsArrayFromRequestBody, getRestrictedFromPostComprehensive, verifyEmailAddress, verifyPassword, verifyId, verifyUrl, verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500, log, getCuedMemberInfoArrayFromRequestBody } from '../../../../../lib/utils';
+
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
 
-
 // This interface accepts GET, PUT, DELETE requests
-//
+
+
 // Info required for GET method
+//
 // - id: string (comment id)
 //
 // Info will be required for GET method
 // - commentComprehensive: ICommentComprehensive
-//
+
+
 // Info required for PUT method
+//
 // - recaptchaResponse: string (query string)
 // - token: JWT
 // - id(parentId): string (query)
 // - content: string (body)
-// - cuedMemberInfoArr: IRestrictedMemberInfo[] (body, optional)
-//
-// Info required for DELETE method
+// - cuedMemberInfoArr: IConciseMemberInfo[] (body, optional)
 
+
+// Info required for DELETE method
+//
 // - token: JWT
 // - id(parentId): string 
 
 
-export default async function GetCommentInfoById(req: NextApiRequest, res: NextApiResponse) {
+export default async function GetRestrictedCommentComprehensiveById(req: NextApiRequest, res: NextApiResponse) {
     const { method } = req;
     if (!['GET', 'PUT', 'DELETE'].includes(method ?? '')) {
         response405(req, res);
         return;
     }
+
+
     //// Verify comment id ////
     const { isValid, category, id: commentId } = verifyId(req.query?.commentId);
     if (!(isValid && ['comment', 'subcomment'].includes(category))) {
@@ -78,7 +85,7 @@ export default async function GetCommentInfoById(req: NextApiRequest, res: NextA
         const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
         const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne({ memberId: authorId });
         if (null === memberComprehensiveQueryResult) {
-            throw new Error(`Member was trying editing or deleting document (of ICommentComprehensive) but have no document (of IMemberComprehensive, member id: ${authorId}) in [C] memberComprehensive`);
+            throw new Error(`Member Attempt to edit or delete document (of ICommentComprehensive) but have no document (of IMemberComprehensive, member id: ${authorId}) in [C] memberComprehensive`);
         }
         const { status: memberStatus, allowCommenting } = memberComprehensiveQueryResult;
         if (!(0 < memberStatus && allowCommenting)) {
@@ -234,9 +241,9 @@ export default async function GetCommentInfoById(req: NextApiRequest, res: NextA
             res.status(400).send('Improperly normalized request info');
             return;
         } else if (e instanceof RestError) {
-            msg = 'Was trying communicating with azure table storage.';
+            msg = 'Attempt to communicate with azure table storage.';
         } else if (e instanceof MongoError) {
-            msg = 'Was trying communicating with atlas mongodb.';
+            msg = 'Attempt to communicate with atlas mongodb.';
         } else {
             msg = `Uncategorized. ${e?.msg}`;
         }

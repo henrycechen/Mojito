@@ -78,7 +78,7 @@ export default async function GetTopicsByChannelId(req: NextApiRequest, res: Nex
     } catch (e: any) {
         let msg;
         if (e instanceof MongoError) {
-            msg = 'Was trying communicating with atlas mongodb.';
+            msg = 'Attempt to communicate with atlas mongodb.';
         } else {
             msg = `Uncategorized. ${e?.msg}`;
         }

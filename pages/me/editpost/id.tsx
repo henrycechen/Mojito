@@ -292,7 +292,7 @@ const EditPost = () => {
                         uploadedList.push(i)
                         setUploadedImageIndexList(uploadedList);
                     } catch (e) {
-                        console.log(`Was trying uploading ${img.url}. ${e}`);
+                        console.log(`Attempt to upload ${img.url}. ${e}`);
                         setProcessStates({ ...processStates, alertSeverity: 'error', alertContent: langConfigs.imagesUploadFailed[lang], displayAlert: true });
                         return;
                     }
@@ -326,7 +326,7 @@ const EditPost = () => {
             }
             return;
         } catch (e) {
-            console.log(`Was trying publishing post. ${e}`);
+            console.log(`Attempt to publish post. ${e}`);
             setProcessStates({ ...processStates, alertSeverity: 'error', alertContent: langConfigs.postPublishFailed[lang], displayAlert: true });
             return;
         }

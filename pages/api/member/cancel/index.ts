@@ -34,7 +34,7 @@ export default async function CancelMembership(req: NextApiRequest, res: NextApi
         const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
         const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne<IMemberComprehensive>({ memberId });
         if (null === memberComprehensiveQueryResult) {
-            throw new Error(`Member was trying cancel membership but have no document (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
+            throw new Error(`Member attempt to cancel membership but have no document (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
         }
         // Step #1 verify member status (of IMemberComprehensive)
         const { status: memberStatus } = memberComprehensiveQueryResult;
@@ -51,7 +51,7 @@ export default async function CancelMembership(req: NextApiRequest, res: NextApi
     } catch (e: any) {
         let msg;
         if (e instanceof MongoError) {
-            msg = 'Was trying communicating with atlas mongodb.';
+            msg = 'Attempt to communicate with atlas mongodb.';
         } else {
             msg = `Uncategorized. ${e?.msg}`;
         }

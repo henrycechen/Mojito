@@ -42,9 +42,8 @@ export default async function GetDictionary(req: NextApiRequest, res: NextApiRes
     } catch (e: any) {
         let msg: string;
         if (e instanceof RestError) {
-            msg = `Was trying communicating with azure table storage.`;
-        }
-        else {
+            msg = `Attempt to communicate with azure table storage.`;
+        } else {
             msg = `Uncategorized. ${e?.msg}`;
         }
         response500(res, msg);

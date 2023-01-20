@@ -1,5 +1,5 @@
 // import common interfaces
-// import { IMemberMemberMapping, INoticeInfo, IMemberPostMapping, IMemberComprehensive, IRestrictedMemberInfo, IMemberStatistics, ILoginJournal, INotificationStatistics, IAttitudeComprehensive, IAttitideMapping, ICommentComprehensive, IEditedCommentComprehensive, IRestrictedCommentComprehensive, IChannelStatistics, ITopicComprehensive, ITopicPostMapping, IPostComprehensive, IEditedPostComprehensive, IRestrictedPostComprehensive } from '../../../../lib/interfaces';
+// import { IMemberMemberMapping, INoticeInfo, IMemberPostMapping, IMemberComprehensive, IConciseMemberInfo, IMemberStatistics, ILoginJournal, INotificationStatistics, IAttitudeComprehensive, IAttitideMapping, ICommentComprehensive, IEditedCommentComprehensive, IRestrictedCommentComprehensive, IChannelStatistics, ITopicComprehensive, ITopicPostMapping, IPostComprehensive, IEditedPostComprehensive, IRestrictedPostComprehensive } from '../../../../lib/interfaces';
 
 //////// Process States ////////
 export interface IProcessStates {
@@ -45,6 +45,7 @@ export interface IResetPasswordCredentials extends ICredentials {
     rowKey: 'ResetPassword';
     ResetPasswordToken: string;
 }
+
 export interface IUpdatePasswordCredentials extends ICredentials {
     partitionKey: string; // email address sh1 hash
     rowKey: 'UpdatePassword';
@@ -100,7 +101,7 @@ export interface IMemberComprehensive extends IAtlasCollectionDocument {
     allowCommenting?: boolean;
 }
 
-export interface IRestrictedMemberInfo {
+export interface IConciseMemberInfo {
     memberId: string;
     nickname: string;
 }
@@ -153,13 +154,20 @@ export interface IMemberStatistics extends IAtlasCollectionDocument {
     totalUndoBlockedByCount: number;
 }
 
+export interface IConciseMemberStatistics extends IAtlasCollectionDocument {
+    memberId: string;
+    totalCreationCount: number;
+    totalCreationLikedCount: number;
+    totalFollowedByCount: number;
+}
+
 // [C] loginJournal
 export interface ILoginJournal extends IAtlasCollectionDocument {
     memberId: string;
     category: 'error' | 'success';
     providerId: 'MojitoMemberSystem' | string; // LoginProviderId
     timestamp: string; // new Date().toISOString()
-    message: string; // short message, e.g., 'Attempted login while email address not verified.'
+    message: string; // short message, e.g., 'Attempted to login while email address not verified.'
 }
 
 // [C] notificationStatistics
@@ -199,7 +207,7 @@ export interface ICommentComprehensive extends IAtlasCollectionDocument {
     memberId: string;
     createdTime: number; // created time of this document
     content: string;
-    cuedMemberInfoArr: IRestrictedMemberInfo[];
+    cuedMemberInfoArr: IConciseMemberInfo[];
 
     //// management ////
     status: number;
@@ -220,7 +228,7 @@ export interface ICommentComprehensive extends IAtlasCollectionDocument {
 export interface IEditedCommentComprehensive extends IAtlasCollectionDocument {
     editedTime: number;
     contentBeforeEdit: string;
-    cuedMemberInfoArrBeforeEdit: IRestrictedMemberInfo[];
+    cuedMemberInfoArrBeforeEdit: IConciseMemberInfo[];
     //// Statistics ////
     totalLikedCountBeforeEdit: number;
     totalDislikedCountBeforeEdit: number;
@@ -233,8 +241,8 @@ export interface IRestrictedCommentComprehensive extends IAtlasCollectionDocumen
     postId: string;
     memberId: string;
     createdTime: number; // created time of this document
-    content: string | null;
-    cuedMemberInfoArr: IRestrictedMemberInfo[];
+    content: string;
+    cuedMemberInfoArr: IConciseMemberInfo[];
 
     //// management ////
     status: number;
@@ -242,7 +250,30 @@ export interface IRestrictedCommentComprehensive extends IAtlasCollectionDocumen
     //// statistics ////
     totalLikedCount: number;
     totalDislikedCount: number;
-    totalSubcommentCount?: number; // for comment entities only
+    totalSubcommentCount: number; // -1 for parent comments
+
+    //// edit info ////
+    editedTime?: number;
+}
+
+export interface IRestrictedCommentComprehensiveWithMemberInfo extends IAtlasCollectionDocument {
+    //// info ////
+    commentId: string; //12 ~ 13 characters, UPPERCASE, comment id begin with 'C', subcomment id begin with 'D'
+    postId: string;
+    memberId: string;
+    nickname: string;
+    avatarImageUrl: string;
+    createdTime: number; // created time of this document
+    content: string;
+    cuedMemberInfoArr: IConciseMemberInfo[];
+
+    //// management ////
+    status: number;
+
+    //// statistics ////
+    totalLikedCount: number;
+    totalDislikedCount: number;
+    totalSubcommentCount: number; // -1 for parent comments
 
     //// edit info ////
     editedTime?: number;
@@ -308,7 +339,7 @@ export interface IPostComprehensive extends IAtlasCollectionDocument {
     title: string;
     imageUrlsArr: string[];
     paragraphsArr: string[];
-    cuedMemberInfoArr: IRestrictedMemberInfo[];
+    cuedMemberInfoArr: IConciseMemberInfo[];
     channelId: string;
     topicIdsArr: string[];
     pinnedCommentId: string | null;
@@ -318,6 +349,7 @@ export interface IPostComprehensive extends IAtlasCollectionDocument {
 
     //// statistics ////
     totalHitCount: number; // viewed times accumulator
+    totalMemberHitCount: number;
     totalLikedCount: number;
     totalUndoLikedCount: number;
     totalDislikedCount: number;
@@ -337,7 +369,7 @@ export interface IEditedPostComprehensive extends IAtlasCollectionDocument {
     titleBeforeEdit: string;
     imageUrlsArrBeforeEdit: string[];
     paragraphsArrBeforeEdit: string[];
-    cuedMemberInfoArrBeforeEdit: IRestrictedMemberInfo[];
+    cuedMemberInfoArrBeforeEdit: IConciseMemberInfo[];
     channelIdBeforeEdit: string;
     topicIdsArrBeforeEdit: string[];
     totalLikedCountBeforeEdit: number;
@@ -349,10 +381,10 @@ export interface IRestrictedPostComprehensive extends IAtlasCollectionDocument {
     postId: string; // 10 characters, UPPERCASE
     memberId: string;
     createdTime: number; // created time of this document (post est.)
-    title: string | null;
+    title: string;
     imageUrlsArr: string[];
     paragraphsArr: string[];
-    cuedMemberInfoArr: IRestrictedMemberInfo[];
+    cuedMemberInfoArr: IConciseMemberInfo[];
     channelId: string;
     topicIdsArr: string[];
     pinnedCommentId: string | null;
@@ -369,4 +401,15 @@ export interface IRestrictedPostComprehensive extends IAtlasCollectionDocument {
 
     //// edit info ////
     editedTime: number | null;
+}
+
+export interface IConcisePostComprehensive extends IAtlasCollectionDocument {
+    postId: string; // 10 characters, UPPERCASE
+    memberId: string;
+    createdTime: number; // created time of this document (post est.)
+    title: string;
+    imageUrlsArr: string[];
+
+    totalHitCount: number; // viewed times accumulator
+    totalLikedCount: number;
 }
