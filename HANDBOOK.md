@@ -504,7 +504,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
    	category: 'error' | 'success';
     providerId: 'MojitoMemberSystem' | string; // LoginProviderId
     timestamp: string; // new Date().toISOString()
-    message: string; // short message, e.g., 'Attempted to login while email address not verified.'
+    message: string; // short message, e.g., 'Attempted login while email address not verified.'
 }
 ```
 
@@ -1035,7 +1035,7 @@ const { topicIdsArr } = postComprehensiveQueryResult;
     
     //// info ////
     affairId: string;
-    in
+    initiateId: string;
     referenceId: string; // post or comment id
     memberId: string;
     createdTime: number; // created time of this document (post est.)

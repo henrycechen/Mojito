@@ -1,4 +1,4 @@
-import { TableClient, AzureNamedKeyCredential } from "@azure/data-tables";
+import { TableClient, AzureNamedKeyCredential } from '@azure/data-tables';
 
 const credential = new AzureNamedKeyCredential(process.env.AZURE_STORAGE_ACCOUNT ?? '', process.env.AZURE_STORAGE_KEY ?? '');
 

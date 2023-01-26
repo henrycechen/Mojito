@@ -54,14 +54,6 @@ export function getRandomIdStr(useUpperCase: boolean = false): string { // Lengt
     }
 }
 
-export function getRandomIdStrL(useUpperCase: boolean = false): string { // Length of 16
-    if (useUpperCase) {
-        return Math.floor(Math.random() * Math.pow(10, 12)).toString(35).toUpperCase() + Math.floor(Math.random() * Math.pow(10, 12)).toString(35).toUpperCase();
-    } else {
-        return Math.floor(Math.random() * Math.pow(10, 12)).toString(35) + Math.floor(Math.random() * Math.pow(10, 12)).toString(35);
-    }
-}
-
 export function getRandomHexStr(useUpperCase: boolean = false): string { // Length of 8 (Hex)
     if (useUpperCase) {
         return Math.floor(Math.random() * Math.pow(10, 10)).toString(16).toUpperCase();
@@ -119,7 +111,7 @@ export function getNicknameFromToken(token: any): string {
 //////// Member ////////
 export function getNicknameBrief(nickname: any): string {
     if (!('string' === typeof nickname && '' !== nickname)) {
-        return `'Mojito會員${Math.floor(Math.random() * Math.pow(10, 2)).toString(16).toUpperCase()}`;
+        return `Mojito會員${Math.floor(Math.random() * Math.pow(10, 2)).toString(16).toUpperCase()}`;
     }
     if (nickname.length > 10) {
         return `${nickname.slice(0, 7)}...`;

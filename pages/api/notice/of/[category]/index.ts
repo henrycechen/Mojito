@@ -24,6 +24,14 @@ export default async function GetNoticeByCategory(req: NextApiRequest, res: Next
         response405(req, res);
         return;
     }
+
+
+    // /////////////////// TEST FIXME:
+    
+
+
+
+
     //// Verify identity ////
     const token = await getToken({ req });
     if (!(token && token?.sub)) {

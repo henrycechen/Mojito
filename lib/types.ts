@@ -16,7 +16,7 @@ export interface ProcessStates {
     [key: string]: any
 }
 
-export type Helper = {
+export type BrowsingHelper = {
     memorizeViewPortPositionY: number | undefined; // help scroll to memorized browsing position on viewport.width <= md
 }
 
@@ -91,26 +91,21 @@ export type TRestrictedCommentInfo = {
 }
 
 // Channel
-export type ChannelInfo = {
-    id: string;
+export type TChannelInfo = {
+    channelId: string;
     name: {
-        [key: string]: string;
+        [lang: string]: string;
     };
     svgIconPath?: string;
 }
 
-export type ChannelDictionary = {
-    [key: string]: ChannelInfo
+export type TChannelInfoStates = {
+    channelIdSequence: string[];
 }
 
-// Topic
-export type TopicInfo = {
-    id: string;
-    channelId: string;
-    name: string;
+export type TChannelInfoDictionary = {
+    [channelId: string]: TChannelInfo
 }
-
-
 
 // Post
 export type TRestrictedPostComprehensive = {

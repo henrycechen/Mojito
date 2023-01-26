@@ -7,7 +7,6 @@ import AzureTableClient from '../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from '../../../../modules/AtlasDatabaseClient';
 
 import { INoticeInfo, INotificationStatistics, IMemberStatistics, IChannelStatistics, ITopicComprehensive, ITopicPostMapping, IPostComprehensive, IMemberComprehensive } from '../../../../lib/interfaces';
-import { ChannelInfo } from '../../../../lib/types';
 import { getRandomIdStr, getRandomIdStrL, getNicknameFromToken, getTopicBase64StringsArrayFromRequestBody, getImageUrlsArrayFromRequestBody, getParagraphsArrayFromRequestBody, verifyUrl, response405, response500, log, getCuedMemberInfoArrayFromRequestBody, provideTopicComprehensive, createNoticeId, createId } from '../../../../lib/utils';
 
 const domain = process.env.NEXT_PUBLIC_APP_DOMAIN;

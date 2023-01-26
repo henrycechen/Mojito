@@ -33,11 +33,22 @@ import Navbar from '../../ui/Navbar';
 import Copyright from '../../ui/Copyright';
 
 import { useRouter } from 'next/router';
-import { LangConfigs, PostInfo, ChannelInfo, ChannelDictionary } from '../../lib/types';
+import { IConciseTopicComprehensive } from '../../lib/interfaces';
+import { LangConfigs, TChannelInfoStates, TChannelInfoDictionary } from '../../lib/types';
 
 import Input from '@mui/material/Input';
 import ListItemText from '@mui/material/ListItemText';
 import ListItemIcon from '@mui/material/ListItemIcon';
+import MenuList from '@mui/material/MenuList/MenuList';
+import { CenterlizedBox } from '../../ui/Styled';
+import { IConciseMemberInfo, IPostComprehensive } from '../../lib/interfaces';
+import { NextPageContext } from 'next';
+import { getNicknameBrief, getRandomHexStr } from '../../lib/utils';
+import Avatar from '@mui/material/Avatar';
+
+type TCreatePostPageProps = {
+    channelInfoDict_ss: TChannelInfoDictionary
+}
 
 type Image = {
     url: string;
@@ -47,16 +58,42 @@ type Image = {
 type ProcessStates = {
     alertSeverity: 'error' | 'info' | 'success';
     alertContent: string;
-    displayModal: boolean;
     displayAlert: boolean;
+    displayCueHelper: boolean;
+    displayNoFollowedMemberAlert: boolean;
     disableAddButton: boolean;
     submitting: boolean;
 }
 
-type PostState = {
+
+
+type TPostInfoOnEdit = {
     title: string;
-    content: string;
-    channel: string;
+    imageUrlsArr: string[];
+    content: string; // require converting to paragraphsArr on submit
+    cuedMemberInfoDict: { [memberId: string]: IConciseMemberInfo }; // require converting to cuedMemberInfoArr on submit
+    channelId: string;
+    topicIdsArr: string[];
+}
+
+type TPostInfoOnSubmit = {
+    title: string;
+    imageUrlsArr: string[];
+    paragraphsArr: string[];
+    cuedMemberInfoArr: IConciseMemberInfo[];
+    channelId: string;
+    topicIdsArr: string[];
+}
+
+type TAuthorInfo = {
+    followedMemberInfoArr: IConciseMemberInfo[];
+}
+
+type TTopicHelper = {
+    display: boolean;
+    topic: string;
+    conciseTopicComprehensiveArr: IConciseTopicComprehensive[];
+    displayAlert: boolean;
 }
 
 type ImageStates = {
@@ -70,6 +107,7 @@ type UploadStates = {
     uploadPrecent: number;
 }
 
+const domain = process.env.NEXT_PUBLIC_APP_DOMAIN;
 const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
     title: {
@@ -78,36 +116,46 @@ const langConfigs: LangConfigs = {
         en: 'Create a new post'
     },
     titlePlaceholder: {
-        tw: '标题',
+        tw: '題目',
         cn: '标题',
         en: 'Title'
     },
     contentPlaceholder: {
-        tw: '写点什么吧~',
+        tw: '寫下你現在的想法吧',
         cn: '写点什么吧~',
         en: 'What\'s on your mind?'
     },
-    addATopic: {
-        tw: '添加一个话题 #',
-        cn: '添加一个话题 #',
-        en: 'Add a topic #'
+    addTopic: {
+        tw: '添加話題',
+        cn: '添加话题',
+        en: 'Add a topic'
     },
-    cueAMember: {
-        tw: '提及一位会员 @',
-        cn: '提及一位会员 @',
-        en: 'Cue a member @'
+    blankTopicAlert: {
+        tw: '話題不能為空白哦',
+        cn: '话题不能为空白哦',
+        en: 'Cannot add a blank topic'
     },
-    cueAMemberTitle: {
-        tw: '选择你想 Cue 的会员',
-        cn: '选择你想 Cue 的会员',
-        en: 'Choose a member'
+    relatedTopicNotFound: {
+        tw: '未找到相關話題',
+        cn: '未找到相关话题',
+        en: 'Related topic not found'
     },
-    cueAMemberSelect: {
-        tw: '会员',
-        cn: '会员',
-        en: 'Member'
+    enterOrQueryATopic: {
+        tw: '鍵入或搜尋一個話題',
+        cn: '输入或搜索一个话题',
+        en: 'Add or query a topic'
     },
-    addMember: {
+    noFollowedMember: {
+        tw: '您還未曾關注其他會員哦',
+        cn: '您还没有关注其他会员',
+        en: 'You have not followed any member'
+    },
+    posts: {
+        tw: '篇帖子',
+        cn: '篇帖子',
+        en: 'Posts'
+    },
+    add: {
         tw: '添加',
         cn: '添加',
         en: 'Add'
@@ -160,123 +208,212 @@ const langConfigs: LangConfigs = {
 
 }
 
-const CreatePost = () => {
-    // Handle session
-    const router = useRouter();
-    useSession({
-        required: true,
-        onUnauthenticated() {
-            router.push('/signin');
+export async function getServerSideProps(context: NextPageContext): Promise<{ props: any }> {
+    const resp = await fetch(`${domain}/api/channel/info/dictionary`);
+    if (200 !== resp.status) {
+        throw new Error('Attempt to GET channel info dictionary');
+    }
+    let channelInfoDict_ss: TChannelInfoDictionary;
+    try {
+        channelInfoDict_ss = await resp.json();
+    } catch (e) {
+        throw new Error(`Attempt to parse channel info dictionary (JSON). ${e}`);
+    }
+    return {
+        props: {
+            channelInfoDict_ss
         }
-    })
+    }
+}
 
-    // Decalre process states
+const CreatePost = ({ channelInfoDict_ss }: TCreatePostPageProps) => {
+    const router = useRouter();
+    const { data: session } = useSession({ required: true, onUnauthenticated() { router.push('/signin') } });
+
+    let authorId = '';
+    const authorSession: any = { ...session };
+    authorId = authorSession?.user?.id;
+
+    //////// INFO - channel info dictionary ////////
+
+    //////// STATES - process ////////
     const [processStates, setProcessStates] = React.useState<ProcessStates>({
         alertSeverity: 'info',
         alertContent: '',
-        displayModal: false,
         displayAlert: false,
+        displayCueHelper: false,
+        displayNoFollowedMemberAlert: false,
         disableAddButton: false,
         submitting: false
     })
 
-    // Declare channel info state
-    const [channelInfoList, setChannelInfoList] = React.useState<ChannelInfo[]>([]);
-    React.useEffect(() => {
-        getPostChannelList();
-    }, []);
+    const handleCueHelperOpenAndClose = () => {
+        setProcessStates({ ...processStates, displayCueHelper: !processStates.displayCueHelper });
+    };
 
-    // Initialize channel list
-    const getPostChannelList = async () => {
-        const channelDict = await fetch('/api/channel/dictionary').then(resp => resp.json());
-        const referenceList = await fetch('/api/channel').then(resp => resp.json());
-        const channelList: ChannelInfo[] = [];
-        referenceList.forEach((channel: keyof ChannelDictionary) => {
-            channelList.push(channelDict[channel])
-        });
-        setChannelInfoList(channelList.filter(ch => !!ch));
+    //////// STATES - channel ////////
+    const [channelInfoStates, setChannelInfoStates] = React.useState<TChannelInfoStates>({
+        channelIdSequence: [],
+    });
+
+    React.useEffect(() => { updateChannelIdSequence() }, []);
+
+    const updateChannelIdSequence = async () => {
+        const resp = await fetch(`/api/channel/id/sequence`);
+        if (200 !== resp.status) {
+            console.log(`Attemp to GET channel id array. Using sequence from channel info dictionary instead`);
+            setChannelInfoStates({
+                ...channelInfoStates,
+                channelIdSequence: Object.keys(channelInfoDict_ss)
+            })
+        } else {
+            try {
+                const idArr = await resp.json();
+                setChannelInfoStates({
+                    ...channelInfoStates,
+                    channelIdSequence: [...idArr]
+                })
+            } catch (e) {
+                console.log(`Attemp to parese channel id array. ${e}`);
+            }
+        }
     }
 
-    // Decalre post info states
-    const [postStates, setPostStates] = React.useState<PostState>({
+    //////// STATE - post ////////
+    const [postInfoStates, setPostInfoStates] = React.useState<TPostInfoOnEdit>({
         title: '',
-        content: '',
-        channel: ''
-        // tags: [] // Not-in-use
-
+        imageUrlsArr: [],
+        content: '', // require converting to paragraphsArr on submit
+        cuedMemberInfoDict: {}, // require converting to cuedMemberInfoArr on submit
+        channelId: '',
+        topicIdsArr: []
     })
 
-    // Handle post states change
-    const handlePostStatesChange = (prop: keyof PostState) => (event: React.ChangeEvent<HTMLInputElement>) => {
-        setPostStates({ ...postStates, [prop]: event.target.value });
+    const handlePostStatesChange = (prop: keyof TPostInfoOnEdit) => (event: React.ChangeEvent<HTMLInputElement>) => {
+        setPostInfoStates({ ...postInfoStates, [prop]: event.target.value });
     };
 
-    // Define member info type
-    type MemberInfo = {
-        id: string;
-        nickname: string;
-        avatarImageUrl: string | undefined;
-    }
-
-    // Define cue-member-helper type
-    type CueMemberHelper = {
-        memberInfoList: MemberInfo[];
-        selectedNicknameList: string[];
-    }
-    // Declare cue member helper
-    const [cueMemberHelper, setCuedMemberHelper] = React.useState<CueMemberHelper>({
-        memberInfoList: [],
-        selectedNicknameList: []
-    });
-    React.useEffect(() => { getFollowingMembers() }, []);
-    const getFollowingMembers = async () => {
-        const resp = await fetch('/api/member/followmember');
-        const list = await resp.json();
-        if ('object' === typeof list && 0 !== list.length) {
-            setCuedMemberHelper({ ...cueMemberHelper, memberInfoList: list });
-        }
-    }
-
-    // Handle modal open
-    const handleModalOpen = async () => {
-        if (0 === cueMemberHelper.memberInfoList.length) {
-            return;
-        }
-        setProcessStates({ ...processStates, displayModal: true });
+    const handleTitleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        setPostInfoStates({
+            ...postInfoStates,
+            title: event.target.value
+        });
     };
-
-    // Handle modal close
-    const handleModalClose = () => {
-        // Step #1 reset selectedNicknameList
-        setCuedMemberHelper({ ...cueMemberHelper, selectedNicknameList: [] });
-        // Step #2 close modal
-        setProcessStates({ ...processStates, displayModal: false })
-    };
-
-    // Handle nickname select change
-    const handleNicknameSelectChange = (event: SelectChangeEvent<typeof cueMemberHelper.selectedNicknameList>) => {
-        const { target: { value } } = event;
-        setCuedMemberHelper({
-            ...cueMemberHelper,
-            selectedNicknameList: typeof value === 'string' ? value.split(',') : value,
+    const handleContentChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        setPostInfoStates({
+            ...postInfoStates,
+            content: event.target.value
         });
     };
 
-    // Handle nickname select submit
-    const handleNicknameSelectSubmit = () => {
-        // console.log(cueMemberHelper.selectedNicknameList);
-        let nicknameStr = '';
-        cueMemberHelper.selectedNicknameList.forEach(name => nicknameStr += `@${name} `);
-        setPostStates({ ...postStates, content: `${postStates.content} ${nicknameStr}` })
-        setProcessStates({ ...processStates, displayModal: false });
+    //////// STATE - author info ////////
+    const [authorInfoStates, setAuthorInfoStates] = React.useState<TAuthorInfo>({
+        followedMemberInfoArr: []
+    });
+
+    React.useEffect(() => { updateAuthorInfoStates() }, []);
+
+    const updateAuthorInfoStates = async () => {
+        // get followed member info
+        const resp = await fetch(`/api/member/info/${authorId}/followed`);
+        if (200 === resp.status) {
+            try {
+                const memberInfoArr = await resp.json();
+                setAuthorInfoStates({ ...authorInfoStates, followedMemberInfoArr: [...memberInfoArr] });
+                if (0 === memberInfoArr.length) {
+                    setProcessStates({ ...processStates, displayNoFollowedMemberAlert: true });
+                }
+            } catch (e) {
+                console.log(`Attempt to parese followed member info array (JSON). ${e}`);
+            }
+        } else {
+            console.log(`Attempt to GET following restricted member info array.`);
+        }
     }
 
-    // Handle add a topic
-    const handleAddTopic = () => {
-        setPostStates({ ...postStates, content: `${postStates.content} #` });
+    const handleCue = (memberInfo: IConciseMemberInfo) => (event: React.MouseEvent<HTMLButtonElement>) => {
+        if (postInfoStates.cuedMemberInfoDict.hasOwnProperty(memberInfo.memberId)) {
+            const update = { ...postInfoStates.cuedMemberInfoDict };
+            delete update[memberInfo.memberId];
+            const content = postInfoStates.content.split(`@${memberInfo.nickname}`).join('');
+            setPostInfoStates({
+                ...postInfoStates,
+                content: content,
+                cuedMemberInfoDict: { ...update }
+            })
+            return;
+        } else {
+            setPostInfoStates({
+                ...postInfoStates,
+                content: `${postInfoStates.content}@${memberInfo.nickname}`,
+                cuedMemberInfoDict: {
+                    ...postInfoStates.cuedMemberInfoDict,
+                    [memberInfo.memberId]: memberInfo
+                }
+            })
+        }
     }
 
-    // Declare image states
+    //////// STATE - topic helper ////////
+    const [topicHelperState, setTopicHelperState] = React.useState<TTopicHelper>({
+        display: false,
+        topic: '',
+        conciseTopicComprehensiveArr: [],
+        displayAlert: false
+    });
+
+    const handleTopicHelperOpen = () => {
+        setTopicHelperState({ display: true, topic: '', conciseTopicComprehensiveArr: [], displayAlert: false });
+    };
+
+    const handleTopicHelperClose = () => {
+        setTopicHelperState({ display: false, topic: '', conciseTopicComprehensiveArr: [], displayAlert: false });
+    };
+
+    React.useEffect(() => { updateTopicInfoArrayByFragment() }, [topicHelperState.topic]);
+
+    const updateTopicInfoArrayByFragment = async () => {
+        const resp = await fetch(`/api/topic/query/by/fragment/${'idfragment'}`);
+        if (200 === resp.status) {
+            try {
+                const infoArr = await resp.json();
+                setTopicHelperState({
+                    ...topicHelperState,
+                    conciseTopicComprehensiveArr: [...infoArr]
+                });
+            } catch (e) {
+                console.log(`Attempt to GET concise topic comprehensive array by fragment. ${e}`);
+            }
+        }
+    }
+
+    const handleTopicInput = (event: React.ChangeEvent<HTMLInputElement>) => {
+        setTopicHelperState({ ...topicHelperState, topic: event.target.value, displayAlert: false });
+    }
+
+    const handleAddATopicManually = () => {
+        if ('' === topicHelperState.topic) {
+            setTopicHelperState({ ...topicHelperState, displayAlert: true });
+            return;
+        }
+        const topicId = Buffer.from(topicHelperState.topic).toString('base64');
+        setTopicHelperState({ display: false, topic: '', conciseTopicComprehensiveArr: [], displayAlert: false });
+        setPostInfoStates({
+            ...postInfoStates,
+            content: `${postInfoStates.content}#${topicHelperState.topic}`,
+            topicIdsArr: [...postInfoStates.topicIdsArr, topicId]
+        })
+    }
+
+    const handleAddATopicById = (topicId: string) => (event: React.MouseEvent<any>) => {
+        setTopicHelperState({ display: false, topic: '', conciseTopicComprehensiveArr: [], displayAlert: false });
+        setPostInfoStates({
+            ...postInfoStates,
+            content: `${postInfoStates.content}#${Buffer.from(topicId, 'base64').toString()}`
+        });
+    }
+
+    //////// STATES - image array ////////
     const [imageList, setImageList] = React.useState<Image[]>([]);
     const [imageStates, setImageStates] = React.useState<ImageStates>({
         enlarge: false,
@@ -310,7 +447,6 @@ const CreatePost = () => {
         event.target.files = null;
     }
 
-    // Handle click on the image box
     const handleClick = (imageUrl: string) => () => {
         if (processStates.submitting) {
             return;
@@ -324,7 +460,6 @@ const CreatePost = () => {
         }
     }
 
-    // Handle click on the remove icon
     const handleRemove = (imageIndex: number) => (event: React.MouseEvent) => {
         if (!processStates.submitting) {
             const imgList = [...imageList];
@@ -333,12 +468,10 @@ const CreatePost = () => {
         }
     }
 
-    // Handle drag start
     const handleDragStart = () => {
         setProcessStates({ ...processStates, disableAddButton: true })
     }
 
-    // Handle drag end
     const handleDragEnd = (result: any) => {
         setProcessStates({ ...processStates, disableAddButton: false })
         const list = Array.from(imageList);
@@ -347,7 +480,7 @@ const CreatePost = () => {
         setImageList(list);
     }
 
-    // Declare upload states
+    //////// STATES - upload process ////////
     const [uploadStates, setUploadStates] = React.useState<UploadStates>({
         imageUrlOnUpload: '',
         uploadPrecent: 0
@@ -359,7 +492,7 @@ const CreatePost = () => {
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         // Step #1 Check requied fileds
-        if ('' === postStates.title || '' === postStates.channel) {
+        if ('' === postInfoStates.title || '' === postInfoStates.channelId) {
             return;
         }
         // Step #2 Upload image
@@ -405,11 +538,13 @@ const CreatePost = () => {
             setProcessStates({ ...processStates, alertSeverity: 'success', alertContent: langConfigs.imagesUploadSuccess[lang], displayAlert: true, submitting: true });
         }
         // Step #3 Publish post
-        const post: PostInfo = {
-            title: postStates.title,
-            content: postStates.content,
-            channelId: postStates.channel,
-            imageUrlArr: []
+        const post: TPostInfoOnSubmit = {
+            title: postInfoStates.title,
+            imageUrlsArr: [],
+            paragraphsArr: [],
+            cuedMemberInfoArr: [],
+            channelId: postInfoStates.channelId,
+            topicIdsArr: []
         }
         try {
             //// TODO: update required as new api rules appied
@@ -432,39 +567,72 @@ const CreatePost = () => {
     return (
         <>
             <Navbar />
-            {/* post composer */}
+
+            {/* post editor */}
             <Box sx={{ display: 'flex', justifyContent: 'center' }}>
                 <Box component={'form'} sx={{ maxWidth: 600, flexGrow: 1, padding: 2, borderRadius: 1, boxShadow: { xs: 0, sm: 1 }, backgroundColor: 'background' }} onSubmit={handleSubmit}>
                     <Stack spacing={2}>
                         <Typography>{langConfigs.title[lang]}</Typography>
+
                         {/* title */}
                         <TextField
-                            id="standard-basic"
-                            variant="standard"
+                            // id="standard-basic"
+                            variant='standard'
                             multiline
                             placeholder={langConfigs.titlePlaceholder[lang]}
-                            value={postStates.title}
+                            value={postInfoStates.title}
                             onChange={handlePostStatesChange('title')}
                             required
                             disabled={processStates.submitting}
                         />
+
                         {/* content */}
                         <TextField
-                            id="outlined-basic"
-                            variant="outlined"
+                            // id="outlined-basic"
+                            variant='outlined'
                             rows={5}
                             multiline
                             fullWidth
                             placeholder={langConfigs.contentPlaceholder[lang]}
-                            value={postStates.content}
+                            value={postInfoStates.content}
                             onChange={handlePostStatesChange('content')}
                             disabled={processStates.submitting}
                         />
+
                         {/* topic & cue button */}
                         <Stack direction={'row'} spacing={1}>
-                            <Button variant='contained' sx={{ padding: 0.2, paddingX: 1 }} onClick={handleAddTopic}><Typography variant='body2'>{langConfigs.addATopic[lang]}</Typography></Button>
-                            <Button variant='contained' sx={{ padding: 0.2, paddingX: 1 }} onClick={handleModalOpen}><Typography variant='body2'>{langConfigs.cueAMember[lang]}</Typography></Button>
+                            <IconButton onClick={handleCueHelperOpenAndClose}><Typography variant='body1' sx={{ minWidth: 24 }}>@</Typography></IconButton>
+                            <IconButton onClick={handleTopicHelperOpen}><Typography variant='body1' sx={{ minWidth: 24 }}>#</Typography></IconButton>
                         </Stack>
+
+                        {/* no followed member alert */}
+                        <Box mt={2} sx={{ display: processStates.displayCueHelper && processStates.displayNoFollowedMemberAlert ? 'flex' : 'none', justifyContent: 'center' }}>
+                            <Typography color={'text.disabled'}>{langConfigs.noFollowedMember[lang]}</Typography>
+                        </Box>
+
+                        {/* followed member array */}
+                        <Box mt={1} sx={{ display: processStates.displayCueHelper ? 'block' : 'none' }}>
+                            <Stack direction={'row'} sx={{ padding: 1, overflow: 'auto', }} >
+                                {authorInfoStates.followedMemberInfoArr.map(memberInfo => {
+                                    return (
+                                        <Button key={getRandomHexStr()} size={'small'} sx={{ minWidth: 72, minHeight: 86 }} onClick={handleCue(memberInfo)}>
+                                            <Stack sx={{}}>
+                                                <Grid container>
+                                                    <Grid item flexGrow={1}></Grid>
+                                                    <Grid item>
+                                                        <Avatar src={memberInfo.avatarImageUrl} sx={{ width: 34, height: 34, bgcolor: 'grey' }}>{memberInfo.nickname?.charAt(0).toUpperCase()}</Avatar>
+                                                    </Grid>
+                                                    <Grid item flexGrow={1}></Grid>
+                                                </Grid>
+                                                <Typography mt={1} sx={{ minHeight: 33, fontSize: 11, color: postInfoStates.cuedMemberInfoDict.hasOwnProperty(memberInfo.memberId) ? 'inherit' : 'text.secondary' }}>{getNicknameBrief(memberInfo.nickname)}</Typography>
+                                            </Stack>
+
+                                        </Button>
+                                    )
+                                })}
+                            </Stack>
+                        </Box>
+
                         {/* image upload */}
                         <Typography>{langConfigs.uploadImage[lang]}</Typography>
                         <Box sx={{ padding: 1, border: 1, borderRadius: 1, borderColor: 'grey.300' }}>
@@ -528,6 +696,7 @@ const CreatePost = () => {
                                                     </Draggable>
                                                 )
                                             }))}
+
                                             {/* the 'add' button */}
                                             <Box display={processStates.disableAddButton || processStates.submitting ? 'none' : ''}>
                                                 <IconButton
@@ -550,25 +719,23 @@ const CreatePost = () => {
                                 </Droppable>
                             </DragDropContext >
                         </Box>
+
                         {/* channel */}
                         <Typography>{langConfigs.choosePostChannel[lang]}</Typography>
-                        <FormControl
-                            fullWidth
-                            disabled={processStates.submitting}
-                            required
-                        >
+                        <FormControl fullWidth disabled={processStates.submitting} required>
                             <InputLabel id='channel'>{langConfigs.postChannel[lang]}</InputLabel>
                             <Select
                                 labelId='channel'
-                                value={postStates.channel}
+                                value={postInfoStates.channelId}
                                 label={langConfigs.postChannel[lang]}
-                                onChange={(event: SelectChangeEvent) => { setPostStates({ ...postStates, channel: event.target.value as string }) }}
+                                onChange={(event: SelectChangeEvent) => { setPostInfoStates({ ...postInfoStates, channelId: event.target.value as string }) }}
                                 SelectDisplayProps={{ style: { display: 'flex', alignItems: 'center' } }}
                                 MenuProps={{ style: { maxHeight: 240 } }}
                             >
-                                {channelInfoList.map(channel => {
+                                {channelInfoStates.channelIdSequence.map(channelId => {
+                                    const channel = channelInfoDict_ss[channelId]
                                     return (
-                                        <MenuItem value={channel.id} key={channel.id} >
+                                        <MenuItem value={channel.channelId} key={channel.channelId} >
                                             <ListItemIcon sx={{ minWidth: '36px' }}>
                                                 <SvgIcon>
                                                     <path d={channel.svgIconPath} />
@@ -602,9 +769,11 @@ const CreatePost = () => {
                     <Copyright sx={{ mt: { xs: 8, sm: 8 }, mb: 4 }} />
                 </Box>
             </Box>
+
+            {/* topic query and selector */}
             <Modal
-                open={processStates.displayModal}
-                onClose={handleModalClose}
+                open={topicHelperState.display}
+                onClose={handleTopicHelperClose}
                 aria-labelledby="modal-modal-title"
                 aria-describedby="modal-modal-description"
             >
@@ -619,28 +788,46 @@ const CreatePost = () => {
                     boxShadow: 24,
                     p: 4,
                 }}>
-                    <Typography>{langConfigs.cueAMemberTitle[lang]}</Typography>
+                    <Typography>{langConfigs.addTopic[lang]}</Typography>
+                    <Box mt={1} sx={{ display: topicHelperState.displayAlert ? 'block' : 'none' }}>
+                        <Alert severity='error'>{langConfigs.blankTopicAlert[lang]}</Alert>
+                    </Box>
+
+                    {/* 'add' button */}
                     <FormControl fullWidth >
-                        <InputLabel id='member-info-list'>{langConfigs.cueAMemberSelect[lang]}</InputLabel>
-                        <Select
-                            labelId='member-info-list'
-                            value={cueMemberHelper.selectedNicknameList}
-                            label={langConfigs.postChannel[lang]}
-                            onChange={handleNicknameSelectChange}
-                            SelectDisplayProps={{ style: { display: 'flex', alignItems: 'center' } }}
-                            MenuProps={{ style: { maxHeight: 240 } }}
-                            multiple={true}
-                        >
-                            {cueMemberHelper.memberInfoList.map(member => {
-                                return (
-                                    <MenuItem value={member.nickname} key={member.id} >
-                                        {member.nickname}
-                                    </MenuItem>
-                                )
-                            })}
-                        </Select>
+                        <Grid container>
+                            <Grid item >
+                                <TextField
+                                    variant={'standard'}
+                                    multiline
+                                    placeholder={langConfigs.enterOrQueryATopic[lang]}
+                                    value={topicHelperState.topic}
+                                    onChange={handleTopicInput}
+                                />
+                            </Grid>
+                            <Grid item flexGrow={1}>
+                            </Grid>
+                            <Grid item>
+                                <Button variant='contained' onClick={handleAddATopicManually}>{langConfigs.add[lang]}</Button>
+                            </Grid>
+                        </Grid>
+
+                        {/* existed topic list */}
+                        <Box mt={2}>
+                            <CenterlizedBox sx={{ display: topicHelperState.display && topicHelperState.displayAlert ? 'flex' : 'none' }}>
+                                <Typography color={'text.disabled'}>{langConfigs.relatedTopicNotFound[lang]}</Typography>
+                            </CenterlizedBox>
+                            <MenuList sx={{ display: 'block' }}>
+                                {0 !== topicHelperState.conciseTopicComprehensiveArr.length && topicHelperState.conciseTopicComprehensiveArr.map(topic => {
+                                    return (
+                                        <MenuItem key={topic.topicId} sx={{ paddingLeft: 2 }} onClick={handleAddATopicById(topic.topicId)}>
+                                            <ListItemText>#{Buffer.from(topic.topicId, 'base64').toString()} {topic.totalPostCount}{langConfigs.posts[lang]}</ListItemText>
+                                        </MenuItem>
+                                    )
+                                })}
+                            </MenuList>
+                        </Box>
                     </FormControl>
-                    <Button variant='contained' onClick={handleNicknameSelectSubmit}>{langConfigs.addMember[lang]}</Button>
                 </Stack>
             </Modal>
         </>

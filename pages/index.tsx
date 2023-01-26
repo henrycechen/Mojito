@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { WheelEvent } from 'react';
+import { NextPageContext } from 'next/types';
 
 import Avatar from '@mui/material/Avatar';
 import Box from '@mui/material/Box';
@@ -23,7 +23,6 @@ import Masonry from '@mui/lab/Masonry';
 import Paper from '@mui/material/Paper';
 
 import { FormControlLabel, styled } from '@mui/material';
-import Switch from '@mui/material/Switch';
 
 
 import Divider from '@mui/material/Divider';
@@ -37,16 +36,20 @@ import ListItemIcon from '@mui/material/ListItemIcon';
 import { useTheme } from '@emotion/react';
 import { useRouter } from 'next/router';
 
-import { ProcessStates, Helper, ChannelDictionary, ChannelInfo, LangConfigs } from '../lib/types';
+import { ProcessStates, BrowsingHelper, LangConfigs, TChannelInfoStates, TChannelInfoDictionary } from '../lib/types';
 import { updateLocalStorage, restoreFromLocalStorage } from '../lib/utils';
 import { CenterlizedBox, ResponsiveCard, StyledSwitch, TextButton } from '../ui/Styled';
 import Navbar from '../ui/Navbar';
+import { IConcisePostComprehensive, IConcisePostComprehensiveWithMemberInfo } from '../lib/interfaces';
 
 const storageName = 'HomePageProcessStates';
 const updateProcessStates = updateLocalStorage(storageName);
 const restoreProcessStates = restoreFromLocalStorage(storageName);
 
-// Decalre process state type of this page
+type THomePagePros = {
+    channelInfoDict_ss: TChannelInfoDictionary
+}
+
 interface HomePageProcessStates extends ProcessStates {
     selectedChannelId: string;
     selectedHotPosts: boolean;
@@ -54,6 +57,14 @@ interface HomePageProcessStates extends ProcessStates {
     memorizeViewPortPositionY: number | undefined;
     memorizeLastViewedPostId: string | undefined;
     wasRedirected: boolean;
+}
+
+type TViewerComprehensive = {
+    totalCreationCount: number;
+    totalCreationLikedCount: number;
+    totalFollowingCount: number;
+
+    reply: number;
 }
 
 type MemberBehaviourStates = {
@@ -70,6 +81,7 @@ type PostInfo = {
     timestamp: string;
 }
 
+const domain = process.env.NEXT_PUBLIC_APP_DOMAIN;
 const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
     allPosts: {
@@ -86,23 +98,67 @@ const langConfigs: LangConfigs = {
         tw: '新帖',
         cn: '最新',
         en: 'Newest'
+    },
+    totalCreationCount: {
+        tw: '發文',
+        cn: '发帖',
+        en: 'Posts'
+    },
+    totalCreationLikedCount: {
+        tw: '喜歡',
+        cn: '点赞',
+        en: 'Likes'
+    },
+    totalFollowingCount: {
+        tw: '關注',
+        cn: '粉丝',
+        en: 'Followers'
+    },
+    unreadReplyNotice: {
+        tw: (n: number) => `${n} 條未讀消息`,
+        cn: (n: number) => `${n} 条未读提醒`,
+        en: (n: number) => `${n} Unread reply`
     }
 }
 
-const Home = () => {
-    const { data: session, status } = useSession();
-    // - 'unauthenticated'
-    // - 'authenticated'
-    const router = useRouter();
+//// get multiple info server-side ////
+export async function getServerSideProps(context: NextPageContext): Promise<{ props: THomePagePros }> {
+    const resp = await fetch(`${domain}/api/channel/info/dictionary`);
+    if (200 !== resp.status) {
+        throw new Error('Attempt to GET channel info dictionary');
+    }
+    let channelInfoDict_ss: TChannelInfoDictionary;
+    try {
+        channelInfoDict_ss = await resp.json();
+    } catch (e) {
+        throw new Error(`Attempt to parse channel info dictionary (JSON). ${e}`);
+    }
+    return {
+        props: {
+            channelInfoDict_ss
+        }
+    }
+}
 
-    //////// Declare masonry ref ////////
+const Home = ({ channelInfoDict_ss }: THomePagePros) => {
+
+    const router = useRouter();
+    const { data: session, status } = useSession();
+    // status - 'unauthenticated' / 'authenticated'
+
+    let viewerId = '';
+    const authorSession: any = { ...session };
+    viewerId = authorSession?.user?.id;
+
+    //////// REF - masonry ////////
     const masonryWrapper = React.useRef<any>();
     const [width, setWidth] = React.useState(636);
     React.useEffect(() => {
         setWidth(masonryWrapper?.current?.offsetWidth)
     }, [])
 
-    //////// Declare process states ////////
+
+    //////// STATES - process ////////
     const [processStates, setProcessStates] = React.useState<HomePageProcessStates>({
         selectedChannelId: '',
         selectedHotPosts: false,
@@ -111,48 +167,104 @@ const Home = () => {
         memorizeLastViewedPostId: undefined,
         wasRedirected: false,
     });
-    // Restore page process states on page re-load
-    React.useEffect(() => {
-        restoreProcessStates(setProcessStates);
-    }, []);
 
-    // Declare helper
-    const [helper, setHelper] = React.useState<Helper>({
+    React.useEffect(() => { restoreProcessStates(setProcessStates) }, []);
+
+
+    //////// STATES - viewer comprehensive (statistics + notice) ////////
+    const [viewerComprehensive, setViewerComprehensive] = React.useState<TViewerComprehensive>({
+        totalCreationCount: 0,
+        totalCreationLikedCount: 0,
+        totalFollowingCount: 0,
+
+        reply: 0
+    })
+
+    React.useEffect(() => { if ('authenticated' === status) { updateViewerComprehensive() } }, [status]);
+
+    const updateViewerComprehensive = async () => {
+        let update: TViewerComprehensive = {
+            totalCreationCount: 0,
+            totalCreationLikedCount: 0,
+            totalFollowingCount: 0,
+            reply: 0,
+        };
+        // Get member statistics by id
+        const resp_statistics = await fetch(`/api/member/statistics/${viewerId}`);
+        if (200 === resp_statistics.status) {
+            try {
+                const statistics = await resp_statistics.json();
+                update.totalCreationCount = statistics.totalCreationCount;
+                update.totalCreationLikedCount = statistics.totalCreationLikedCount;
+                update.totalFollowingCount = statistics.totalFollowingCount;
+            } catch (e) {
+                console.log(`Attempt to GET member statistics. ${e}`);
+            }
+        }
+        const resp_notice = await fetch(`/api/notice/statistics`);
+        if (200 === resp_notice.status) {
+            try {
+                const notice = await resp_notice.json();
+                update.reply = notice.reply;
+            } catch (e) {
+                console.log(`Attempt to GET notice statistics. ${e}`);
+            }
+        }
+        setViewerComprehensive({ ...update });
+    }
+
+
+    //////// STATES - browsing helper ////////
+    const [browsingHelper, setBrowsingHelper] = React.useState<BrowsingHelper>({
         memorizeViewPortPositionY: undefined, // reset scroll-help on handleChannelSelect, handleSwitchChange, ~~handlePostCardClick~~
     })
 
-    // Decalre & initialize channel states
-    const [channelInfoArr, setChannelInfoArr] = React.useState<ChannelInfo[]>([]);
-    React.useEffect(() => {
-        getPostChannelArr();
-    }, []);
-    const getPostChannelArr = async () => {
-        const channelDict = await fetch('/api/channel/dictionary').then(resp => resp.json());
-        const referenceArr = await fetch('/api/channel').then(resp => resp.json());
-        const channelArr: ChannelInfo[] = [];
-        referenceArr.forEach((channel: keyof ChannelDictionary) => {
-            channelArr.push(channelDict[channel])
-        });
-        setChannelInfoArr(channelArr.filter(channel => !!channel));
+    ///////// STATES - channel /////////
+    const [channelInfoStates, setChannelInfoStates] = React.useState<TChannelInfoStates>({
+        channelIdSequence: [],
+    });
+
+    React.useEffect(() => { updateChannelIdSequence() }, []);
+
+    const updateChannelIdSequence = async () => {
+        const resp = await fetch(`/api/channel/id/sequence`);
+        if (200 !== resp.status) {
+            console.log(`Attemp to GET channel id array. Using sequence from channel info dictionary instead`);
+            setChannelInfoStates({
+                ...channelInfoStates,
+                channelIdSequence: Object.keys(channelInfoDict_ss)
+            })
+        } else {
+            try {
+                const idArr = await resp.json();
+                setChannelInfoStates({
+                    ...channelInfoStates,
+                    channelIdSequence: [...idArr]
+                })
+            } catch (e) {
+                console.log(`Attemp to parese channel id array. ${e}`);
+            }
+        }
     }
-    // Restore channel bar position
+
+    // Handle channel bar restore on refresh
     React.useEffect(() => {
         if (!!processStates.memorizeChannelBarPositionX) {
             document.getElementById('channel-bar')?.scrollBy(processStates.memorizeChannelBarPositionX ?? 0, 0);
         }
-    }, [channelInfoArr]);
+    }, [channelInfoStates.channelIdSequence]);
 
-    // Handle channel select
+    //// Handle channel select
     const handleChannelSelect = (channelId: string) => (event: React.MouseEvent<HTMLButtonElement> | React.SyntheticEvent) => {
         let states: HomePageProcessStates = { ...processStates };
         states.selectedChannelId = channelId;
         states.memorizeChannelBarPositionX = document.getElementById('channel-bar')?.scrollLeft;
         // Step #1 update process states
         setProcessStates(states);
-        // Step #2 update process states cache
+        // Step #2 presist process states to cache
         updateProcessStates(states);
-        // Step #3 reset helper
-        setHelper({ ...helper, memorizeViewPortPositionY: undefined });
+        // Step #3 reset browsing helper
+        setBrowsingHelper({ ...browsingHelper, memorizeViewPortPositionY: undefined });
     }
 
     // Handle newest/hotest posts switch
@@ -160,26 +272,29 @@ const Home = () => {
         let states: HomePageProcessStates = { ...processStates, selectedHotPosts: !processStates.selectedHotPosts }
         // Step #1 update process states
         setProcessStates(states);
-        // Step #2 update process states cache
+        // Step #2 presist process states to cache
         updateProcessStates(states);
-        // Step #3 reset helper
-        setHelper({ ...helper, memorizeViewPortPositionY: undefined });
+        // Step #3 reset browsing helper
+        setBrowsingHelper({ ...browsingHelper, memorizeViewPortPositionY: undefined });
     }
 
-    // Declare post info states
-    const [postList, setPostList] = React.useState<PostInfo[]>([])
-    // Initialize post list
-    React.useEffect(() => {
-        getPosts();
-    }, [processStates])
-    const getPosts = async () => {
-        //// TODO: test api '/post' moved to '/post/of' //// 
-        const resp = await fetch(`/api/post/of?ranking=${processStates.selectedHotPosts ? 'hotest' : 'newest'}`);
-        const _postList = await resp.json();
-        setPostList(_postList);
+    //////// STATE - post array ////////
+    const [postsArr, setPostsArr] = React.useState<IConcisePostComprehensiveWithMemberInfo[]>([]);
+
+    React.useEffect(() => { updatePostsArr() }, [processStates.selectedChannelId]);
+
+    const updatePostsArr = async () => {
+        const resp = await fetch(`/api/post/s/of${processStates.selectedHotPosts ? '/hot/24h' : '/new'}`);
+        if (200 === resp.status) {
+            try {
+                setPostsArr(await resp.json());
+            } catch (e) {
+                console.log(`Attempt to GET posts. ${e}`);
+            }
+        }
     }
 
-    // Restore browsing after loading posts
+    // Handle restore browsing position after reload
     React.useEffect(() => {
         if (processStates.wasRedirected) {
             const postId = processStates.memorizeLastViewedPostId;
@@ -187,9 +302,9 @@ const Home = () => {
             if (!postId) {
                 return;
             } else if (600 > window.innerWidth) { // 0 ~ 599
-                setHelper({ ...helper, memorizeViewPortPositionY: (document.getElementById(postId)?.offsetTop ?? 0) / 2 - 200 });
+                setBrowsingHelper({ ...browsingHelper, memorizeViewPortPositionY: (document.getElementById(postId)?.offsetTop ?? 0) / 2 - 200 });
             } else { // 600 ~ ∞
-                setHelper({ ...helper, memorizeViewPortPositionY: processStates.memorizeViewPortPositionY });
+                setBrowsingHelper({ ...browsingHelper, memorizeViewPortPositionY: processStates.memorizeViewPortPositionY });
             }
             let states: HomePageProcessStates = { ...processStates, memorizeLastViewedPostId: undefined, memorizeViewPortPositionY: undefined, wasRedirected: false };
             // Step #2 update process states
@@ -197,9 +312,9 @@ const Home = () => {
             // Step #3 update process state cache
             updateProcessStates(states);
         }
-    }, [postList]);
-    if (!!helper.memorizeViewPortPositionY) {
-        window.scrollTo(0, helper.memorizeViewPortPositionY ?? 0);
+    }, [postsArr]);
+    if (!!browsingHelper.memorizeViewPortPositionY) {
+        window.scrollTo(0, browsingHelper.memorizeViewPortPositionY ?? 0);
     }
 
     // Handle click on post card
@@ -249,52 +364,52 @@ const Home = () => {
     return (
         <>
             <Navbar />
-            {/* post component */}
             <Grid container>
+
+                {/* - placeholder - */}
                 <Grid item xs={0} sm={0} md={0} lg={0} xl={1}></Grid>
 
-                {/* left column */}
+                {/* - left column - */}
                 <Grid item xs={0} sm={0} md={2} lg={2} xl={1}>
                     <Stack spacing={1} sx={{ marginX: 1, display: { xs: 'none', sm: 'none', md: 'block' } }} >
-                        {/* the channel menu (desktop mode) */}
+
+                        {/* channel menu (desktop mode) */}
                         <ResponsiveCard sx={{ padding: 1 }}>
                             <MenuList>
-                                {/* the "all" menu item */}
+
+                                {/* 'all' menu item */}
                                 <MenuItem
                                     onClick={handleChannelSelect('all')}
                                     selected={processStates.selectedChannelId === 'all'}
                                 >
-                                    <ListItemIcon >
+                                    <ListItemIcon>
                                         <BubbleChartIcon />
                                     </ListItemIcon>
                                     <ListItemText>
-                                        <Typography>
-                                            {langConfigs.allPosts[lang]}
-                                        </Typography>
+                                        <Typography>{langConfigs.allPosts[lang]}</Typography>
                                     </ListItemText>
                                 </MenuItem>
+
                                 {/* other channels */}
-                                {channelInfoArr.map(channel => {
+                                {channelInfoStates.channelIdSequence.map(id => {
+                                    const { channelId, name, svgIconPath } = channelInfoDict_ss[id];
                                     return (
-                                        <MenuItem key={channel.id}
-                                            onClick={handleChannelSelect(channel.id)}
-                                            selected={processStates.selectedChannelId === channel.id}
+                                        <MenuItem key={channelId}
+                                            onClick={handleChannelSelect(channelId)}
+                                            selected={channelId === processStates.selectedChannelId}
                                         >
                                             <ListItemIcon >
-                                                <SvgIcon>
-                                                    <path d={channel.svgIconPath} />
-                                                </SvgIcon>
+                                                <SvgIcon><path d={svgIconPath} /></SvgIcon>
                                             </ListItemIcon>
                                             <ListItemText>
-                                                <Typography>
-                                                    {channel.name[lang]}
-                                                </Typography>
+                                                <Typography>{name[lang]}</Typography>
                                             </ListItemText>
                                         </MenuItem>
                                     )
                                 })}
                             </MenuList>
                         </ResponsiveCard>
+
                         {/* hotest / newest switch */}
                         <ResponsiveCard sx={{ padding: 0, paddingY: 2, paddingLeft: 2 }}>
                             <FormControlLabel
@@ -307,9 +422,10 @@ const Home = () => {
                     </Stack>
                 </Grid>
 
-                {/* middle column */}
+                {/* - middle column - */}
                 <Grid item xs={12} sm={12} md={7} lg={7} xl={7} >
-                    {/* #1 the channel bar (mobile mode) */}
+
+                    {/* channel bar (mobile mode) */}
                     <Stack direction={'row'} id='channel-bar'
                         sx={{
                             padding: 1,
@@ -317,6 +433,7 @@ const Home = () => {
                             display: { sm: 'flex', md: 'none' }
                         }}
                     >
+
                         {/* hotest / newest switch */}
                         <Box minWidth={110}>
                             <FormControlLabel
@@ -325,146 +442,129 @@ const Home = () => {
                                 onChange={handleSwitchChange}
                             />
                         </Box>
-                        {/* the "all" button */}
+
+                        {/* 'all' button */}
                         <Button variant={'all' === processStates.selectedChannelId ? 'contained' : 'text'} size='small' onClick={handleChannelSelect('all')}>
                             <Typography variant='body2' color={'all' === processStates.selectedChannelId ? 'white' : "text.secondary"} sx={{ backgroundColor: 'primary' }}>
                                 {langConfigs.allPosts[lang]}
                             </Typography>
                         </Button>
+
                         {/* other channels */}
-                        {channelInfoArr.map(channel => {
+                        {channelInfoStates.channelIdSequence.map(id => {
+                            const { channelId, name } = channelInfoDict_ss[id];
                             return (
-                                <Button variant={channel.id === processStates.selectedChannelId ? 'contained' : 'text'} key={channel.id} size='small' onClick={handleChannelSelect(channel.id)}>
-                                    <Typography variant="body2" color={channel.id === processStates.selectedChannelId ? 'white' : "text.secondary"} sx={{ backgroundColor: 'primary' }}>
-                                        {channel.name[lang]}
+                                <Button variant={channelId === processStates.selectedChannelId ? 'contained' : 'text'} key={channelId} size='small' onClick={handleChannelSelect(channelId)}>
+                                    <Typography
+                                        variant={'body2'}
+                                        color={channelId === processStates.selectedChannelId ? 'white' : 'text.secondary'}
+                                        sx={{ backgroundColor: 'primary' }}>
+                                        {name[lang]}
                                     </Typography>
                                 </Button>
                             )
                         })}
                     </Stack>
-                    
-                    {/* #2 the post mansoy */}
+
+                    {/* mansoy */}
                     <Box ml={1} ref={masonryWrapper}>
                         <Masonry columns={{ xs: 2, sm: 3, md: 3, lg: 3, xl: 4 }}>
-                            {postList.length !== 0 && postList.map(post =>
-                                <Paper id={post.id} key={post.id} sx={{ maxWidth: 300, '&:hover': { cursor: 'pointer' } }} onClick={handlePostCardClick(post.id)}>
-                                    <Stack>
-                                        {/* image */}
-                                        <Box component={'img'} src={post.imgUrl} maxWidth={{ xs: width / 2, sm: 300 }} height={'auto'} sx={{ borderTopLeftRadius: 4, borderTopRightRadius: 4 }}></Box>
 
-                                        {/* title */}
-                                        <Box paddingTop={2} paddingX={2}>
-                                            <Typography variant='body1'>{post.title}</Typography>
-                                        </Box>
-                                        {/* member info & member behaviour */}
-                                        <Box paddingTop={1}>
-                                            <Grid container>
-                                                <Grid item flexGrow={1}>
-                                                    <Box display={'flex'} flexDirection={'row'}>
-                                                        <IconButton>
-                                                            <Avatar sx={{ bgcolor: 'grey', width: 25, height: 25, fontSize: 12 }}>
-                                                                {'W'}
-                                                            </Avatar>
+                            {/* posts */}
+                            {postsArr.length !== 0 && postsArr.map(post => {
+                                return (
+                                    <Paper id={post.postId} key={post.postId} sx={{ maxWidth: 300, '&:hover': { cursor: 'pointer' } }} onClick={handlePostCardClick(post.postId)}>
+                                        <Stack>
+                                            {/* image */}
+                                            <Box component={'img'} src={post.imageUrlsArr[0]} maxWidth={{ xs: width / 2, sm: 300 }} height={'auto'} sx={{ borderTopLeftRadius: 4, borderTopRightRadius: 4 }}></Box>
+
+                                            {/* title */}
+                                            <Box paddingTop={2} paddingX={2}>
+                                                <Typography variant='body1'>{post.title}</Typography>
+                                            </Box>
+                                            {/* member info & member behaviour */}
+                                            <Box paddingTop={1}>
+                                                <Grid container>
+                                                    <Grid item flexGrow={1}>
+                                                        <Box display={'flex'} flexDirection={'row'}>
+                                                            <IconButton>
+                                                                <Avatar src={post.avatarImageUrl} sx={{ width: 34, height: 34, bgcolor: 'grey' }}>{post.nickname?.charAt(0).toUpperCase()}</Avatar>
+                                                            </IconButton>
+                                                            <Button variant='text' color='inherit' sx={{ textTransform: 'none' }}>
+                                                                <Typography variant='body2'>{post.nickname}</Typography>
+                                                            </Button>
+                                                        </Box>
+                                                    </Grid>
+                                                    <Grid item>
+                                                        <IconButton aria-label='like' >
+                                                            <ThumbUpIcon color={true ? 'primary' : 'inherit'} />
                                                         </IconButton>
-                                                        <Button variant='text' color='inherit' sx={{ textTransform: 'none' }}>
-                                                            <Typography variant='body2'>{'WebMaster'}</Typography>
-                                                        </Button>
-                                                    </Box>
+                                                    </Grid>
                                                 </Grid>
-                                                <Grid item>
-                                                    <IconButton aria-label='like' >
-                                                        <ThumbUpIcon color={true ? 'primary' : 'inherit'} />
-                                                    </IconButton>
-                                                </Grid>
-                                            </Grid>
-                                        </Box>
-                                    </Stack>
-                                </Paper>
-                            )}
+                                            </Box>
+                                        </Stack>
+                                    </Paper>
+                                )
+                            })}
                         </Masonry>
                     </Box>
                 </Grid>
 
                 {/* right column */}
                 <Grid item xs={0} sm={0} md={3} lg={3} xl={2}>
-                    <Stack spacing={1} sx={{ marginX: 1, display: { xs: 'none', sm: 'none', md: 'flex' } }} >
+
+                    {/* member (viewer) info stack */}
+                    {'authenticated' === status && <Stack spacing={1} sx={{ marginX: 1, display: { xs: 'none', sm: 'none', md: 'flex' } }} >
+
                         {/* member info card */}
                         <ResponsiveCard sx={{ paddingY: 2 }}>
                             <Stack>
                                 {/* nickname */}
-                                <CenterlizedBox mt={1} >
-                                    <Typography variant='body1'>
-                                        {'WebMaster'}
-                                    </Typography>
+                                <CenterlizedBox mt={3} >
+                                    <Box sx={{ fontSize: 20, fontWeight: 100 }}>{session?.user?.name}</Box>
                                 </CenterlizedBox>
-                                <Box mt={1}><Divider /></Box>
+                                <Box mt={3}><Divider /></Box>
                                 {/* info */}
-                                <CenterlizedBox mt={2} >
+                                <CenterlizedBox mt={4} mb={1} >
                                     {/* left column */}
                                     <Box>
-                                        <CenterlizedBox>
-                                            <Typography variant='body1'>
-                                                {'发帖'}
-                                            </Typography>
-                                        </CenterlizedBox>
-                                        <CenterlizedBox>
-                                            <Typography variant='body1'>
-                                                {10}
-                                            </Typography>
-                                        </CenterlizedBox>
+                                        <CenterlizedBox><Typography variant='body1'>{langConfigs.totalCreationCount[lang]}</Typography></CenterlizedBox>
+                                        <CenterlizedBox><Typography variant='body1'>{viewerComprehensive.totalCreationCount}</Typography></CenterlizedBox>
                                     </Box>
                                     {/* middle column */}
                                     <Box marginX={4}>
-                                        <CenterlizedBox>
-                                            <Typography variant='body1' >
-                                                {'粉丝'}
-                                            </Typography>
-                                        </CenterlizedBox>
-                                        <CenterlizedBox>
-                                            <Typography variant='body1'>
-                                                {10}
-                                            </Typography>
-                                        </CenterlizedBox>
+                                        <CenterlizedBox><Typography variant='body1' >{langConfigs.totalFollowingCount[lang]}</Typography></CenterlizedBox>
+                                        <CenterlizedBox><Typography variant='body1'>{viewerComprehensive.totalFollowingCount}</Typography></CenterlizedBox>
                                     </Box>
                                     {/* right column */}
                                     <Box>
-                                        <CenterlizedBox>
-                                            <Typography variant='body1'>
-                                                {'获赞'}
-                                            </Typography>
-                                        </CenterlizedBox>
-                                        <CenterlizedBox>
-                                            <Typography variant='body1'>
-                                                {10}
-                                            </Typography>
-                                        </CenterlizedBox>
+                                        <CenterlizedBox><Typography variant='body1'>{langConfigs.totalCreationLikedCount[lang]}</Typography></CenterlizedBox>
+                                        <CenterlizedBox><Typography variant='body1'>{viewerComprehensive.totalCreationLikedCount}</Typography></CenterlizedBox>
                                     </Box>
-
-
-
                                 </CenterlizedBox>
                             </Stack>
                         </ResponsiveCard>
+
                         {/* unread message card */}
                         <ResponsiveCard sx={{ paddingY: 2 }}>
                             <CenterlizedBox>
-                                <IconButton>
-                                    <EmailIcon />
-                                </IconButton>
                                 <Button variant='text' color='inherit'>
-                                    <Typography variant='body1' sx={{ marginTop: 0.1 }}>
-                                        {'0 条未读提醒'}
-                                    </Typography>
+                                    <EmailIcon sx={{ color: 'grey' }} />
+                                    <Typography variant='body1' sx={{ marginTop: 0.1 }}>{langConfigs.unreadReplyNotice[lang](viewerComprehensive.reply)}</Typography>
                                 </Button>
                             </CenterlizedBox>
-
                         </ResponsiveCard>
+                    </ Stack>}
+
+                    {/* post rankings stack */}
+                    <Stack spacing={1} sx={{ marginX: 1, display: { xs: 'none', sm: 'none', md: 'flex' } }} >
+
                         {/* 24 hour hot */}
-                        <ResponsiveCard sx={{ padding: { lg: 3, xl: 2 } }}>
+                        <ResponsiveCard sx={{ padding: { lg: 3, xl: 2 } }} mt={2}>
                             <Box>
                                 <Typography>{'24小时热帖'}</Typography>
                             </Box>
-                            <Stack mt={1} spacing={1}>
+                            <Stack spacing={1}>
                                 {true && [{ title: '#初秋专属氛围感#', imgUrl: 'pink' }, { title: '今天就需要衛衣加持', imgUrl: '#1976d2' }, { title: '星期一的咖啡時光～', imgUrl: 'darkorange' }].map(po =>
                                     <Grid container key={po.title}>
                                         <Grid item display={{ md: 'none', lg: 'block' }}>
@@ -484,6 +584,7 @@ const Home = () => {
                                 )}
                             </Stack>
                         </ResponsiveCard>
+                        
                         {/* 7 days hot */}
                         <ResponsiveCard sx={{ padding: { lg: 3, xl: 2 } }}>
                             <Box>

@@ -1,5 +1,4 @@
 import * as React from 'react';
-// import { useCookies } from 'react-cookie';
 
 import type { AppProps } from 'next/app'
 import Head from 'next/head';

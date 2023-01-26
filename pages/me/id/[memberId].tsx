@@ -57,10 +57,10 @@ import ListItemIcon from '@mui/material/ListItemIcon';
 import { useTheme } from '@emotion/react';
 import { useRouter } from 'next/router';
 
-import { ProcessStates, Helper, ChannelDictionary, ChannelInfo, LangConfigs } from '../../lib/types';
-import { updateLocalStorage, restoreFromLocalStorage } from '../../lib/utils';
-import { CenterlizedBox, ResponsiveCard, StyledSwitch, TextButton } from '../../ui/Styled';
-import Navbar from '../../ui/Navbar';
+import { ProcessStates, BrowsingHelper, ChannelDictionary, ChannelInfo, LangConfigs } from '../../../lib/types';
+import { updateLocalStorage, restoreFromLocalStorage } from '../../../lib/utils';
+import { CenterlizedBox, ResponsiveCard, StyledSwitch, TextButton } from '../../../ui/Styled';
+import Navbar from '../../../ui/Navbar';
 
 
 const storageName = 'MemberPageProcessStates';
@@ -233,7 +233,7 @@ const Member = () => {
     }, []);
 
     // Declare helper
-    const [helper, setHelper] = React.useState<Helper>({
+    const [helper, setHelper] = React.useState<BrowsingHelper>({
         memorizeViewPortPositionY: undefined, // reset scroll-help on handleChannelSelect, handleSwitchChange, ~~handlePostCardClick~~
     })
 
@@ -316,6 +316,7 @@ const Member = () => {
                                             <Grid item flexGrow={2}>
                                                 <Stack direction={'row'} marginTop={0.5}>
                                                     <IconButton sx={{ padding: 0 }}>
+                                                        {/* <Avatar src={post.avatarImageUrl} sx={{ width: 34, height: 34, bgcolor: 'grey' }}>{post.nickname?.charAt(0).toUpperCase()}</Avatar> */}
                                                         <Avatar sx={{ width: 38, height: 38, bgcolor: 'grey' }}>{'W'}</Avatar>
                                                     </IconButton>
                                                     <Box ml={1}>
@@ -849,6 +850,8 @@ const Member = () => {
 
                     {/* avatar */}
                     <CenterlizedBox sx={{ marginTop: 1 }}>
+                        {/* <Avatar src={post.avatarImageUrl} sx={{ width: 34, height: 34, bgcolor: 'grey' }}>{post.nickname?.charAt(0).toUpperCase()}</Avatar> */}
+
                         <Avatar alt='WebMaster' sx={{ height: { xs: 52, sm: 64 }, width: { xs: 52, sm: 64 } }} />
                     </CenterlizedBox>
                     {/* nickname */}

@@ -104,6 +104,7 @@ export interface IMemberComprehensive extends IAtlasCollectionDocument {
 export interface IConciseMemberInfo {
     memberId: string;
     nickname: string;
+    avatarImageUrl: string;
 }
 
 // [C] memberStatistics
@@ -321,6 +322,12 @@ export interface ITopicComprehensive extends IAtlasCollectionDocument {
     totalUndoSavedCount: number;
 }
 
+export interface IConciseTopicComprehensive extends IAtlasCollectionDocument {
+    topicId: string; // base64 string from topic content string
+    channelId: string;
+    totalPostCount: number;
+}
+
 // [C] topicPostMapping
 export interface ITopicPostMapping extends IAtlasCollectionDocument {
     topicId: string;
@@ -406,6 +413,18 @@ export interface IRestrictedPostComprehensive extends IAtlasCollectionDocument {
 export interface IConcisePostComprehensive extends IAtlasCollectionDocument {
     postId: string; // 10 characters, UPPERCASE
     memberId: string;
+    createdTime: number; // created time of this document (post est.)
+    title: string;
+    imageUrlsArr: string[];
+
+    totalHitCount: number; // viewed times accumulator
+    totalLikedCount: number;
+}
+export interface IConcisePostComprehensiveWithMemberInfo extends IAtlasCollectionDocument {
+    postId: string; // 10 characters, UPPERCASE
+    memberId: string;
+    nickname: string;
+    avatarImageUrl: string;
     createdTime: number; // created time of this document (post est.)
     title: string;
     imageUrlsArr: string[];

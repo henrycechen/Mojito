@@ -36,7 +36,7 @@ const langConfigs: LangConfigs = {
     }
 }
 
-const VerifyAccount = () => {
+const VerifyMember = () => {
     let recaptcha: any;
     const router = useRouter();
 
@@ -121,4 +121,4 @@ const VerifyAccount = () => {
     )
 }
 
-export default VerifyAccount;
+export default VerifyMember;

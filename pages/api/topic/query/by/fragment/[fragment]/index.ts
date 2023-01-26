@@ -13,7 +13,7 @@ const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
  * Info required for GET requests
  * 
  * recaptchaResponse: string (query string)
- * fragment: string (query)
+ * fragment: string (query, fragment of topic id string)
 */
 
 export default async function QueryTopicByIdFragment(req: NextApiRequest, res: NextApiResponse) {
@@ -22,6 +22,37 @@ export default async function QueryTopicByIdFragment(req: NextApiRequest, res: N
         response405(req, res);
         return;
     }
+
+    res.send([
+        {
+            topicId: '5ZGo5p2w5Lym',
+            channelId: 'chat',
+            totalPostCount: 126
+        },
+        {
+            topicId: '6K+05aW95LiN5ZOt',
+            channelId: 'chat',
+            totalPostCount: 75
+        },
+        {
+            topicId: '5ZGK55m95rCU55CD',
+            channelId: 'chat',
+            totalPostCount: 64
+        },
+        {
+            topicId: '6b6Z5Y236aOO',
+            channelId: 'chat',
+            totalPostCount: 12
+        },
+        {
+            topicId: '5Y+N5pa55ZCR55qE6ZKf',
+            channelId: 'chat',
+            totalPostCount: 3
+        },
+    ]);
+    return;
+
+
     // FIXME: deactived human/bot verification for tests
     //// Verify human/bot ////
     // const { recaptchaResponse } = req.query;
@@ -54,7 +85,7 @@ export default async function QueryTopicByIdFragment(req: NextApiRequest, res: N
                 $search: { text: { path: 'topicId', query: fragment } }
             },
             {
-                $limit: 10
+                $limit: 5
             },
             {
                 $sort: { totalHitCount: 1 }

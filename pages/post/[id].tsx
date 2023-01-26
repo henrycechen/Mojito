@@ -1,5 +1,5 @@
 import * as React from 'react';
-// import 
+
 import Avatar from '@mui/material/Avatar';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -32,7 +32,7 @@ import "swiper/css/pagination";
 import Navbar from '../../ui/Navbar';
 
 import { IAttitideMapping, IRestrictedCommentComprehensive, IRestrictedCommentComprehensiveWithMemberInfo, IConciseMemberInfo, IConcisePostComprehensive } from '../../lib/interfaces';
-import { ProcessStates, ChannelDictionary, ChannelInfo, LangConfigs, TRestrictedCommentInfo, TRestrictedPostComprehensive, TMemberInfo, TPostStatistics, TMemberStatistics } from '../../lib/types';
+import { ProcessStates, TChannelInfoDictionary, TChannelInfo, LangConfigs, TRestrictedCommentInfo, TRestrictedPostComprehensive, TMemberInfo, TPostStatistics, TMemberStatistics } from '../../lib/types';
 import { getNicknameBrief, getRandomHexStr, provideCuedMemberInfoArray, timeToString, verifyUrl } from '../../lib/utils';
 import Divider from '@mui/material/Divider';
 import Container from '@mui/material/Container';
@@ -52,7 +52,7 @@ import { Alert } from '@mui/material';
 
 type PostPageProps = {
     restrictedPostComprehensive_ss: TRestrictedPostComprehensive;
-    channelInfo_ss: ChannelInfo;
+    channelInfo_ss: TChannelInfo;
     authorInfo_ss: TMemberInfo;
     authorStatistics_ss: TMemberStatistics;
 }
@@ -65,7 +65,7 @@ type TEditorStates = {
     cuedMemberInfoDict: { [memberId: string]: IConciseMemberInfo };
     alertContent: string;
     displayAlert: boolean;
-    displayFollowingMemberArray: boolean;
+    displayCueHelper: boolean;
     displayNoFollowedMemberAlert: boolean;
 }
 
@@ -119,7 +119,7 @@ const langConfigs: LangConfigs = {
         cn: (parentId: string, nickname: string) => 'P' === parentId.slice(0, 1) ? `评论@${nickname}的主题帖` : `回复@${nickname}的评论`,
         en: (parentId: string, nickname: string) => 'P' === parentId.slice(0, 1) ? `Comment on this post` : `Reply to @${nickname}`,
     },
-    nofollowedMember: {
+    noFollowedMember: {
         tw: '您還未曾關注其他會員哦',
         cn: '您还没有关注其他会员',
         en: 'You have not followed any member'
@@ -214,7 +214,7 @@ export async function getServerSideProps(context: NextPageContext): Promise<{ pr
     }
     const restrictedPostComprehensive_ss = await restrictedPostComprehensive_resp.json();
     // GET channel info by id
-    const channelInfo_resp = await fetch(`${domain}/api/channel/of/${restrictedPostComprehensive_ss.channelId}`);
+    const channelInfo_resp = await fetch(`${domain}/api/channel/info/by/id/${restrictedPostComprehensive_ss.channelId}`);
     if (200 !== channelInfo_resp.status) {
         throw new Error('Attempt to GET channel info');
     }
@@ -247,13 +247,14 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, }
     const router = useRouter();
     const { data: session, status } = useSession();
     // status - 'unauthenticated' / 'authenticated'
+
     let viewerId = '';
     if ('authenticated' === status) {
         const viewerSession: any = { ...session };
         viewerId = viewerSession?.user?.id;
     }
 
-    //////// POST info ////////
+    //////// INFO - post ////////
     const {
         postId,
         memberId: authorId,
@@ -269,13 +270,13 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, }
         editedTime,
     } = restrictedPostComprehensive_ss;
 
-    //////// AUTHOR info ////////
+    //////// INFO - post author ////////
     const {
         nickname,
         avatarImageUrl
     } = authorInfo_ss;
 
-    //////// STATE - declare swipper dimensions ////////
+    //////// STATES - swipper (dimensions) ////////
     const [swiperWrapperHeight, setSwiperWrapperHeight] = React.useState(1);
     // Logic:
     // swiperWrapperHeight is designed for adjust Box (swiperslide wrapper) height
@@ -289,7 +290,7 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, }
         setSwiperWrapperHeight(wrapper?.offsetHeight ?? 1);
     }, [])
 
-    //////// STATE - process STATE ////////
+    //////// STATES - process ////////
     const [processStates, setProcessStates] = React.useState<PostPageProcessStates>({
         displayEditor: false,
         displayBackdrop: false,
@@ -305,7 +306,7 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, }
         setProcessStates({ ...processStates, displayBackdrop: false, backdropOnDisplayImageUrl: undefined });
     };
 
-    //////// STATE - editor STATE ////////
+    //////// STATES - editor ////////
     const [editorStates, setEditorStates] = React.useState<TEditorStates>({
         parentId: '',
         memberId: '',
@@ -314,7 +315,7 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, }
         cuedMemberInfoDict: {},
         alertContent: '',
         displayAlert: false,
-        displayFollowingMemberArray: false,
+        displayCueHelper: false,
         displayNoFollowedMemberAlert: false,
     });
 
@@ -337,12 +338,12 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, }
         setProcessStates({ ...processStates, displayEditor: false })
     }
 
-    const handleFollowingMemberInfoArrayOpenAndClose = () => {
+    const handleCueHelperOpenAndClose = () => {
         if ('authenticated' === status) { }
         if (0 !== viewerInfoStates.followedMemberInfoArr.length) {
-            setEditorStates({ ...editorStates, displayFollowingMemberArray: !editorStates.displayFollowingMemberArray, displayNoFollowedMemberAlert: false });
+            setEditorStates({ ...editorStates, displayCueHelper: !editorStates.displayCueHelper, displayNoFollowedMemberAlert: false });
         } else {
-            setEditorStates({ ...editorStates, displayFollowingMemberArray: !editorStates.displayFollowingMemberArray, displayNoFollowedMemberAlert: true });
+            setEditorStates({ ...editorStates, displayCueHelper: !editorStates.displayCueHelper, displayNoFollowedMemberAlert: true });
         }
     }
 
@@ -367,7 +368,6 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, }
                 }
             })
         }
-
     }
 
     const handleSubmitComment = async () => {
@@ -434,9 +434,10 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, }
         }
     }
 
-    //////// STATE -  viewer info ////////
+    //////// STATES - viewer info //////// TODO:
     const [viewerInfoStates, setViewerInfoStates] = React.useState<TViewerInfoStates>({
         followedMemberInfoArr: []
+        // blockedMemberInfoArr TODO:
     });
 
     React.useEffect(() => {
@@ -456,12 +457,12 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, }
                     followedMemberInfoArr: [...memberInfoArr]
                 });
             } catch (e) {
-                console.log(`Attempt to get following restricted member info array. ${e}`);
+                console.log(`Attempt to GET following restricted member info array. ${e}`);
             }
         }
     }
 
-    //////// STATE - post statistics ////////
+    //////// STATES - post statistics ////////
     const [postStatisticsState, setPostStatisticsState] = React.useState<TPostStatistics>({
         totalHitCount: restrictedPostComprehensive_ss.totalHitCount,
         totalLikedCount: restrictedPostComprehensive_ss.totalLikedCount,
@@ -470,7 +471,7 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, }
         totalSavedCount: restrictedPostComprehensive_ss.totalSavedCount
     });
 
-    //////// STATE - author statistics ////////
+    //////// STATES - author statistics ////////
     const [authorStatisticsState, setAuthorStatisticsState] = React.useState<TConciseMemberStatistics>({
         totalCreationCount: 0,
         totalCreationLikedCount: 0,
@@ -495,7 +496,7 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, }
     }
 
 
-    //////// STATE - concise creations info (of author) array  ////////
+    //////// STATES - concise creations info (of author) array  ////////
     const [conciseCreationInfoArrState, setConciseCreationInfoArrState] = React.useState<IConcisePostComprehensive[]>([]);
 
     React.useEffect(() => { updateCreationArr() }, []);
@@ -516,7 +517,7 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, }
         router.push(`/post/${postId}`);
     }
 
-    //////// STATE - member behaviour ////////
+    //////// STATES - member behaviour ////////
     const [behaviourStates, setBehaviourStates] = React.useState<MemberBehaviourStates>({
         attitudeOnPost: 0,
         attitudeOnComment: {},
@@ -575,7 +576,7 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, }
                 followed: !!followed
             });
         } catch (e) {
-            console.log(`Attempt to initialize behaviour STATE`);
+            console.log(`Attempt to initialize behaviour STATES`);
         }
     }
 
@@ -605,7 +606,7 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, }
         setBehaviourStates({ ...behaviourStates, followed: !behaviourStates.followed });
     }
 
-    //////// STATE - restricted comment comprehensive with member info dictionary ////////
+    //////// STATES - restricted comment comprehensive with member info dictionary ////////
     const [restrictedCommentComprehensiveWithMemberInfoDict, setRestrictedCommentComprehensiveWithMemberInfoDict] = React.useState<TRestrictedCommentComprehensiveWithMemberInfoDict>({});
 
     React.useEffect(() => {
@@ -630,6 +631,7 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, }
     }
 
     const handleExpressAttitudeOnComment = (commentId: string, attitude: number) => (event: React.MouseEvent<any>) => {
+        //// FIXME: test
         // if ('authenticated' !== status) {
         //     router.push(`/signin`);
         //     return;
@@ -698,11 +700,11 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, }
         }
     }
 
-    //////// STATE - restricted (sub)comment comprehensive dictionary STATE ////////
+    //////// STATES - restricted (sub)comment comprehensive dictionary STATES ////////
     const [restrictedSubcommentComprehensiveDict, setRestrictedSubcommentComprehensiveDict] = React.useState<any>({});
 
     const handleExpressAttitudeOnSubcomment = (parentId: string, commentId: string, attitude: number) => (event: React.MouseEvent<any>) => {
-        const prev = restrictedSubcommentComprehensiveDict[parentId]; // previous state of subcomments of the given parent id
+        const prev = restrictedSubcommentComprehensiveDict[parentId]; // previous STATES of subcomments of the given parent id
         if (behaviourStates.attitudeOnComment[commentId] === attitude) {
             setBehaviourStates({ ...behaviourStates, attitudeOnComment: { ...behaviourStates.attitudeOnComment, [commentId]: 0 } });
             setRestrictedSubcommentComprehensiveDict({
@@ -842,7 +844,7 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, }
                                 {/* post-title: mobile style */}
                                 <Stack mt={0.5} direction={'row'} sx={{ display: { xs: 'flex', sm: 'none' } }}>
                                     <IconButton sx={{ padding: 0 }}>
-                                        <Avatar sx={{ width: 38, height: 38, bgcolor: 'grey' }}>{nickname?.charAt(0).toUpperCase()}</Avatar>
+                                        <Avatar src={avatarImageUrl} sx={{ width: 38, height: 38, bgcolor: 'grey' }}>{nickname?.charAt(0).toUpperCase()}</Avatar>
                                     </IconButton>
                                     <Grid container ml={1}>
                                         <Grid item >
@@ -954,7 +956,7 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, }
                                                 {/* member info */}
                                                 <Stack direction={'row'}>
                                                     <IconButton sx={{ padding: 0 }}>
-                                                        <Avatar sx={{ width: 38, height: 38, bgcolor: 'grey' }}>{verifyUrl(avatarImageUrl) ? avatarImageUrl : nickname[0]}</Avatar>
+                                                        <Avatar src={avatarImageUrl} sx={{ width: 38, height: 38, bgcolor: 'grey' }}>{nickname?.charAt(0).toUpperCase()}</Avatar>
                                                     </IconButton>
                                                     <Box ml={1}>
                                                         <TextButton color='inherit'>
@@ -1173,6 +1175,7 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, }
             >
                 <Box sx={{ minWidth: 340, maxWidth: 360, minHeight: 200, borderRadius: 2, padding: 2 }}>
                     <Typography>{langConfigs.createComment[lang]}</Typography>
+                    {/* content input */}
                     <TextField
                         id="outlined-basic"
                         variant="outlined"
@@ -1186,13 +1189,15 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, }
                         // disabled={processStates.submitting}
                         sx={{ marginTop: 1 }}
                     />
+                    {/* blank content alert */}
                     <Box mt={1} sx={{ display: editorStates.displayAlert ? 'block' : 'none' }}>
                         <Alert severity='error'>{editorStates.alertContent}</Alert>
                     </Box>
+                    {/* cue & submit button */}
                     <Grid container mt={2} mb={1}>
                         <Grid item>
-                            <IconButton onClick={handleFollowingMemberInfoArrayOpenAndClose}>
-                                <Typography variant='body1'>@</Typography>
+                            <IconButton onClick={handleCueHelperOpenAndClose}>
+                                <Typography variant='body1' sx={{ minWidth: 24 }}>@</Typography>
                             </IconButton>
                         </Grid>
                         <Grid item flexGrow={1}></Grid>
@@ -1203,11 +1208,13 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, }
 
                         </Grid>
                     </Grid>
-                    <Divider sx={{ display: editorStates.displayFollowingMemberArray ? 'block' : 'none' }}></Divider>
-                    <Box mt={2} sx={{ display: editorStates.displayFollowingMemberArray && editorStates.displayNoFollowedMemberAlert ? 'flex' : 'none', justifyContent: 'center' }}>
-                        <Typography color={'text.disabled'}>{langConfigs.nofollowedMember[lang]}</Typography>
+                    <Divider sx={{ display: editorStates.displayCueHelper ? 'block' : 'none' }}></Divider>
+                    {/* no followed member alert */}
+                    <Box mt={2} sx={{ display: editorStates.displayCueHelper && editorStates.displayNoFollowedMemberAlert ? 'flex' : 'none', justifyContent: 'center' }}>
+                        <Typography color={'text.disabled'}>{langConfigs.noFollowedMember[lang]}</Typography>
                     </Box>
-                    <Box mt={1} sx={{ display: editorStates.displayFollowingMemberArray ? 'block' : 'none' }}>
+                    {/* followed member array */}
+                    <Box mt={1} sx={{ display: editorStates.displayCueHelper ? 'block' : 'none' }}>
                         <Stack direction={'row'} sx={{ padding: 1, overflow: 'auto', }} >
                             {viewerInfoStates.followedMemberInfoArr.map(memberInfo => {
                                 return (
@@ -1216,7 +1223,7 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, }
                                             <Grid container>
                                                 <Grid item flexGrow={1}></Grid>
                                                 <Grid item>
-                                                    <Avatar sx={{ width: 34, height: 34, bgcolor: 'grey' }}>{memberInfo.nickname?.charAt(0).toUpperCase()}</Avatar>
+                                                    <Avatar src={avatarImageUrl} sx={{ width: 34, height: 34, bgcolor: 'grey' }}>{nickname?.charAt(0).toUpperCase()}</Avatar>
                                                 </Grid>
                                                 <Grid item flexGrow={1}></Grid>
                                             </Grid>

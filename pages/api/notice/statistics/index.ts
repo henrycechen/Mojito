@@ -24,6 +24,11 @@ export default async function GetNotificationStatistics(req: NextApiRequest, res
         response405(req, res);
         return;
     }
+
+    res.send({ cue: 1, reply: 1, like: 123, pin: 1, save: 1, follow: 1 })
+    return;
+
+
     // FIXME: deactived human/bot verification for tests
     //// Verify human/bot ////
     // const { recaptchaResponse } = req.query;
