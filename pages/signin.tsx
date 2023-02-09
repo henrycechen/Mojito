@@ -29,7 +29,7 @@ import ReCAPTCHA from "react-google-recaptcha";
 
 import { useRouter } from 'next/router';
 import { NextPageContext } from 'next/types';
-import { LangConfigs, SignInCredentialStates } from '../lib/types';
+import { LangConfigs, TSignInCredentialStates } from '../lib/types';
 import About from '../ui/About';
 
 type SigninPageProps = {
@@ -75,10 +75,10 @@ const langConfigs: LangConfigs = {
         cn: (partyName: string) => `使用 ${partyName} 账户登录`,
         en: (partyName: string) => `Use ${partyName} Account to sign in`,
     },
-    forgetPassword: {
+    forgotPassword: {
         tw: '忘记密码了？',
         cn: '忘记密码了？',
-        en: 'Forgot password?'
+        en: 'I forgot my password...'
     },
     resendVerificationEmail: {
         tw: '重新发送验证邮件',
@@ -88,7 +88,7 @@ const langConfigs: LangConfigs = {
     appSignup: {
         tw: '没有Mojito账户？现在就注册吧',
         cn: '没有Mojito账户？现在就注册吧',
-        en: 'Don\' have a Mojito account? Sign up now'
+        en: 'Sign up now'
     },
     recaptchaLang: {
         tw: 'zh-TW',
@@ -319,7 +319,7 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
     })
 
     // Handle signIn credential states change
-    const handleChange = (prop: keyof SignInCredentialStates) => (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleChange = (prop: keyof TSignInCredentialStates) => (event: React.ChangeEvent<HTMLInputElement>) => {
         setSignInCredentialStates({ ...signInCredentialStates, [prop]: event.target.value });
     };
     const handleShowPassword = () => {
@@ -459,7 +459,7 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
                     <Grid container sx={{ mt: 3 }} >
                         <Grid item xs>
                             <Link href="/forgot" variant="body2">
-                                {langConfigs.forgetPassword[lang]}
+                                {langConfigs.forgotPassword[lang]}
                             </Link>
                         </Grid>
                         <Grid item>

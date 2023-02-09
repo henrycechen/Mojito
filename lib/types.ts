@@ -5,19 +5,21 @@ export type LangConfigs = {
 };
 
 // States
-export type SignInCredentialStates = {
+export type TSignInCredentialStates = {
     emailAddress: string;
     password: string;
     repeatpassword: string;
     showpassword: boolean;
 }
 
-export interface ProcessStates {
-    [key: string]: any
+export type TBrowsingHelper = {
+    memorizeViewPortPositionY: number | undefined; // help scroll to memorized browsing position on viewport.width <= md
 }
 
-export type BrowsingHelper = {
-    memorizeViewPortPositionY: number | undefined; // help scroll to memorized browsing position on viewport.width <= md
+// Preference
+export type TPreferenceStates = {
+    lang: string;
+    mode: 'light' | 'dark';
 }
 
 // Mail
@@ -66,16 +68,19 @@ export type ResetPasswordRequestInfo = {
     expireDate: number;
 }
 
-// Comment
-export type CommentInfo = {
-    id?: string;
-    memberId: string;
-    createTimestamp: string;
-    content: string;
-    likedTimes?: number;
-    dislikedTimes?: number;
-    commentStatus?: number;
+// Notice
+export type TNoticeInfoWithMemberInfo = {
+    noticeId: string; // notice id
+    category: string; //'cue' | 'reply' | 'like' | 'pin' | 'save' | 'follow';
+    initiateId: string; // initiate member id
+    nickname: string; // initiate member nickname
+    avatarImageUrl: string;
+    createdTime: number;
+    postTitle?: string;
+    commentBrief?: string;
 }
+
+// Comment
 
 export type TRestrictedCommentInfo = {
     commentId: string; //12 ~ 13 characters, UPPERCASE, comment id begin with 'C', subcomment id begin with 'D'

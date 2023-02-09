@@ -1,7 +1,7 @@
 import { MongoClient } from 'mongodb';
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { IMemberComprehensive, IConciseMemberInfo, IAttitudeComprehensive, IAttitideMapping, ICommentComprehensive, IRestrictedCommentComprehensive, IRestrictedPostComprehensive, IPostComprehensive, IEditedPostComprehensive, ITopicComprehensive, } from './interfaces';
-import { ProcessStates } from './types';
+import { IMemberComprehensive, IConciseMemberInfo, IAttitudeComprehensive, IAttitideMapping, ICommentComprehensive, IRestrictedCommentComprehensive, IRestrictedPostComprehensive, IPostComprehensive, IEditedPostComprehensive, ITopicComprehensive, IConciseMemberStatistics, IProcessStates, } from './interfaces';
+import { TChannelInfo, TNoticeInfoWithMemberInfo } from './types';
 
 // import common utils for API
 // import { createId, createNoticeId, getRandomIdStr, getRandomIdStrL, getRandomHexStr, timeStampToString, getNicknameFromToken, getContentBrief, getMappingFromAttitudeComprehensive, createCommentComprehensive, provideCommentComprehensiveUpdate, getRestrictedFromCommentComprehensive, getTopicBase64StringsArrayFromRequestBody, getImageUrlsArrayFromRequestBody, getParagraphsArrayFromRequestBody, getRestrictedFromPostComprehensive, verifyEmailAddress, verifyPassword, verifyId, verifyUrl, verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500, log } from '../../../../lib/utils';
@@ -13,7 +13,7 @@ import { ProcessStates } from './types';
 //
 //  IDs
 //  - Member id : 8 ~ 9 characters, UPPERCASE, begin with 'M'
-//  - Notice id : 6 ~ 7 characters, UPPERCASE, begin with 'N'
+//  - Notice id : UPPERCASE, begin with 'N'
 //  - Topic id : base64 string from topic content string, begin with 'T'
 //  - Comment id : 12 ~ 13 characters, UPPERCASE, comment begin with 'C', subcomment begin with 'D'
 //  - Post id : 10 ~ 11 characters, UPPERCASE, begin with 'P'
@@ -37,12 +37,12 @@ export function createId(catergory: 'member' | 'notice' | 'comment' | 'subcommen
 
 export function createNoticeId(category: 'cue' | 'reply' | 'like' | 'pin' | 'save' | 'follow', initiateId: string, postId = '', commentId = ''): string {
     switch (category) {
-        case 'cue': return `C-${initiateId}${!postId ? '' : '-' + postId}${!commentId ? '' : '-' + commentId}`;
-        case 'reply': return `R-${initiateId}${!postId ? '' : '-' + postId}${!commentId ? '' : '-' + commentId}`;
-        case 'like': return `L-${initiateId}${!postId ? '' : '-' + postId}${!commentId ? '' : '-' + commentId}`;
-        case 'pin': return `P-${initiateId}${!postId ? '' : '-' + postId}${!commentId ? '' : '-' + commentId}`;
-        case 'save': return `S-${initiateId}${!postId ? '' : '-' + postId}`;
-        case 'follow': return 'F-' + initiateId;
+        case 'cue': return `NC-${initiateId}${'' === postId ? '' : `-${postId}`}${'' === commentId ? '' : `-${commentId}`}`;
+        case 'reply': return `NR-${initiateId}${'' === postId ? '' : `-${postId}`}${'' === commentId ? '' : `-${commentId}`}`;
+        case 'like': return `NL-${initiateId}${'' === postId ? '' : `-${postId}`}${'' === commentId ? '' : `-${commentId}`}`;
+        case 'pin': return `NP-${initiateId}${'' === postId ? '' : `-${postId}`}${'' === commentId ? '' : `-${commentId}`}`;
+        case 'save': return `NS-${initiateId}${'' === postId ? '' : `-${postId}`}`;
+        case 'follow': return 'NF-' + initiateId;
     }
 }
 
@@ -72,7 +72,7 @@ export function timeToString(time: any, lang: string): string {
         cn: { min: ' 分钟前', mins: ' 分钟前', hour: ' 小时前', hours: ' 小时前', houra: ' 小时', hoursa: ' 小时', day: ' 天前', days: ' 天前' },
         en: { min: ' minute', mins: ' minutes', hour: ' hour', hours: ' hours', houra: ' hour', hoursa: ' hours', day: ' day', days: ' days' }
     }[_lang];
-    if (!time) {
+    if (!('number' === typeof time || 'string' === typeof time)) {
         return `0${langConfigs?.min}`;
     }
     const diff = new Date().getTime() - new Date(time).getTime();
@@ -93,6 +93,97 @@ export function timeToString(time: any, lang: string): string {
     }
 }
 
+export function noticeInfoToString(info: TNoticeInfoWithMemberInfo, lang: string): string {
+    let _lang = lang;
+    if (!['tw', 'cn', 'en'].includes(lang)) {
+        _lang = 'tw';
+    }
+    const { isValid, category, entity } = verifyNoticeId(info.noticeId);
+    if (!(isValid && ['cue', 'reply', 'like', 'pin', 'save', 'follow'].includes(category))) {
+        switch (_lang) {
+            case 'tw': return `某位 Mojito 會員對您做了某些回應`;
+            case 'cn': return `某位 Mojito 会员对您做了某些回应`;
+            case 'en': return `A Mojito member has done something regarding you`;
+        }
+    }
+    if ('cue' === category) {
+        // - WebMaster在帖子“...”的评论“...”中提到了您
+        // - WebMaster在帖子“...”中提到了您
+        if ('comment' === entity) {
+            switch (_lang) {
+                case 'tw': return `在帖子 “${info.postTitle}” 的評論“${info.commentBrief}” 中提及了您`;
+                case 'cn': return `在帖子 “${info.postTitle}” 的评论“${info.commentBrief}” 中提到了您`;
+                case 'en': return `Mentioned you in comment "${info.commentBrief}" in "${info.postTitle}"`;
+            }
+        } else {
+            switch (_lang) {
+                case 'tw': return `在帖子“${info.postTitle}”中提及了您`;
+                case 'cn': return `在帖子“${info.postTitle}”中提到了您`;
+                case 'en': return `Mentioned you in post "${info.postTitle}"`;
+            }
+        }
+    }
+    if ('reply' === category) {
+        // - WebMaster在帖子“...”中回复了您的评论“...”
+        // - WebMaster回复了您的帖子“...”
+        if ('comment' === entity) {
+            switch (_lang) {
+                case 'tw': return `在帖子 “${info.postTitle}” 中回復了您的評論 “${info.commentBrief}”`;
+                case 'cn': return `在帖子 “${info.postTitle}” 中回复了您的评论 “${info.commentBrief}”`;
+                case 'en': return `Replied your comment "${info.commentBrief}" in "${info.postTitle}"`;
+            }
+        } else {
+            switch (_lang) {
+                case 'tw': return `回复了您的帖子 “${info.postTitle}”`;
+                case 'cn': return `回复了您的帖子 “${info.postTitle}”`;
+                case 'en': return `Replied your post "${info.postTitle}"`;
+            }
+        }
+    }
+    if ('like' === category) {
+        // - WebMaster喜欢了您在“...”中发表的评论“...”
+        // - WebMaster喜欢了您的帖子“...”
+        if ('comment' === entity) {
+            switch (_lang) {
+                case 'tw': return `喜歡了您在帖子 “${info.postTitle}” 中發表的評論 “${info.commentBrief}”`;
+                case 'cn': return `赞了您在帖子 “${info.postTitle}” 中发布的评论 “${info.commentBrief}”`;
+                case 'en': return `Liked your comment "${info.commentBrief}" in "${info.postTitle}"`;
+            }
+        } else {
+            switch (_lang) {
+                case 'tw': return `喜歡了您的帖子 “${info.postTitle}”`;
+                case 'cn': return `赞了您在的帖子 “${info.postTitle}”`;
+                case 'en': return `Liked your post "${info.postTitle}"`;
+            }
+        }
+    }
+    if ('pin' === category) {
+        // - WebMaster置顶了您在“...”中发表的评论“...”
+        switch (_lang) {
+            case 'tw': return `置頂了您在 “${info.postTitle}” 中發表的評論 “${info.commentBrief}”`;
+            case 'cn': return `置顶了您在 “${info.postTitle}” 中发布的评论 “${info.commentBrief}”`;
+            case 'en': return `Pinned your comment "${info.commentBrief}" in "${info.postTitle}"`;
+        }
+    }
+    if ('save' === category) {
+        // - WebMaster收藏了“...”
+        switch (_lang) {
+            case 'tw': return `收藏了您的帖子 “${info.postTitle}”`;
+            case 'cn': return `收藏了您的帖子 “${info.postTitle}”`;
+            case 'en': return `Saved your post "${info.postTitle}"`;
+        }
+    }
+    if ('follow' === category) {
+        // - WebMaster关注了您
+        switch (_lang) {
+            case 'tw': return `開始關注您`;
+            case 'cn': return `关注了您`;
+            case 'en': return `Followed you`;
+        }
+    }
+    return '某位 Mojito 會員對您做了某些回應'
+}
+
 //////// JWT ////////
 /**
  * 
@@ -108,13 +199,14 @@ export function getNicknameFromToken(token: any): string {
     }
     return 'MojitoMember ' + getRandomHexStr(true);
 }
+
 //////// Member ////////
 export function getNicknameBrief(nickname: any): string {
     if (!('string' === typeof nickname && '' !== nickname)) {
         return `Mojito會員${Math.floor(Math.random() * Math.pow(10, 2)).toString(16).toUpperCase()}`;
     }
     if (nickname.length > 10) {
-        return `${nickname.slice(0, 7)}...`;
+        return `${nickname.slice(0, 6)}...`;
     }
     return nickname;
 }
@@ -127,13 +219,31 @@ export function provideCuedMemberInfoArray(cuedMemberInfoDictionary: { [memberId
     return memberIdArr.map(memberId => cuedMemberInfoDictionary[memberId]);
 }
 
-//////// Content ////////
-export function getContentBrief(content: any, length = 21): string | undefined {
-    if (!('string' === typeof content && '' !== content)) {
-        return undefined;
+export function fakeConciseMemberInfo(): IConciseMemberInfo {
+    return {
+        memberId: '',
+        nickname: '',
+        avatarImageUrl: ''
     }
-    if (content.length > 21) {
-        return `${content.slice(0, 21)}...`;
+}
+
+export function fakeConciseMemberStatistics(): IConciseMemberStatistics {
+    return {
+        memberId: '',
+        totalCreationCount: 0,
+        totalFollowedByCount: 0,
+        totalCreationSavedCount: 0,
+        totalCreationLikedCount: 0
+    }
+}
+
+//////// Content ////////
+export function getContentBrief(content: any, length = 21): string {
+    if (!('string' === typeof content && '' !== content)) {
+        return '';
+    }
+    if (content.length > length) {
+        return `${content.slice(0, length)}...`;
     }
     return content;
 }
@@ -292,6 +402,15 @@ export function getRestrictedFromCommentComprehensive(commentComprehensive: ICom
         }
     }
     return restricted;
+}
+
+//////// Channel ////////
+export function fakeChannel(): TChannelInfo {
+    return {
+        channelId: '',
+        name: {},
+        svgIconPath: ''
+    }
 }
 
 //////// Topic ////////
@@ -455,24 +574,61 @@ export function getRestrictedFromPostComprehensive(postComprehensive: IPostCompr
     return restricted;
 }
 
+export function fakeRestrictedPostComprehensive(): IRestrictedPostComprehensive {
+    return {
+        postId: '',
+        memberId: '',
+        createdTime: 0,
+        title: '',
+        imageUrlsArr: [],
+        paragraphsArr: [],
+        cuedMemberInfoArr: [],
+        channelId: '',
+        topicIdsArr: [],
+        pinnedCommentId: null,
+        status: -1,
+        totalHitCount: 0,
+        totalLikedCount: 0,
+        totalDislikedCount: 0,
+        totalCommentCount: 0,
+        totalSavedCount: 0,
+        editedTime: 0
+    }
+}
+
 //////// Utilize local storage ////////
 export function updateLocalStorage(storageName: string) {
-    const update = (processStates: ProcessStates) => {
-        const states: ProcessStates = { ...processStates };
-        window.localStorage.setItem(storageName, JSON.stringify(states))
+    const fn = (states: IProcessStates) => {
+        const _: IProcessStates = { ...states };
+        window.localStorage.setItem(storageName, JSON.stringify(_))
     }
-    return update;
+    return fn;
+}
+
+export function provideLocalStorage(storageName: string) {
+    try {
+        return JSON.parse(window.localStorage.getItem(storageName) ?? '{}');
+    } catch (e) {
+        console.log(`Attempt to parse object from local storage ${storageName}. ${e}`);
+    } finally {
+        return {};
+    }
 }
 
 export function restoreFromLocalStorage(storageName: string) {
-    const restore = (setProcessStates: Function) => {
-        const prevStates: ProcessStates = JSON.parse(window.localStorage.getItem(storageName) ?? '{}')
-        if (prevStates !== null && Object.keys(prevStates).length !== 0) {
-            setProcessStates(prevStates);
+    const fn = (setStates: Function) => {
+        try {
+            const prevStates: IProcessStates = JSON.parse(window.localStorage.getItem(storageName) ?? '{}')
+            if (prevStates !== null && Object.keys(prevStates).length !== 0) {
+                setStates(prevStates);
+            }
+        } catch (e) {
+            console.log(`Attempt to restore from local storage ${storageName}. ${e}`);
         }
     }
-    return restore;
+    return fn;
 }
+
 
 //////// Verify infomation ////////
 export function verifyEmailAddress(emailAddress: string): boolean {
@@ -491,62 +647,93 @@ export function verifyPassword(password: any): boolean {
     return regex.test(password);
 }
 
-export function verifyId(id: any) {
+export function verifyId(id: any): { isValid: boolean; category: string; id: string } {
     if (!(undefined !== id && 'string' === typeof id)) {
-        return {
-            isValid: false,
-            category: '',
-            id: ''
-        }
+        return { isValid: false, category: '', id: '' }
     }
     const ref = `${id}`.toUpperCase();
     const cat = ref.slice(0, 1);
     if (!(new RegExp(/[CDMNPT]/).test(cat))) {
-        return {
-            isValid: false,
-            category: '',
-            id: ''
-        }
+        return { isValid: false, category: '', id: '' }
     }
     switch (cat) {
         case 'M':
-            if (new RegExp(`^[A-Z0-9]{8,9}$`).test(ref)) {
-                return { isValid: false, category: 'member', id: '' }
-            } else {
-                return { isValid: true, category: 'member', id: ref }
-            }
+            if (new RegExp(`^[A-Z0-9]{8,9}$`).test(ref)) { return { isValid: true, category: 'member', id: ref } }
+            else { return { isValid: false, category: 'member', id: '' } }
         case 'N':
-            if (new RegExp(`^[A-Z0-9]{6,7}$`).test(ref)) {
-                return { isValid: false, category: 'notice', id: '' }
-            } else {
-                return { isValid: true, category: 'notice', id: ref }
-            }
+            if (new RegExp(`^[A-Z0-9]{6,39}$`).test(ref)) { return { isValid: true, category: 'notice', id: ref } }
+            else { return { isValid: false, category: 'notice', id: '' } }
         case 'T':
             return { isValid: true, category: 'topic', id: ref }
         case 'C':
-            if (new RegExp(`^[A-Z0-9]{12,13}$`).test(ref)) {
-                return { isValid: false, category: 'comment', id: '' }
-            } else {
-                return { isValid: true, category: 'comment', id: ref }
-            }
+            if (new RegExp(`^[A-Z0-9]{12,13}$`).test(ref)) { return { isValid: true, category: 'comment', id: ref } }
+            else { return { isValid: false, category: 'comment', id: '' } }
         case 'D':
-            if (new RegExp(`^[A-Z0-9]{12,13}$`).test(ref)) {
-                return { isValid: false, category: 'subcomment', id: '' }
-            } else {
-                return { isValid: true, category: 'subcomment', id: ref }
-            }
+            if (new RegExp(`^[A-Z0-9]{12,13}$`).test(ref)) { return { isValid: true, category: 'subcomment', id: ref } }
+            else { return { isValid: false, category: 'subcomment', id: '' } }
         case 'P':
-            if (new RegExp(`^[A-Z0-9]{10,11}$`).test(ref)) {
-                return { isValid: false, category: 'post', id: '' }
-            } else {
-                return { isValid: true, category: 'post', id: ref }
-            }
+            if (new RegExp(`^[A-Z0-9]{10,11}$`).test(ref)) { return { isValid: true, category: 'post', id: ref } }
+            else { return { isValid: false, category: 'post', id: '' } }
         default: return {
             isValid: false,
             category: '',
             id: ''
         }
     }
+}
+
+export function verifyNoticeId(id: any): { isValid: boolean; category: string; entity: string } {
+    if (!(undefined !== id && 'string' === typeof id)) {
+        return { isValid: false, category: '', entity: '' }
+    }
+    const ref = `${id}`.toUpperCase();
+    const cat = ref.slice(0, 2);
+    if (!(new RegExp(/N[CRLPSF]/).test(cat))) {
+        return { isValid: false, category: '', entity: '' }
+    }
+    const num = ref.split('-').length;
+    switch (cat) {
+        case 'NC':
+            if (3 === num) { return { isValid: true, category: 'cue', entity: 'post' } }
+            else if (4 === num) { return { isValid: true, category: 'cue', entity: 'comment' } }
+            else { return { isValid: false, category: 'cue', entity: '' } }
+        case 'NR':
+            if (3 === num) { return { isValid: true, category: 'reply', entity: 'post' } }
+            else if (4 === num) { return { isValid: true, category: 'reply', entity: 'comment' } }
+            else { return { isValid: false, category: 'reply', entity: '' } }
+        case 'NL':
+            if (3 === num) { return { isValid: true, category: 'like', entity: 'post' } }
+            else if (4 === num) { return { isValid: true, category: 'like', entity: 'comment' } }
+            else { return { isValid: false, category: 'like', entity: '' } }
+        case 'NP':
+            if (4 === num) { return { isValid: true, category: 'pin', entity: '' } }
+            else { return { isValid: false, category: 'pin', entity: '' } }
+        case 'NS':
+            if (3 === num) { return { isValid: true, category: 'save', entity: 'post' } }
+            else { return { isValid: false, category: 'save', entity: 'post' } }
+        case 'NF':
+            if (2 === num) { return { isValid: true, category: 'follow', entity: '' } }
+            else { return { isValid: false, category: 'follow', entity: '' } }
+        default:
+            return { isValid: false, category: '', entity: '' }
+    }
+}
+
+export function noticeIdToUrl(id: string) {
+    const arr = id.split('-');
+    let str = '';
+    arr.forEach(s => {
+        const cat = s.slice(0, 1);
+        // if (new RegExp(/[CDP]/).test(cat)) {
+        if ('P' === cat) {
+            str = str + `/post/${s}`
+        }
+        if (['C', 'D'].includes(cat)) {
+            str = str + `?p=${s}`
+        }
+        // }
+    })
+    return str;
 }
 
 export function verifyUrl(url: any): boolean {

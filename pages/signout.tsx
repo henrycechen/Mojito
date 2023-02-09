@@ -12,7 +12,7 @@ import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
 
 import { signIn, signOut, getProviders, getSession, getCsrfToken, useSession } from 'next-auth/react'
-import { LangConfigs, SignInCredentialStates } from '../lib/types';
+import { LangConfigs, TSignInCredentialStates } from '../lib/types';
 
 
 import { useRouter } from 'next/router';

@@ -62,7 +62,7 @@ export interface IMemberMemberMapping extends IAzureTableEntity {
 // [PRL] Notice
 export interface INoticeInfo extends IAzureTableEntity {
     partitionKey: string; // notified member id
-    rowKey: string; // notice id
+    rowKey: string; // notice id, combined id string
     Category: 'cue' | 'reply' | 'like' | 'pin' | 'save' | 'follow';
     InitiateId: string; // initiate member id
     Nickname: string; // initiate member nickname
@@ -105,6 +105,21 @@ export interface IConciseMemberInfo {
     memberId: string;
     nickname: string;
     avatarImageUrl: string;
+}
+
+export interface IConciseMemberInfoWithTime extends IConciseMemberInfo {
+    memberId: string;
+    nickname: string;
+    avatarImageUrl: string;
+    createdTime: number;
+}
+
+export interface IConciseMemberInfoWithBriefIntroAndTime extends IConciseMemberInfo {
+    memberId: string;
+    nickname: string;
+    avatarImageUrl: string;
+    briefIntro: string | undefined;
+    createdTime: number;
 }
 
 // [C] memberStatistics
@@ -158,8 +173,9 @@ export interface IMemberStatistics extends IAtlasCollectionDocument {
 export interface IConciseMemberStatistics extends IAtlasCollectionDocument {
     memberId: string;
     totalCreationCount: number;
-    totalCreationLikedCount: number;
     totalFollowedByCount: number;
+    totalCreationLikedCount: number;
+    totalCreationSavedCount: number;
 }
 
 // [C] loginJournal
@@ -420,7 +436,8 @@ export interface IConcisePostComprehensive extends IAtlasCollectionDocument {
     totalHitCount: number; // viewed times accumulator
     totalLikedCount: number;
 }
-export interface IConcisePostComprehensiveWithMemberInfo extends IAtlasCollectionDocument {
+
+export interface IConcisePostComprehensiveWithMemberInfo {
     postId: string; // 10 characters, UPPERCASE
     memberId: string;
     nickname: string;

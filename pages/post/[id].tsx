@@ -31,9 +31,9 @@ import "swiper/css/pagination";
 
 import Navbar from '../../ui/Navbar';
 
-import { IAttitideMapping, IRestrictedCommentComprehensive, IRestrictedCommentComprehensiveWithMemberInfo, IConciseMemberInfo, IConcisePostComprehensive } from '../../lib/interfaces';
-import { ProcessStates, TChannelInfoDictionary, TChannelInfo, LangConfigs, TRestrictedCommentInfo, TRestrictedPostComprehensive, TMemberInfo, TPostStatistics, TMemberStatistics } from '../../lib/types';
-import { getNicknameBrief, getRandomHexStr, provideCuedMemberInfoArray, timeToString, verifyUrl } from '../../lib/utils';
+import { IAttitideMapping, IRestrictedCommentComprehensive, IRestrictedCommentComprehensiveWithMemberInfo, IConciseMemberInfo, IConcisePostComprehensive, IProcessStates } from '../../lib/interfaces';
+import { TChannelInfoDictionary, TChannelInfo, LangConfigs, TRestrictedCommentInfo, TRestrictedPostComprehensive, TMemberInfo, TPostStatistics, TMemberStatistics } from '../../lib/types';
+import { fakeChannel, fakeRestrictedPostComprehensive, getNicknameBrief, getRandomHexStr, provideCuedMemberInfoArray, restoreFromLocalStorage, timeToString, updateLocalStorage, verifyId, verifyUrl } from '../../lib/utils';
 import Divider from '@mui/material/Divider';
 import Container from '@mui/material/Container';
 
@@ -49,12 +49,16 @@ import MemberInfoById from '../api/member/info/[memberId]';
 import Tooltip from '@mui/material/Tooltip';
 import { Alert } from '@mui/material';
 
+const storageName0 = 'PreferenceStates';
+const updatePreferenceStatesCache = updateLocalStorage(storageName0);
+const restorePreferenceStatesFromCache = restoreFromLocalStorage(storageName0);
 
-type PostPageProps = {
+type TPostPageProps = {
     restrictedPostComprehensive_ss: TRestrictedPostComprehensive;
     channelInfo_ss: TChannelInfo;
     authorInfo_ss: TMemberInfo;
     authorStatistics_ss: TMemberStatistics;
+    redirect404: boolean;
 }
 
 type TEditorStates = {
@@ -78,7 +82,9 @@ type TConciseMemberStatistics = {
     totalCreationLikedCount: number;
     totalFollowedByCount: number;
 }
-interface PostPageProcessStates extends ProcessStates {
+
+interface IPostPageProcessStates extends IProcessStates {
+    lang: string;
     displayEditor: boolean;
     editorEnchorElement: any;
     displayBackdrop: boolean;
@@ -87,7 +93,7 @@ interface PostPageProcessStates extends ProcessStates {
 
 type MemberBehaviourStates = {
     attitudeOnPost: number;
-    attitudeOnComment: { [key: string]: number };
+    attitudeOnComment: { [commentId: string]: number };
     saved: boolean;
     followed: boolean;
 }
@@ -97,7 +103,7 @@ type TRestrictedCommentComprehensiveWithMemberInfoDict = {
 }
 
 const domain = process.env.NEXT_PUBLIC_APP_DOMAIN;
-const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
+const defaultLang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
     title: {
         tw: '撰寫新主題帖',
@@ -202,10 +208,20 @@ const langConfigs: LangConfigs = {
 }
 
 //// get multiple info server-side ////
-export async function getServerSideProps(context: NextPageContext): Promise<{ props: PostPageProps }> {
+export async function getServerSideProps(context: NextPageContext): Promise<{ props: TPostPageProps }> {
     const { id } = context.query;
-    if ('string' !== typeof id) {
-        throw new Error('Improper post id');
+    const { isValid, category } = verifyId(id);
+    // Verify post id
+    if (!(isValid && 'post' === category)) {
+        return {
+            props: {
+                restrictedPostComprehensive_ss: fakeRestrictedPostComprehensive(),
+                channelInfo_ss: fakeChannel(),
+                authorInfo_ss: {},
+                authorStatistics_ss: {},
+                redirect404: true
+            }
+        }
     }
     // GET restricted post comprehensive
     const restrictedPostComprehensive_resp = await fetch(`${domain}/api/post/rc/${id}`);
@@ -216,7 +232,7 @@ export async function getServerSideProps(context: NextPageContext): Promise<{ pr
     // GET channel info by id
     const channelInfo_resp = await fetch(`${domain}/api/channel/info/by/id/${restrictedPostComprehensive_ss.channelId}`);
     if (200 !== channelInfo_resp.status) {
-        throw new Error('Attempt to GET channel info');
+        throw new Error('Attempt to GET channel info by id');
     }
     const channelInfo_ss = await channelInfo_resp.json();
     // GET author info by id
@@ -236,18 +252,26 @@ export async function getServerSideProps(context: NextPageContext): Promise<{ pr
             restrictedPostComprehensive_ss,
             channelInfo_ss,
             authorInfo_ss,
-            authorStatistics_ss
+            authorStatistics_ss, // FIXME: have not been used in context
+            redirect404: false
         }
     }
 }
 
 
-const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, }: PostPageProps) => {
+const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, authorStatistics_ss, redirect404 }: TPostPageProps) => {
 
     const router = useRouter();
+    React.useEffect(() => {
+        if (redirect404) {
+            router.push('/404');
+        }
+    }, [])
+
     const { data: session, status } = useSession();
     // status - 'unauthenticated' / 'authenticated'
 
+    //////// INFO - viewer //////// (conditional.)
     let viewerId = '';
     if ('authenticated' === status) {
         const viewerSession: any = { ...session };
@@ -276,6 +300,14 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, }
         avatarImageUrl
     } = authorInfo_ss;
 
+    //////// STATES - preference ////////
+    const [preferenceStates, setPreferenceStates] = React.useState<any>({
+        lang: defaultLang,
+        mode: 'light'
+    })
+    React.useEffect(() => { restorePreferenceStatesFromCache(setPreferenceStates) }, [])
+
+
     //////// STATES - swipper (dimensions) ////////
     const [swiperWrapperHeight, setSwiperWrapperHeight] = React.useState(1);
     // Logic:
@@ -291,7 +323,8 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, }
     }, [])
 
     //////// STATES - process ////////
-    const [processStates, setProcessStates] = React.useState<PostPageProcessStates>({
+    const [processStates, setProcessStates] = React.useState<IPostPageProcessStates>({
+        lang: defaultLang,
         displayEditor: false,
         displayBackdrop: false,
         backdropOnDisplayImageUrl: undefined,
@@ -327,7 +360,7 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, }
         if (editorStates.parentId !== parentId) {
             setEditorStates({ ...editorStates, parentId, memberId, nickname, content: '' });
         }
-        setProcessStates({ ...processStates, alertContent: langConfigs.emptyCommentAlert[lang], displayEditor: true });
+        setProcessStates({ ...processStates, alertContent: langConfigs.emptyCommentAlert[preferenceStates.lang], displayEditor: true });
     }
 
     const handleEditorInput = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -430,7 +463,7 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, }
                 console.log(`Attempt to create comment on ${parentId}. ${e}`);
             }
         } else {
-            setProcessStates({ ...processStates, alertContent: langConfigs.emptyCommentAlert[lang], displayEditor: true });
+            setProcessStates({ ...processStates, alertContent: langConfigs.emptyCommentAlert[preferenceStates.lang], displayEditor: true });
         }
     }
 
@@ -531,7 +564,7 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, }
 
     const initializeBehaviourStates = async () => {
         let attitudeOnPost = 0;
-        let attitudeOnComment: { [key: string]: number } = {};
+        let attitudeOnComment: { [commentId: string]: number } = {};
         let saved = false;
         let followed = false;
         try {
@@ -814,10 +847,10 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, }
             <Container disableGutters >
                 <Grid container >
 
-                    {/* left column (placeholder) */}
+                    {/* //// placeholder - left //// */}
                     <Grid item xs={0} sm={1} md={1} />
 
-                    {/* middle column */}
+                    {/* //// middle column //// */}
                     <Grid item xs={12} sm={10} md={7} >
 
                         {/* middle card-stack */}
@@ -830,14 +863,14 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, }
                                 <Box display={{ xs: 'none', sm: 'block' }}>
 
                                     {/* channel name */}
-                                    <Typography variant={'subtitle1'} fontWeight={400} color={'grey'}>{channelInfo_ss.name[lang]}</Typography>
+                                    <Typography variant={'subtitle1'} fontWeight={400} color={'grey'}>{channelInfo_ss.name[preferenceStates.lang]}</Typography>
 
                                     {/* title */}
                                     <Typography variant={'h6'} fontWeight={700}>{title}</Typography>
 
                                     {/* member info & timestamp */}
                                     <TextButton color='inherit' sx={{ flexDirection: 'row', marginTop: 1 }}>
-                                        <Typography variant='body2'>{`${nickname} ${timeToString(createdTime, lang)}`}</Typography>
+                                        <Typography variant='body2'>{`${nickname} ${timeToString(createdTime, preferenceStates.lang)}`}</Typography>
                                     </TextButton>
                                 </Box>
 
@@ -847,21 +880,25 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, }
                                         <Avatar src={avatarImageUrl} sx={{ width: 38, height: 38, bgcolor: 'grey' }}>{nickname?.charAt(0).toUpperCase()}</Avatar>
                                     </IconButton>
                                     <Grid container ml={1}>
+
+                                        {/* nickname and created time */}
                                         <Grid item >
                                             <TextButton color='inherit'>
                                                 <Typography variant='body2' >
                                                     {nickname}
                                                 </Typography>
                                                 <Typography variant='body2' fontSize={{ xs: 12 }} >
-                                                    {timeToString(createdTime, lang)}
+                                                    {timeToString(createdTime, preferenceStates.lang)}
                                                 </Typography>
                                             </TextButton>
                                         </Grid>
+
+                                        {/* placeholder */}
                                         <Grid item flexGrow={1}></Grid>
 
                                         {/* follow button */}
                                         <Grid item>
-                                            <Chip label={behaviourStates.followed ? langConfigs.followed[lang] : langConfigs.follow[lang]} sx={{ paddingX: 1 }} color={behaviourStates.followed ? 'default' : 'primary'} onClick={handleFollow} />
+                                            <Chip label={behaviourStates.followed ? langConfigs.followed[preferenceStates.lang] : langConfigs.follow[preferenceStates.lang]} sx={{ paddingX: 1 }} color={behaviourStates.followed ? 'default' : 'primary'} onClick={handleFollow} />
                                         </Grid>
                                     </Grid>
                                 </Stack>
@@ -925,8 +962,8 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, }
 
                                     {/* comment */}
                                     <Grid item sx={{ display: 'flex', flexDirection: 'row' }}>
-                                        <Tooltip title={langConfigs.createComment[lang]}>
-                                            <IconButton aria-label='comment' onClick={handleEditorOpen(postId, authorId, nickname ?? langConfigs.defaultNickname[lang])}>
+                                        <Tooltip title={langConfigs.createComment[preferenceStates.lang]}>
+                                            <IconButton aria-label='comment' onClick={handleEditorOpen(postId, authorId, nickname ?? langConfigs.defaultNickname[preferenceStates.lang])}>
                                                 <ChatBubbleIcon fontSize='small' />
                                             </IconButton>
                                         </Tooltip>
@@ -939,7 +976,7 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, }
                                     {/* edit post */}
                                     <Grid item sx={{ display: 'flex', flexDirection: 'row' }}>
                                         {/* FIXME: on testing, should be authorId === viewerId */}
-                                        {authorId === authorId && <Button variant='text' sx={{ ml: 1, padding: 0 }} onClick={handleEditPost}>{langConfigs.editPost[lang]}</Button>}
+                                        {authorId === authorId && <Button variant='text' sx={{ ml: 1, padding: 0 }} onClick={handleEditPost}>{langConfigs.editPost[preferenceStates.lang]}</Button>}
                                     </Grid>
                                 </Grid>
                             </ResponsiveCard>
@@ -964,7 +1001,7 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, }
                                                                 {nickname}
                                                             </Typography>
                                                             <Typography variant='body2' fontSize={{ xs: 12 }} >
-                                                                {timeToString(createdTime, lang)}
+                                                                {timeToString(createdTime, preferenceStates.lang)}
                                                             </Typography>
                                                         </TextButton>
                                                     </Box>
@@ -995,7 +1032,7 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, }
 
                                                     {/* comment */}
                                                     <Grid item sx={{ display: 'flex', flexDirection: 'row' }}>
-                                                        <Tooltip title={langConfigs.replyToComment[lang](nickname)}>
+                                                        <Tooltip title={langConfigs.replyToComment[preferenceStates.lang](nickname)}>
                                                             <IconButton aria-label='comment' onClick={handleEditorOpen(commentId, memberId, nickname)}>
                                                                 <ReplyIcon fontSize='small' />
                                                             </IconButton>
@@ -1008,7 +1045,7 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, }
                                                 <Box sx={{ display: 0 !== restrictedCommentComprehensiveWithMemberInfoDict[commentId].totalSubcommentCount ? 'block' : 'none' }}>
 
                                                     {/* expend button */}
-                                                    <Button variant='text' sx={{ display: restrictedCommentComprehensiveWithMemberInfoDict[commentId].isExpended ? 'none' : 'block' }} onClick={async () => handleExpendSubcomments(commentId)} >{langConfigs.expendSubcomments[lang]}</Button>
+                                                    <Button variant='text' sx={{ display: restrictedCommentComprehensiveWithMemberInfoDict[commentId].isExpended ? 'none' : 'block' }} onClick={async () => handleExpendSubcomments(commentId)} >{langConfigs.expendSubcomments[preferenceStates.lang]}</Button>
 
                                                     {/* subcomment stack (conditional rendering)*/}
                                                     <Stack id={`stack-${commentId}`} marginTop={{ xs: 1.5, sm: 2 }} paddingLeft={3} sx={{ display: restrictedCommentComprehensiveWithMemberInfoDict[commentId].isExpended ? 'block' : 'none' }}>
@@ -1027,7 +1064,7 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, }
                                                                                     {nickname}
                                                                                 </Typography>
                                                                                 <Typography variant='body2' fontSize={{ xs: 12 }} >
-                                                                                    {timeToString(createdTime, lang)}
+                                                                                    {timeToString(createdTime, preferenceStates.lang)}
                                                                                 </Typography>
                                                                             </TextButton>
                                                                         </Box>
@@ -1058,7 +1095,7 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, }
 
                                                                         {/* reply */}
                                                                         <Grid item sx={{ display: 'flex', flexDirection: 'row' }}>
-                                                                            <Tooltip title={langConfigs.replyToComment[lang](nickname)}>
+                                                                            <Tooltip title={langConfigs.replyToComment[preferenceStates.lang](nickname)}>
                                                                                 <IconButton aria-label='comment' onClick={handleEditorOpen(commentId, memberId, nickname)}>
                                                                                     <ReplyIcon fontSize='small' />
                                                                                 </IconButton>
@@ -1071,7 +1108,7 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, }
                                                     </Stack>
 
                                                     {/* undo expend button */}
-                                                    <Button variant='text' sx={{ display: restrictedCommentComprehensiveWithMemberInfoDict[commentId].isExpended ? 'block' : 'none' }} onClick={handleUndoExpendSubcomments(commentId)} >{langConfigs.undoExpendSubcomments[lang]}</Button>
+                                                    <Button variant='text' sx={{ display: restrictedCommentComprehensiveWithMemberInfoDict[commentId].isExpended ? 'block' : 'none' }} onClick={handleUndoExpendSubcomments(commentId)} >{langConfigs.undoExpendSubcomments[preferenceStates.lang]}</Button>
 
                                                 </Box>
 
@@ -1084,7 +1121,7 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, }
                         </Stack>
                     </Grid>
 
-                    {/* right column*/}
+                    {/* //// right column //// */}
                     <Grid item xs={0} sm={1} md={4} >
 
                         {/* right card-stack */}
@@ -1104,8 +1141,8 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, }
 
 
                                     <CenterlizedBox >
-                                        <Tooltip title={behaviourStates.followed ? langConfigs.undoFollow[lang] : langConfigs.follow[lang]}>
-                                            <Button variant='text' color={behaviourStates.followed ? 'inherit' : 'info'} sx={{ paddingY: 0.1, borderRadius: 4, fontSize: 13 }} onClick={handleFollow}>{behaviourStates.followed ? langConfigs.followed[lang] : langConfigs.follow[lang]}</Button>
+                                        <Tooltip title={behaviourStates.followed ? langConfigs.undoFollow[preferenceStates.lang] : langConfigs.follow[preferenceStates.lang]}>
+                                            <Button variant='text' color={behaviourStates.followed ? 'inherit' : 'info'} sx={{ paddingY: 0.1, borderRadius: 4, fontSize: 13 }} onClick={handleFollow}>{behaviourStates.followed ? langConfigs.followed[preferenceStates.lang] : langConfigs.follow[preferenceStates.lang]}</Button>
                                         </Tooltip>
                                     </CenterlizedBox>
 
@@ -1116,19 +1153,19 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, }
 
                                         {/* info left column */}
                                         <Box>
-                                            <CenterlizedBox><Typography variant='body1'>{langConfigs.creations[lang]}</Typography></CenterlizedBox>
+                                            <CenterlizedBox><Typography variant='body1'>{langConfigs.creations[preferenceStates.lang]}</Typography></CenterlizedBox>
                                             <CenterlizedBox><Typography variant='body1'>{authorStatisticsState.totalCreationCount}</Typography></CenterlizedBox>
                                         </Box>
 
                                         {/* info middle column */}
                                         <Box marginX={4}>
-                                            <CenterlizedBox><Typography variant='body1' >{langConfigs.followedBy[lang]}</Typography></CenterlizedBox>
+                                            <CenterlizedBox><Typography variant='body1' >{langConfigs.followedBy[preferenceStates.lang]}</Typography></CenterlizedBox>
                                             <CenterlizedBox><Typography variant='body1'>{authorStatisticsState.totalFollowedByCount}</Typography></CenterlizedBox>
                                         </Box>
 
                                         {/* info right column */}
                                         <Box>
-                                            <CenterlizedBox><Typography variant='body1'>{langConfigs.liked[lang]}</Typography></CenterlizedBox>
+                                            <CenterlizedBox><Typography variant='body1'>{langConfigs.liked[preferenceStates.lang]}</Typography></CenterlizedBox>
                                             <CenterlizedBox><Typography variant='body1'>{authorStatisticsState.totalCreationLikedCount}</Typography></CenterlizedBox>
                                         </Box>
                                     </CenterlizedBox>
@@ -1138,7 +1175,7 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, }
                             {/* other post recommend in this channel */}
                             <ResponsiveCard sx={{ padding: 3 }}>
                                 <Box>
-                                    <Typography>{nickname} {langConfigs.hotPostRecommend[lang]}</Typography>
+                                    <Typography>{nickname} {langConfigs.hotPostRecommend[preferenceStates.lang]}</Typography>
                                 </Box>
                                 <Stack mt={2} spacing={1}>
                                     {0 !== conciseCreationInfoArrState.length && conciseCreationInfoArrState.map(creation =>
@@ -1151,8 +1188,8 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, }
                                                     <TextButton color='inherit' onClick={handleRedirectToPost(creation.postId)}>
                                                         <Typography variant='body1' marginTop={0.1} textOverflow={'ellipsis'} noWrap maxWidth={200}>{creation.title}</Typography>
                                                         <Stack direction={'row'}>
-                                                            <Typography variant='body2' fontSize={{ xs: 12 }}>{`${creation.totalHitCount} ${langConfigs.viewed[lang]}`}</Typography>
-                                                            <Typography ml={1} variant='body2' fontSize={{ xs: 12 }}>{`${creation.totalLikedCount} ${langConfigs.liked[lang]}`}</Typography>
+                                                            <Typography variant='body2' fontSize={{ xs: 12 }}>{`${creation.totalHitCount} ${langConfigs.viewed[preferenceStates.lang]}`}</Typography>
+                                                            <Typography ml={1} variant='body2' fontSize={{ xs: 12 }}>{`${creation.totalLikedCount} ${langConfigs.liked[preferenceStates.lang]}`}</Typography>
                                                         </Stack>
                                                     </TextButton>
                                                 </Box>
@@ -1162,6 +1199,7 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, }
                             </ResponsiveCard>
                         </Stack>
                     </Grid>
+
                 </Grid>
             </Container >
 
@@ -1174,7 +1212,7 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, }
                 anchorOrigin={{ vertical: 'bottom', horizontal: 'center', }}
             >
                 <Box sx={{ minWidth: 340, maxWidth: 360, minHeight: 200, borderRadius: 2, padding: 2 }}>
-                    <Typography>{langConfigs.createComment[lang]}</Typography>
+                    <Typography>{langConfigs.createComment[preferenceStates.lang]}</Typography>
                     {/* content input */}
                     <TextField
                         id="outlined-basic"
@@ -1182,7 +1220,7 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, }
                         rows={4}
                         multiline
                         fullWidth
-                        placeholder={langConfigs.editorPlaceholder[lang](editorStates.parentId, editorStates.nickname)}
+                        placeholder={langConfigs.editorPlaceholder[preferenceStates.lang](editorStates.parentId, editorStates.nickname)}
                         onChange={handleEditorInput}
                         value={editorStates.content}
                         // onChange={handlePostStatesChange('content')}
@@ -1203,7 +1241,7 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, }
                         <Grid item flexGrow={1}></Grid>
                         <Grid item>
                             <Box display={'flex'} justifyContent={'end'}>
-                                <Button variant='contained' onClick={async () => { await handleSubmitComment() }} >{langConfigs.submitComment[lang]}</Button>
+                                <Button variant='contained' onClick={async () => { await handleSubmitComment() }} >{langConfigs.submitComment[preferenceStates.lang]}</Button>
                             </Box>
 
                         </Grid>
@@ -1211,7 +1249,7 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, }
                     <Divider sx={{ display: editorStates.displayCueHelper ? 'block' : 'none' }}></Divider>
                     {/* no followed member alert */}
                     <Box mt={2} sx={{ display: editorStates.displayCueHelper && editorStates.displayNoFollowedMemberAlert ? 'flex' : 'none', justifyContent: 'center' }}>
-                        <Typography color={'text.disabled'}>{langConfigs.noFollowedMember[lang]}</Typography>
+                        <Typography color={'text.disabled'}>{langConfigs.noFollowedMember[preferenceStates.lang]}</Typography>
                     </Box>
                     {/* followed member array */}
                     <Box mt={1} sx={{ display: editorStates.displayCueHelper ? 'block' : 'none' }}>

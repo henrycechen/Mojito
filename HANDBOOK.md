@@ -196,7 +196,7 @@ type ResetPasswordRequestInfo = {
 
 | Property     | Type   | Desc                                                         |
 | ------------ | ------ | ------------------------------------------------------------ |
-| NoticeId     | string | combined id strings, 10 ~ 36 characters, UPPERCASE, begin with Notice category code (e.g., 'C', cued) |
+| NoticeId     | string | combined id strings, 10 ~ 36 characters, UPPERCASE, begin with 'N' plus Notice category code (e.g., 'NC', cued) |
 | PostTitle    | string |                                                              |
 | CommentBrief | string | maximum 21 characters                                        |
 
@@ -252,7 +252,7 @@ type ResetPasswordRequestInfo = {
 | NotifiedMemberIdStr | NoticeId | `"save"` | MemberIdStr | string   | string    |
 
 ```
-- WebMaster收藏了“WebMaster在Mojito发的第一篇帖子”中提到了您
+- WebMaster收藏了“WebMaster在Mojito发的第一篇帖子”
 ```
 
 #### Followed (🔔)

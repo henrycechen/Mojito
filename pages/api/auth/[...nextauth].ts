@@ -264,8 +264,8 @@ export default NextAuth({
                     }
                     // Step #3 complete session (jwt) info
                     const { nickname: name, avatarImageUrl: image } = memberComprehensiveQueryResult;
-                    user.id = memberId,
-                        user.name = name;
+                    user.id = memberId;
+                    user.name = name;
                     user.image = image;
                     // Step #4 write journal (ILoginJournal) in [C] loginJournal
                     const loginJournalCollectionClient = atlasDbClient.db('journal').collection<ILoginJournal>('login');
@@ -294,7 +294,7 @@ export default NextAuth({
             }
         },
         async session({ session, user, token }: any) {
-            session.user.id = token.id;
+            session.user.id = token.sub;
             return session;
         }
     }

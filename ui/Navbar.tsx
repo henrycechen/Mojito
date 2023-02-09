@@ -62,6 +62,7 @@ const langConfigs: LangConfigs = {
 
 export default () => {
     const { data: session, status } = useSession();
+    const mySession: any = { ...session }
     const router = useRouter();
 
     const theme = useTheme();
@@ -73,8 +74,8 @@ export default () => {
     const handleClick = (actionIndex: number) => {
         setAnchorEl(null);
         if (actionIndex === 0) { router.push('/me/createpost') };
-        if (actionIndex === 1) { router.push('/me/id?c=message') };
-        if (actionIndex === 2) { router.push('/me/id?c=post') };
+        if (actionIndex === 1) { router.push(`/me/id/${mySession?.user?.id}?layout=message`) };
+        if (actionIndex === 2) { router.push(`/me/id/${mySession?.user?.id}?layout=post`) };
         if (actionIndex === 3) { signOut() };
     }
 

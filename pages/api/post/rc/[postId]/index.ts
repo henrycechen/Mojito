@@ -8,7 +8,7 @@ import AzureTableClient from '../../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from '../../../../../modules/AtlasDatabaseClient';
 
 import { INoticeInfo, IMemberPostMapping, INotificationStatistics, IMemberStatistics, IChannelStatistics, ITopicComprehensive, ITopicPostMapping, IPostComprehensive, IEditedPostComprehensive, IMemberComprehensive } from '../../../../../lib/interfaces';
-import { getRandomIdStrL, getNicknameFromToken, getTopicBase64StringsArrayFromRequestBody, getRestrictedFromPostComprehensive, getImageUrlsArrayFromRequestBody, getParagraphsArrayFromRequestBody, verifyId, response405, response500, log, providePostComprehensiveUpdate, getCuedMemberInfoArrayFromRequestBody, provideEditedPostInfo, provideTopicComprehensive, createNoticeId } from '../../../../../lib/utils';
+import { getNicknameFromToken, getTopicBase64StringsArrayFromRequestBody, getRestrictedFromPostComprehensive, getImageUrlsArrayFromRequestBody, getParagraphsArrayFromRequestBody, verifyId, response405, response500, log, providePostComprehensiveUpdate, getCuedMemberInfoArrayFromRequestBody, provideEditedPostInfo, provideTopicComprehensive, createNoticeId } from '../../../../../lib/utils';
 
 const domain = process.env.NEXT_PUBLIC_APP_DOMAIN;
 
@@ -44,8 +44,8 @@ export default async function GetRestrictedPostComprehensiveById(req: NextApiReq
             `這是@WebMaster從維基百科搬過來的...@县长马邦德是@WebMaster的老闆`
         ],
         cuedMemberInfoArr: [
-            {memberId: 'M1234XXXX', nickname: 'WebMaster'},
-            {memberId: 'M1234ABCD', nickname: '县长马邦德'},
+            { memberId: 'M1234XXXX', nickname: 'WebMaster' },
+            { memberId: 'M1234ABCD', nickname: '县长马邦德' },
         ],
         channelId: 'hobby',
         topicIdsArr: [

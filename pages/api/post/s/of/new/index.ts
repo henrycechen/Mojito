@@ -1,12 +1,18 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 
 export default async function PostRankingOf24HoursNewest(req: NextApiRequest, res: NextApiResponse) {
+
+    console.log('new');
+    console.log(req.query?.channelId, req.query?.withMemberInfo, req.query?.quantity);
+
     res.send([
         {
             postId: 'post-id-0',
             memberId: 'M1234XXXX',
-            nickname: 'WebMaster',
-            avatarImageUrl: '',
+
+            nickname: '猴賽雷啊',
+            avatarImageUrl: 'https://cdn1.iconfinder.com/data/icons/animal-avatars-1/60/Sloth-animals-nature-wildlife-animal-avatars-1024.png',
+
             createdTime: 1674610376336,
             imageUrlsArr: ['https://mui.com/static/images/cards/paella.jpg'],
             title: 'WebMaster看得最多的一张图片',
@@ -17,8 +23,10 @@ export default async function PostRankingOf24HoursNewest(req: NextApiRequest, re
         {
             postId: 'post-id-1',
             memberId: 'M1234XXXX',
+
             nickname: 'WebMaster',
             avatarImageUrl: '',
+
             createdTime: 1674610376336,
             imageUrlsArr: ['https://i.imgur.com/cYDG24D.jpeg'],
             title: '在Imgur上看到的Elonald Trusk',
@@ -29,8 +37,10 @@ export default async function PostRankingOf24HoursNewest(req: NextApiRequest, re
         {
             postId: 'post-id-2',
             memberId: 'M1234XXXX',
+
             nickname: 'WebMaster',
             avatarImageUrl: '',
+
             createdTime: 1674610376336,
             imageUrlsArr: ['https://i.imgur.com/IWP1cL4.jpeg'],
             title: 'Just a Golden Retriever in the Fall Leaves',
@@ -41,8 +51,10 @@ export default async function PostRankingOf24HoursNewest(req: NextApiRequest, re
         {
             postId: 'post-id-3',
             memberId: 'M1234XXXX',
+
             nickname: 'WebMaster',
             avatarImageUrl: '',
+
             createdTime: 1674610376336,
             imageUrlsArr: ['https://i.imgur.com/Ne2hcBt.jpeg'],
             title: 'Home of Stephen King, Bangor, ME',
@@ -53,8 +65,10 @@ export default async function PostRankingOf24HoursNewest(req: NextApiRequest, re
         {
             postId: 'post-id-4',
             memberId: 'M1234XXXX',
+
             nickname: 'WebMaster',
             avatarImageUrl: '',
+
             createdTime: 1674610376336,
             imageUrlsArr: ['https://i.imgur.com/9qTKlKW.jpeg'],
             title: 'The Fellowship of the Ring (1978)',
@@ -65,8 +79,10 @@ export default async function PostRankingOf24HoursNewest(req: NextApiRequest, re
         {
             postId: 'post-id-5',
             memberId: 'M1234XXXX',
+
             nickname: 'WebMaster',
             avatarImageUrl: '',
+
             createdTime: 1674610376336,
             imageUrlsArr: ['https://i.imgur.com/fQdY6Fs.jpeg'],
             title: 'beautiful art by Sam Yang',
@@ -77,8 +93,10 @@ export default async function PostRankingOf24HoursNewest(req: NextApiRequest, re
         {
             postId: 'post-id-6',
             memberId: 'M1234XXXX',
+
             nickname: 'WebMaster',
             avatarImageUrl: '',
+
             createdTime: 1674610376336,
             imageUrlsArr: ['https://i.imgur.com/tGBVefA.jpeg'],
             title: 'REPUGNANTS',
@@ -89,8 +107,10 @@ export default async function PostRankingOf24HoursNewest(req: NextApiRequest, re
         {
             postId: 'post-id-7',
             memberId: 'M1234XXXX',
-            nickname: 'WebMaster',
-            avatarImageUrl: '',
+
+            nickname: 'Pikabu Monster',
+            avatarImageUrl: 'https://www.google.com/url?sa=i&url=https%3A%2F%2Fpikabu.monster%2Fposts-1%3Ftag%3D%25D0%2590%25D0%25B2%25D0%25B0%25D1%2582%25D0%25B0%25D1%2580%25D0%25BA%25D0%25B0%255C%25D0%2590%25D0%25BD%25D0%25B8%25D0%25BC%25D0%25B5&psig=AOvVaw37861TIpzR_kDsdNyMsUHJ&ust=1675373812288000&source=images&cd=vfe&ved=2ahUKEwjw0ez4o_X8AhVDpOkKHbxjBV8QjRx6BAgAEAo',
+
             createdTime: 1674610376336,
             imageUrlsArr: ['https://i.imgur.com/3PcGJbZ.jpeg'],
             title: 'What a nice Tuesday',
@@ -101,8 +121,10 @@ export default async function PostRankingOf24HoursNewest(req: NextApiRequest, re
         {
             postId: 'post-id-8',
             memberId: 'M1234XXXX',
+
             nickname: 'WebMaster',
             avatarImageUrl: '',
+
             createdTime: 1674610376336,
             imageUrlsArr: ['https://i.imgur.com/aqaWs3K.jpeg'],
             title: '#cakeday',
@@ -113,8 +135,10 @@ export default async function PostRankingOf24HoursNewest(req: NextApiRequest, re
         {
             postId: 'post-id-9',
             memberId: 'M1234XXXX',
+
             nickname: 'WebMaster',
             avatarImageUrl: '',
+
             createdTime: 1674610376336,
             imageUrlsArr: ['https://i.imgur.com/GwMvtMD.jpeg'],
             title: 'The Acropolis of Athens, the great jewel of classical Greece',
@@ -125,8 +149,10 @@ export default async function PostRankingOf24HoursNewest(req: NextApiRequest, re
         {
             postId: 'post-id-10',
             memberId: 'M1234XXXX',
+
             nickname: 'WebMaster',
             avatarImageUrl: '',
+
             createdTime: 1674610376336,
             imageUrlsArr: ['https://i.imgur.com/qbeOXWl.jpeg'],
             title: 'I FOUND IT.',
@@ -137,8 +163,10 @@ export default async function PostRankingOf24HoursNewest(req: NextApiRequest, re
         {
             postId: 'post-id-11',
             memberId: 'M1234XXXX',
+
             nickname: 'WebMaster',
             avatarImageUrl: '',
+
             createdTime: 1674610376336,
             imageUrlsArr: ['https://i.imgur.com/RnGBjx2.jpeg'],
             title: 'Actors and their stunt doubles!',
@@ -149,8 +177,10 @@ export default async function PostRankingOf24HoursNewest(req: NextApiRequest, re
         {
             postId: 'post-id-12',
             memberId: 'M1234XXXX',
+
             nickname: 'WebMaster',
             avatarImageUrl: '',
+
             createdTime: 1674610376336,
             imageUrlsArr: ['https://i.imgur.com/fgOXKnw.jpeg'],
             title: 'Thor Odinbun: God of Bunder',
@@ -161,8 +191,10 @@ export default async function PostRankingOf24HoursNewest(req: NextApiRequest, re
         {
             postId: 'post-id-13',
             memberId: 'M1234XXXX',
+
             nickname: 'WebMaster',
             avatarImageUrl: '',
+
             createdTime: 1674610376336,
             imageUrlsArr: ['https://i.imgur.com/1TlSUWC.jpeg'],
             title: 'Beautiful art',
@@ -173,8 +205,10 @@ export default async function PostRankingOf24HoursNewest(req: NextApiRequest, re
         {
             postId: 'post-id-14',
             memberId: 'M1234XXXX',
+
             nickname: 'WebMaster',
             avatarImageUrl: '',
+
             createdTime: 1674610376336,
             imageUrlsArr: ['https://i.imgur.com/CBAjNKS.jpeg'],
             title: 'Finally finished this Philippa Eilhart Cosplay from The Witcher',
@@ -185,8 +219,10 @@ export default async function PostRankingOf24HoursNewest(req: NextApiRequest, re
         {
             postId: 'post-id-15',
             memberId: 'M1234XXXX',
+
             nickname: 'WebMaster',
             avatarImageUrl: '',
+
             createdTime: 1674610376336,
             imageUrlsArr: ['https://i.imgur.com/2uKxVvO.jpeg'],
             title: 'It was a long day',
@@ -197,8 +233,10 @@ export default async function PostRankingOf24HoursNewest(req: NextApiRequest, re
         {
             postId: 'post-id-16',
             memberId: 'M1234XXXX',
+
             nickname: 'WebMaster',
             avatarImageUrl: '',
+
             createdTime: 1674610376336,
             imageUrlsArr: ['https://i.imgur.com/C9V5MX8.jpeg'],
             title: 'A photo of my dog Panko every day',
@@ -209,8 +247,10 @@ export default async function PostRankingOf24HoursNewest(req: NextApiRequest, re
         {
             postId: 'post-id-17',
             memberId: 'M1234XXXX',
+
             nickname: 'WebMaster',
             avatarImageUrl: '',
+
             createdTime: 1674610376336,
             imageUrlsArr: ['https://i.imgur.com/UALNrSn.jpeg'],
             title: 'It\'s my cake day! To celebrate, here\'s my wedding dress that I made myself!!',
@@ -221,8 +261,10 @@ export default async function PostRankingOf24HoursNewest(req: NextApiRequest, re
         {
             postId: 'post-id-18',
             memberId: 'M1234XXXX',
+
             nickname: 'WebMaster',
             avatarImageUrl: '',
+
             createdTime: 1674610376336,
             imageUrlsArr: ['https://i.imgur.com/S9IYY5x.jpeg'],
             title: 'Me too!!',
@@ -233,8 +275,10 @@ export default async function PostRankingOf24HoursNewest(req: NextApiRequest, re
         {
             postId: 'post-id-19',
             memberId: 'M1234XXXX',
+
             nickname: 'WebMaster',
             avatarImageUrl: '',
+
             createdTime: 1674610376336,
             imageUrlsArr: ['https://i.imgur.com/dcNstYH.jpeg'],
             title: 'A Dump of Cute Animal Memes ',
@@ -245,8 +289,10 @@ export default async function PostRankingOf24HoursNewest(req: NextApiRequest, re
         {
             postId: 'post-id-20',
             memberId: 'M1234XXXX',
+
             nickname: 'WebMaster',
             avatarImageUrl: '',
+
             createdTime: 1674610376336,
             imageUrlsArr: ['https://i.imgur.com/PbcaRNa.png'],
             title: 'Animal derps',
@@ -257,8 +303,10 @@ export default async function PostRankingOf24HoursNewest(req: NextApiRequest, re
         {
             postId: 'post-id-21',
             memberId: 'M1234XXXX',
+
             nickname: 'WebMaster',
             avatarImageUrl: '',
+
             createdTime: 1674610376336,
             imageUrlsArr: ['https://i.imgur.com/Ae1wefj.jpeg'],
             title: 'Then and now. She destroys every stuffed animal except this one. :)',
@@ -269,8 +317,10 @@ export default async function PostRankingOf24HoursNewest(req: NextApiRequest, re
         {
             postId: 'post-id-22',
             memberId: 'M1234XXXX',
+
             nickname: 'WebMaster',
             avatarImageUrl: '',
+
             createdTime: 1674610376336,
             imageUrlsArr: ['https://i.imgur.com/jSrk41C.png'],
             title: '?',
@@ -281,8 +331,10 @@ export default async function PostRankingOf24HoursNewest(req: NextApiRequest, re
         {
             postId: 'post-id-23',
             memberId: 'M1234XXXX',
+
             nickname: 'WebMaster',
             avatarImageUrl: '',
+
             createdTime: 1674610376336,
             imageUrlsArr: ['https://i.imgur.com/h4YdP09.jpeg'],
             title: 'I’m kinda stoked',
@@ -293,8 +345,10 @@ export default async function PostRankingOf24HoursNewest(req: NextApiRequest, re
         {
             postId: 'post-id-24',
             memberId: 'M1234XXXX',
+
             nickname: 'WebMaster',
             avatarImageUrl: '',
+
             createdTime: 1674610376336,
             imageUrlsArr: ['https://i.imgur.com/v8RoSVP.png'],
             title: 'A Larger guide to Imgur animal names PT 2!',
@@ -305,8 +359,10 @@ export default async function PostRankingOf24HoursNewest(req: NextApiRequest, re
         {
             postId: 'post-id-25',
             memberId: 'M1234XXXX',
+
             nickname: 'WebMaster',
             avatarImageUrl: '',
+
             createdTime: 1674610376336,
             imageUrlsArr: ['https://i.imgur.com/ncoNpAo.jpeg'],
             title: 'Tumblr : Animal Edition',
@@ -317,8 +373,10 @@ export default async function PostRankingOf24HoursNewest(req: NextApiRequest, re
         {
             postId: 'post-id-26',
             memberId: 'M1234XXXX',
+
             nickname: 'WebMaster',
             avatarImageUrl: '',
+
             createdTime: 1674610376336,
             imageUrlsArr: ['https://i.imgur.com/ogUchxX.jpeg'],
             title: 'cat',
@@ -329,8 +387,10 @@ export default async function PostRankingOf24HoursNewest(req: NextApiRequest, re
         {
             postId: 'post-id-27',
             memberId: 'M1234XXXX',
+
             nickname: 'WebMaster',
             avatarImageUrl: '',
+
             createdTime: 1674610376336,
             imageUrlsArr: ['https://i.imgur.com/Ct5jAYO.jpeg'],
             title: 'Bond villain confirmed',
@@ -341,8 +401,10 @@ export default async function PostRankingOf24HoursNewest(req: NextApiRequest, re
         {
             postId: 'post-id-28',
             memberId: 'M1234XXXX',
+
             nickname: 'WebMaster',
             avatarImageUrl: '',
+
             createdTime: 1674610376336,
             imageUrlsArr: ['https://i.imgur.com/V0Ao5Il.jpeg'],
             title: 'Beautiful Victorian Architecture Fort Hamilton Parkway Brooklyn',
@@ -353,8 +415,10 @@ export default async function PostRankingOf24HoursNewest(req: NextApiRequest, re
         {
             postId: 'post-id-29',
             memberId: 'M1234XXXX',
+
             nickname: 'WebMaster',
             avatarImageUrl: '',
+
             createdTime: 1674610376336,
             imageUrlsArr: ['https://i.imgur.com/ZwgUOWg.jpeg'],
             title: 'A very American genius…',

@@ -29,7 +29,7 @@ import BackToHomeButtonGroup from '../ui/BackToHomeButtonGroup';
 import ReCAPTCHA from "react-google-recaptcha";
 
 import { useRouter } from 'next/router';
-import { LangConfigs, SignInCredentialStates } from '../lib/types';
+import { LangConfigs, TSignInCredentialStates } from '../lib/types';
 import { verifyEmailAddress, verifyPassword } from '../lib/utils';
 import Consent from '../ui/Consent';
 
@@ -241,7 +241,7 @@ const SignUp = ({ providers }: any) => {
     })
 
     // Handle signIn credential states change
-    const handleChange = (prop: keyof SignInCredentialStates) => (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleChange = (prop: keyof TSignInCredentialStates) => (event: React.ChangeEvent<HTMLInputElement>) => {
         setSignInCredentialStates({ ...signInCredentialStates, [prop]: event.target.value });
     };
     const handleShowPassword = () => {

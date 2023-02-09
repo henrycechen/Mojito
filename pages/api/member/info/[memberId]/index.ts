@@ -38,12 +38,13 @@ export default async function MemberInfoById(req: NextApiRequest, res: NextApiRe
     try {
       
         const info: TMemberInfo = {
-            memberId: 'M1234ABCD',
-            nickname: '县长马邦德',
-            avatarImageUrl: 'https://p3-pc-sign.douyinpic.com/image-cut-tos-priv/3e1f26ab6652e8bab2146d9685309421~tplv-dy-resize-origshort-autoq-75:330.jpeg?x-expires=1988985600&x-signature=QXW59uArpZ4MLuzLDFUUD8X80Kg%3D&from=3213915784&s=PackSourceEnum_AWEME_DETAIL&se=false&sc=cover&biz_tag=pcweb_cover&l=202301140039005D37849F840BB8293C1A'
+            memberId: 'M1234XXXX',
+            nickname: 'WebMaster',
+            avatarImageUrl: 'https://www.nicepng.com/png/full/804-8049853_med-boukrima-specialist-webmaster-php-e-commerce-web.png'
         }
-      
+        
         res.send(info);
+        // avatarImageUrl: 'https://p3-pc-sign.douyinpic.com/image-cut-tos-priv/3e1f26ab6652e8bab2146d9685309421~tplv-dy-resize-origshort-autoq-75:330.jpeg?x-expires=1988985600&x-signature=QXW59uArpZ4MLuzLDFUUD8X80Kg%3D&from=3213915784&s=PackSourceEnum_AWEME_DETAIL&se=false&sc=cover&biz_tag=pcweb_cover&l=202301140039005D37849F840BB8293C1A'
 
         
     } catch (e: any) {

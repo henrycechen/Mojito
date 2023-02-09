@@ -9,7 +9,7 @@ import { IMemberMemberMapping, INoticeInfo, INotificationStatistics, IMemberComp
 import { createNoticeId, getNicknameFromToken, verifyId, response405, response500, log, } from '../../../../lib/utils';
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
 
-/** This interface ONLY accepts GET requests
+/** This interface accepts GET and POST requests
  * 
  * Info required for GET requests
  * 
@@ -20,12 +20,16 @@ const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
 
 export default async function GetNotificationStatistics(req: NextApiRequest, res: NextApiResponse) {
     const { method } = req;
-    if ('GET' !== method) {
+    if (!['GET', 'PUT'].includes(method ?? '')) {
         response405(req, res);
         return;
     }
-
-    res.send({ cue: 1, reply: 1, like: 123, pin: 1, save: 1, follow: 1 })
+    if ('GET' === method){
+        res.send({ cue: 16, reply: 23, like: 99, pin: 7, save: 56, follow: 34 })
+    }
+    if ('PUT' === method){
+        res.status(200).end();
+    }
     return;
 
 

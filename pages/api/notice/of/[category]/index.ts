@@ -7,7 +7,7 @@ import AzureTableClient from '../../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from "../../../../../modules/AtlasDatabaseClient";
 
 import { IMemberComprehensive, } from '../../../../../lib/interfaces';
-import { response405, response500, log } from '../../../../../lib/utils';
+import { response405, response500, log, createNoticeId, createId } from '../../../../../lib/utils';
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
 
 /** This interface ONLY accepts GET requests
@@ -27,9 +27,119 @@ export default async function GetNoticeByCategory(req: NextApiRequest, res: Next
 
 
     // /////////////////// TEST FIXME:
-    
-
-
+    const { category } = req.query;
+    if ('like' === category) {
+        res.send([]);
+        return
+        res.send([
+            {
+                noticeId: `${createNoticeId('like', 'M2950ABBX', createId('post'))}`,
+                category: 'like',
+                initiateId: 'M2950ABBX',
+                nickname: '550W不是Moss',
+                avatarImageUrl: 'https://cdn.icon-icons.com/icons2/1371/PNG/512/robot02_90810.png',
+                createdTime: 1675644625055,
+                postTitle: '請告訴我，整天說算不算放棄',
+            },
+            {
+                noticeId: `${createNoticeId('like', 'M2950ABBX', createId('post'))}`,
+                category: 'like',
+                initiateId: 'M2950ABBX',
+                nickname: '550W不是Moss',
+                avatarImageUrl: 'https://cdn.icon-icons.com/icons2/1371/PNG/512/robot02_90810.png',
+                createdTime: 1675644894030,
+                postTitle: '彩色的時間染上空空空白',
+            },
+            {
+                noticeId: `${createNoticeId('like', 'M2950ABBX', createId('post'), createId('comment'))}`,
+                category: 'like',
+                initiateId: 'M2950ABBX',
+                nickname: '550W不是Moss',
+                avatarImageUrl: 'https://cdn.icon-icons.com/icons2/1371/PNG/512/robot02_90810.png',
+                createdTime: 1675645871314,
+                postTitle: '我不知道你有这么多的话要讲',
+                commentBrief: '但是我感觉这篇帖子发的都是一些发话'
+            },
+            {
+                noticeId: `${createNoticeId('like', 'M1234XXXX', createId('post'))}`,
+                category: 'like',
+                initiateId: 'M1234XXXX',
+                nickname: 'WebMaster',
+                avatarImageUrl: 'https://www.nicepng.com/png/full/804-8049853_med-boukrima-specialist-webmaster-php-e-commerce-web.png',
+                createdTime: 1675645871314,
+                postTitle: '想象不到如此心跳',
+            },
+            {
+                noticeId: `${createNoticeId('like', 'M1234XXXX', createId('post'))}`,
+                category: 'like',
+                initiateId: 'M3380ACMM',
+                nickname: '測試一下名字最長可以有多長雖然可能會被拒絕',
+                avatarImageUrl: 'https://store.playstation.com/store/api/chihiro/00_09_000/container/PT/pt/19/EP4067-NPEB01320_00-AVPOPULUSM000897/image?w=320&h=320&bg_color=000000&opacity=100&_version=00_09_000',
+                createdTime: 1675645871314,
+                postTitle: '想象不到如此心跳',
+            },
+        ])
+    }
+    if ('save' === category) {
+        res.send([
+            {
+                noticeId: `${createNoticeId('save', 'M2950ABBX', createId('post'))}`,
+                category: 'save',
+                initiateId: 'M2950ABBX',
+                nickname: '550W不是Moss',
+                avatarImageUrl: 'https://cdn.icon-icons.com/icons2/1371/PNG/512/robot02_90810.png',
+                createdTime: 1675645871314,
+                postTitle: '我不知道你有这么多的话要讲',
+                commentBrief: '但是我感觉这篇帖子发的都是一些发话'
+            },
+            {
+                noticeId: `${createNoticeId('save', 'M1234XXXX', createId('post'))}`,
+                category: 'save',
+                initiateId: 'M1234XXXX',
+                nickname: 'WebMaster',
+                avatarImageUrl: 'https://www.nicepng.com/png/full/804-8049853_med-boukrima-specialist-webmaster-php-e-commerce-web.png',
+                createdTime: 1675645871314,
+                postTitle: '想象不到如此心跳',
+            },
+            {
+                noticeId: `${createNoticeId('save', 'M3380ACMM', createId('post'))}`,
+                category: 'save',
+                initiateId: 'M3380ACMM',
+                nickname: '測試一下名字最長可以有多長雖然可能會被拒絕',
+                avatarImageUrl: 'https://store.playstation.com/store/api/chihiro/00_09_000/container/PT/pt/19/EP4067-NPEB01320_00-AVPOPULUSM000897/image?w=320&h=320&bg_color=000000&opacity=100&_version=00_09_000',
+                createdTime: 1675645871314,
+                postTitle: '想象不到如此心跳',
+            },
+        ])
+    }
+    if ('reply' === category) {
+        res.send([
+            {
+                noticeId: `${createNoticeId('reply', 'M2950ABBX', createId('post'), createId('comment'))}`,
+                category: 'reply',
+                initiateId: 'M2950ABBX',
+                nickname: '550W不是Moss',
+                avatarImageUrl: 'https://cdn.icon-icons.com/icons2/1371/PNG/512/robot02_90810.png',
+                createdTime: 1675645871314,
+                postTitle: '我不知道你有这么多的话要讲',
+                commentBrief: '但是我感觉这篇帖子发的都是一些发话'
+            },
+        ])
+    }
+    if ('cue' === category) {
+        res.send([
+            {
+                noticeId: `${createNoticeId('cue', 'M3380ACMM', createId('post'))}`,
+                category: 'cue',
+                initiateId: 'M3380ACMM',
+                nickname: '測試一下名字最長可以有多長雖然可能會被拒絕',
+                avatarImageUrl: 'https://store.playstation.com/store/api/chihiro/00_09_000/container/PT/pt/19/EP4067-NPEB01320_00-AVPOPULUSM000897/image?w=320&h=320&bg_color=000000&opacity=100&_version=00_09_000',
+                createdTime: 1675645871314,
+                postTitle: '想象不到如此心跳',
+            },
+        ])
+    }
+    return;
 
 
     //// Verify identity ////
@@ -38,7 +148,7 @@ export default async function GetNoticeByCategory(req: NextApiRequest, res: Next
         res.status(400).send('Invalid identity');
         return;
     }
-    const category = req.query?.category;
+    // const category = req.query?.category;
     //// Verify notice category ////
     if (('string' === typeof category && ['cue', 'reply', 'like', 'pin', 'save', 'follow'].includes(category))) {
         res.status(400).send('Invalid notice category');

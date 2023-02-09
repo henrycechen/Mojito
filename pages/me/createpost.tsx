@@ -65,8 +65,6 @@ type ProcessStates = {
     submitting: boolean;
 }
 
-
-
 type TPostInfoOnEdit = {
     title: string;
     imageUrlsArr: string[];
