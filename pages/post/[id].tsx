@@ -17,6 +17,7 @@ import ThumbDownIcon from '@mui/icons-material/ThumbDown';
 import ChatBubbleIcon from '@mui/icons-material/ChatBubble';
 import StarIcon from '@mui/icons-material/Star';
 import ReplyIcon from '@mui/icons-material/Reply';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
 
 
 import { ResponsiveCard, CenterlizedBox, TextButton } from '../../ui/Styled';
@@ -942,7 +943,7 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, a
                                         <IconButton aria-label='like' onClick={handleExpressAttitudeOnPost(1)}>
                                             <ThumbUpIcon color={1 === behaviourStates.attitudeOnPost ? 'primary' : 'inherit'} fontSize='small' />
                                         </IconButton>
-                                        <Typography variant='body2' sx={{ marginTop: 1.1 }}>{postStatisticsState.totalLikedCount + behaviourStates.attitudeOnPost}</Typography>
+                                        <Typography variant='body2' sx={{ marginTop: 1 }}>{postStatisticsState.totalLikedCount + behaviourStates.attitudeOnPost}</Typography>
                                     </Grid>
 
                                     {/* dislike */}
@@ -957,7 +958,7 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, a
                                         <IconButton aria-label='save' onClick={handleSave}>
                                             <StarIcon color={behaviourStates.saved ? 'warning' : 'inherit'} fontSize='small' />
                                         </IconButton>
-                                        <Typography variant='body2' sx={{ marginTop: 1.1 }}>{postStatisticsState.totalSavedCount + (behaviourStates.saved ? 1 : 0)}</Typography>
+                                        <Typography variant='body2' sx={{ marginTop: 1 }}>{postStatisticsState.totalSavedCount + (behaviourStates.saved ? 1 : 0)}</Typography>
                                     </Grid>
 
                                     {/* comment */}
@@ -967,17 +968,21 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, a
                                                 <ChatBubbleIcon fontSize='small' />
                                             </IconButton>
                                         </Tooltip>
-                                        <Typography variant='body2' sx={{ marginTop: 1.1 }}>{postStatisticsState.totalCommentCount}</Typography>
+                                        <Typography variant='body2' sx={{ marginTop: 1 }}>{postStatisticsState.totalCommentCount}</Typography>
                                     </Grid>
 
                                     {/* blank space */}
-                                    <Grid item flexGrow={1}></Grid>
+                                    <Grid item flexGrow={1} />
+                                    <Grid item>
+                                        <IconButton ><MoreVertIcon fontSize='small' /></IconButton>
+                                        {/* FIXME: put the option of "edit post" in the hidden menu */}
+                                    </Grid>
 
                                     {/* edit post */}
-                                    <Grid item sx={{ display: 'flex', flexDirection: 'row' }}>
-                                        {/* FIXME: on testing, should be authorId === viewerId */}
-                                        {authorId === authorId && <Button variant='text' sx={{ ml: 1, padding: 0 }} onClick={handleEditPost}>{langConfigs.editPost[preferenceStates.lang]}</Button>}
-                                    </Grid>
+                                    {/* <Grid item sx={{ display: 'flex', flexDirection: 'row' }}> */}
+                                    {/* FIXME: on testing, should be authorId === viewerId */}
+                                    {/* {authorId === authorId && <Button variant='text' sx={{ ml: 1, padding: 0 }} onClick={handleEditPost}>{langConfigs.editPost[preferenceStates.lang]}</Button>} */}
+                                    {/* </Grid> */}
                                 </Grid>
                             </ResponsiveCard>
 
@@ -1020,7 +1025,7 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, a
                                                         <IconButton aria-label='like' onClick={handleExpressAttitudeOnComment(commentId, 1)}>
                                                             <ThumbUpIcon color={1 === behaviourStates.attitudeOnComment[commentId] ? 'primary' : 'inherit'} fontSize='small' />
                                                         </IconButton>
-                                                        <Typography variant='body2' sx={{ marginTop: 1.1 }}>{totalLikedCount}</Typography>
+                                                        <Typography variant='body2' sx={{ marginTop: 1 }}>{totalLikedCount}</Typography>
                                                     </Grid>
 
                                                     {/* dislike */}
@@ -1037,9 +1042,18 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, a
                                                                 <ReplyIcon fontSize='small' />
                                                             </IconButton>
                                                         </Tooltip>
-                                                        <Typography variant='body2' sx={{ marginTop: 1.1 }}>{restrictedCommentComprehensiveWithMemberInfoDict[commentId].totalSubcommentCount}</Typography>
+                                                        <Typography variant='body2' sx={{ marginTop: 1 }}>{restrictedCommentComprehensiveWithMemberInfoDict[commentId].totalSubcommentCount}</Typography>
+                                                    </Grid>
+
+                                                    {/* blank space */}
+                                                    <Grid item flexGrow={1} />
+                                                    <Grid item>
+                                                        <IconButton ><MoreVertIcon fontSize='small' /></IconButton>
+                                                        {/* FIXME: put the option of "edit post" in the hidden menu */}
                                                     </Grid>
                                                 </Grid>
+
+
 
                                                 {/* subcomment stack wrapper */}
                                                 <Box sx={{ display: 0 !== restrictedCommentComprehensiveWithMemberInfoDict[commentId].totalSubcommentCount ? 'block' : 'none' }}>
@@ -1083,7 +1097,7 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, a
                                                                             <IconButton aria-label='like' onClick={handleExpressAttitudeOnSubcomment(commentId, subcommentId, 1)}>
                                                                                 <ThumbUpIcon color={1 === behaviourStates.attitudeOnComment[subcommentId] ? 'primary' : 'inherit'} fontSize='small' />
                                                                             </IconButton>
-                                                                            <Typography variant='body2' sx={{ marginTop: 1.1 }}>{totalLikedCount}</Typography>
+                                                                            <Typography variant='body2' sx={{ marginTop: 1 }}>{totalLikedCount}</Typography>
                                                                         </Grid>
 
                                                                         {/* dislike */}
@@ -1100,6 +1114,13 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, a
                                                                                     <ReplyIcon fontSize='small' />
                                                                                 </IconButton>
                                                                             </Tooltip>
+                                                                        </Grid>
+
+                                                                        {/* blank space */}
+                                                                        <Grid item flexGrow={1} />
+                                                                        <Grid item>
+                                                                            <IconButton ><MoreVertIcon fontSize='small' /></IconButton>
+                                                                            {/* FIXME: put the option of "edit post" in the hidden menu */}
                                                                         </Grid>
                                                                     </Grid>
                                                                 </Box>

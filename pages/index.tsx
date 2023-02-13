@@ -23,7 +23,7 @@ import Masonry from '@mui/lab/Masonry';
 
 import Paper from '@mui/material/Paper';
 
-import { FormControlLabel, styled } from '@mui/material';
+import { FormControlLabel, Menu, styled } from '@mui/material';
 
 
 import Divider from '@mui/material/Divider';
@@ -31,6 +31,8 @@ import MenuList from '@mui/material/MenuList';
 import MenuItem from '@mui/material/MenuItem';
 import ListItemText from '@mui/material/ListItemText';
 import ListItemIcon from '@mui/material/ListItemIcon';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import BlockIcon from '@mui/icons-material/Block';
 
 import { useTheme } from '@emotion/react';
 import { useRouter } from 'next/router';
@@ -40,6 +42,7 @@ import { updateLocalStorage, restoreFromLocalStorage, getNicknameBrief } from '.
 import { CenterlizedBox, ResponsiveCard, StyledSwitch, TextButton } from '../ui/Styled';
 import Navbar from '../ui/Navbar';
 import { IConcisePostComprehensive, IConcisePostComprehensiveWithMemberInfo, IProcessStates } from '../lib/interfaces';
+import Copyright from '../ui/Copyright';
 
 const storageName = 'HomePageProcessStates';
 const updateProcessStatesCache = updateLocalStorage(storageName);
@@ -352,6 +355,11 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
         router.push(`/me/id/${viewerId}`);
     }
 
+    //////// STATES - post menu ////////
+    const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+    const handleOpenMemberMenu = (event: React.MouseEvent<HTMLElement>) => { setAnchorEl(event.currentTarget) }
+    const handleCloseMemberMenu = () => { setAnchorEl(null) }
+
     //////// STATE - posts (24 hours) ////////
     const [twentyFourHoursPostArr, setTtwentyFourHoursPostArr] = React.useState<IConcisePostComprehensive[]>([]);
 
@@ -534,7 +542,7 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
                                                 <Grid container>
 
                                                     {/* member info */}
-                                                    <Grid item >
+                                                    <Grid item flexGrow={1}>
                                                         <Box display={'flex'} flexDirection={'row'}>
                                                             <Button variant={'text'} color={'inherit'} sx={{ textTransform: 'none' }} onClick={handleClickOnMemberInfo(post.memberId, post.postId)}>
                                                                 <Avatar src={post.avatarImageUrl} sx={{ width: 34, height: 34, bgcolor: 'grey' }}>{post.nickname?.charAt(0).toUpperCase()}</Avatar>
@@ -546,7 +554,8 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
                                                     </Grid>
 
                                                     {/* member behaviour / placeholder */}
-                                                    <Grid item flexGrow={1}>
+                                                    <Grid item >
+                                                        <IconButton onClick={handleOpenMemberMenu}><MoreVertIcon /></IconButton>
                                                     </Grid>
                                                 </Grid>
                                             </Box>
@@ -556,6 +565,13 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
                             })}
                         </Masonry>
                     </Box>
+
+                    <CenterlizedBox>
+                        <Button variant='contained'>{'Load more'}</Button>
+                    </CenterlizedBox>
+
+                    {/* copyright */}
+                    <Copyright sx={{ marginY: 8 }} />
                 </Grid>
 
                 {/* //// right column //// */}
@@ -675,6 +691,22 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
                 {/* //// placeholder - right //// */}
                 <Grid item xs={0} sm={0} md={0} lg={0} xl={0}></Grid>
             </Grid>
+            <Menu
+                sx={{ mt: '45px' }}
+                anchorEl={anchorEl}
+                anchorOrigin={{ vertical: 'top', horizontal: 'right', }}
+                keepMounted
+                transformOrigin={{ vertical: 'top', horizontal: 'right', }}
+                open={Boolean(anchorEl)}
+                onClose={handleCloseMemberMenu}
+                MenuListProps={{}}
+            >
+                <MenuItem >
+                    <ListItemIcon><BlockIcon /></ListItemIcon>
+                    <ListItemText>{'See less'}</ListItemText>
+                </MenuItem>
+            </Menu>
+
         </>
     )
 }

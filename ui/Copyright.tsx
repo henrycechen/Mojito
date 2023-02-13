@@ -1,32 +1,43 @@
-import Box from '@mui/material/Box';
 import Link from '@mui/material/Link';
 import Typography from '@mui/material/Typography';
-
 import { LangConfigs } from '../lib/types';
 
-const appName = process.env['APP_FULL_NAME'] ?? 'Mojito New Zealand';
-const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
-const langConfigs: LangConfigs = {
+type TComponentProps = {
+    lang?: string,
+    sx: any
+}
 
+const appName = process.env['NEXT_PUBLIC_APP_NAME'] ?? 'Mojito';
+const langConfigs: LangConfigs = {
     guidelines: {
         tw: '社區準則',
         cn: '社区准则',
-        en: 'community guidelines'
-    }
+        en: 'Community guidelines,'
+    },
+    privacy: {
+        tw: '隱私政策',
+        cn: '隐私政策',
+        en: 'Privacy policy,'
+    },
 }
 
-export default (props: any) => {
+export default function Copyright(props: TComponentProps) {
+    const { lang, sx } = props;
     return (
-        <Typography variant="body2" color="text.secondary" align="center" {...props}>
+        <Typography variant={'body2'} color={'text.secondary'} align={'center'} {...sx}>
             {'Copyright © '}
-            <Link color='inherit' href="/" underline={'none'}>
+            <Link color={'inherit'} href={'/'} underline={'none'}>
                 {appName}
             </Link>
-            {' '}
+            {' 2022-'}
             {new Date().getFullYear()}
             {' '}
-            <Link color="inherit" href="/" underline={'none'}>
-                {langConfigs.guidelines[lang]}
+            <Link color={'inherit'} href={'/guidelines'} underline={'none'}>
+                {langConfigs.guidelines[lang ?? 'tw']}
+            </Link>
+            {' '}
+            <Link color={'inherit'} href={'/privacy'} underline={'none'}>
+                {langConfigs.privacy[lang ?? 'tw']}
             </Link>
         </Typography>
     );

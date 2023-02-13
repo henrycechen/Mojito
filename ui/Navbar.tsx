@@ -51,7 +51,7 @@ const langConfigs: LangConfigs = {
     member: {
         tw: '賬戶',
         cn: '账户',
-        en: 'Account'
+        en: 'Member'
     },
     signOut: {
         tw: '登出',
@@ -113,50 +113,28 @@ export default () => {
                             <Menu
                                 sx={{ mt: '45px' }}
                                 anchorEl={anchorEl}
-                                anchorOrigin={{
-                                    vertical: 'top',
-                                    horizontal: 'right',
-                                }}
+                                anchorOrigin={{ vertical: 'top', horizontal: 'right', }}
                                 keepMounted
-                                transformOrigin={{
-                                    vertical: 'top',
-                                    horizontal: 'right',
-                                }}
+                                transformOrigin={{ vertical: 'top', horizontal: 'right', }}
                                 open={Boolean(anchorEl)}
                                 onClose={handleCloseMemberMenu}
                                 MenuListProps={{}}
                             >
                                 <MenuItem onClick={() => handleClick(0)} >
-                                    <ListItemIcon>
-                                        <CreateIcon />
-                                    </ListItemIcon>
-                                    <ListItemText>
-                                        {langConfigs.createPost[lang]}
-                                    </ListItemText>
+                                    <ListItemIcon><CreateIcon /></ListItemIcon>
+                                    <ListItemText>{langConfigs.createPost[lang]}</ListItemText>
                                 </MenuItem>
                                 <MenuItem onClick={() => handleClick(1)} >
-                                    <ListItemIcon>
-                                        <EmailIcon />
-                                    </ListItemIcon>
-                                    <ListItemText>
-                                        {langConfigs.message[lang]}
-                                    </ListItemText>
+                                    <ListItemIcon><EmailIcon /></ListItemIcon>
+                                    <ListItemText>{langConfigs.message[lang]}</ListItemText>
                                 </MenuItem>
                                 <MenuItem onClick={() => handleClick(2)} >
-                                    <ListItemIcon>
-                                        <AccountCircleIcon />
-                                    </ListItemIcon>
-                                    <ListItemText>
-                                        {langConfigs.member[lang]}
-                                    </ListItemText>
+                                    <ListItemIcon><AccountCircleIcon /></ListItemIcon>
+                                    <ListItemText>{langConfigs.member[lang]}</ListItemText>
                                 </MenuItem>
                                 <MenuItem onClick={() => handleClick(3)} >
-                                    <ListItemIcon>
-                                        <ExitToAppIcon />
-                                    </ListItemIcon>
-                                    <ListItemText>
-                                        {langConfigs.signOut[lang]}
-                                    </ListItemText>
+                                    <ListItemIcon><ExitToAppIcon /></ListItemIcon>
+                                    <ListItemText>{langConfigs.signOut[lang]}</ListItemText>
                                 </MenuItem>
                                 <Divider />
                                 <MenuItem onClick={handleColorModeSelect} >
