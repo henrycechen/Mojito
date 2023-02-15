@@ -6,7 +6,7 @@ import { MongoError } from 'mongodb';
 import AtlasDatabaseClient from "../../../../../modules/AtlasDatabaseClient";
 
 import { IMemberMemberMapping, INoticeInfo, INotificationStatistics, IMemberComprehensive, IMemberStatistics } from '../../../../../lib/interfaces';
-import { createNoticeId, getNicknameFromToken, verifyId, response405, response500, log, } from '../../../../../lib/utils';
+import { createNoticeId, getNicknameFromToken, verifyId, response405, response500, logWithDate, } from '../../../../../lib/utils';
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
 
 //////// Find out who am I following ////////

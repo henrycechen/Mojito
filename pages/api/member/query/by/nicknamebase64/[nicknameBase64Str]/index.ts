@@ -5,7 +5,7 @@ import { MongoError } from 'mongodb';
 import AtlasDatabaseClient from "../../../../../../../modules/AtlasDatabaseClient";
 
 import { IMemberMemberMapping, INoticeInfo, INotificationStatistics, IMemberComprehensive, IMemberStatistics } from '../../../../../../../lib/interfaces';
-import { createNoticeId, getNicknameFromToken, verifyId, response405, response500, log, } from '../../../../../../../lib/utils';
+import { createNoticeId, getNicknameFromToken, verifyId, response405, response500, logWithDate, } from '../../../../../../../lib/utils';
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
 
 /** This interface ONLY accepts GET requests
@@ -73,7 +73,7 @@ export default async function QueryMemberByNicknameBase64(req: NextApiRequest, r
         if (!res.headersSent) {
             response500(res, msg);
         }
-        log(msg, e);
+        logWithDate(msg, e);
         await atlasDbClient.close();
         return;
     }

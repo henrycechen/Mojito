@@ -4,7 +4,7 @@ import { MongoError } from 'mongodb';
 import AtlasDatabaseClient from '../../../../../../modules/AtlasDatabaseClient';
 
 import { INoticeInfo, IMemberPostMapping, INotificationStatistics, IMemberComprehensive, IMemberStatistics, ILoginJournal, IAttitudeComprehensive, IAttitideMapping, ICommentComprehensive, IEditedCommentComprehensive, IRestrictedCommentComprehensive, IChannelStatistics, ITopicComprehensive, ITopicPostMapping, IPostComprehensive, IEditedPostComprehensive, IRestrictedPostComprehensive } from '../../../../../../lib/interfaces';
-import { verifyId, response405, response500, log, getRestrictedFromCommentComprehensive } from '../../../../../../lib/utils';
+import { verifyId, response405, response500, logWithDate, getRestrictedFromCommentComprehensive } from '../../../../../../lib/utils';
 
 // This interface only accepts GET requests
 // 
@@ -208,7 +208,7 @@ export default async function GetCommentsByParentId(req: NextApiRequest, res: Ne
         if (!res.headersSent) {
             response500(res, msg);
         }
-        log(msg, e);
+        logWithDate(msg, e);
         await atlasDbClient.close();
         return;
     }

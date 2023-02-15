@@ -9,7 +9,7 @@ import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 
-import { useSession } from 'next-auth/react'
+import { signIn, useSession, } from 'next-auth/react'
 
 import SvgIcon from '@mui/material/SvgIcon';
 
@@ -64,13 +64,17 @@ import { useRouter } from 'next/router';
 
 import Navbar from '../../../ui/Navbar';
 import { TBrowsingHelper, LangConfigs, TChannelInfoDictionary, TChannelInfoStates, TNoticeInfoWithMemberInfo, TPreferenceStates } from '../../../lib/types';
-import { updateLocalStorage, restoreFromLocalStorage, verifyId, fakeConciseMemberInfo, fakeConciseMemberStatistics, timeToString, noticeInfoToString, verifyNoticeId, getNicknameBrief, noticeIdToUrl, getContentBrief, provideLocalStorage } from '../../../lib/utils';
+import { updateLocalStorage, restoreFromLocalStorage, verifyId, fakeConciseMemberInfo, fakeConciseMemberStatistics, timeToString, noticeInfoToString, verifyNoticeId, getNicknameBrief, noticeIdToUrl, getContentBrief, provideLocalStorage, provideAvatarImageUrl } from '../../../lib/utils';
 import { CenterlizedBox, ResponsiveCard, StyledSwitch, TextButton } from '../../../ui/Styled';
 import { IConciseMemberInfo, IConciseMemberStatistics, IConcisePostComprehensiveWithMemberInfo, IConciseMemberInfoWithBriefIntroAndTime, IConciseMemberInfoWithTime, IProcessStates } from '../../../lib/interfaces';
 import FormGroup from '@mui/material/FormGroup';
 import Switch from '@mui/material/Switch';
 import Checkbox from '@mui/material/Checkbox';
 import Link from '@mui/material/Link';
+
+import DoneIcon from '@mui/icons-material/Done';
+
+import axios, { AxiosError, AxiosResponse } from 'axios';
 
 const storageName0 = 'PreferenceStates';
 const updatePreferenceStatesCache = updateLocalStorage(storageName0);
@@ -123,7 +127,12 @@ type TBehaviourStates = {
 
 type TSettingsLayoutStates = {
     selectedSettingId: number;
-    avatarImageUrl: string | undefined;
+    // uploadPercent: number;
+
+    avatarImageUrl: string;
+    disableUploadAvatarImageButton: boolean;
+    uploadAvatarImageResult: 0 | 100 | 200 | 300 | 400; // 0:no-file, 100:ready 200:succeeded, 300:uploading 400:failed
+
     nickname: string;
     password: string;
     repeatPassword: string;
@@ -136,7 +145,7 @@ type TSettingsLayoutStates = {
     registerDate: string;
 }
 
-const domain = process.env.NEXT_PUBLIC_APP_DOMAIN;
+const domain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? '';
 const defaultLang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
     message: {
@@ -288,6 +297,31 @@ const langConfigs: LangConfigs = {
         tw: '上傳',
         cn: '上传',
         en: 'Upload'
+    },
+    chooseImageToUpload: {
+        tw: '選擇相片以上傳',
+        cn: '选择照片以上传',
+        en: 'Choose image to upload'
+    },
+    uploadRequirement: {
+        tw: '*请选择 2 MB 以内的相片文件',
+        cn: '*请选择 2 MB 以内的照片文件',
+        en: '*Please limit the image file size to 2MB'
+    },
+    uploading: {
+        tw: '上傳中...',
+        cn: '上传中...',
+        en: 'Uploading...'
+    },
+    uploadSucceeded: {
+        tw: '上傳成功',
+        cn: '上传成功',
+        en: 'Upload succeeded'
+    },
+    uploadFailed: {
+        tw: '上傳失敗，點擊以重試',
+        cn: '上传失败，點擊以重試',
+        en: 'Upload failed'
     },
     nickname: {
         tw: '名稱',
@@ -452,8 +486,8 @@ const langConfigs: LangConfigs = {
 
 //// Get multiple member info server-side ////
 export async function getServerSideProps(context: NextPageContext): Promise<{ props: TMemberPageProps }> {
-    const { id } = context.query;
-    const { isValid, category } = verifyId(id);
+    const { memberId } = context.query;
+    const { isValid, category } = verifyId(memberId);
     // Verify member id
     if (!(isValid && 'member' === category)) {
         return {
@@ -472,13 +506,13 @@ export async function getServerSideProps(context: NextPageContext): Promise<{ pr
     }
     const channelInfoDict_ss = await dictionary_resp.json();
     // GET member info by id
-    const info_resp = await fetch(`${domain}/api/member/info/${id}`);
+    const info_resp = await fetch(`${domain}/api/member/info/${memberId}`);
     if (200 !== info_resp.status) {
         throw new Error('Attempt to GET member info');
     }
     const memberInfo_ss = await info_resp.json();
     // GET member statistics by id
-    const statistics_resp = await fetch(`${domain}/api/member/statistics/${id}`);
+    const statistics_resp = await fetch(`${domain}/api/member/statistics/${memberId}`);
     if (200 !== statistics_resp.status) {
         throw new Error('Attempt to GET member statistics');
     }
@@ -518,7 +552,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
     // [!] set width on select layout moved to process states section
 
     //////// INFO - member ////////
-    const { memberId, nickname, avatarImageUrl } = memberInfo_ss;
+    const { memberId, nickname, avatarImageFullName } = memberInfo_ss;
 
     //////// STATES - preference ////////
     const [preferenceStates, setPreferenceStates] = React.useState<TPreferenceStates>({
@@ -534,7 +568,6 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
         selectedLayout: 'postslayout', // default
         wasRedirected: false,
     })
-
 
     React.useEffect(() => { selectLayoutByQuery() }, [router])
 
@@ -994,7 +1027,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
 
         // undo save post
         if (2 === buttonId) {
-            // Step #1 mark post of chice as "undo-saved"
+            // Step #1 mark post of chice as 'undo-saved'
             let update: { [postId: string]: number } = { ...behaviourStates.undoSaved };
             if (update.hasOwnProperty(postId)) {
                 update[postId] = -1 * update[postId]
@@ -1019,8 +1052,13 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
     //////// STATES - settings layout ////////
     const [settingslayoutStates, setSettingsLayoutStates] = React.useState<TSettingsLayoutStates>({
         selectedSettingId: 0,
+        // uploadPercent: 0,
         nickname: memberInfo_ss.nickname,
-        avatarImageUrl: memberInfo_ss.avatarImageUrl,
+
+        avatarImageUrl: provideAvatarImageUrl(avatarImageFullName, domain),
+        disableUploadAvatarImageButton: true,
+        uploadAvatarImageResult: 0,
+
         password: '',
         repeatPassword: '',
         showpassword: false,
@@ -1065,11 +1103,47 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
 
         //// Avatar ////
         const AvatarSetting = () => {
-            const handleUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+            const handleOpenFile = (event: React.ChangeEvent<HTMLInputElement>) => {
                 if (event.target.files?.length !== 0 && event.target.files !== null) {
                     const url = URL.createObjectURL(event.target.files[0]);
-                    setSettingsLayoutStates({ ...settingslayoutStates, avatarImageUrl: url })
+                    setSettingsLayoutStates({ ...settingslayoutStates, avatarImageUrl: url, disableUploadAvatarImageButton: false, uploadAvatarImageResult: 100 })
                 }
+            }
+
+            const handleUploadAvatarImage = async () => {
+                if (!(undefined !== settingslayoutStates.avatarImageUrl && '' !== settingslayoutStates.avatarImageUrl)) {
+                    return;
+                }
+
+                // Prepare to upload avatar image
+                setSettingsLayoutStates({ ...settingslayoutStates, disableUploadAvatarImageButton: true, uploadAvatarImageResult: 300 });
+                let formData = new FormData();
+                const config = {
+                    headers: { 'Content-Type': 'multipart/form-data' },
+                    onUploadProgress: (event: any) => {
+                        console.log(`Upload progress:`, Math.round((event.loaded * 100) / event.total));
+                    }
+                }
+
+                // Retrieve file and measure the size
+                const blb = await fetch(settingslayoutStates.avatarImageUrl).then(r => r.blob());
+                if ((await blb.arrayBuffer()).byteLength > 2097152) { // new image file no larger than 2 MB
+                    setSettingsLayoutStates({ ...settingslayoutStates, disableUploadAvatarImageButton: false, uploadAvatarImageResult: 400 });
+                    return;
+                }
+
+                // Post avatar image file
+                formData.append('image', blb);
+                await axios.post(`/api/avatar/upload/${memberId}`, formData, config)
+                    .then((response: AxiosResponse) => {
+                        setSettingsLayoutStates({ ...settingslayoutStates, disableUploadAvatarImageButton: true, uploadAvatarImageResult: 200 });
+
+
+                    })
+                    .catch((error: AxiosError) => {
+                        setSettingsLayoutStates({ ...settingslayoutStates, disableUploadAvatarImageButton: false, uploadAvatarImageResult: 400 });
+                        console.log(`Attempt to upload avatar image. ${error}`);
+                    })
             }
 
             return (
@@ -1079,20 +1153,34 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
                     <CenterlizedBox>
                         <Avatar src={settingslayoutStates.avatarImageUrl} sx={{ width: { xs: 96, md: 128 }, height: { xs: 96, md: 128 }, }}></Avatar>
                     </CenterlizedBox>
+
+                    {/* 'open file' button */}
                     <CenterlizedBox mt={1}>
                         <Box>
-                            <IconButton color="primary" aria-label="upload picture" component="label" >
-                                <input hidden accept="image/*" type="file" onChange={handleUpload} />
+                            <IconButton color='primary' aria-label='upload picture' component='label' >
+                                <input hidden accept='image/*' type='file' onChange={handleOpenFile} />
                                 <PhotoCamera />
                             </IconButton>
                         </Box>
                     </CenterlizedBox>
 
-                    {/* upload */}
+                    {/* 'upload' button */}
                     <CenterlizedBox mt={1}>
-                        <Button variant='contained' size='small'>
-                            <Typography>{langConfigs.upload[preferenceStates.lang]}</Typography>
+                        <Button variant='contained' color={400 !== settingslayoutStates.uploadAvatarImageResult ? 'primary' : 'error'} size='small' onClick={async () => { await handleUploadAvatarImage() }} disabled={settingslayoutStates.disableUploadAvatarImageButton}>
+                            {/* button: disabled, result: 0 (no-file) */}
+                            {0 === settingslayoutStates.uploadAvatarImageResult && <Typography variant={'body2'}>{langConfigs.chooseImageToUpload[preferenceStates.lang]}</Typography>}
+                            {/* button: enabled, result: 100 (ready) */}
+                            {100 === settingslayoutStates.uploadAvatarImageResult && <Typography variant={'body2'}>{langConfigs.upload[preferenceStates.lang]}</Typography>}
+                            {/* button: disabled, result: 300 (uploading) */}
+                            {300 === settingslayoutStates.uploadAvatarImageResult && <Typography variant={'body2'}>{langConfigs.uploading[preferenceStates.lang]}</Typography>}
+                            {/* button: enabled, result: 400 (failed) */}
+                            {400 === settingslayoutStates.uploadAvatarImageResult && <Typography variant={'body2'}>{langConfigs.uploadFailed[preferenceStates.lang]}</Typography>}
+                            {/* button: disabled, result: 200 (succeeded) */}
+                            {200 === settingslayoutStates.uploadAvatarImageResult && <Typography variant={'body2'}>{langConfigs.uploadSucceeded[preferenceStates.lang]}</Typography>}
                         </Button>
+                    </CenterlizedBox>
+                    <CenterlizedBox mt={2}>
+                        <Typography color={'grey'} variant={'body2'}>{langConfigs.uploadRequirement[preferenceStates.lang]}</Typography>
                     </CenterlizedBox>
                 </Box>
             )
@@ -1154,11 +1242,11 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
                                 value={settingslayoutStates.password}
                                 onChange={handleChange('password')}
                                 endAdornment={
-                                    <InputAdornment position="end">
+                                    <InputAdornment position='end'>
                                         <IconButton
-                                            aria-label="toggle password visibility"
+                                            aria-label='toggle password visibility'
                                             onClick={handleShowPassword}
-                                            edge="end"
+                                            edge='end'
                                         >
                                             {settingslayoutStates.showpassword ? <VisibilityIcon /> : <VisibilityOffIcon />}
                                         </IconButton>
@@ -1180,11 +1268,11 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
                                 value={settingslayoutStates.password}
                                 onChange={handleChange('password')}
                                 endAdornment={
-                                    <InputAdornment position="end">
+                                    <InputAdornment position='end'>
                                         <IconButton
-                                            aria-label="toggle password visibility"
+                                            aria-label='toggle password visibility'
                                             onClick={handleShowPassword}
-                                            edge="end"
+                                            edge='end'
                                         >
                                             {settingslayoutStates.showpassword ? <VisibilityIcon /> : <VisibilityOffIcon />}
                                         </IconButton>
@@ -1206,11 +1294,11 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
                                 value={settingslayoutStates.repeatPassword}
                                 onChange={handleChange('repeatPassword')}
                                 endAdornment={
-                                    <InputAdornment position="end">
+                                    <InputAdornment position='end'>
                                         <IconButton
-                                            aria-label="toggle password visibility"
+                                            aria-label='toggle password visibility'
                                             onClick={handleShowPassword}
-                                            edge="end"
+                                            edge='end'
                                         >
                                             {settingslayoutStates.showpassword ? <VisibilityIcon /> : <VisibilityOffIcon />}
                                         </IconButton>
@@ -1229,7 +1317,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
                         </Button>
                     </CenterlizedBox>
                     <Box sx={{ mt: 6, paddingX: 2, textAlign: 'right' }} >
-                        <Link href="/forgot" variant="body2">
+                        <Link href='/forgot' variant='body2'>
                             {langConfigs.forgotPassword[preferenceStates.lang]}
                         </Link>
                     </Box>
@@ -1281,10 +1369,10 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
                 <Container maxWidth='xs' sx={{ paddingTop: { xs: 6, sm: 16 } }}>
                     <CenterlizedBox>
                         <FormControl sx={{ minWidth: 100 }}>
-                            <InputLabel id="gender-select-label">{langConfigs.gender[preferenceStates.lang]}</InputLabel>
+                            <InputLabel id='gender-select-label'>{langConfigs.gender[preferenceStates.lang]}</InputLabel>
                             <Select
-                                labelId="gender-select-label"
-                                id="gender-select"
+                                labelId='gender-select-label'
+                                id='gender-select'
                                 value={settingslayoutStates.gender.toString()}
                                 label={langConfigs.gender[preferenceStates.lang]}
                                 onChange={handleChange}
@@ -1443,10 +1531,10 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
         const RegisterInfo = () => {
             return (
                 <Container maxWidth='xs' sx={{ paddingTop: { xs: 6, sm: 14 } }}>
-                    
+
                     {/* memberid */}
                     <Typography variant='body1' color={'text.secondary'}>{`${langConfigs.memberId[preferenceStates.lang]}: ${memberId}`}</Typography>
-                    
+
                     {/* register date */}
                     <Typography variant='body1'>{`${langConfigs.registerDate[preferenceStates.lang]}: ${new Date(settingslayoutStates.registerDate).toLocaleDateString()}`}</Typography>
                 </Container>
@@ -1458,124 +1546,131 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
             <Grid container mt={2}>
 
                 {/* //// placeholder - left //// */}
-                <Grid item xs={0} sm={2} md={2} lg={4} xl={4}></Grid>
+                <Grid item xs={0} sm={2} md={3} lg={3} xl={3} />
 
-                {/* //// left column //// */}
-                <Grid item xs={4} sm={2} md={2} lg={1} xl={1} sx={{ minWidth: { xs: 0, sm: 160 } }}>
-                    <Box sx={{ borderRadius: 1, boxShadow: { xs: 0, sm: 1, md: 2 }, padding: { xs: 0, sm: 1 }, marginRight: 1, minHeight: 400 }}>
-                        <MenuList>
+                {/* //// middle column */}
+                <Grid item xs={12} sm={8} md={6} lg={6} xl={6}>
+                    <Grid container sx={{ borderRadius: 1, boxShadow: { xs: 0, sm: 2 }, minHeight: 440 }}>
+                        {/* //// left column //// */}
+                        <Grid item sx={{ minWidth: { xs: 0, sm: 160 } }}>
+                            <Box sx={{ padding: { xs: 0, sm: 2 }, marginRight: 1, }}>
+                                <MenuList>
 
-                            {/* avatar */}
-                            <MenuItem onClick={handleSettingSelect(0)} selected={0 === processStates.selectedSettingId} >
-                                <ListItemIcon>
-                                    <AccountCircleIcon />
-                                </ListItemIcon>
-                                <ListItemText>
-                                    <Typography variant='body2'>{langConfigs.avatar[preferenceStates.lang]}</Typography>
-                                </ListItemText>
-                            </MenuItem>
+                                    {/* avatar */}
+                                    <MenuItem onClick={handleSettingSelect(0)} selected={0 === processStates.selectedSettingId} >
+                                        <ListItemIcon>
+                                            <AccountCircleIcon />
+                                        </ListItemIcon>
+                                        <ListItemText>
+                                            <Typography variant='body2'>{langConfigs.avatar[preferenceStates.lang]}</Typography>
+                                        </ListItemText>
+                                    </MenuItem>
 
-                            {/* nickname */}
-                            <MenuItem onClick={handleSettingSelect(1)} selected={1 === processStates.selectedSettingId}>
-                                <ListItemIcon>
-                                    <LabelIcon />
-                                </ListItemIcon>
-                                <ListItemText>
-                                    <Typography variant='body2'>{langConfigs.nickname[preferenceStates.lang]}</Typography>
-                                </ListItemText>
-                            </MenuItem>
+                                    {/* nickname */}
+                                    <MenuItem onClick={handleSettingSelect(1)} selected={1 === processStates.selectedSettingId}>
+                                        <ListItemIcon>
+                                            <LabelIcon />
+                                        </ListItemIcon>
+                                        <ListItemText>
+                                            <Typography variant='body2'>{langConfigs.nickname[preferenceStates.lang]}</Typography>
+                                        </ListItemText>
+                                    </MenuItem>
 
-                            {/* password */}
-                            <MenuItem onClick={handleSettingSelect(2)} selected={2 === processStates.selectedSettingId}>
-                                <ListItemIcon>
-                                    <LockIcon />
-                                </ListItemIcon>
-                                <ListItemText>
-                                    <Typography variant='body2'>{langConfigs.password[preferenceStates.lang]}</Typography>
-                                </ListItemText>
-                            </MenuItem>
+                                    {/* password */}
+                                    <MenuItem onClick={handleSettingSelect(2)} selected={2 === processStates.selectedSettingId}>
+                                        <ListItemIcon>
+                                            <LockIcon />
+                                        </ListItemIcon>
+                                        <ListItemText>
+                                            <Typography variant='body2'>{langConfigs.password[preferenceStates.lang]}</Typography>
+                                        </ListItemText>
+                                    </MenuItem>
 
-                            {/* brief intro */}
-                            <MenuItem onClick={handleSettingSelect(3)} selected={3 === processStates.selectedSettingId}>
-                                <ListItemIcon>
-                                    <InterestsIcon />
-                                </ListItemIcon>
-                                <ListItemText>
-                                    <Typography variant='body2'>{langConfigs.briefIntro[preferenceStates.lang]}</Typography>
-                                </ListItemText>
-                            </MenuItem>
+                                    {/* brief intro */}
+                                    <MenuItem onClick={handleSettingSelect(3)} selected={3 === processStates.selectedSettingId}>
+                                        <ListItemIcon>
+                                            <InterestsIcon />
+                                        </ListItemIcon>
+                                        <ListItemText>
+                                            <Typography variant='body2'>{langConfigs.briefIntro[preferenceStates.lang]}</Typography>
+                                        </ListItemText>
+                                    </MenuItem>
 
-                            {/* gender */}
-                            <MenuItem onClick={handleSettingSelect(4)} selected={4 === processStates.selectedSettingId}>
-                                <ListItemIcon>
-                                    <OpacityIcon />
-                                </ListItemIcon>
-                                <ListItemText>
-                                    <Typography variant='body2'>{langConfigs.gender[preferenceStates.lang]}</Typography>
-                                </ListItemText>
-                            </MenuItem>
+                                    {/* gender */}
+                                    <MenuItem onClick={handleSettingSelect(4)} selected={4 === processStates.selectedSettingId}>
+                                        <ListItemIcon>
+                                            <OpacityIcon />
+                                        </ListItemIcon>
+                                        <ListItemText>
+                                            <Typography variant='body2'>{langConfigs.gender[preferenceStates.lang]}</Typography>
+                                        </ListItemText>
+                                    </MenuItem>
 
-                            {/* birthday */}
-                            <MenuItem onClick={handleSettingSelect(5)} selected={5 === processStates.selectedSettingId}>
-                                <ListItemIcon>
-                                    <CakeIcon />
-                                </ListItemIcon>
-                                <ListItemText>
-                                    <Typography variant='body2'>{langConfigs.birthday[preferenceStates.lang]}</Typography>
-                                </ListItemText>
-                            </MenuItem>
+                                    {/* birthday */}
+                                    <MenuItem onClick={handleSettingSelect(5)} selected={5 === processStates.selectedSettingId}>
+                                        <ListItemIcon>
+                                            <CakeIcon />
+                                        </ListItemIcon>
+                                        <ListItemText>
+                                            <Typography variant='body2'>{langConfigs.birthday[preferenceStates.lang]}</Typography>
+                                        </ListItemText>
+                                    </MenuItem>
 
-                            {/* privacy */}
-                            <MenuItem onClick={handleSettingSelect(6)} selected={6 === processStates.selectedSettingId}>
-                                <ListItemIcon>
-                                    <CheckBoxIcon />
-                                </ListItemIcon>
-                                <ListItemText>
-                                    <Typography variant='body2'>{langConfigs.privacySettings[preferenceStates.lang]}</Typography>
-                                </ListItemText>
-                            </MenuItem>
+                                    {/* privacy */}
+                                    <MenuItem onClick={handleSettingSelect(6)} selected={6 === processStates.selectedSettingId}>
+                                        <ListItemIcon>
+                                            <CheckBoxIcon />
+                                        </ListItemIcon>
+                                        <ListItemText>
+                                            <Typography variant='body2'>{langConfigs.privacySettings[preferenceStates.lang]}</Typography>
+                                        </ListItemText>
+                                    </MenuItem>
 
-                            {/* blacklist */}
-                            <MenuItem onClick={handleSettingSelect(7)} selected={7 === processStates.selectedSettingId}>
-                                <ListItemIcon>
-                                    <BlockIcon />
-                                </ListItemIcon>
-                                <ListItemText>
-                                    <Typography variant='body2'>{langConfigs.blacklist[preferenceStates.lang]}</Typography>
-                                </ListItemText>
-                            </MenuItem>
+                                    {/* blacklist */}
+                                    <MenuItem onClick={handleSettingSelect(7)} selected={7 === processStates.selectedSettingId}>
+                                        <ListItemIcon>
+                                            <BlockIcon />
+                                        </ListItemIcon>
+                                        <ListItemText>
+                                            <Typography variant='body2'>{langConfigs.blacklist[preferenceStates.lang]}</Typography>
+                                        </ListItemText>
+                                    </MenuItem>
 
-                            {/* register info */}
-                            <MenuItem onClick={handleSettingSelect(10)} selected={10 === processStates.selectedSettingId}>
-                                <ListItemIcon>
-                                    <InfoIcon />
-                                </ListItemIcon>
-                                <ListItemText>
-                                    <Typography variant='body2'>{langConfigs.memberInfo[preferenceStates.lang]}</Typography>
-                                </ListItemText>
-                            </MenuItem>
-                        </MenuList>
-                    </Box>
+                                    {/* register info */}
+                                    <MenuItem onClick={handleSettingSelect(10)} selected={10 === processStates.selectedSettingId}>
+                                        <ListItemIcon>
+                                            <InfoIcon />
+                                        </ListItemIcon>
+                                        <ListItemText>
+                                            <Typography variant='body2'>{langConfigs.memberInfo[preferenceStates.lang]}</Typography>
+                                        </ListItemText>
+                                    </MenuItem>
+                                </MenuList>
+                            </Box>
+                        </Grid>
+
+                        {/* //// right column //// */}
+                        <Grid item flexGrow={1}>
+                            {/* multi-display */}
+                            <Box sx={{}}>
+                                {0 === settingslayoutStates.selectedSettingId && <AvatarSetting />}
+                                {1 === settingslayoutStates.selectedSettingId && <NicknameSetting />}
+                                {2 === settingslayoutStates.selectedSettingId && <PasswordeSetting />}
+                                {3 === settingslayoutStates.selectedSettingId && <BriefIntroSetting />}
+                                {4 === settingslayoutStates.selectedSettingId && <GenderSetting />}
+                                {5 === settingslayoutStates.selectedSettingId && <BirthdaySetting />}
+                                {6 === settingslayoutStates.selectedSettingId && <PrivacySettings />}
+                                {7 === settingslayoutStates.selectedSettingId && <BlacklistSettings />}
+                                {10 === settingslayoutStates.selectedSettingId && <RegisterInfo />}
+                            </Box>
+                        </Grid>
+
+                    </Grid>
                 </Grid>
 
-                {/* //// right column //// */}
-                <Grid item xs={8} sm={6} md={6} lg={3} xl={3}>
-                    {/* multi-display */}
-                    <Box sx={{ borderRadius: 1, boxShadow: { xs: 0, sm: 1, md: 2 }, minHeight: 400 }}>
-                        {0 === settingslayoutStates.selectedSettingId && <AvatarSetting />}
-                        {1 === settingslayoutStates.selectedSettingId && <NicknameSetting />}
-                        {2 === settingslayoutStates.selectedSettingId && <PasswordeSetting />}
-                        {3 === settingslayoutStates.selectedSettingId && <BriefIntroSetting />}
-                        {4 === settingslayoutStates.selectedSettingId && <GenderSetting />}
-                        {5 === settingslayoutStates.selectedSettingId && <BirthdaySetting />}
-                        {6 === settingslayoutStates.selectedSettingId && <PrivacySettings />}
-                        {7 === settingslayoutStates.selectedSettingId && <BlacklistSettings />}
-                        {10 === settingslayoutStates.selectedSettingId && <RegisterInfo />}
-                    </Box>
-                </Grid>
 
                 {/* //// placeholder - right //// */}
-                <Grid item xs={0} sm={2} md={2} lg={4} xl={4}></Grid>
+                <Grid item xs={0} sm={2} md={3} lg={3} xl={3} />
             </Grid>
         )
     }
@@ -1583,7 +1678,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
     ///////// COMPONENT - member page /////////
     return (
         <>
-            <Navbar />
+            <Navbar nickname={nickname} avatarImageUrl={provideAvatarImageUrl(avatarImageFullName, domain)} />
 
             {/* //// first layer - member info //// */}
             <Box sx={{ minHeight: { xs: 160, md: 200 } }}>
@@ -1591,7 +1686,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
 
                     {/* avatar */}
                     <CenterlizedBox sx={{ marginTop: { xs: 4, sm: 6 } }}>
-                        <Avatar src={avatarImageUrl} sx={{ height: { xs: 90, sm: 72 }, width: { xs: 90, sm: 72 } }}>{nickname?.charAt(0).toUpperCase()}</Avatar>
+                        <Avatar src={provideAvatarImageUrl(avatarImageFullName, domain)} sx={{ height: { xs: 90, sm: 72 }, width: { xs: 90, sm: 72 } }}>{nickname?.charAt(0).toUpperCase()}</Avatar>
                     </CenterlizedBox>
 
                     {/* nickname */}
@@ -1699,11 +1794,11 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
                 <Grid item xs={0} sm={1} md={2} lg={2} xl={2}></Grid>
 
                 {/* //// left column //// */}
-                <Grid item xs={0} sm={0} md={2} lg={2} xl={1}>
+                <Grid item xs={0} sm={0} md={2} lg={2} xl={2}>
                     <Stack spacing={0} sx={{ marginX: 1, display: { xs: 'none', sm: 'none', md: 'block' } }} >
 
                         {/* my posts / saved posts / browsing history switch */}
-                        <ResponsiveCard >
+                        <ResponsiveCard sx={{ padding: 1 }}>
                             <MenuList>
 
                                 {/* creations list item */}
@@ -1810,7 +1905,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
 
                         {/* the 'all' button */}
                         <Button variant={'all' === postsLayoutStates.selectedChannelId ? 'contained' : 'text'} size='small' onClick={handleChannelSelect('all')} >
-                            <Typography variant='body2' color={'all' === postsLayoutStates.selectedChannelId ? 'white' : "text.secondary"} sx={{ backgroundColor: 'primary' }}>
+                            <Typography variant='body2' color={'all' === postsLayoutStates.selectedChannelId ? 'white' : 'text.secondary'} sx={{ backgroundColor: 'primary' }}>
                                 {langConfigs.allPosts[preferenceStates.lang]}
                             </Typography>
                         </Button>

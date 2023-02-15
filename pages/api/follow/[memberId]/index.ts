@@ -7,7 +7,7 @@ import AzureTableClient from '../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from "../../../../modules/AtlasDatabaseClient";
 
 import { IMemberMemberMapping, INoticeInfo, INotificationStatistics, IMemberComprehensive, IMemberStatistics } from '../../../../lib/interfaces';
-import { createNoticeId, getNicknameFromToken, verifyId, response405, response500, log, } from '../../../../lib/utils';
+import { createNoticeId, getNicknameFromToken, verifyId, response405, response500, logWithDate, } from '../../../../lib/utils';
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
 
 /** This interface accepts GET and POST requests
@@ -21,7 +21,6 @@ const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
  * 
  * Info required for POST requests
  * 
- * recaptchaResponse: string (query string)
  * token: JWT
  * id: string (query, member id)
 */
@@ -36,21 +35,6 @@ export default async function FollowOrUndoFollowMemberById(req: NextApiRequest, 
     res.send(true);
     return
 
-    // FIXME: deactived human/bot verification for tests
-    //// Verify human/bot ////
-    // const { recaptchaResponse } = req.query;
-    // const { status, message } = await verifyRecaptchaResponse(recaptchaServerSecret, recaptchaResponse);
-    // if (200 !== status) {
-    //     if (403 === status) {
-    //         res.status(403).send(message);
-    //         return;
-    //     }
-    //     if (500 === status) {
-    //         response500(res, message);
-    //         return;
-    //     }
-    // }
-    //// Verify identity ////
     const token = await getToken({ req });
     if (!(token && token?.sub)) {
         res.status(400).send('Invalid identity');
@@ -120,7 +104,7 @@ export default async function FollowOrUndoFollowMemberById(req: NextApiRequest, 
                 }
             });
             if (!memberStatisticsUpdateResult.acknowledged) {
-                log(`Failed to update totalUndoFollowingCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`);
+                logWithDate(`Failed to update totalUndoFollowingCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`);
             }
             // Step #2.3 update totalUndoFollowedByCount (of IMemberStatistics) in [C] memberStatistics
             const memberFollowedStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId: memberId_object }, {
@@ -129,7 +113,7 @@ export default async function FollowOrUndoFollowMemberById(req: NextApiRequest, 
                 }
             });
             if (!memberFollowedStatisticsUpdateResult.acknowledged) {
-                log(`Failed to update totalUndoFollowedByCount (of IMemberStatistics, member id: ${memberId_object}) in [C] memberStatistics`);
+                logWithDate(`Failed to update totalUndoFollowedByCount (of IMemberStatistics, member id: ${memberId_object}) in [C] memberStatistics`);
             }
         } else {
             // Case [Follow]
@@ -146,7 +130,7 @@ export default async function FollowOrUndoFollowMemberById(req: NextApiRequest, 
                 }
             });
             if (!memberStatisticsUpdateResult.acknowledged) {
-                log(`Failed to update totalFollowingCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`);
+                logWithDate(`Failed to update totalFollowingCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`);
             }
             // Step #2.2 update totalFollowedByCount (of IMemberStatistics) in [C] memberStatistics
             const memberFollowedStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId: memberId_object }, {
@@ -155,7 +139,7 @@ export default async function FollowOrUndoFollowMemberById(req: NextApiRequest, 
                 }
             });
             if (!memberFollowedStatisticsUpdateResult.acknowledged) {
-                log(`Failed to update totalFollowedByCount (of IMemberStatistics, member id: ${memberId_object}) in [C] memberStatistics`);
+                logWithDate(`Failed to update totalFollowedByCount (of IMemberStatistics, member id: ${memberId_object}) in [C] memberStatistics`);
             }
             //// Handle notice.follow (cond.) ////
             // Step #2.3 (cond.) look up record (of IMemberMemberMapping) in [RL] BlockingMemberMapping
@@ -178,7 +162,7 @@ export default async function FollowOrUndoFollowMemberById(req: NextApiRequest, 
                 const notificationStatisticsCollectionClient = atlasDbClient.db('statistics').collection<INotificationStatistics>('notification');
                 const notificationStatisticsUpdateResult = await notificationStatisticsCollectionClient.updateOne({ memberId: memberId_object }, { $inc: { follow: 1 } });
                 if (!notificationStatisticsUpdateResult.acknowledged) {
-                    log(`Failed to update follow (of INotificationStatistics, member id: ${memberId_object}) in [C] notificationStatistics`);
+                    logWithDate(`Failed to update follow (of INotificationStatistics, member id: ${memberId_object}) in [C] notificationStatistics`);
                 }
             }
         }
@@ -203,7 +187,7 @@ export default async function FollowOrUndoFollowMemberById(req: NextApiRequest, 
         if (!res.headersSent) {
             response500(res, msg);
         }
-        log(msg, e);
+        logWithDate(msg, e);
         await atlasDbClient.close();
         return;
     }

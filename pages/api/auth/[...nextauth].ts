@@ -12,31 +12,31 @@ import AzureEmailCommunicationClient from '../../../modules/AzureEmailCommunicat
 import { RestError } from '@azure/storage-blob';
 import { MongoError } from 'mongodb';
 
-import { verifyRecaptchaResponse, verifyEnvironmentVariable, getRandomIdStr, log, getRandomHexStr } from '../../../lib/utils';
+import { verifyRecaptchaResponse, verifyEnvironmentVariable, getRandomIdStr, logWithDate, getRandomHexStr } from '../../../lib/utils';
 import { IVerifyEmailAddressCredentials, IMemberComprehensive, ILoginCredentials, ILoginJournal } from '../../../lib/interfaces';
 import { LangConfigs, VerifyEmailAddressRequestInfo, EmailMessage } from '../../../lib/types';
 import { composeVerifyEmailAddressEmailContent } from '../../../lib/email';
+import AzureBlobClient from '../../../modules/AzureBlobClient';
+import Jimp from 'jimp';
 
-type LoginRequestInfo = {
+type TLoginRequestInfo = {
     recaptchaResponse: any;
     emailAddress: any;
     password: any;
 }
 
-type ProviderIdMapping = {
+type TProviderIdMapping = {
     [key: string]: string
 }
 
-interface MemberUser extends User {
+interface IMemberUser extends User {
     id: string;
-    nickname?: string;
     emailAddress?: string;
-    avatarImageUrl?: string;
 }
 
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
 const salt = process.env.APP_PASSWORD_SALT ?? '';
-export const loginProviderIdMapping: ProviderIdMapping = {
+export const loginProviderIdMapping: TProviderIdMapping = {
     //// [!] Every time add a new provider, update this dictionary ////
     mojito: 'MojitoMemberSystem',
     github: 'GitHubOAuth',
@@ -146,10 +146,11 @@ export default NextAuth({
                         message: 'Login.'
                     });
                     await atlasDbClient.close();
-                    // Step #4 complete session (jwt) info
-                    const { nickname: name, avatarImageUrl: image } = memberComprehensiveQueryResult;
-                    user.name = name;
-                    user.image = image;
+                    // FIXME: update: 14/02/2023 exclude name & image from the JWT, manually retrieve nickname & avatar image every time
+                    // Step #4 complete session (jwt) info 
+                    // const { nickname: name, avatarImageUrl: image } = memberComprehensiveQueryResult;
+                    // user.name = name;
+                    // user.image = image;
                     return true;
                 } catch (e: any) {
                     let msg = ` '/api/auth/[...nextauth]/default/callbacks/signIn?provider=MojitoMemberSystem'`;
@@ -159,7 +160,7 @@ export default NextAuth({
                     } else {
                         msg = `Uncategorized. ${e?.msg}` + msg;
                     }
-                    log(msg, e);
+                    logWithDate(msg, e);
                     return '/error';
                 }
             }
@@ -168,7 +169,7 @@ export default NextAuth({
                 const { name: nickname, email: emailAddress, image: avatarImageUrl } = user;
                 if ('string' !== typeof emailAddress || '' === emailAddress) {
                     // [!] an invalid email address was provided by third-party login provider
-                    log(`Attempt to login with ${providerId}, retrieved an invalid email address`);
+                    logWithDate(`Attempt to login with ${providerId}, retrieved an invalid email address`);
                     return `/signin?error=InappropriateEmailAddress&providerId=${providerId}`;
                 }
                 const emailAddressHash = CryptoJS.SHA1(emailAddress).toString();
@@ -178,36 +179,57 @@ export default NextAuth({
                 //// [!] attemp to reterieve entity makes the probability of causing RestError ////
                 const loginCredentialsQueryResult = await loginCredentialsQuery.next();
                 if (!loginCredentialsQueryResult.value) {
-                    //// Situation A ////
-                    //// [!] login credential record not found deemed unregistered ////
+                    //// (Situation A) [!] login credential record not found deemed unregistered ////
                     // Step #A2.1 create a new member id
                     const memberId = getRandomIdStr(true);
                     // Step #A2.2 upsert entity (ILoginCredentials) in [RL] Credentials
                     credentialsTableClient.upsertEntity<ILoginCredentials>({ partitionKey: emailAddressHash, rowKey: providerId, MemberId: memberId }, 'Replace');
                     // Step #A2.3 create a new email address verification token
-
                     const verifyEmailAddressToken = getRandomHexStr(true);
                     // Step #A2.4 upsert entity (IVerifyEmailAddressCredentials) in [RL] Credentials
                     credentialsTableClient.upsertEntity<IVerifyEmailAddressCredentials>({ partitionKey: emailAddressHash, rowKey: 'VerifyEmailAddress', VerifyEmailAddressToken: verifyEmailAddressToken }, 'Replace');
-                    // Step #A2.5 create document (MemberComprehensive) in [C] memberComprehensive
+                    // Step #A2.5 (cond.) retrieve avatar image
+                    if ('string' === typeof avatarImageUrl) {
+                        try {
+                            const resp = await fetch(avatarImageUrl);
+                            if (resp.status === 200) {
+                                const contentType = resp.headers.get('Content-Type');
+                                if ('string' === typeof contentType && ['image/jpeg', 'image/png'].includes(contentType)) {
+                                    const contianerClient = AzureBlobClient('avatar');
+                                    const blockClient = contianerClient.getBlockBlobClient(`${memberId}.png`);
+                                    if ('image/png' === contentType) {
+                                        await blockClient.uploadData(await resp.arrayBuffer());
+                                    } else {
+                                        const initialBuf = Buffer.concat([new Uint8Array(await resp.arrayBuffer())]);
+                                        const handledFile = await Jimp.read(initialBuf);
+                                        const convertedBuf = await handledFile.getBufferAsync(Jimp.MIME_PNG);
+                                        await blockClient.uploadData(convertedBuf);
+                                    }
+                                }
+                            }
+                        } catch (e: any) {
+                            logWithDate(`Attempt to fetch avatar image from login provider`, e);
+                        }
+                    }
                     await atlasDbClient.connect();
+                    // Step #A2.6 create document (MemberComprehensive) in [C] memberComprehensive
                     const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
                     let memberComprehensiveCollectionInsertResult = await memberComprehensiveCollectionClient.insertOne({
                         memberId,
                         providerId,
-                        registeredTime: new Date().getTime(),
+                        registeredTimeBySeconds: Math.floor(new Date().getTime() / 1000),
                         emailAddress,
                         nickname: nickname ?? '',
-                        avatarImageUrl: avatarImageUrl ?? '',
+                        lastAvatarImageUpdatedTimeBySeconds: Math.floor(new Date().getTime() / 1000),
                         status: 0, // email address not verified
                         allowPosting: false,
                         allowCommenting: false
                     });
                     if (!memberComprehensiveCollectionInsertResult.acknowledged) {
-                        log(`Attempt to insert document (MemberComprehensive) for registering with ${providerId}`);
+                        logWithDate(`Attempt to insert document (MemberComprehensive) for registering with ${providerId}`);
                         return `/signin?error=ThirdPartyProviderSignin&providerId=${providerId}`;
                     }
-                    // Step #A2.6 write journal in [C] loginJournal
+                    // Step #A2.7 write journal in [C] loginJournal
                     const loginJournalCollectionClient = atlasDbClient.db('journal').collection<ILoginJournal>('login');
                     await loginJournalCollectionClient.insertOne({
                         memberId,
@@ -233,8 +255,7 @@ export default NextAuth({
                     await mailClient.send(emailMessage);
                     return `/signin?error=EmailAddressVerificationRequired&providerId=${providerId}&emailAddressB64=${Buffer.from(emailAddress ?? '').toString('base64')}`;
                 } else {
-                    //// Situation B ////
-                    //// [!] login credential record is found ////
+                    //// (Situation B) [!] login credential record is found ////
                     const { MemberId: memberId } = loginCredentialsQueryResult.value;
                     // Step #B2.1 member status (IMemberComprehensive) in [C] memberComprehensive
                     await atlasDbClient.connect();
@@ -262,11 +283,10 @@ export default NextAuth({
                         //// [!] member status code error ////
                         return `/signin?error=DefectiveMember&providerId=${providerId}`;
                     }
-                    // Step #3 complete session (jwt) info
-                    const { nickname: name, avatarImageUrl: image } = memberComprehensiveQueryResult;
-                    user.id = memberId;
-                    user.name = name;
-                    user.image = image;
+                    // FIXME: update: 14/02/2023 exclude name & image from the JWT, manually retrieve nickname & avatar image every time
+                    // const { nickname: name, avatarImageUrl: image } = memberComprehensiveQueryResult;
+                    // user.name = name;
+                    // user.image = image;
                     // Step #4 write journal (ILoginJournal) in [C] loginJournal
                     const loginJournalCollectionClient = atlasDbClient.db('journal').collection<ILoginJournal>('login');
                     await loginJournalCollectionClient.insertOne({
@@ -277,6 +297,8 @@ export default NextAuth({
                         message: 'Login.'
                     });
                     await atlasDbClient.close();
+                    // Step #3 complete session (jwt) info
+                    user.id = memberId;
                     return true;
                 }
             } catch (e: any) {
@@ -288,7 +310,7 @@ export default NextAuth({
                 } else {
                     msg = `Uncategorized. ${e?.msg}` + msg;
                 }
-                log(msg, e);
+                logWithDate(msg, e);
                 await atlasDbClient.close();
                 return false;
             }
@@ -300,7 +322,7 @@ export default NextAuth({
     }
 })
 
-async function verifyLoginCredentials(credentials: LoginRequestInfo): Promise<MemberUser | null> {
+async function verifyLoginCredentials(credentials: TLoginRequestInfo): Promise<IMemberUser | null> {
     //// Verify environment variables ////
     const environmentVariable = verifyEnvironmentVariable({ recaptchaServerSecret, salt });
     if ('string' === typeof environmentVariable) {
@@ -343,7 +365,7 @@ async function verifyLoginCredentials(credentials: LoginRequestInfo): Promise<Me
         } else {
             msg = `Uncategorized. ${e?.msg} trace='/api/auth/[...nextauth]/veriftLoginCredentials'`;
         }
-        log(msg, e);
+        logWithDate(msg, e);
         return null;
     }
 }

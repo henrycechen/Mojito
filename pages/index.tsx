@@ -545,7 +545,7 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
                                                     <Grid item flexGrow={1}>
                                                         <Box display={'flex'} flexDirection={'row'}>
                                                             <Button variant={'text'} color={'inherit'} sx={{ textTransform: 'none' }} onClick={handleClickOnMemberInfo(post.memberId, post.postId)}>
-                                                                <Avatar src={post.avatarImageUrl} sx={{ width: 34, height: 34, bgcolor: 'grey' }}>{post.nickname?.charAt(0).toUpperCase()}</Avatar>
+                                                                <Avatar src={post.avatarImageFullName} sx={{ width: 34, height: 34, bgcolor: 'grey' }}>{post.nickname?.charAt(0).toUpperCase()}</Avatar>
                                                                 <Box ml={1}>
                                                                     <Typography variant='body2'>{getNicknameBrief(post.nickname)}</Typography>
                                                                 </Box>

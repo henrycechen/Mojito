@@ -24,6 +24,11 @@ const langConfigs: LangConfigs = {
         cn: '软件使用许可及服务协议',
         en: 'Software license and service agreement'
     },
+    publishedDate: {
+        tw: `更新日期：2023年2月13日`,
+        cn: `更新日期：2023年2月13日`,
+        en: `Updated: February 13, 2022`
+    },
     terms: {
         tw: [
             '1. 版權聲明：本軟體受著作權法和國際版權公約的保護。未經我們書面許可，您不得以任何方式複制、使用或散佈本軟體。',
@@ -73,6 +78,7 @@ export default function ServiceAgreement() {
                     <Grid item md={1}></Grid>
                     <Grid item md={3} sx={{ p: 1, paddingTop: 16 }}>
                         <Typography variant={'h5'}>{langConfigs.title[processStates.lang]}</Typography>
+                        <Typography variant={'body2'}>{langConfigs.publishedDate[processStates.lang]}</Typography>
                         <Button variant='text' sx={{ textTransform: 'none' }} onClick={setLang}>
                             <Typography variant={'body2'}>{'简|繁|English'}</Typography>
                         </Button>

@@ -3,7 +3,7 @@ import { RestError } from '@azure/data-tables';
 
 import AzureTableClient from '../../../../modules/AzureTableClient';
 import { TChannelInfoDictionary } from '../../../../lib/types';
-import { response405, response500, log } from '../../../../lib/utils';
+import { response405, response500, logWithDate } from '../../../../lib/utils';
 
 export default async function GetChannelInfoDictionary(req: NextApiRequest, res: NextApiResponse) {
     const { method } = req;
@@ -45,7 +45,7 @@ export default async function GetChannelInfoDictionary(req: NextApiRequest, res:
             msg = `Uncategorized. ${e?.msg}`;
         }
         response500(res, msg);
-        log(msg, e);
+        logWithDate(msg, e);
         return;
     }
 }

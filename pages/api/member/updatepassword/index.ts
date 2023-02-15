@@ -8,7 +8,7 @@ import AtlasDatabaseClient from '../../../../modules/AtlasDatabaseClient';
 
 import { ILoginJournal, IMemberComprehensive, IMemberPostMapping, IMojitoMemberSystemLoginCredentials } from '../../../../lib/interfaces';
 import { MemberInfo } from '../../../../lib/types';
-import { createNoticeId, verifyId, response405, response500, log, verifyEnvironmentVariable, verifyRecaptchaResponse, verifyPassword } from '../../../../lib/utils';
+import { createNoticeId, verifyId, response405, response500, logWithDate, verifyEnvironmentVariable, verifyRecaptchaResponse, verifyPassword } from '../../../../lib/utils';
 
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
 const salt = process.env.APP_PASSWORD_SALT ?? '';
@@ -38,7 +38,7 @@ export default async function UpdatePassword(req: NextApiRequest, res: NextApiRe
     if (!!environmentVariable) {
         const msg = `${environmentVariable} not found`;
         response500(res, msg);
-        log(msg);
+        logWithDate(msg);
         return;
     }
     //// Declare DB client ////
@@ -140,7 +140,7 @@ export default async function UpdatePassword(req: NextApiRequest, res: NextApiRe
         if (!res.headersSent) {
             response500(res, msg);
         }
-        log(msg, e);
+        logWithDate(msg, e);
         await atlasDbClient.close();
         return;
     }

@@ -62,7 +62,8 @@ export function getRandomHexStr(useUpperCase: boolean = false): string { // Leng
     }
 }
 
-export function timeToString(time: any, lang: string): string {
+// FIXME: milliseconds to seconds have not applied
+export function timeToString(timeBySeconds: any, lang: string): string {
     let _lang = lang;
     if (!['tw', 'cn', 'en'].includes(lang)) {
         _lang = 'tw';
@@ -72,10 +73,10 @@ export function timeToString(time: any, lang: string): string {
         cn: { min: ' 分钟前', mins: ' 分钟前', hour: ' 小时前', hours: ' 小时前', houra: ' 小时', hoursa: ' 小时', day: ' 天前', days: ' 天前' },
         en: { min: ' minute', mins: ' minutes', hour: ' hour', hours: ' hours', houra: ' hour', hoursa: ' hours', day: ' day', days: ' days' }
     }[_lang];
-    if (!('number' === typeof time || 'string' === typeof time)) {
+    if (!('number' === typeof timeBySeconds || 'string' === typeof timeBySeconds)) {
         return `0${langConfigs?.min}`;
     }
-    const diff = new Date().getTime() - new Date(time).getTime();
+    const diff = new Date().getTime() - new Date(timeBySeconds).getTime(); // FIXME: Math.floor(new Date().getTime() / 1000) 
     if (24 * 3600000 < diff) {
         const d = Math.floor(diff / (24 * 3600000));
         return `${d}${1 === d ? langConfigs?.day : langConfigs?.days}`;;
@@ -211,6 +212,13 @@ export function getNicknameBrief(nickname: any): string {
     return nickname;
 }
 
+export function provideAvatarImageUrl(imageFullName: string, domain: string): string {
+    if (''=== imageFullName) {
+        return '';
+    }
+    return `${domain}/api/avatar/a/${imageFullName}?`
+}
+
 export function provideCuedMemberInfoArray(cuedMemberInfoDictionary: { [memberId: string]: IConciseMemberInfo }): IConciseMemberInfo[] {
     const memberIdArr = Object.keys(cuedMemberInfoDictionary);
     if (0 === memberIdArr.length) {
@@ -223,7 +231,7 @@ export function fakeConciseMemberInfo(): IConciseMemberInfo {
     return {
         memberId: '',
         nickname: '',
-        avatarImageUrl: ''
+        avatarImageFullName: ''
     }
 }
 
@@ -812,6 +820,6 @@ export function response500(response: NextApiResponse, msg: string) {
 }
 
 //////// Log ////////
-export function log(msg: string, e: any = {}) {
+export function logWithDate(msg: string, e: any = {}) {
     console.log(`[${new Date().toISOString()}] ${msg} ${e?.stack}`);
 }

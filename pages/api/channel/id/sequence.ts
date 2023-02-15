@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { RestError } from '@azure/data-tables';
 
 import AzureTableClient from '../../../../modules/AzureTableClient';
-import { response405, response500, log } from '../../../../lib/utils';
+import { response405, response500, logWithDate } from '../../../../lib/utils';
 
 export default async function GetChannelIdSequence(req: NextApiRequest, res: NextApiResponse) {
     const { method } = req;
@@ -33,7 +33,7 @@ export default async function GetChannelIdSequence(req: NextApiRequest, res: Nex
             msg = `Uncategorized. ${e?.msg}`;
         }
         response500(res, msg);
-        log(msg, e);
+        logWithDate(msg, e);
         return;
     }
 }

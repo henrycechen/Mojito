@@ -86,13 +86,13 @@ export interface IAtlasCollectionDocument {
 export interface IMemberComprehensive extends IAtlasCollectionDocument {
     memberId: string; // 10 characters, UPPERCASE
     providerId?: string; // "MojitoMemberSystem" | "GitHubOAuth" | ...
-    registeredTime?: number;
-    verifiedTime?: number;
+    registeredTimeBySeconds?: number; // Math.floor(new Date().getTime() / 1000)
+    verifiedTimeBySeconds?: number;
     emailAddress?: string;
     memberIndex?: number;
     nickname?: string;
     nicknameBase64?: string; // prevent duplicated nickname when re-naming
-    avatarImageUrl?: string;
+    avatarImageFullName?: string;
     briefIntro?: string;
     gender?: -1 | 0 | 1;
     birthday?: string;
@@ -104,20 +104,20 @@ export interface IMemberComprehensive extends IAtlasCollectionDocument {
 export interface IConciseMemberInfo {
     memberId: string;
     nickname: string;
-    avatarImageUrl: string;
+    avatarImageFullName: string;
 }
 
 export interface IConciseMemberInfoWithTime extends IConciseMemberInfo {
     memberId: string;
     nickname: string;
-    avatarImageUrl: string;
+    avatarImageFullName: string;
     createdTime: number;
 }
 
 export interface IConciseMemberInfoWithBriefIntroAndTime extends IConciseMemberInfo {
     memberId: string;
     nickname: string;
-    avatarImageUrl: string;
+    avatarImageFullName: string;
     briefIntro: string | undefined;
     createdTime: number;
 }
@@ -279,7 +279,7 @@ export interface IRestrictedCommentComprehensiveWithMemberInfo extends IAtlasCol
     postId: string;
     memberId: string;
     nickname: string;
-    avatarImageUrl: string;
+    avatarImageFullName: string;
     createdTime: number; // created time of this document
     content: string;
     cuedMemberInfoArr: IConciseMemberInfo[];
@@ -441,7 +441,7 @@ export interface IConcisePostComprehensiveWithMemberInfo {
     postId: string; // 10 characters, UPPERCASE
     memberId: string;
     nickname: string;
-    avatarImageUrl: string;
+    avatarImageFullName: string;
     createdTime: number; // created time of this document (post est.)
     title: string;
     imageUrlsArr: string[];

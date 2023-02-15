@@ -9,7 +9,7 @@ import AtlasDatabaseClient from "../../../../../modules/AtlasDatabaseClient";
 
 import { IMemberMemberMapping, INoticeInfo, IMemberPostMapping, IMemberComprehensive, IConciseMemberInfo, IMemberStatistics, ILoginJournal, INotificationStatistics, IAttitudeComprehensive, IAttitideMapping, ICommentComprehensive, IEditedCommentComprehensive, IRestrictedCommentComprehensive, IChannelStatistics, ITopicComprehensive, ITopicPostMapping, IPostComprehensive, IEditedPostComprehensive, IRestrictedPostComprehensive } from '../../../../../lib/interfaces';
 import { TMemberInfo } from '../../../../../lib/types';
-import { verifyId, response405, response500, log } from '../../../../../lib/utils';
+import { verifyId, response405, response500, logWithDate } from '../../../../../lib/utils';
 
 
 // TODO: unfinished
@@ -40,7 +40,7 @@ export default async function MemberInfoById(req: NextApiRequest, res: NextApiRe
         const info: TMemberInfo = {
             memberId: 'M1234XXXX',
             nickname: 'WebMaster',
-            avatarImageUrl: 'https://www.nicepng.com/png/full/804-8049853_med-boukrima-specialist-webmaster-php-e-commerce-web.png'
+            avatarImageFullName: 'M1234XXXX.png'
         }
         
         res.send(info);
@@ -59,7 +59,7 @@ export default async function MemberInfoById(req: NextApiRequest, res: NextApiRe
         if (!res.headersSent) {
             response500(res, msg);
         }
-        log(msg, e);
+        logWithDate(msg, e);
         // await atlasDbClient.close();
         return;
     }

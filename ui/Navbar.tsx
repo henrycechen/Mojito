@@ -30,6 +30,11 @@ import { useRouter } from 'next/router';
 
 import { ColorModeContext } from './Theme';
 
+type TNavBarProps = {
+    nickname: string;
+    avatarImageUrl: string;
+}
+
 const domain = process.env.NEXT_PUBLIC_APP_DOMAIN;
 const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
@@ -60,7 +65,9 @@ const langConfigs: LangConfigs = {
     }
 }
 
-export default () => {
+export default function NavBar(props: TNavBarProps) {
+
+
     const { data: session, status } = useSession();
     const mySession: any = { ...session }
     const router = useRouter();
@@ -95,9 +102,7 @@ export default () => {
             <Container maxWidth={'xl'}>
                 <Toolbar disableGutters>
                     <Link href='/' mt={1}>
-                        {/* <Box component={'img'} src={`${domain}/logo${'dark' === colorMode.mode ? '-dark' : ''}.png`} sx={{ height: '2.5rem' }} /> */}
                         <Box component={'img'} src={`${domain}/logo${'dark' === theme.palette.mode ? '-dark' : ''}.png`} sx={{ height: '2.5rem' }} />
-                        {/* <Box component={'img'} src={`${domain}/logo.png`} sx={{ height: '2.5rem' }} /> */}
                     </Link>
                     <Box sx={{ flexGrow: 1 }}></Box>
                     {'authenticated' !== status && !session && (
@@ -107,7 +112,7 @@ export default () => {
                         <Box sx={{ flexGrow: 0 }}>
                             <Tooltip title="Open settings">
                                 <IconButton onClick={handleOpenMemberMenu} sx={{ p: 0 }}>
-                                    <Avatar alt={session?.user?.name ?? ''} src={session?.user?.image ?? ''} />
+                                    <Avatar alt={props.nickname} src={props.avatarImageUrl} />
                                 </IconButton>
                             </Tooltip>
                             <Menu

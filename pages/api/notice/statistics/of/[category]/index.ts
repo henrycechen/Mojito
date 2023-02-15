@@ -7,7 +7,7 @@ import AzureTableClient from '../../../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from "../../../../../../modules/AtlasDatabaseClient";
 
 import { IMemberMemberMapping, INoticeInfo, INotificationStatistics, IMemberComprehensive, IMemberStatistics } from '../../../../../../lib/interfaces';
-import { createNoticeId, getNicknameFromToken, verifyId, response405, response500, log, verifyRecaptchaResponse, } from '../../../../../../lib/utils';
+import { createNoticeId, getNicknameFromToken, verifyId, response405, response500, logWithDate, verifyRecaptchaResponse, } from '../../../../../../lib/utils';
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
 
 //////// API disabled ////////

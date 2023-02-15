@@ -6,7 +6,7 @@ import CryptoJS from 'crypto-js';
 import AzureTableClient from '../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from '../../../../modules/AtlasDatabaseClient';
 
-import { verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500, log, verifyEmailAddress } from '../../../../lib/utils';
+import { verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500, logWithDate, verifyEmailAddress } from '../../../../lib/utils';
 import { INotificationStatistics, IMemberComprehensive, IMemberStatistics, ILoginJournal } from '../../../../lib/interfaces';
 
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
@@ -22,7 +22,7 @@ export default async function VerifyToken(req: NextApiRequest, res: NextApiRespo
     if (!!environmentVariable) {
         const msg = `${environmentVariable} not found`;
         response500(res, msg);
-        log(msg);
+        logWithDate(msg);
         return;
     }
     //// Declare DB client ////
@@ -110,7 +110,7 @@ export default async function VerifyToken(req: NextApiRequest, res: NextApiRespo
         const memberComprehensiveCollectionUpdateResult = await memberComprehensiveCollectionClient.updateOne({ memberId, providerId }, {
             $set: {
                 //// info ////
-                verifiedTime: new Date().getTime(),
+                verifiedTimeBySeconds: Math.floor(new Date().getTime() / 1000),
                 gender: -1, // "keep as secret"
                 //// management ////
                 status: 200,
@@ -214,7 +214,7 @@ export default async function VerifyToken(req: NextApiRequest, res: NextApiRespo
         if (!res.headersSent) {
             response500(res, msg);
         }
-        log(msg, e);
+        logWithDate(msg, e);
         await atlasDbClient.close();
         return;
     }

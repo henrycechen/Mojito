@@ -8,7 +8,7 @@ import AzureTableClient from '../../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from '../../../../../modules/AtlasDatabaseClient';
 
 import { IMemberComprehensive, IMemberPostMapping, IPostComprehensive, IRestrictedPostComprehensive } from '../../../../../lib/interfaces';
-import { createNoticeId, verifyId, response405, response500, log, getRestrictedFromPostComprehensive } from '../../../../../lib/utils';
+import { createNoticeId, verifyId, response405, response500, logWithDate, getRestrictedFromPostComprehensive } from '../../../../../lib/utils';
 
 /** This interface ONLY accepts GET requests
  * 
@@ -90,7 +90,7 @@ export default async function GetSavedPosts(req: NextApiRequest, res: NextApiRes
         if (!res.headersSent) {
             response500(res, msg);
         }
-        log(msg, e);
+        logWithDate(msg, e);
         await atlasDbClient.close();
         return;
     }

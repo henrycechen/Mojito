@@ -43,7 +43,7 @@ export type EmailRecipient = {
 export type TMemberInfo = {
     memberId?: string;
     nickname?: string;
-    avatarImageUrl?: string | undefined;
+    avatarImageFullName?: string | undefined;
     briefIntro?: string | undefined;
     gender?: -1 | 0 | 1;
     birthday?: string | undefined;
@@ -74,7 +74,7 @@ export type TNoticeInfoWithMemberInfo = {
     category: string; //'cue' | 'reply' | 'like' | 'pin' | 'save' | 'follow';
     initiateId: string; // initiate member id
     nickname: string; // initiate member nickname
-    avatarImageUrl: string;
+    avatarImageFullName: string;
     createdTime: number;
     postTitle?: string;
     commentBrief?: string;

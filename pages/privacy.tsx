@@ -24,6 +24,11 @@ const langConfigs: LangConfigs = {
         cn: '软件使用隐私权声明',
         en: 'Software Usage Privacy Statement'
     },
+    publishedDate: {
+        tw: `更新日期：2023年2月13日`,
+        cn: `更新日期：2023年2月13日`,
+        en: `Updated: February 13, 2022`
+    },
     terms: {
         tw: [
             '1. 我們重視您的隱私權：我們非常重視您的隱私權，並將按照法律法規的要求嚴格保護您的個人信息。',
@@ -73,6 +78,7 @@ export default function PrivacyPolicy() {
                     <Grid item md={1}></Grid>
                     <Grid item md={3} sx={{ p: 1, paddingTop: 16 }}>
                         <Typography variant={'h5'}>{langConfigs.title[processStates.lang]}</Typography>
+                        <Typography variant={'body2'}>{langConfigs.publishedDate[processStates.lang]}</Typography>
                         <Button variant='text' sx={{ textTransform: 'none' }} onClick={setLang}>
                             <Typography variant={'body2'}>{'简|繁|English'}</Typography>
                         </Button>

@@ -11,7 +11,7 @@ import AtlasDatabaseClient from "../../../../modules/AtlasDatabaseClient";
 
 import { IMemberComprehensive, IUpdatePasswordCredentials } from '../../../../lib/interfaces';
 import { LangConfigs, EmailMessage, ResetPasswordRequestInfo } from '../../../../lib/types';
-import { getRandomHexStr, verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500, log } from '../../../../lib/utils';
+import { getRandomHexStr, verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500, logWithDate } from '../../../../lib/utils';
 import { composeResetPasswordEmailContent } from '../../../../lib/email';
 
 const appSecret = process.env.APP_AES_SECRET ?? '';
@@ -112,7 +112,7 @@ export default async function RequestUpdatePassword(req: NextApiRequest, res: Ne
         if (!res.headersSent) {
             response500(res, msg);
         }
-        log(msg, e);
+        logWithDate(msg, e);
         await atlasDbClient.close();
         return;
     }

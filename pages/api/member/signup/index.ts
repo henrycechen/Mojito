@@ -9,7 +9,7 @@ import AtlasDatabaseClient from '../../../../modules/AtlasDatabaseClient';
 
 import { IMojitoMemberSystemLoginCredentials, IVerifyEmailAddressCredentials, IMemberComprehensive, ILoginJournal } from '../../../../lib/interfaces';
 import { LangConfigs, EmailMessage, VerifyEmailAddressRequestInfo } from '../../../../lib/types';
-import { getRandomIdStr, verifyEmailAddress, verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500, log, getRandomHexStr } from '../../../../lib/utils';
+import { getRandomIdStr, verifyEmailAddress, verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500, logWithDate, getRandomHexStr } from '../../../../lib/utils';
 import { composeVerifyEmailAddressEmailContent } from '../../../../lib/email';
 
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
@@ -36,7 +36,7 @@ export default async function SignUp(req: NextApiRequest, res: NextApiResponse) 
     if (!!environmentVariable) {
         const msg = `${environmentVariable} not found`;
         response500(res, msg);
-        log(msg);
+        logWithDate(msg);
         return;
     }
     //// Declare DB client ////
@@ -97,7 +97,7 @@ export default async function SignUp(req: NextApiRequest, res: NextApiResponse) 
         const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.insertOne({
             memberId,
             providerId,
-            registeredTime: new Date().getTime(),
+            registeredTimeBySeconds: Math.floor(new Date().getTime() / 1000),
             emailAddress,
             nickname: emailAddress.split('@')[0],
             status: 0, // email address not verified
@@ -107,7 +107,7 @@ export default async function SignUp(req: NextApiRequest, res: NextApiResponse) 
         if (!memberComprehensiveQueryResult.acknowledged) {
             const msg = 'Attempt to insert document (IMemberComprehensive) in [C] memberComprehensive';
             response500(res, msg);
-            log(msg);
+            logWithDate(msg);
             return;
         }
         res.status(200).send('Member established');
@@ -147,7 +147,7 @@ export default async function SignUp(req: NextApiRequest, res: NextApiResponse) 
         if (!res.headersSent) {
             response500(res, msg);
         }
-        log(msg, e);
+        logWithDate(msg, e);
         await atlasDbClient.close();
         return;
     }

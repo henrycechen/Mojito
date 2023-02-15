@@ -375,12 +375,17 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
     //// info ////
     memberId: string; // 8 ~ 9 characters, UPPERCASE, begin with 'M'
     providerId?: string; // "MojitoMemberSystem" | "GitHubOAuth" | ...
-    registeredTime?: number;// new Date().getTime()
-    verifiedTime?: number;
+    
+    registeredTimeBySeconds?: number; // Math.floor(new Date().getTime() / 1000) 
+    verifiedTimeBySeconds?: number;
     emailAddress?: string;
+    
+    
+    lastAvatarImageUpdatedTimeBySeconds?: number;
+    
     nickname?: string;
     nicknameBase64?: string;    
-  	avatarImageUrl?: string;
+  	
     briefIntro?: string;
     gender?: -1 | 0 | 1;
     birthday?: string;
@@ -858,7 +863,7 @@ const { topicIdsArr } = postComprehensiveQueryResult;
     memberId: string;
     createdTime: number; // created time of this document (post est.)
     title: string;
-    imageUrlsArr: string[];
+    imageNamesArr: string[];
 	paragraphsArr: string[];
     cuedMemberComprehensivesArr: ICuedMemberComprehensive[];
 	channelId: string;
@@ -1124,7 +1129,7 @@ const { topicIdsArr } = postComprehensiveQueryResult;
        //// info ////
        memberId: "_", // 10 characters, UPPERCASE
        providerId: "MojitoMemberSystem",
-       registeredTime: 1670987135509,
+       registeredTimeBySeconds: 1670987135509,
        emailAddress: "_",
        //// management ////
        status: 0,
@@ -1218,7 +1223,7 @@ const { topicIdsArr } = postComprehensiveQueryResult;
    ```json
    {
        //// info ////
-       verifiedTime: new Date().getTime(),
+       verifiedTimeBySeconds: new Date().getTime(),
        gender: 0,
        //// management ////
        status: 200,
@@ -1333,10 +1338,10 @@ const { topicIdsArr } = postComprehensiveQueryResult;
           //// info ////
           memberId: "_", // 10 characters, UPPERCASE
           providerId: "GitHubOAuth", // login (register) with a GitHub account
-          registeredTime: 1670987135509,
+          registeredTimeBySeconds: 1670987135509,
           emailAddress: "_",
           nickname: "_",
-         	avatarImageUrl: "_",
+         	avatarImageFullName: "_",
           //// management ////
           status: 0,
           allowPosting: false,
@@ -1442,14 +1447,14 @@ const { topicIdsArr } = postComprehensiveQueryResult;
 
 ### ▶️Update member info
 
-| Behaviour             | Involved tables / collections |
-| --------------------- | ----------------------------- |
-| Update AvatarImageUrl | [C] memberComprehensive       |
-| Update Nickname       | [C] memberComprehensive       |
-| Update Password       | [RL] Credentials              |
-| Update BriefIntro     | [C] memberComprehensive       |
-| Update Gender         | [C] memberComprehensive       |
-| Update Birthday       | [C] memberComprehensive       |
+| Behaviour                  | Involved tables / collections |
+| -------------------------- | ----------------------------- |
+| Update AvatarImageFullName | [C] memberComprehensive       |
+| Update Nickname            | [C] memberComprehensive       |
+| Update Password            | [RL] Credentials              |
+| Update BriefIntro          | [C] memberComprehensive       |
+| Update Gender              | [C] memberComprehensive       |
+| Update Birthday            | [C] memberComprehensive       |
 
 ### 💡Forbid Members frequently updating their avatar image 
 
@@ -2010,7 +2015,7 @@ export default async function Verify(req: NextApiRequest, res: NextApiResponse) 
     image: 'imageUrl',
     emailAddress: 'henrycechen@gmail.com',
     nickname: '',
-    avatarImageUrl: ''
+    avatarImageFullName: ''
   }
   ```
 
@@ -2349,7 +2354,7 @@ VTJGc2RHVmtYMS9HQWQydEQ1aFJMUXlmUDhoYXJlZzJjNW0vMEJ3SCttcFhhUXdTZFF3RGtyNjN4OXcx
 
 
 
-# Dev
+# Develop
 
 
 
@@ -2393,6 +2398,35 @@ Simply add to `tsconfig.json`
 
 ```json
 "moduleResolution": "node",
+```
+
+
+
+## Use axios to post form data
+
+This is an archive for an old way of uploading image
+
+```typescript
+let formData = new FormData();
+const config = {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    onUploadProgress: (event: any) => {
+        console.log(`Upload progress:`, Math.round((event.loaded * 100) / event.total));
+    }
+}
+try {
+    formData.append('image', await fetch(settingslayoutStates.avatarImageFullName).then(r => r.blob()));
+    const resp = await axios.post(`/api/avatar/upload/${memberId}`, formData, config);
+    alert(resp)
+    if (200 === resp.status) {
+        setSettingsLayoutStates({ ...settingslayoutStates, disableUploadAvatarImageButton: true, uploadAvatarImageResult: 200 });
+    } else {
+        setSettingsLayoutStates({ ...settingslayoutStates, disableUploadAvatarImageButton: false, uploadAvatarImageResult: 400 });
+    }
+} catch (e) {
+    console.log(`Attempt to upload avatar image. ${e}`);
+    return;
+}
 ```
 
 

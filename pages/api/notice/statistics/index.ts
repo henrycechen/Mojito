@@ -6,7 +6,7 @@ import { MongoError } from 'mongodb';
 import AtlasDatabaseClient from "../../../../modules/AtlasDatabaseClient";
 
 import { IMemberMemberMapping, INoticeInfo, INotificationStatistics, IMemberComprehensive, IMemberStatistics } from '../../../../lib/interfaces';
-import { createNoticeId, getNicknameFromToken, verifyId, response405, response500, log, } from '../../../../lib/utils';
+import { createNoticeId, getNicknameFromToken, verifyId, response405, response500, logWithDate, } from '../../../../lib/utils';
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
 
 /** This interface accepts GET and POST requests
@@ -72,7 +72,7 @@ export default async function GetNotificationStatistics(req: NextApiRequest, res
         const notificationStatisticsCollectionClient = atlasDbClient.db('statistics').collection<INotificationStatistics>('notification');
         const notificationStatisticsQueryResult = await notificationStatisticsCollectionClient.findOne({ memberId }, { projection: { _id: 0, memberId: 0, cue: 1, reply: 1, like: 1, pin: 1, save: 1, follow: 1 } });
         if (null === notificationStatisticsQueryResult) {
-            log(`Document (of INotificationStatistics, member id: ${memberId}) not found in [C] notificationStatistics`);
+            logWithDate(`Document (of INotificationStatistics, member id: ${memberId}) not found in [C] notificationStatistics`);
             res.status(500).send('Notification statistics document not found');
             await atlasDbClient.close();
             return;
@@ -89,7 +89,7 @@ export default async function GetNotificationStatistics(req: NextApiRequest, res
         if (!res.headersSent) {
             response500(res, msg);
         }
-        log(msg, e);
+        logWithDate(msg, e);
         await atlasDbClient.close();
         return;
     }

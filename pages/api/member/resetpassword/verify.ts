@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 
-import { verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500, log } from '../../../../lib/utils';
+import { verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500, logWithDate } from '../../../../lib/utils';
 
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
 
@@ -15,7 +15,7 @@ export default async function VerifyToken(req: NextApiRequest, res: NextApiRespo
     if (!!environmentVariable) {
         const msg = `${environmentVariable} not found`;
         response500(res, msg);
-        log(msg);
+        logWithDate(msg);
         return;
     }
     try {
@@ -64,7 +64,7 @@ export default async function VerifyToken(req: NextApiRequest, res: NextApiRespo
         if (!res.headersSent) {
             response500(res, msg);
         }
-        log(msg, e);
+        logWithDate(msg, e);
         return;
     }
 }

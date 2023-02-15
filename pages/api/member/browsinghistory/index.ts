@@ -7,7 +7,7 @@ import AzureTableClient from '../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from "../../../../modules/AtlasDatabaseClient";
 
 import { IMemberComprehensive, IPostComprehensive, IRestrictedPostComprehensive, } from '../../../../lib/interfaces';
-import { response405, response500, log, getRestrictedFromPostComprehensive } from '../../../../lib/utils';
+import { response405, response500, logWithDate, getRestrictedFromPostComprehensive } from '../../../../lib/utils';
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
 
 /** This interface ONLY accepts GET requests
@@ -90,7 +90,7 @@ export default async function GetBrowsingHistory(req: NextApiRequest, res: NextA
         if (!res.headersSent) {
             response500(res, msg);
         }
-        log(msg, e);
+        logWithDate(msg, e);
         await atlasDbClient.close();
         return;
     }

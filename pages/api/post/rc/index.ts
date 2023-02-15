@@ -7,7 +7,7 @@ import AzureTableClient from '../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from '../../../../modules/AtlasDatabaseClient';
 
 import { INoticeInfo, INotificationStatistics, IMemberStatistics, IChannelStatistics, ITopicComprehensive, ITopicPostMapping, IPostComprehensive, IMemberComprehensive } from '../../../../lib/interfaces';
-import { getRandomIdStr, getRandomIdStrL, getNicknameFromToken, getTopicBase64StringsArrayFromRequestBody, getImageUrlsArrayFromRequestBody, getParagraphsArrayFromRequestBody, verifyUrl, response405, response500, log, getCuedMemberInfoArrayFromRequestBody, provideTopicComprehensive, createNoticeId, createId } from '../../../../lib/utils';
+import { getRandomIdStr, getRandomIdStrL, getNicknameFromToken, getTopicBase64StringsArrayFromRequestBody, getImageUrlsArrayFromRequestBody, getParagraphsArrayFromRequestBody, verifyUrl, response405, response500, logWithDate, getCuedMemberInfoArrayFromRequestBody, provideTopicComprehensive, createNoticeId, createId } from '../../../../lib/utils';
 
 const domain = process.env.NEXT_PUBLIC_APP_DOMAIN;
 
@@ -122,13 +122,13 @@ export default async function CreatePost(req: NextApiRequest, res: NextApiRespon
         const memberStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IMemberStatistics>('member');
         const memberStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId }, { $inc: { totalCreationCount: 1 } });
         if (!memberStatisticsUpdateResult.acknowledged) {
-            log(`Document (IPostComprehensive, post id: ${postId}) inserted in [C] postComprehensive successfully but failed to update totalCreationCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`);
+            logWithDate(`Document (IPostComprehensive, post id: ${postId}) inserted in [C] postComprehensive successfully but failed to update totalCreationCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`);
         }
         // Step #3.2 update totalPostCount (IChannelStatistics) in [C] channelStatistics
         const channelStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IChannelStatistics>('channel');
         const channelStatisticsUpdateResult = await channelStatisticsCollectionClient.updateOne({ channelId }, { $inc: { totalPostCount: 1 } });
         if (!channelStatisticsUpdateResult.acknowledged) {
-            log(`Document (IPostComprehensive, post id: ${postId}) inserted in [C] postComprehensive successfully but failed to update totalPostCount (of IChannelStatistics, channel id: ${channelId}) in [C] channelStatistics`);
+            logWithDate(`Document (IPostComprehensive, post id: ${postId}) inserted in [C] postComprehensive successfully but failed to update totalPostCount (of IChannelStatistics, channel id: ${channelId}) in [C] channelStatistics`);
         }
         // Step #3.3 (cond.) update totalPostCount or insert a new document (ITopicComprehensive) in [C] topicComprehensive
         if (topicIdsArr.length !== 0) {
@@ -141,7 +141,7 @@ export default async function CreatePost(req: NextApiRequest, res: NextApiRespon
                     // case document (of topicComprehensive) [not found]
                     const topicComprehensiveUpdateResult = await topicComprehensiveCollectionClient.updateOne({ topicId }, { $set: provideTopicComprehensive(topicId, channelId) }, { upsert: true });
                     if (!topicComprehensiveUpdateResult.acknowledged) {
-                        log(`Document (IPostComprehensive, post id: ${postId}) inserted in [C] postComprehensive successfully but failed to update totalPostCount (of ITopicComprehensive, topic id: ${topicId}) in [C] topicComprehensive`);
+                        logWithDate(`Document (IPostComprehensive, post id: ${postId}) inserted in [C] postComprehensive successfully but failed to update totalPostCount (of ITopicComprehensive, topic id: ${topicId}) in [C] topicComprehensive`);
                     }
                 }
                 // Step (cond.) #3.4 insert a new document (of ITopicPostMapping) in [C] topicPostMapping
@@ -153,7 +153,7 @@ export default async function CreatePost(req: NextApiRequest, res: NextApiRespon
                     status: 200
                 });
                 if (!topicPostMappingInsertResult.acknowledged) {
-                    log(`Document (ITopicPostMapping, post id: ${postId}) inserted in [C] postComprehensive successfully but failed to insert document (of ITopicPostMapping, topic id: ${topicId}) in [C] topicPostMapping`);
+                    logWithDate(`Document (ITopicPostMapping, post id: ${postId}) inserted in [C] postComprehensive successfully but failed to insert document (of ITopicPostMapping, topic id: ${topicId}) in [C] topicPostMapping`);
                 }
             }
         }
@@ -190,7 +190,7 @@ export default async function CreatePost(req: NextApiRequest, res: NextApiRespon
                         }
                     });
                     if (!notificationStatisticsUpdateResult.acknowledged) {
-                        log(`Document (IPostComprehensive, post id: ${postId}) inserted in [C] postComprehensive successfully but failed to update cue (of INotificationStatistics, member id: ${memberId_cued}) in [C] notificationStatistics`);
+                        logWithDate(`Document (IPostComprehensive, post id: ${postId}) inserted in [C] postComprehensive successfully but failed to update cue (of INotificationStatistics, member id: ${memberId_cued}) in [C] notificationStatistics`);
                     }
                 }
             }
@@ -212,7 +212,7 @@ export default async function CreatePost(req: NextApiRequest, res: NextApiRespon
         if (!res.headersSent) {
             response500(res, msg);
         }
-        log(msg, e);
+        logWithDate(msg, e);
         await atlasDbClient.close();
         return;
     }

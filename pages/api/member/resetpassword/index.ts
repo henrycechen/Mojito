@@ -6,7 +6,7 @@ import CryptoJS from 'crypto-js';
 import AzureTableClient from '../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from '../../../../modules/AtlasDatabaseClient';
 
-import { verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500, log, verifyEmailAddress, verifyPassword } from '../../../../lib/utils';
+import { verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500, logWithDate, verifyEmailAddress, verifyPassword } from '../../../../lib/utils';
 import { IMojitoMemberSystemLoginCredentials, ILoginJournal } from '../../../../lib/interfaces';
 
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
@@ -30,7 +30,7 @@ export default async function ResetPassword(req: NextApiRequest, res: NextApiRes
     if (!!environmentVariable) {
         const msg = `${environmentVariable} not found`;
         response500(res, msg);
-        log(msg);
+        logWithDate(msg);
         return;
     }
     //// Declare DB client ////
@@ -125,7 +125,7 @@ export default async function ResetPassword(req: NextApiRequest, res: NextApiRes
         if (!res.headersSent) {
             response500(res, msg);
         }
-        log(msg, e);
+        logWithDate(msg, e);
         await atlasDbClient.close();
         return;
     }

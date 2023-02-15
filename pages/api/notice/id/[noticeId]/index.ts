@@ -7,7 +7,7 @@ import AzureTableClient from '../../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from "../../../../../modules/AtlasDatabaseClient";
 
 import { IMemberComprehensive, } from '../../../../../lib/interfaces';
-import { verifyId, response405, response500, log } from '../../../../../lib/utils';
+import { verifyId, response405, response500, logWithDate } from '../../../../../lib/utils';
 
 /** This interface ONLY accepts DELETE requests
  * 
@@ -22,18 +22,21 @@ export default async function DeleteNoticeById(req: NextApiRequest, res: NextApi
         response405(req, res);
         return;
     }
+
     //// Verify identity ////
     const token = await getToken({ req });
     if (!(token && token?.sub)) {
-        res.status(400).send('Invalid identity');
+        res.status(401).send('Unauthorized');
         return;
     }
-    // Verify notice id
+
+    //// Verify notice id ////
     const { isValid, category, id: noticeId } = verifyId(req.body?.noticeId);
     if (!(isValid && 'notice' === category)) {
         res.status(400).send('Invalid notice id');
         return;
     }
+
     //// Declare DB client ////
     const atlasDbClient = AtlasDatabaseClient();
     try {
@@ -67,7 +70,7 @@ export default async function DeleteNoticeById(req: NextApiRequest, res: NextApi
         if (!res.headersSent) {
             response500(res, msg);
         }
-        log(msg, e);
+        logWithDate(msg, e);
         await atlasDbClient.close();
         return;
     }

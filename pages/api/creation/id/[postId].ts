@@ -7,7 +7,7 @@ import AzureTableClient from '../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from "../../../../modules/AtlasDatabaseClient";
 
 import { IChannelStatistics, IMemberComprehensive, IMemberPostMapping, IMemberStatistics, IPostComprehensive, ITopicComprehensive, } from '../../../../lib/interfaces';
-import { verifyId, response405, response500, log } from '../../../../lib/utils';
+import { verifyId, response405, response500, logWithDate } from '../../../../lib/utils';
 
 /** This interface ONLY accepts DELETE requests
  * 
@@ -83,14 +83,14 @@ export default async function DeleteCreationById(req: NextApiRequest, res: NextA
         const memberStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IMemberStatistics>('member');
         const memberStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId }, { $inc: { totalCreationDeleteCount: 1 } });
         if (!memberStatisticsUpdateResult.acknowledged) {
-            log(`Document (IPostComprehensive, post id: ${postId}) updated (deleted, status -1) in [C] postComprehensive successfully but failed to update totalCreationDeleteCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`);
+            logWithDate(`Document (IPostComprehensive, post id: ${postId}) updated (deleted, status -1) in [C] postComprehensive successfully but failed to update totalCreationDeleteCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`);
         }
         // Step #2.2 update totalPostDeleteCount (of IChannelStatistics) in [C] channelStatistics
         const { channelId } = postComprehensiveQueryResult;
         const channelStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IChannelStatistics>('channel');
         const channelStatisticsUpdateResult = await channelStatisticsCollectionClient.updateOne({ channelId }, { $inc: { totalPostDeleteCount: 1 } });
         if (!channelStatisticsUpdateResult.acknowledged) {
-            log(`Document (IPostComprehensive, post id: ${postId}) updated (deleted, status -1) in [C] postComprehensive successfully but failed to update totalPostDeleteCount (of IChannelStatistics, channel id: ${channelId}) in [C] channelStatistics`);
+            logWithDate(`Document (IPostComprehensive, post id: ${postId}) updated (deleted, status -1) in [C] postComprehensive successfully but failed to update totalPostDeleteCount (of IChannelStatistics, channel id: ${channelId}) in [C] channelStatistics`);
         }
         // Step #2.3 (cond.) update totalPostDeleteCount (of ITopicComprehensive) in [C] topicComprehensive
         const { topicIdsArr } = postComprehensiveQueryResult;
@@ -99,7 +99,7 @@ export default async function DeleteCreationById(req: NextApiRequest, res: NextA
             for await (const topicId of topicIdsArr) {
                 const topicComprehensiveUpdateResult = await topicComprehensiveCollectionClient.updateOne({ topicId }, { $inc: { totalPostDeleteCount: 1 } });
                 if (!topicComprehensiveUpdateResult.acknowledged) {
-                    log(`Document (IPostComprehensive, post id: ${postId}) updated (deleted, status -1) in [C] postComprehensive successfully but failed to update totalPostDeleteCount (of ITopicComprehensive, topic id: ${topicId}) in [C] topicComprehensive`);
+                    logWithDate(`Document (IPostComprehensive, post id: ${postId}) updated (deleted, status -1) in [C] postComprehensive successfully but failed to update totalPostDeleteCount (of ITopicComprehensive, topic id: ${topicId}) in [C] topicComprehensive`);
                 }
             }
         }
@@ -117,7 +117,7 @@ export default async function DeleteCreationById(req: NextApiRequest, res: NextA
         if (!res.headersSent) {
             response500(res, msg);
         }
-        log(msg, e);
+        logWithDate(msg, e);
         await atlasDbClient.close();
         return;
     }

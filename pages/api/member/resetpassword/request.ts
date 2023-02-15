@@ -7,7 +7,7 @@ import AzureEmailCommunicationClient from '../../../../modules/AzureEmailCommuni
 
 import { IResetPasswordCredentials } from '../../../../lib/interfaces';
 import { LangConfigs, EmailMessage, ResetPasswordRequestInfo } from '../../../../lib/types';
-import { getRandomHexStr, verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500, log } from '../../../../lib/utils';
+import { getRandomHexStr, verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500, logWithDate } from '../../../../lib/utils';
 import { composeResetPasswordEmailContent } from '../../../../lib/email';
 
 const appSecret = process.env.APP_AES_SECRET ?? '';
@@ -101,7 +101,7 @@ export default async function RequestResetPassword(req: NextApiRequest, res: Nex
         if (!res.headersSent) {
             response500(res, msg);
         }
-        log(msg, e);
+        logWithDate(msg, e);
         return;
     }
 }

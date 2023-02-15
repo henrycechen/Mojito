@@ -7,7 +7,7 @@ import AzureTableClient from '../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from "../../../../modules/AtlasDatabaseClient";
 
 import { IMemberMemberMapping, IMemberComprehensive, IMemberStatistics, } from '../../../../lib/interfaces';
-import { verifyId, response405, response500, log } from '../../../../lib/utils';
+import { verifyId, response405, response500, logWithDate } from '../../../../lib/utils';
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
 
 /** This interface ONLY accepts POST requests
@@ -93,12 +93,12 @@ export default async function BlockOrUndoBlockMemberById(req: NextApiRequest, re
             const memberStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IMemberStatistics>('member');
             const memberStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId }, { $inc: { totalUndoBlockingCount: 1 } });
             if (!memberStatisticsUpdateResult.acknowledged) {
-                log(`Failed to update totalUndoBlockingCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`);
+                logWithDate(`Failed to update totalUndoBlockingCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`);
             }
             // Step #2.2 update totalUndoBlockedByCount (of IMemberStatistics) in [C] memberStatistics
             const memberBlockedStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId: memberId_object }, { $inc: { totalUndoBlockedByCount: 1 } });
             if (!memberBlockedStatisticsUpdateResult.acknowledged) {
-                log(`Failed to update totalUndoBlockedByCount (of IMemberStatistics, member id: ${memberId_object}) in [C] memberStatistics`);
+                logWithDate(`Failed to update totalUndoBlockedByCount (of IMemberStatistics, member id: ${memberId_object}) in [C] memberStatistics`);
             }
         } else {
             // Case [Block]
@@ -111,12 +111,12 @@ export default async function BlockOrUndoBlockMemberById(req: NextApiRequest, re
             const memberStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IMemberStatistics>('member');
             const memberStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId }, { $inc: { totalBlockingCount: 1 } });
             if (!memberStatisticsUpdateResult.acknowledged) {
-                log(`Failed to update totalBlockingCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`);
+                logWithDate(`Failed to update totalBlockingCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`);
             }
             // Step #2.2 update totalBlockedByCount (of IMemberStatistics) in [C] memberStatistics
             const memberBlockedStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId: memberId_object }, { $inc: { totalBlockedByCount: 1 } });
             if (!memberBlockedStatisticsUpdateResult.acknowledged) {
-                log(`Failed to update totalBlockedByCount (of IMemberStatistics, member id: ${memberId_object}) in [C] memberStatistics`);
+                logWithDate(`Failed to update totalBlockedByCount (of IMemberStatistics, member id: ${memberId_object}) in [C] memberStatistics`);
             }
         }
         await atlasDbClient.close();
@@ -140,7 +140,7 @@ export default async function BlockOrUndoBlockMemberById(req: NextApiRequest, re
         if (!res.headersSent) {
             response500(res, msg);
         }
-        log(msg, e);
+        logWithDate(msg, e);
         await atlasDbClient.close();
         return;
     }

@@ -6,7 +6,7 @@ import AtlasDatabaseClient from "../../../../modules/AtlasDatabaseClient";
 
 import { INoticeInfo, INotificationStatistics, IMemberStatistics, IAttitudeComprehensive, ICommentComprehensive, IChannelStatistics, ITopicComprehensive, ITopicPostMapping, IPostComprehensive, IMemberComprehensive } from '../../../../lib/interfaces';
 
-import { response405, response500, log } from '../../../../lib/utils';
+import { response405, response500, logWithDate } from '../../../../lib/utils';
 
 /** This interface ONLY accepts DELETE requests
  * 
@@ -58,7 +58,7 @@ export default async function CancelMembership(req: NextApiRequest, res: NextApi
         if (!res.headersSent) {
             response500(res, msg);
         }
-        log(msg, e);
+        logWithDate(msg, e);
         await atlasDbClient.close();
         return;
     }

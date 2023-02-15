@@ -9,7 +9,7 @@ import AtlasDatabaseClient from '../../../../modules/AtlasDatabaseClient';
 
 import { IVerifyEmailAddressCredentials, IMemberComprehensive } from '../../../../lib/interfaces';
 import { LangConfigs, EmailMessage, VerifyEmailAddressRequestInfo } from '../../../../lib/types';
-import { getRandomHexStr, verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500, log } from '../../../../lib/utils';
+import { getRandomHexStr, verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500, logWithDate } from '../../../../lib/utils';
 import { composeVerifyEmailAddressEmailContent } from '../../../../lib/email';
 import { loginProviderIdMapping } from '../../auth/[...nextauth]';
 
@@ -38,7 +38,7 @@ export default async function RequestVerificationEmail(req: NextApiRequest, res:
     if (!!environmentVariable) {
         const msg = `${environmentVariable} not found`;
         response500(res, msg);
-        log(msg);
+        logWithDate(msg);
         return;
     }
     //// Declare DB client ////
@@ -105,7 +105,7 @@ export default async function RequestVerificationEmail(req: NextApiRequest, res:
             //// [!] document (of IMemberComprehensive) not found ////
             const msg = 'Member management (document of IMemberComprehensive) not found in [C] memberComprehensive';
             response500(res, msg);
-            log(msg);
+            logWithDate(msg);
             return;
         }
         const { status } = memberComprehensiveQueryResult;
@@ -113,7 +113,7 @@ export default async function RequestVerificationEmail(req: NextApiRequest, res:
             //// [!] member status (property of IMemberComprehensive) not found or status (code) error ////
             const msg = 'Member status (property of IMemberComprehensive) error in [C] memberComprehensive';
             response500(res, msg);
-            log(msg);
+            logWithDate(msg);
             return;
         }
         // Step #4.2 verify member status
@@ -155,7 +155,7 @@ export default async function RequestVerificationEmail(req: NextApiRequest, res:
         if (!res.headersSent) {
             response500(res, msg);
         }
-        log(msg, e);
+        logWithDate(msg, e);
         await atlasDbClient.close();
         return;
     }
