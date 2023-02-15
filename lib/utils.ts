@@ -212,11 +212,12 @@ export function getNicknameBrief(nickname: any): string {
     return nickname;
 }
 
-export function provideAvatarImageUrl(imageFullName: string, domain: string): string {
-    if (''=== imageFullName) {
-        return '';
+export function provideAvatarImageUrl(memberId: string, domain: string, forceBrowserUpdate = false): string {
+    if (forceBrowserUpdate) {
+        return `${domain}/api/avatar/a/${memberId}.png?variant=${getRandomHexStr()}`;
+    } else {
+        return `${domain}/api/avatar/a/${memberId}.png`;
     }
-    return `${domain}/api/avatar/a/${imageFullName}?`
 }
 
 export function provideCuedMemberInfoArray(cuedMemberInfoDictionary: { [memberId: string]: IConciseMemberInfo }): IConciseMemberInfo[] {

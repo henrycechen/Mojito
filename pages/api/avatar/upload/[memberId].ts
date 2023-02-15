@@ -9,7 +9,6 @@ import Jimp from 'jimp';
 import AzureBlobClient from '../../../../modules/AzureBlobClient';
 
 import { logWithDate, response405, response500, verifyId } from '../../../../lib/utils';
-import { getRandomIdStr } from '../../../../lib/utils';
 import AtlasDatabaseClient from '../../../../modules/AtlasDatabaseClient';
 import { IMemberComprehensive } from '../../../../lib/interfaces';
 
@@ -126,7 +125,7 @@ const uploadAsync = (req: NextApiRequest, memberId: string) => {
                         reject(new Error(`Attempt to upload avatar image file that exceeds size limit.`))
                     }
                     try {
-                        let size, resize, cropX, cropY;
+                        let size, resize, cropX, cropY; // v0.1.2 Add sizing function
 
                         const image = await Jimp.read(initialBuf);
                         if (image.bitmap.width > image.bitmap.height) {

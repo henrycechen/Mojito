@@ -28,7 +28,7 @@ export default async function GetAvatarImageByFullName(req: NextApiRequest, res:
 
     const { fullname } = req.query;
     const contianerClient = AzureBlobClient('avatar');
-    if (!('string' === typeof fullname && new RegExp(/M[A-Z0-9]{8,9}\.png/).test(fullname))) {
+    if (!('string' === typeof fullname && new RegExp(/M[A-Z0-9]{8,9}\.png/).test(fullname))) { // v0.1.2 Add RegExp
         res.status(404).send('Avatar image not found');
         return;
     }

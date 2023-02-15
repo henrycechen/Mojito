@@ -130,6 +130,7 @@ type TSettingsLayoutStates = {
     // uploadPercent: number;
 
     avatarImageUrl: string;
+    alternativeImageUrl: string | undefined;
     disableUploadAvatarImageButton: boolean;
     uploadAvatarImageResult: 0 | 100 | 200 | 300 | 400; // 0:no-file, 100:ready 200:succeeded, 300:uploading 400:failed
 
@@ -1055,7 +1056,8 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
         // uploadPercent: 0,
         nickname: memberInfo_ss.nickname,
 
-        avatarImageUrl: provideAvatarImageUrl(avatarImageFullName, domain),
+        avatarImageUrl: provideAvatarImageUrl(memberId, domain),
+        alternativeImageUrl: provideAvatarImageUrl(memberId, domain),
         disableUploadAvatarImageButton: true,
         uploadAvatarImageResult: 0,
 
@@ -1106,12 +1108,12 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
             const handleOpenFile = (event: React.ChangeEvent<HTMLInputElement>) => {
                 if (event.target.files?.length !== 0 && event.target.files !== null) {
                     const url = URL.createObjectURL(event.target.files[0]);
-                    setSettingsLayoutStates({ ...settingslayoutStates, avatarImageUrl: url, disableUploadAvatarImageButton: false, uploadAvatarImageResult: 100 })
+                    setSettingsLayoutStates({ ...settingslayoutStates, alternativeImageUrl: url, disableUploadAvatarImageButton: false, uploadAvatarImageResult: 100 })
                 }
             }
 
             const handleUploadAvatarImage = async () => {
-                if (!(undefined !== settingslayoutStates.avatarImageUrl && '' !== settingslayoutStates.avatarImageUrl)) {
+                if (!(undefined !== settingslayoutStates.alternativeImageUrl && '' !== settingslayoutStates.alternativeImageUrl)) {
                     return;
                 }
 
@@ -1126,7 +1128,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
                 }
 
                 // Retrieve file and measure the size
-                const blb = await fetch(settingslayoutStates.avatarImageUrl).then(r => r.blob());
+                const blb = await fetch(settingslayoutStates.alternativeImageUrl).then(r => r.blob());
                 if ((await blb.arrayBuffer()).byteLength > 2097152) { // new image file no larger than 2 MB
                     setSettingsLayoutStates({ ...settingslayoutStates, disableUploadAvatarImageButton: false, uploadAvatarImageResult: 400 });
                     return;
@@ -1136,9 +1138,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
                 formData.append('image', blb);
                 await axios.post(`/api/avatar/upload/${memberId}`, formData, config)
                     .then((response: AxiosResponse) => {
-                        setSettingsLayoutStates({ ...settingslayoutStates, disableUploadAvatarImageButton: true, uploadAvatarImageResult: 200 });
-
-
+                        setSettingsLayoutStates({ ...settingslayoutStates, avatarImageUrl: provideAvatarImageUrl(memberId, domain, true), disableUploadAvatarImageButton: true, uploadAvatarImageResult: 200 });
                     })
                     .catch((error: AxiosError) => {
                         setSettingsLayoutStates({ ...settingslayoutStates, disableUploadAvatarImageButton: false, uploadAvatarImageResult: 400 });
@@ -1151,7 +1151,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
 
                     {/* image */}
                     <CenterlizedBox>
-                        <Avatar src={settingslayoutStates.avatarImageUrl} sx={{ width: { xs: 96, md: 128 }, height: { xs: 96, md: 128 }, }}></Avatar>
+                        <Avatar src={settingslayoutStates.alternativeImageUrl} sx={{ width: { xs: 96, md: 128 }, height: { xs: 96, md: 128 }, }}></Avatar>
                     </CenterlizedBox>
 
                     {/* 'open file' button */}
@@ -1182,6 +1182,10 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
                     <CenterlizedBox mt={2}>
                         <Typography color={'grey'} variant={'body2'}>{langConfigs.uploadRequirement[preferenceStates.lang]}</Typography>
                     </CenterlizedBox>
+
+                    <Button variant='contained' onClick={() => {
+                        console.log(settingslayoutStates);
+                    }}>{'123'}</Button>
                 </Box>
             )
         }
@@ -1678,7 +1682,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
     ///////// COMPONENT - member page /////////
     return (
         <>
-            <Navbar nickname={nickname} avatarImageUrl={provideAvatarImageUrl(avatarImageFullName, domain)} />
+            <Navbar nickname={nickname} avatarImageUrl={settingslayoutStates.avatarImageUrl} />
 
             {/* //// first layer - member info //// */}
             <Box sx={{ minHeight: { xs: 160, md: 200 } }}>
@@ -1686,7 +1690,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
 
                     {/* avatar */}
                     <CenterlizedBox sx={{ marginTop: { xs: 4, sm: 6 } }}>
-                        <Avatar src={provideAvatarImageUrl(avatarImageFullName, domain)} sx={{ height: { xs: 90, sm: 72 }, width: { xs: 90, sm: 72 } }}>{nickname?.charAt(0).toUpperCase()}</Avatar>
+                        <Avatar src={settingslayoutStates.avatarImageUrl} sx={{ height: { xs: 90, sm: 72 }, width: { xs: 90, sm: 72 } }}>{nickname?.charAt(0).toUpperCase()}</Avatar>
                     </CenterlizedBox>
 
                     {/* nickname */}
