@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { RestError } from '@azure/data-tables';
 
 import AzureTableClient from '../../../../modules/AzureTableClient';
-import { TChannelInfoDictionary } from '../../../../lib/types';
+import { IChannelInfoDictionary } from '../../../../lib/interfaces/channel';
 import { response405, response500, logWithDate } from '../../../../lib/utils';
 
 export default async function GetChannelInfoDictionary(req: NextApiRequest, res: NextApiResponse) {
@@ -21,7 +21,7 @@ export default async function GetChannelInfoDictionary(req: NextApiRequest, res:
             response500(res, 'No records of channel info dictionary');
             return;
         }
-        const infoDict: TChannelInfoDictionary = {};
+        const infoDict: IChannelInfoDictionary = {};
         do {
             const { rowKey, TW, CN, EN, SvgIconPath } = channelInfoQueryResult.value
             infoDict[rowKey] = {

@@ -34,20 +34,21 @@ import Copyright from '../../ui/Copyright';
 
 import { useRouter } from 'next/router';
 import { IConciseTopicComprehensive } from '../../lib/interfaces';
-import { LangConfigs, TChannelInfoStates, TChannelInfoDictionary } from '../../lib/types';
+import { LangConfigs } from '../../lib/types';
+import { IConciseMemberInfo, IPostComprehensive } from '../../lib/interfaces';
+import { IChannelInfoStates, IChannelInfoDictionary } from '../../lib/interfaces/channel';
+import { getNicknameBrief, getRandomHexStr } from '../../lib/utils';
 
 import Input from '@mui/material/Input';
 import ListItemText from '@mui/material/ListItemText';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import MenuList from '@mui/material/MenuList/MenuList';
 import { CenterlizedBox } from '../../ui/Styled';
-import { IConciseMemberInfo, IPostComprehensive } from '../../lib/interfaces';
 import { NextPageContext } from 'next';
-import { getNicknameBrief, getRandomHexStr } from '../../lib/utils';
 import Avatar from '@mui/material/Avatar';
 
 type TCreatePostPageProps = {
-    channelInfoDict_ss: TChannelInfoDictionary
+    channelInfoDict_ss: IChannelInfoDictionary
 }
 
 type Image = {
@@ -211,7 +212,7 @@ export async function getServerSideProps(context: NextPageContext): Promise<{ pr
     if (200 !== resp.status) {
         throw new Error('Attempt to GET channel info dictionary');
     }
-    let channelInfoDict_ss: TChannelInfoDictionary;
+    let channelInfoDict_ss: IChannelInfoDictionary;
     try {
         channelInfoDict_ss = await resp.json();
     } catch (e) {
@@ -250,7 +251,7 @@ const CreatePost = ({ channelInfoDict_ss }: TCreatePostPageProps) => {
     };
 
     //////// STATES - channel ////////
-    const [channelInfoStates, setChannelInfoStates] = React.useState<TChannelInfoStates>({
+    const [channelInfoStates, setChannelInfoStates] = React.useState<IChannelInfoStates>({
         channelIdSequence: [],
     });
 

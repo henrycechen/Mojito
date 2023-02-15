@@ -8,7 +8,7 @@ import AzureEmailCommunicationClient from '../../../../modules/AzureEmailCommuni
 import AtlasDatabaseClient from '../../../../modules/AtlasDatabaseClient';
 
 import { IMojitoMemberSystemLoginCredentials, IVerifyEmailAddressCredentials, IMemberComprehensive, ILoginJournal } from '../../../../lib/interfaces';
-import { LangConfigs, EmailMessage, VerifyEmailAddressRequestInfo } from '../../../../lib/types';
+import { LangConfigs, EmailMessage, TVerifyEmailAddressRequestInfo } from '../../../../lib/types';
 import { getRandomIdStr, verifyEmailAddress, verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500, logWithDate, getRandomHexStr } from '../../../../lib/utils';
 import { composeVerifyEmailAddressEmailContent } from '../../../../lib/email';
 
@@ -122,7 +122,7 @@ export default async function SignUp(req: NextApiRequest, res: NextApiResponse) 
         });
         await atlasDbClient.close();
         // Step #6 send email
-        const info: VerifyEmailAddressRequestInfo = { emailAddress, providerId, verifyEmailAddressToken };
+        const info: TVerifyEmailAddressRequestInfo = { emailAddress, providerId, verifyEmailAddressToken };
         const emailMessage: EmailMessage = {
             sender: '<donotreply@mojito.co.nz>',
             content: {

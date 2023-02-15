@@ -6,7 +6,7 @@ import AzureTableClient from '../../../../modules/AzureTableClient';
 import AzureEmailCommunicationClient from '../../../../modules/AzureEmailCommunicationClient';
 
 import { IResetPasswordCredentials } from '../../../../lib/interfaces';
-import { LangConfigs, EmailMessage, ResetPasswordRequestInfo } from '../../../../lib/types';
+import { LangConfigs, EmailMessage, TResetPasswordRequestInfo } from '../../../../lib/types';
 import { getRandomHexStr, verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500, logWithDate } from '../../../../lib/utils';
 import { composeResetPasswordEmailContent } from '../../../../lib/email';
 
@@ -67,7 +67,7 @@ export default async function RequestResetPassword(req: NextApiRequest, res: Nex
         }
         // Step #3.1 create a new reset password verification token
         const resetPasswordToken = getRandomHexStr(true); // use UPPERCASE
-        const info: ResetPasswordRequestInfo = {
+        const info: TResetPasswordRequestInfo = {
             emailAddress,
             resetPasswordToken: resetPasswordToken,
             expireDate: new Date().getTime() + 15 * 60 * 1000 // set valid time for 15 minutes

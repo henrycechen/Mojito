@@ -1,7 +1,8 @@
 import { MongoClient } from 'mongodb';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { IMemberComprehensive, IConciseMemberInfo, IAttitudeComprehensive, IAttitideMapping, ICommentComprehensive, IRestrictedCommentComprehensive, IRestrictedPostComprehensive, IPostComprehensive, IEditedPostComprehensive, ITopicComprehensive, IConciseMemberStatistics, IProcessStates, } from './interfaces';
-import { TChannelInfo, TNoticeInfoWithMemberInfo } from './types';
+import { IChannelInfo } from './interfaces/channel';
+import { INoticeInfoWithMemberInfo } from './interfaces/notification';
 
 // import common utils for API
 // import { createId, createNoticeId, getRandomIdStr, getRandomIdStrL, getRandomHexStr, timeStampToString, getNicknameFromToken, getContentBrief, getMappingFromAttitudeComprehensive, createCommentComprehensive, provideCommentComprehensiveUpdate, getRestrictedFromCommentComprehensive, getTopicBase64StringsArrayFromRequestBody, getImageUrlsArrayFromRequestBody, getParagraphsArrayFromRequestBody, getRestrictedFromPostComprehensive, verifyEmailAddress, verifyPassword, verifyId, verifyUrl, verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500, log } from '../../../../lib/utils';
@@ -94,7 +95,7 @@ export function timeToString(timeBySeconds: any, lang: string): string {
     }
 }
 
-export function noticeInfoToString(info: TNoticeInfoWithMemberInfo, lang: string): string {
+export function noticeInfoToString(info: INoticeInfoWithMemberInfo, lang: string): string {
     let _lang = lang;
     if (!['tw', 'cn', 'en'].includes(lang)) {
         _lang = 'tw';
@@ -414,7 +415,7 @@ export function getRestrictedFromCommentComprehensive(commentComprehensive: ICom
 }
 
 //////// Channel ////////
-export function fakeChannel(): TChannelInfo {
+export function fakeChannel(): IChannelInfo {
     return {
         channelId: '',
         name: {},

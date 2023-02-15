@@ -8,7 +8,6 @@ import AtlasDatabaseClient from "../../../../../modules/AtlasDatabaseClient";
 
 
 import { IMemberMemberMapping, INoticeInfo, IMemberPostMapping, IMemberComprehensive, IConciseMemberInfo, IMemberStatistics, ILoginJournal, INotificationStatistics, IAttitudeComprehensive, IAttitideMapping, ICommentComprehensive, IEditedCommentComprehensive, IRestrictedCommentComprehensive, IChannelStatistics, ITopicComprehensive, ITopicPostMapping, IPostComprehensive, IEditedPostComprehensive, IRestrictedPostComprehensive } from '../../../../../lib/interfaces';
-import { TMemberInfo } from '../../../../../lib/types';
 import { verifyId, response405, response500, logWithDate } from '../../../../../lib/utils';
 
 
@@ -37,7 +36,7 @@ export default async function MemberInfoById(req: NextApiRequest, res: NextApiRe
 
     try {
       
-        const info: TMemberInfo = {
+        const info: IConciseMemberInfo = {
             memberId: 'M1234XXXX',
             nickname: 'WebMaster',
             avatarImageFullName: 'M1234XXXX.png'

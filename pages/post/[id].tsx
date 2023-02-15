@@ -32,9 +32,16 @@ import "swiper/css/pagination";
 
 import Navbar from '../../ui/Navbar';
 
-import { IAttitideMapping, IRestrictedCommentComprehensive, IRestrictedCommentComprehensiveWithMemberInfo, IConciseMemberInfo, IConcisePostComprehensive, IProcessStates } from '../../lib/interfaces';
-import { TChannelInfoDictionary, TChannelInfo, LangConfigs, TRestrictedCommentInfo, TRestrictedPostComprehensive, TMemberInfo, TPostStatistics, TMemberStatistics } from '../../lib/types';
+import { IAttitideMapping, IRestrictedCommentComprehensive, IRestrictedCommentComprehensiveWithMemberInfo, IConcisePostComprehensive, IProcessStates } from '../../lib/interfaces';
+import { LangConfigs } from '../../lib/types';
 import { fakeChannel, fakeRestrictedPostComprehensive, getNicknameBrief, getRandomHexStr, provideCuedMemberInfoArray, restoreFromLocalStorage, timeToString, updateLocalStorage, verifyId, verifyUrl } from '../../lib/utils';
+
+import { IConciseMemberInfo, IConciseMemberStatistics } from '../../lib/interfaces/member';
+import { IRestrictedPostComprehensive } from '../../lib/interfaces/post';
+import { IChannelInfo } from '../../lib/interfaces/channel';
+
+
+
 import Divider from '@mui/material/Divider';
 import Container from '@mui/material/Container';
 
@@ -55,10 +62,10 @@ const updatePreferenceStatesCache = updateLocalStorage(storageName0);
 const restorePreferenceStatesFromCache = restoreFromLocalStorage(storageName0);
 
 type TPostPageProps = {
-    restrictedPostComprehensive_ss: TRestrictedPostComprehensive;
-    channelInfo_ss: TChannelInfo;
-    authorInfo_ss: TMemberInfo;
-    authorStatistics_ss: TMemberStatistics;
+    restrictedPostComprehensive_ss: IRestrictedPostComprehensive;
+    channelInfo_ss: IChannelInfo;
+    authorInfo_ss: IConciseMemberInfo;
+    authorStatistics_ss: IConciseMemberStatistics;
     redirect404: boolean;
 }
 

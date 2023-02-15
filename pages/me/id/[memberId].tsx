@@ -63,10 +63,13 @@ import { useTheme } from '@emotion/react';
 import { useRouter } from 'next/router';
 
 import Navbar from '../../../ui/Navbar';
-import { TBrowsingHelper, LangConfigs, TChannelInfoDictionary, TChannelInfoStates, TNoticeInfoWithMemberInfo, TPreferenceStates } from '../../../lib/types';
+import { TBrowsingHelper, LangConfigs, TPreferenceStates } from '../../../lib/types';
 import { updateLocalStorage, restoreFromLocalStorage, verifyId, fakeConciseMemberInfo, fakeConciseMemberStatistics, timeToString, noticeInfoToString, verifyNoticeId, getNicknameBrief, noticeIdToUrl, getContentBrief, provideLocalStorage, provideAvatarImageUrl } from '../../../lib/utils';
 import { CenterlizedBox, ResponsiveCard, StyledSwitch, TextButton } from '../../../ui/Styled';
 import { IConciseMemberInfo, IConciseMemberStatistics, IConcisePostComprehensiveWithMemberInfo, IConciseMemberInfoWithBriefIntroAndTime, IConciseMemberInfoWithTime, IProcessStates } from '../../../lib/interfaces';
+import { INoticeInfoWithMemberInfo } from '../../../lib/interfaces/notification';
+import { IChannelInfoStates, IChannelInfoDictionary } from '../../../lib/interfaces/channel';
+
 import FormGroup from '@mui/material/FormGroup';
 import Switch from '@mui/material/Switch';
 import Checkbox from '@mui/material/Checkbox';
@@ -89,7 +92,7 @@ const updatePostsLayoutStatesCache = updateLocalStorage(storageName2);
 const restorePostsLayoutStatesFromCache = restoreFromLocalStorage(storageName2);
 
 type TMemberPageProps = {
-    channelInfoDict_ss: TChannelInfoDictionary;
+    channelInfoDict_ss: IChannelInfoDictionary;
     memberInfo_ss: IConciseMemberInfo;
     memberStatistics_ss: IConciseMemberStatistics;
     redirect404: boolean;
@@ -101,9 +104,14 @@ interface IMemberPageProcessStates extends IProcessStates {
     wasRedirected: boolean;
 }
 
+type TMemberInfoStates = {
+    avatarImageUrl: string;
+    nickname: string;
+}
+
 type TMessagesLayoutStates = {
     selectedCategory: string;
-    noticeInfoArr: TNoticeInfoWithMemberInfo[];
+    noticeInfoArr: INoticeInfoWithMemberInfo[];
     noticeStatistics: { [category: string]: number };
 }
 
@@ -129,12 +137,12 @@ type TSettingsLayoutStates = {
     selectedSettingId: number;
     // uploadPercent: number;
 
-    avatarImageUrl: string;
-    alternativeImageUrl: string | undefined;
-    disableUploadAvatarImageButton: boolean;
-    uploadAvatarImageResult: 0 | 100 | 200 | 300 | 400; // 0:no-file, 100:ready 200:succeeded, 300:uploading 400:failed
 
-    nickname: string;
+
+
+
+
+
     password: string;
     repeatPassword: string;
     showpassword?: boolean;
@@ -145,6 +153,8 @@ type TSettingsLayoutStates = {
     blacklist: IConciseMemberInfoWithTime[];
     registerDate: string;
 }
+
+
 
 const domain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? '';
 const defaultLang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
@@ -553,7 +563,16 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
     // [!] set width on select layout moved to process states section
 
     //////// INFO - member ////////
-    const { memberId, nickname, avatarImageFullName } = memberInfo_ss;
+    const { memberId } = memberInfo_ss;
+
+    //////// STATES - memberInfo ////////
+    const [memberInfoStates, setMemberInfoStates] = React.useState<TMemberInfoStates>({
+        avatarImageUrl: provideAvatarImageUrl(memberId, domain),
+        nickname: memberInfo_ss.nickname,
+    })
+
+
+
 
     //////// STATES - preference ////////
     const [preferenceStates, setPreferenceStates] = React.useState<TPreferenceStates>({
@@ -903,7 +922,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
     })
 
     ///////// STATES - channel /////////
-    const [channelInfoStates, setChannelInfoStates] = React.useState<TChannelInfoStates>({
+    const [channelInfoStates, setChannelInfoStates] = React.useState<IChannelInfoStates>({
         channelIdSequence: [],
     });
 
@@ -1052,14 +1071,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
 
     //////// STATES - settings layout ////////
     const [settingslayoutStates, setSettingsLayoutStates] = React.useState<TSettingsLayoutStates>({
-        selectedSettingId: 0,
-        // uploadPercent: 0,
-        nickname: memberInfo_ss.nickname,
-
-        avatarImageUrl: provideAvatarImageUrl(memberId, domain),
-        alternativeImageUrl: provideAvatarImageUrl(memberId, domain),
-        disableUploadAvatarImageButton: true,
-        uploadAvatarImageResult: 0,
+        selectedSettingId: 1,
 
         password: '',
         repeatPassword: '',
@@ -1072,6 +1084,11 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
         blacklist: [],
         registerDate: '2022-11-10T22:44:24.373372Z'
     });
+
+    const [nicknameState, setNicknameState] = React.useState<any>({
+        alternativeNickname: memberInfo_ss.nickname,
+
+    })
 
     React.useEffect(() => { updateSettingslayoutStates() }, [settingslayoutStates.selectedSettingId])
 
@@ -1100,25 +1117,38 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
 
     }
 
+
     //////// COMPONENT - settings layout ////////
     const SettingsLayout = () => {
 
-        //// Avatar ////
-        const AvatarSetting = () => {
+        //// Avatar Image ////
+        const AvatarImageSetting = () => {
+            type TAvatarImageSettingStates = {
+                alternativeImageUrl: string | undefined;
+                disableUploadButton: boolean;
+                uploadAvatarImageResult: 0 | 100 | 300 | 400;
+            }
+
+            const [avatarImageSettingStates, setAvatarImageSettingStates] = React.useState<TAvatarImageSettingStates>({
+                alternativeImageUrl: provideAvatarImageUrl(memberId, domain, true),
+                disableUploadButton: true,
+                uploadAvatarImageResult: 0
+            })
+
             const handleOpenFile = (event: React.ChangeEvent<HTMLInputElement>) => {
                 if (event.target.files?.length !== 0 && event.target.files !== null) {
                     const url = URL.createObjectURL(event.target.files[0]);
-                    setSettingsLayoutStates({ ...settingslayoutStates, alternativeImageUrl: url, disableUploadAvatarImageButton: false, uploadAvatarImageResult: 100 })
+                    setAvatarImageSettingStates({ ...avatarImageSettingStates, alternativeImageUrl: url, disableUploadButton: false, uploadAvatarImageResult: 100 });
                 }
             }
 
             const handleUploadAvatarImage = async () => {
-                if (!(undefined !== settingslayoutStates.alternativeImageUrl && '' !== settingslayoutStates.alternativeImageUrl)) {
+                if (!(undefined !== avatarImageSettingStates.alternativeImageUrl && '' !== avatarImageSettingStates.alternativeImageUrl)) {
                     return;
                 }
 
                 // Prepare to upload avatar image
-                setSettingsLayoutStates({ ...settingslayoutStates, disableUploadAvatarImageButton: true, uploadAvatarImageResult: 300 });
+                setAvatarImageSettingStates({ ...avatarImageSettingStates, disableUploadButton: true, uploadAvatarImageResult: 300 });
                 let formData = new FormData();
                 const config = {
                     headers: { 'Content-Type': 'multipart/form-data' },
@@ -1128,20 +1158,20 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
                 }
 
                 // Retrieve file and measure the size
-                const blb = await fetch(settingslayoutStates.alternativeImageUrl).then(r => r.blob());
-                if ((await blb.arrayBuffer()).byteLength > 2097152) { // new image file no larger than 2 MB
-                    setSettingsLayoutStates({ ...settingslayoutStates, disableUploadAvatarImageButton: false, uploadAvatarImageResult: 400 });
+                const bb = await fetch(avatarImageSettingStates.alternativeImageUrl).then(r => r.blob());
+                if ((await bb.arrayBuffer()).byteLength > 2097152) { // new image file no larger than 2 MB
+                    setAvatarImageSettingStates({ ...avatarImageSettingStates, disableUploadButton: false, uploadAvatarImageResult: 400 });
                     return;
                 }
 
                 // Post avatar image file
-                formData.append('image', blb);
+                formData.append('image', bb);
                 await axios.post(`/api/avatar/upload/${memberId}`, formData, config)
                     .then((response: AxiosResponse) => {
-                        setSettingsLayoutStates({ ...settingslayoutStates, avatarImageUrl: provideAvatarImageUrl(memberId, domain, true), disableUploadAvatarImageButton: true, uploadAvatarImageResult: 200 });
+                        setMemberInfoStates({ ...memberInfoStates, avatarImageUrl: provideAvatarImageUrl(memberId, domain, true) });
                     })
                     .catch((error: AxiosError) => {
-                        setSettingsLayoutStates({ ...settingslayoutStates, disableUploadAvatarImageButton: false, uploadAvatarImageResult: 400 });
+                        setAvatarImageSettingStates({ ...avatarImageSettingStates, disableUploadButton: true, uploadAvatarImageResult: 400 });
                         console.log(`Attempt to upload avatar image. ${error}`);
                     })
             }
@@ -1151,14 +1181,14 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
 
                     {/* image */}
                     <CenterlizedBox>
-                        <Avatar src={settingslayoutStates.alternativeImageUrl} sx={{ width: { xs: 96, md: 128 }, height: { xs: 96, md: 128 }, }}></Avatar>
+                        <Avatar src={avatarImageSettingStates.alternativeImageUrl} sx={{ width: { xs: 96, md: 128 }, height: { xs: 96, md: 128 }, }}></Avatar>
                     </CenterlizedBox>
 
                     {/* 'open file' button */}
                     <CenterlizedBox mt={1}>
                         <Box>
-                            <IconButton color='primary' aria-label='upload picture' component='label' >
-                                <input hidden accept='image/*' type='file' onChange={handleOpenFile} />
+                            <IconButton color={'primary'} aria-label={'upload picture'} component={'label'} >
+                                <input hidden accept={'image/*'} type={'file'} onChange={handleOpenFile} />
                                 <PhotoCamera />
                             </IconButton>
                         </Box>
@@ -1166,36 +1196,47 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
 
                     {/* 'upload' button */}
                     <CenterlizedBox mt={1}>
-                        <Button variant='contained' color={400 !== settingslayoutStates.uploadAvatarImageResult ? 'primary' : 'error'} size='small' onClick={async () => { await handleUploadAvatarImage() }} disabled={settingslayoutStates.disableUploadAvatarImageButton}>
+                        <Button variant='contained' color={400 !== avatarImageSettingStates.uploadAvatarImageResult ? 'primary' : 'error'} size={'small'} onClick={async () => { await handleUploadAvatarImage() }} disabled={avatarImageSettingStates.disableUploadButton}>
                             {/* button: disabled, result: 0 (no-file) */}
-                            {0 === settingslayoutStates.uploadAvatarImageResult && <Typography variant={'body2'}>{langConfigs.chooseImageToUpload[preferenceStates.lang]}</Typography>}
+                            {0 === avatarImageSettingStates.uploadAvatarImageResult && <Typography variant={'body2'}>{langConfigs.chooseImageToUpload[preferenceStates.lang]}</Typography>}
                             {/* button: enabled, result: 100 (ready) */}
-                            {100 === settingslayoutStates.uploadAvatarImageResult && <Typography variant={'body2'}>{langConfigs.upload[preferenceStates.lang]}</Typography>}
+                            {100 === avatarImageSettingStates.uploadAvatarImageResult && <Typography variant={'body2'}>{langConfigs.upload[preferenceStates.lang]}</Typography>}
                             {/* button: disabled, result: 300 (uploading) */}
-                            {300 === settingslayoutStates.uploadAvatarImageResult && <Typography variant={'body2'}>{langConfigs.uploading[preferenceStates.lang]}</Typography>}
+                            {300 === avatarImageSettingStates.uploadAvatarImageResult && <Typography variant={'body2'}>{langConfigs.uploading[preferenceStates.lang]}</Typography>}
                             {/* button: enabled, result: 400 (failed) */}
-                            {400 === settingslayoutStates.uploadAvatarImageResult && <Typography variant={'body2'}>{langConfigs.uploadFailed[preferenceStates.lang]}</Typography>}
-                            {/* button: disabled, result: 200 (succeeded) */}
-                            {200 === settingslayoutStates.uploadAvatarImageResult && <Typography variant={'body2'}>{langConfigs.uploadSucceeded[preferenceStates.lang]}</Typography>}
+                            {400 === avatarImageSettingStates.uploadAvatarImageResult && <Typography variant={'body2'}>{langConfigs.uploadFailed[preferenceStates.lang]}</Typography>}
                         </Button>
                     </CenterlizedBox>
                     <CenterlizedBox mt={2}>
                         <Typography color={'grey'} variant={'body2'}>{langConfigs.uploadRequirement[preferenceStates.lang]}</Typography>
                     </CenterlizedBox>
-
-                    <Button variant='contained' onClick={() => {
-                        console.log(settingslayoutStates);
-                    }}>{'123'}</Button>
                 </Box>
             )
         }
 
         //// Nickname ////
         const NicknameSetting = () => {
-            const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-                setSettingsLayoutStates({ ...settingslayoutStates, nickname: event.target.value });
+            type TNicknameSetting = {
+                alternativeName: string;
+                displayError: false;
             }
-            const handleSubmit = () => { }
+
+            const [nicknameSettingStates, setNicknameSettingStates] = React.useState<any>({
+                alternativeName: '',
+                displayError: false
+            });
+
+            const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+                if (13 < `${event.target.value}`.length) {
+                    setNicknameSettingStates({ ...nicknameSettingStates, displayError: true });
+                } else {
+                    setNicknameSettingStates({ ...nicknameSettingStates, alternativeName: event.target.value });
+                }
+            }
+            const handleSubmit = () => {
+                console.log(nicknameSettingStates.alternativeName);
+
+            }
 
             return (
                 <Container maxWidth='xs' sx={{ paddingTop: { xs: 6, sm: 16 } }}>
@@ -1203,9 +1244,9 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
                     {/* input */}
                     <CenterlizedBox>
                         <TextField
-                            required
+                            error={nicknameSettingStates.displayError}
                             label={langConfigs.newNickname[preferenceStates.lang]}
-                            value={settingslayoutStates.nickname}
+                            value={nicknameSettingStates.alternativeName}
                             onChange={handleChange}
                             size={'small'}
                         />
@@ -1213,9 +1254,14 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
 
                     {/* update */}
                     <CenterlizedBox sx={{ mt: 2 }}>
-                        <Button variant='contained' size='small'>
-                            <Typography>{langConfigs.update[preferenceStates.lang]}</Typography>
+                        <Button variant='contained' size='small' onClick={handleSubmit}>
+                            <Typography variant={'body2'}>{langConfigs.update[preferenceStates.lang]}</Typography>
                         </Button>
+                    </CenterlizedBox>
+
+                    {/* hint */}
+                    <CenterlizedBox mt={2}>
+                        <Typography color={'grey'} variant={'body2'}>{langConfigs.uploadRequirement[preferenceStates.lang]}</Typography>
                     </CenterlizedBox>
                 </Container>
             )
@@ -1657,7 +1703,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
                         <Grid item flexGrow={1}>
                             {/* multi-display */}
                             <Box sx={{}}>
-                                {0 === settingslayoutStates.selectedSettingId && <AvatarSetting />}
+                                {0 === settingslayoutStates.selectedSettingId && <AvatarImageSetting />}
                                 {1 === settingslayoutStates.selectedSettingId && <NicknameSetting />}
                                 {2 === settingslayoutStates.selectedSettingId && <PasswordeSetting />}
                                 {3 === settingslayoutStates.selectedSettingId && <BriefIntroSetting />}
@@ -1682,7 +1728,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
     ///////// COMPONENT - member page /////////
     return (
         <>
-            <Navbar nickname={nickname} avatarImageUrl={settingslayoutStates.avatarImageUrl} />
+            <Navbar nickname={memberInfoStates.nickname} avatarImageUrl={memberInfoStates.avatarImageUrl} />
 
             {/* //// first layer - member info //// */}
             <Box sx={{ minHeight: { xs: 160, md: 200 } }}>
@@ -1690,12 +1736,12 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
 
                     {/* avatar */}
                     <CenterlizedBox sx={{ marginTop: { xs: 4, sm: 6 } }}>
-                        <Avatar src={settingslayoutStates.avatarImageUrl} sx={{ height: { xs: 90, sm: 72 }, width: { xs: 90, sm: 72 } }}>{nickname?.charAt(0).toUpperCase()}</Avatar>
+                        <Avatar src={memberInfoStates.avatarImageUrl} sx={{ height: { xs: 90, sm: 72 }, width: { xs: 90, sm: 72 } }}>{memberInfoStates.nickname?.charAt(0).toUpperCase()}</Avatar>
                     </CenterlizedBox>
 
                     {/* nickname */}
                     <CenterlizedBox sx={{ marginTop: { xs: 0, sm: 1 } }}>
-                        <Typography variant='h6' textAlign={'center'}>{nickname}</Typography>
+                        <Typography variant='h6' textAlign={'center'}>{memberInfoStates.nickname}</Typography>
                     </CenterlizedBox>
 
                     {/* info */}

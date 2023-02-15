@@ -8,7 +8,8 @@ import AtlasDatabaseClient from "../../../../../modules/AtlasDatabaseClient";
 
 
 import { IMemberMemberMapping, INoticeInfo, IMemberPostMapping, IMemberComprehensive, IConciseMemberInfo, IMemberStatistics, ILoginJournal, INotificationStatistics, IAttitudeComprehensive, IAttitideMapping, ICommentComprehensive, IEditedCommentComprehensive, IRestrictedCommentComprehensive, IChannelStatistics, ITopicComprehensive, ITopicPostMapping, IPostComprehensive, IEditedPostComprehensive, IRestrictedPostComprehensive } from '../../../../../lib/interfaces';
-import { TMemberStatistics } from '../../../../../lib/types';
+
+import { IConciseMemberStatistics } from '../../../../../lib/interfaces/member';
 import { verifyId, response405, response500, logWithDate } from '../../../../../lib/utils';
 
 
@@ -48,7 +49,7 @@ export default async function GetMemberStatisticsById(req: NextApiRequest, res: 
 
     try {
 
-        const statistics: TMemberStatistics = {
+        const statistics: IConciseMemberStatistics = {
             memberId: 'M1234ABCD',
             totalCreationCount: 23,
             totalCreationLikedCount: 101,

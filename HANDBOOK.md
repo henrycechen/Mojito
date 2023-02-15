@@ -190,6 +190,16 @@ type ResetPasswordRequestInfo = {
 | ------------ | -------------------- | -------- |
 | MemberIdStr  | BlockedByMemberIdStr | boolean  |
 
+### [RL] Registry
+
+\* This table records the registry credentials
+
+| PartitionKey | RowKey               | MemberId | IsActive |
+| ------------ | -------------------- | -------- | -------- |
+| `"Nickname"` | nicknameBase64String | string   | boolea   |
+
+
+
 
 
 ## 📘Notification
@@ -384,7 +394,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
     lastAvatarImageUpdatedTimeBySeconds?: number;
     
     nickname?: string;
-    nicknameBase64?: string;    
+    nicknameBase64?: string;
   	
     briefIntro?: string;
     gender?: -1 | 0 | 1;

@@ -10,7 +10,7 @@ import AtlasDatabaseClient from "../../../../modules/AtlasDatabaseClient";
 
 
 import { IMemberComprehensive, IUpdatePasswordCredentials } from '../../../../lib/interfaces';
-import { LangConfigs, EmailMessage, ResetPasswordRequestInfo } from '../../../../lib/types';
+import { LangConfigs, EmailMessage, TResetPasswordRequestInfo } from '../../../../lib/types';
 import { getRandomHexStr, verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500, logWithDate } from '../../../../lib/utils';
 import { composeResetPasswordEmailContent } from '../../../../lib/email';
 

@@ -37,11 +37,12 @@ import BlockIcon from '@mui/icons-material/Block';
 import { useTheme } from '@emotion/react';
 import { useRouter } from 'next/router';
 
-import { TBrowsingHelper, LangConfigs, TChannelInfoStates, TChannelInfoDictionary } from '../lib/types';
+import { TBrowsingHelper, LangConfigs } from '../lib/types';
 import { updateLocalStorage, restoreFromLocalStorage, getNicknameBrief } from '../lib/utils';
 import { CenterlizedBox, ResponsiveCard, StyledSwitch, TextButton } from '../ui/Styled';
 import Navbar from '../ui/Navbar';
 import { IConcisePostComprehensive, IConcisePostComprehensiveWithMemberInfo, IProcessStates } from '../lib/interfaces';
+import { IChannelInfoStates, IChannelInfoDictionary } from '../lib/interfaces/channel';
 import Copyright from '../ui/Copyright';
 
 const storageName = 'HomePageProcessStates';
@@ -49,7 +50,7 @@ const updateProcessStatesCache = updateLocalStorage(storageName);
 const restoreProcessStatesFromCache = restoreFromLocalStorage(storageName);
 
 type THomePageProps = {
-    channelInfoDict_ss: TChannelInfoDictionary;
+    channelInfoDict_ss: IChannelInfoDictionary;
     redirect404: boolean;
 }
 
@@ -141,7 +142,7 @@ export async function getServerSideProps(context: NextPageContext): Promise<{ pr
     if (200 !== resp.status) {
         throw new Error('Attempt to GET channel info dictionary');
     }
-    let channelInfoDict_ss: TChannelInfoDictionary;
+    let channelInfoDict_ss: IChannelInfoDictionary;
     try {
         channelInfoDict_ss = await resp.json();
     } catch (e) {
@@ -234,7 +235,7 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
     })
 
     ///////// STATES - channel /////////
-    const [channelInfoStates, setChannelInfoStates] = React.useState<TChannelInfoStates>({
+    const [channelInfoStates, setChannelInfoStates] = React.useState<IChannelInfoStates>({
         channelIdSequence: [],
     });
 

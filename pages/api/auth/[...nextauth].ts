@@ -14,7 +14,7 @@ import { MongoError } from 'mongodb';
 
 import { verifyRecaptchaResponse, verifyEnvironmentVariable, getRandomIdStr, logWithDate, getRandomHexStr } from '../../../lib/utils';
 import { IVerifyEmailAddressCredentials, IMemberComprehensive, ILoginCredentials, ILoginJournal } from '../../../lib/interfaces';
-import { LangConfigs, VerifyEmailAddressRequestInfo, EmailMessage } from '../../../lib/types';
+import { LangConfigs, TVerifyEmailAddressRequestInfo, EmailMessage } from '../../../lib/types';
 import { composeVerifyEmailAddressEmailContent } from '../../../lib/email';
 import AzureBlobClient from '../../../modules/AzureBlobClient';
 import Jimp from 'jimp';
@@ -240,7 +240,7 @@ export default NextAuth({
                     });
                     await atlasDbClient.close();
                     // Step #A3 send email
-                    const info: VerifyEmailAddressRequestInfo = { emailAddress, providerId, verifyEmailAddressToken };
+                    const info: TVerifyEmailAddressRequestInfo = { emailAddress, providerId, verifyEmailAddressToken };
                     const emailMessage: EmailMessage = {
                         sender: '<donotreply@mojito.co.nz>',
                         content: {
