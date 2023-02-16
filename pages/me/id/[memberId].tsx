@@ -464,6 +464,7 @@ const langConfigs: LangConfigs = {
         cn: '保密',
         en: 'Keep as secret'
     },
+    //// Birthday setting ////
     birthday: {
         tw: '生日',
         cn: '生日',
@@ -475,25 +476,11 @@ const langConfigs: LangConfigs = {
         en: 'Choose your birthday'
     },
 
-    memberId: {
-        tw: 'Mojito 會員ID',
-        cn: 'Mojito 会员ID',
-        en: 'Mojito Member ID'
-    },
-    registerDate: {
-        tw: '注冊日期',
-        cn: '注册日期',
-        en: 'Register date'
-    },
+    //// Privacy setting ////
     privacySettings: {
         tw: '設定',
         cn: '设置',
         en: 'Settings'
-    },
-    visibility: {
-        tw: '可見性',
-        cn: '可见性',
-        en: 'Visibility'
     },
     privacy: {
         tw: '隱私',
@@ -505,11 +492,6 @@ const langConfigs: LangConfigs = {
         cn: '语言',
         en: 'Language'
     },
-    cancelMembership: {
-        tw: '注銷',
-        cn: '注銷',
-        en: 'Cancel membership'
-    },
     cancel: {
         tw: '注銷',
         cn: '注銷',
@@ -520,13 +502,18 @@ const langConfigs: LangConfigs = {
         cn: '允许他人访问您的收藏',
         en: 'Allow other member visiting your saved posts'
     },
-    allowSavingBrowsingHistory: {
+    clickXTimesToCancelMemberShip: {
+        tw: (t: number) => 0 !== t ? `繼續點擊${t}次以注銷賬號` : `繼續點擊以注銷賬號`,
+        cn: (t: number) => 0 !== t ? `继续点击${t}次以注销账户` : `继续点击以注销账户`,
+        en: (t: number) => 0 !== t ? `Keep taping ${t} times to cancel membershipt` : `Keep taping to cancel membershipt`,
+    },
+    allowKeepingBrowsingHistory: {
         tw: '保存您的瀏覽記錄',
         cn: '保存您的浏览记录',
         en: 'Save browsing history'
 
     },
-    hidePostsAndCommentsFromBlockedMember: {
+    hidePostsAndCommentsOfBlockedMember: {
         tw: '隱藏屏蔽的會員的作品和評論',
         cn: '隐藏屏蔽的会员的作品与评论',
         en: 'Hide posts and comments from blocked member'
@@ -537,6 +524,7 @@ const langConfigs: LangConfigs = {
         cn: '我希望注销我的账户',
         en: 'I wish to cancel my membership'
     },
+    //// Black list ////
     blacklist: {
         tw: '黑名單',
         cn: '黑名單',
@@ -552,6 +540,16 @@ const langConfigs: LangConfigs = {
         tw: '資訊',
         cn: '信息',
         en: 'Info'
+    },
+    memberId: {
+        tw: 'Mojito 會員ID',
+        cn: 'Mojito 会员ID',
+        en: 'Mojito Member ID'
+    },
+    registerDate: {
+        tw: '注冊日期',
+        cn: '注册日期',
+        en: 'Register date'
     },
 }
 
@@ -630,6 +628,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
         nickname: string;
         briefIntro: string;
         gender: number;
+        birthdayBySecond: number;
     }
 
     //////// STATES - memberInfo ////////
@@ -638,6 +637,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
         nickname: memberInfo_ss.nickname,
         briefIntro: memberInfo_ss.briefIntro,
         gender: memberInfo_ss.gender,
+        birthdayBySecond: memberInfo_ss.birthdayBySecond,
     })
 
 
@@ -1151,7 +1151,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
 
     //////// STATES - setting layout ////////
     const [settinglayoutStates, setSettingLayoutStates] = React.useState<TSettingLayoutStates>({
-        selectedSettingId: 4,
+        selectedSettingId: 6,
 
 
         briefIntro: '',
@@ -1189,7 +1189,6 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
     const handleUndoBlock = (memberId: string) => (event: React.MouseEvent<HTMLButtonElement>) => {
 
     }
-
 
     //////// COMPONENT - setting layout ////////
     const SettingLayout = () => {
@@ -1690,15 +1689,14 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
                 progressStatus: 100,
             });
 
-
             const handleChange = (event: SelectChangeEvent) => {
                 setGenderSettingStates({ ...genderSettingStates, gender: parseInt(event.target.value), disableButton: memberInfoStates.gender === parseInt(event.target.value) });
             };
 
             const handleSubmit = async () => {
-                // if (memberInfoStates.gender === genderSettingStates.gender) {
-                //     return;
-                // }
+                if (memberInfoStates.gender === genderSettingStates.gender) {
+                    return;
+                }
 
                 // Prepare to update gender
                 setGenderSettingStates({ ...genderSettingStates, disableButton: true, progressStatus: 300 });
@@ -1759,19 +1757,66 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
 
         //// Birthday ////
         const BirthdaySetting = () => {
+            type TBirthdaySettingStates = {
+                date: Dayjs | null;
+                disableButton: boolean;
+                progressStatus: 100 | 200 | 300 | 400;
+            }
+
+            const [birthdaySettingStates, setBirthdaySettingStates] = React.useState<TBirthdaySettingStates>({
+                date: dayjs(memberInfoStates.birthdayBySecond * 1000),
+                disableButton: true,
+                progressStatus: 100,
+            });
+
             const handleChange = (value: Dayjs | null) => {
-                setSettingLayoutStates({ ...settinglayoutStates, birthday: value });
+                if (null == value) {
+                    return;
+                }
+                if (0 !== memberInfoStates.birthdayBySecond - Math.floor((birthdaySettingStates.date?.toDate().getTime() ?? 1000) / 1000)) {
+                    setBirthdaySettingStates({ ...birthdaySettingStates, date: value, disableButton: true });
+                } else {
+                    setBirthdaySettingStates({ ...birthdaySettingStates, date: value, disableButton: false });
+                }
             };
-            const handleSubmit = () => { };
+
+            const handleSubmit = async () => {
+                console.log(birthdaySettingStates.date?.toDate().getTime());
+                console.log(memberInfoStates.birthdayBySecond - Math.floor((birthdaySettingStates.date?.toDate().getTime() ?? 1000) / 1000));
+
+                if (!(null !== birthdaySettingStates.date && 0 !== memberInfoStates.birthdayBySecond - Math.floor((birthdaySettingStates.date?.toDate().getTime() ?? 1000) / 1000))) {
+                    return;
+                }
+
+                // Prepare to update birthday
+                setBirthdaySettingStates({ ...birthdaySettingStates, disableButton: true, progressStatus: 300 });
+                const date = Math.floor(birthdaySettingStates.date?.toDate().getTime() / 1000);
+                const resp = await fetch(`/api/member/info/${memberId}/birthday`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ date })
+                });
+
+                if (200 === resp.status) {
+                    setBirthdaySettingStates({ ...birthdaySettingStates, disableButton: true, progressStatus: 200 });
+                    setTimeout(() => {
+                        setMemberInfoStates({ ...memberInfoStates, birthdayBySecond: date });
+                    }, 2000)
+                } else {
+                    setBirthdaySettingStates({ ...birthdaySettingStates, disableButton: false, progressStatus: 400 });
+                }
+            };
 
             return (
                 <Container maxWidth='xs' sx={{ paddingTop: { xs: 6, sm: 16 } }}>
+
+                    {/* birthday select */}
                     <CenterlizedBox>
                         <LocalizationProvider dateAdapter={AdapterDayjs}>
                             <MobileDatePicker
                                 label={langConfigs.chooseYourBirthday[preferenceStates.lang]}
-                                inputFormat='MM/DD/YYYY'
-                                value={settinglayoutStates.birthday}
+                                inputFormat='DD/MM/YYYY'
+                                value={birthdaySettingStates.date}
                                 onChange={handleChange}
                                 renderInput={(params) => <TextField {...params} />}
 
@@ -1779,9 +1824,17 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
                         </LocalizationProvider>
                     </CenterlizedBox>
 
+                    {/* 'update' button */}
                     <CenterlizedBox sx={{ mt: 2 }}>
-                        <Button variant='contained' size='small'>
-                            <Typography variant='body2'>{langConfigs.submit[preferenceStates.lang]}</Typography>
+                        <Button variant={'contained'} color={400 !== birthdaySettingStates.progressStatus ? 'primary' : 'error'} size={'small'} onClick={async () => { await handleSubmit() }} disabled={birthdaySettingStates.disableButton}>
+                            {/* button: enabled, result: 100 (ready) */}
+                            {100 === birthdaySettingStates.progressStatus && <Typography variant={'body2'}>{langConfigs.update[preferenceStates.lang]}</Typography>}
+                            {/* button: disabled/enabled, result: 200 (succeeded) */}
+                            {200 === birthdaySettingStates.progressStatus && <Typography variant={'body2'}>{langConfigs.updateSucceeded[preferenceStates.lang]}</Typography>}
+                            {/* button: disabled, result: 300 (ongoing) */}
+                            {300 === birthdaySettingStates.progressStatus && <Typography variant={'body2'}>{langConfigs.updatinging[preferenceStates.lang]}</Typography>}
+                            {/* button: enabled, result: 400 (failed) */}
+                            {400 === birthdaySettingStates.progressStatus && <Typography variant={'body2'}>{langConfigs.updateFailed[preferenceStates.lang]}</Typography>}
                         </Button>
                     </CenterlizedBox>
                 </Container>
@@ -1789,35 +1842,56 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
         }
 
         //// Privacy ////
-        const PrivacySettings = () => {
+        const PrivacySetting = () => {
+            type TPrivacySettingStates = {
+                allowVisitingMySavedPosts: boolean;
+                allowKeepingBrowsingHistory: boolean;
+                hidePostsAndCommentsOfBlockedMember: boolean;
+                countdown: number;
+                displayButton: boolean;
+                displayCountdown: boolean;
+            }
+
+            const [privacySettingStates, setPrivacySettingStates] = React.useState<TPrivacySettingStates>({
+                allowVisitingMySavedPosts: false,
+                allowKeepingBrowsingHistory: false,
+                hidePostsAndCommentsOfBlockedMember: false,
+                countdown: 5,
+                displayButton: false,
+                displayCountdown: false,
+            });
+
             const handleSelectLang = (event: SelectChangeEvent<string>) => {
                 setPreferenceStates({ ...preferenceStates, lang: event.target.value });
                 updatePreferenceStatesCache({ ...preferenceStates, lang: event.target.value })
             }
-            const handleCheck = () => {
-                setSettingLayoutStates({ ...settinglayoutStates, isWishToCancelChecked: !settinglayoutStates.isWishToCancelChecked });
+
+            const handleToggle = (prop: keyof TPrivacySettingStates) => (event: React.ChangeEvent<HTMLInputElement>) => {
+                console.log(`${prop}`);
+                
             }
+
+            const handleCheck = () => {
+                setPrivacySettingStates({ ...privacySettingStates, displayButton: !privacySettingStates.displayButton, countdown: 5, displayCountdown: false });
+            }
+
+            const handleCancel = async () => {
+                if (privacySettingStates.countdown > 0) {
+                    setPrivacySettingStates({ ...privacySettingStates, countdown: privacySettingStates.countdown - 1, displayCountdown: true });
+                } else {
+                    alert('hahah')
+                }
+            }
+
+
+
             return (
-                <Container maxWidth='xs' sx={{ paddingTop: { xs: 4 } }}>
+                <Container maxWidth='xs' sx={{ paddingTop: { xs: 3, sm: 4 } }}>
                     <FormGroup>
-
-                        {/* visibility */}
-                        <Typography variant={'body2'} >{langConfigs.visibility[preferenceStates.lang]}</Typography>
-                        <Box pl={{ xs: 0, sm: 2, md: 4 }} mb={1}>
-                            <FormControlLabel control={<Switch defaultChecked />} label={<Typography variant={'body2'} align={'left'}>{langConfigs.allowVisitingSavedPosts[preferenceStates.lang]}</Typography>} sx={{ fontSize: 14 }} />
-                        </Box>
-
-
-                        {/* privacy */}
-                        <Typography variant={'body2'} >{langConfigs.privacy[preferenceStates.lang]}</Typography>
-                        <Box pl={{ xs: 0, sm: 2, md: 4 }} mb={1}>
-                            <FormControlLabel control={<Switch defaultChecked />} label={<Typography variant={'body2'} align={'left'}>{langConfigs.allowSavingBrowsingHistory[preferenceStates.lang]}</Typography>} sx={{ fontSize: 14 }} />
-                            <FormControlLabel control={<Switch defaultChecked />} label={<Typography variant={'body2'} align={'left'}>{langConfigs.hidePostsAndCommentsFromBlockedMember[preferenceStates.lang]}</Typography>} sx={{ fontSize: 14 }} />
-                        </Box>
 
                         {/* language */}
                         <Typography variant={'body2'} >{langConfigs.language[preferenceStates.lang]}</Typography>
-                        <Box pl={{ xs: 0, sm: 2, md: 4 }} mb={2} pt={1}>
+                        <Box pl={{ xs: 0, sm: 2, md: 4 }} pt={1}>
                             <Select
                                 value={preferenceStates.lang}
                                 onChange={handleSelectLang}
@@ -1830,19 +1904,26 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
                             </Select>
                         </Box>
 
-                        <CenterlizedBox sx={{ mt: 2 }}>
-                            <Button variant='contained' size='small'>
-                                <Typography variant='body2'>{langConfigs.submit[preferenceStates.lang]}</Typography>
-                            </Button>
-                        </CenterlizedBox>
-
-                        {/* cancel member */}
-                        <Typography variant={'body2'} sx={{ mt: 2 }}>{langConfigs.cancelMembership[preferenceStates.lang]}</Typography>
+                        {/* privacy */}
+                        <Typography variant={'body2'} mt={4}>{langConfigs.privacy[preferenceStates.lang]}</Typography>
                         <Box pl={{ xs: 0, sm: 2, md: 4 }}>
-                            <FormControlLabel control={<Checkbox onChange={handleCheck} checked={settinglayoutStates.isWishToCancelChecked} />} label={langConfigs.wishToCancelMembership[preferenceStates.lang]} />
+                            <FormControlLabel control={<Switch defaultChecked onChange={handleToggle('allowVisitingMySavedPosts')}/>} label={<Typography variant={'body2'} align={'left'}>{langConfigs.allowVisitingSavedPosts[preferenceStates.lang]}</Typography>} sx={{ fontSize: 14 }} />
+                            <FormControlLabel control={<Switch defaultChecked onChange={handleToggle('allowKeepingBrowsingHistory')}/>} label={<Typography variant={'body2'} align={'left'}>{langConfigs.allowKeepingBrowsingHistory[preferenceStates.lang]}</Typography>} sx={{ fontSize: 14 }} />
+                            <FormControlLabel control={<Switch defaultChecked onChange={handleToggle('hidePostsAndCommentsOfBlockedMember')}/>} label={<Typography variant={'body2'} align={'left'}>{langConfigs.hidePostsAndCommentsOfBlockedMember[preferenceStates.lang]}</Typography>} sx={{ fontSize: 14 }} />
                         </Box>
-                        {settinglayoutStates.isWishToCancelChecked && <Box mb={4} paddingX={2}>
-                            <Button variant='contained' size='small' fullWidth>{langConfigs.cancel[preferenceStates.lang]}</Button>
+
+                        {/* cancel membership */}
+                        <Typography variant={'body2'} sx={{ mt: 4 }}>{langConfigs.cancel[preferenceStates.lang]}</Typography>
+                        <Box pl={{ xs: 0, sm: 2, md: 4 }}>
+                            <FormControlLabel control={<Checkbox onChange={handleCheck} checked={privacySettingStates.displayButton} />} label={langConfigs.wishToCancelMembership[preferenceStates.lang]} />
+                        </Box>
+
+                        {/* 'cancel' button */}
+                        {privacySettingStates.displayButton && <Box mb={4} paddingX={2}>
+                            <Button variant={'contained'} color={'error'} size={'small'} onClick={async () => { await handleCancel() }} fullWidth>
+                                {!privacySettingStates.displayCountdown && <Typography variant='body2'>{langConfigs.cancel[preferenceStates.lang]}</Typography>}
+                                {privacySettingStates.displayCountdown && <Typography variant='body2'>{langConfigs.clickXTimesToCancelMemberShip[preferenceStates.lang](privacySettingStates.countdown)}</Typography>}
+                            </Button>
                         </Box>}
                     </FormGroup>
 
@@ -2027,7 +2108,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
                             {3 === settinglayoutStates.selectedSettingId && <BriefIntroSetting />}
                             {4 === settinglayoutStates.selectedSettingId && <GenderSetting />}
                             {5 === settinglayoutStates.selectedSettingId && <BirthdaySetting />}
-                            {6 === settinglayoutStates.selectedSettingId && <PrivacySettings />}
+                            {6 === settinglayoutStates.selectedSettingId && <PrivacySetting />}
                             {7 === settinglayoutStates.selectedSettingId && <BlacklistSettings />}
                             {10 === settinglayoutStates.selectedSettingId && <RegisterInfo />}
                         </Container>
@@ -2052,7 +2133,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
                 <Box>
 
                     {/* avatar */}
-                    <CenterlizedBox sx={{ mt: { xs: 4, sm: 6 } }}>
+                    <CenterlizedBox sx={{ mt: { xs: 4, sm: 5 } }}>
                         <Avatar src={memberInfoStates.avatarImageUrl} sx={{ height: { xs: 90, sm: 72 }, width: { xs: 90, sm: 72 } }}>{memberInfoStates.nickname?.charAt(0).toUpperCase()}</Avatar>
                     </CenterlizedBox>
 
@@ -2066,8 +2147,21 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
                         <Typography variant='body2' textAlign={'center'}>{memberInfoStates.briefIntro}</Typography>
                     </CenterlizedBox>
 
+                    {/* <Grid container sx={{ px: 4, mt: 1 }}>
+                        <Grid item xs={1} sm={3} md={4} lg={5} xl={5}></Grid>
+                        <Grid item xs={10} sm={6} md={4} lg={2} xl={2}>
+                            <Divider></Divider>
+                        </Grid>
+                        <Grid item xs={1} sm={3} md={4} lg={5} xl={5}></Grid>
+                    </Grid> */}
+                    <CenterlizedBox sx={{ mt: { xs: 1, sm: 2 } }}>
+                        <Box></Box>
+                        <Box sx={{ width: { xs: 220, sm: 280 } }}><Divider></Divider></Box>
+                        <Box></Box>
+                    </CenterlizedBox>
+
                     {/* info */}
-                    <Grid container columnSpacing={{ xs: 4, sm: 5 }} sx={{ mt: { xs: 3, sm: 4 } }}>
+                    <Grid container columnSpacing={{ xs: 3, sm: 5 }} sx={{ mt: { xs: 1, sm: 2 } }}>
 
                         {/* blank space */}
                         <Grid item flexGrow={1}></Grid>
@@ -2075,7 +2169,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
                         {/* creation count */}
                         <Grid item>
                             <CenterlizedBox>
-                                <Typography variant='body1'>{langConfigs.creations[preferenceStates.lang]}</Typography>
+                                <Typography variant='body2'>{langConfigs.creations[preferenceStates.lang]}</Typography>
                             </CenterlizedBox>
                             <CenterlizedBox>
                                 <Typography variant='body1'>{memberStatistics_ss.totalCreationCount}</Typography>
@@ -2085,7 +2179,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
                         {/* followed by count */}
                         <Grid item>
                             <CenterlizedBox>
-                                <Typography variant='body1'>{langConfigs.followedBy[preferenceStates.lang]}</Typography>
+                                <Typography variant='body2'>{langConfigs.followedBy[preferenceStates.lang]}</Typography>
                             </CenterlizedBox>
                             <CenterlizedBox>
                                 <Typography variant='body1'>{memberStatistics_ss.totalFollowedByCount}</Typography>
@@ -2095,7 +2189,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
                         {/* creation saved count */}
                         <Grid item>
                             <CenterlizedBox>
-                                <Typography variant='body1'>{langConfigs.saved[preferenceStates.lang]}</Typography>
+                                <Typography variant='body2'>{langConfigs.saved[preferenceStates.lang]}</Typography>
                             </CenterlizedBox>
                             <CenterlizedBox>
                                 <Typography variant='body1'>{memberStatistics_ss.totalCreationSavedCount}</Typography>
@@ -2105,7 +2199,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
                         {/* creation liked count */}
                         <Grid item>
                             <CenterlizedBox>
-                                <Typography variant='body1'>{langConfigs.like[preferenceStates.lang]}</Typography>
+                                <Typography variant='body2'>{langConfigs.like[preferenceStates.lang]}</Typography>
                             </CenterlizedBox>
                             <CenterlizedBox>
                                 <Typography variant='body1'>{memberStatistics_ss.totalCreationLikedCount}</Typography>
@@ -2117,7 +2211,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
                     </Grid>
 
                     {/* layout select */}
-                    <Stack spacing={1} direction='row' mt={1} sx={{ padding: 1, justifyContent: 'center', overflow: 'auto' }}>
+                    <Stack spacing={1} direction='row' mt={2} sx={{ padding: 1, justifyContent: 'center', overflow: 'auto' }}>
 
                         {/* s0 - message layout */}
                         {('authenticated' === status && viewerId === memberId) && <Button variant={'contained'} size='small' color={'messagelayout' === processStates.selectedLayout ? 'primary' : 'inherit'} onClick={handleSelectLayout('messagelayout')}>
@@ -2364,7 +2458,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
             {/* setting layout */}
             {'settinglayout' === processStates.selectedLayout && <SettingLayout />}
 
-            <Copyright sx={{ mt: 8 }} lang={preferenceStates.lang} />
+            <Copyright sx={{ mt: 16 }} lang={preferenceStates.lang} />
             <Terms sx={{ mb: 8 }} lang={preferenceStates.lang} />
 
         </>
