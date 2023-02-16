@@ -103,7 +103,7 @@ export default async function UpdatePassword(req: NextApiRequest, res: NextApiRe
         if (!loginCredentialsQueryResult.value) {
             //// [!] login credential mapping record not found deemed member deactivated / suspended / not registered ////
             res.status(500).send('Provided current password does not match the record');
-            response500(res, `Member attempt to PUT password but have no record (of ILoginCredentials) in [RL] Credentials`);
+            response500(res, `Member attempt to update (PUT) password but have no record (of ILoginCredentials) in [RL] Credentials`);
             return;
         }
 

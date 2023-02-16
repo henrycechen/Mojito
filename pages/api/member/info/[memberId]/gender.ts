@@ -10,7 +10,7 @@ import { INicknameRegistry } from '../../../../../lib/interfaces/registry';
 import AtlasDatabaseClient from '../../../../../modules/AtlasDatabaseClient';
 import AzureTableClient from '../../../../../modules/AzureTableClient';
 
-/** UpdateNickname v0.1.1
+/** UpdateGender v0.1.1
  * 
  * Last update: 16/02/2023
  * 
@@ -19,11 +19,12 @@ import AzureTableClient from '../../../../../modules/AzureTableClient';
  * Info required for PUT requests
  * 
  * - token: JWT
- * - alternativeName: string (body, length < 13)
+ * - gender: number (body, -1 | 0 | 1)
 */
 
 
-export default async function UpdateNickname(req: NextApiRequest, res: NextApiResponse) {
+export default async function UpdateGender(req: NextApiRequest, res: NextApiResponse) {
+
     const { method } = req;
     if ('PUT' !== method) {
         response405(req, res);
@@ -61,7 +62,7 @@ export default async function UpdateNickname(req: NextApiRequest, res: NextApiRe
         const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
         const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne({ memberId });
         if (null === memberComprehensiveQueryResult) {
-            throw new Error(`Member attempt to update nickname but have no document (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
+            throw new Error(`Member attempt to update (PUT) gender but have no document (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
         }
 
         const { status: memberStatus } = memberComprehensiveQueryResult;
@@ -71,52 +72,29 @@ export default async function UpdateNickname(req: NextApiRequest, res: NextApiRe
             return;
         }
 
-        //// Verify alternative name ////
-        const { alternativeName } = req.body;
-        if (!('string' === typeof alternativeName && 13 > alternativeName.length)) {
+        //// Verify gender ////
+        const { gender } = req.body;
+        if (!('number' === typeof gender && [-1, 0, 1].includes(gender))) {
             // TODO: Place nickname examination method here
-            console.log(alternativeName);
-
-            res.status(409).send('Alternative name exceeds length limit or has been occupied');
+            res.status(400).send('Invalid gender code');
             return;
         }
-
-        //// Create Base64 string of alternative name ////
-        const nameB64 = Buffer.from(alternativeName).toString('base64');
-
-        //// Look up record (of INicknameRegistry) in [RL] Registry ////
-        const registryTableClient = AzureTableClient('Registry');
-        const nicknameRegistryQuery = registryTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq 'nickname' and RowKey eq '${nameB64}' and IsActive eq true` } });
-        const nicknameRegistryQueryResult = await nicknameRegistryQuery.next();
-        if (!!nicknameRegistryQueryResult.value) {
-            res.status(422).send('Alternative name exceeds length limit or has been occupied');
-            return;
-        }
-
-        //// Upsert record (of INicknameRegistry) in [RL] Registry ////
-        await registryTableClient.upsertEntity<INicknameRegistry>({
-            partitionKey: 'nickname',
-            rowKey: nameB64,
-            MemberId: memberId,
-            Nickname: alternativeName,
-            IsActive: true
-        }, 'Replace')
 
         //// Update properties (of IMemberComprehensive) in [C] memberComprehensive ////
         const memberComprehensiveUpdateResult = await memberComprehensiveCollectionClient.updateOne({ memberId }, {
             $set: {
-                nickname: alternativeName,
-                lastNicknameUpdatedTimeBySecond: Math.floor(new Date().getTime() / 1000)
+                gender,
+                lastGenderUpdatedTimeBySecond: Math.floor(new Date().getTime() / 1000)
             }
         })
 
         if (!memberComprehensiveUpdateResult.acknowledged) {
-            logWithDate(`Failed to update nickname, lastNicknameUpdatedTimeBySecond (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
-            res.status(500).send(`Attempt to update nickname`);
+            logWithDate(`Failed to update gender, lastGenderUpdatedTimeBySecond (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
+            res.status(500).send(`Attempt to update gender`);
             return;
         }
 
-        res.status(200).send('Nickname updated');
+        res.status(200).send('Gender updated');
         await atlasDbClient.close();
     } catch (e: any) {
         let msg;

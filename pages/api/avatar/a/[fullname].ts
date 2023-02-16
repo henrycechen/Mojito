@@ -20,11 +20,11 @@ export default async function GetAvatarImageByFullName(req: NextApiRequest, res:
     }
 
     // FIXME: test
-    // const resp = await fetch(`https://www.nicepng.com/png/full/804-8049853_med-boukrima-specialist-webmaster-php-e-commerce-web.png`)
-    // res.setHeader('Content-Type', `image/png`);
-    // res.setHeader('Content-Disposition', 'inline');
-    // res.send(Buffer.from(await resp.arrayBuffer()))
-    // return;
+    const resp = await fetch(`https://www.nicepng.com/png/full/804-8049853_med-boukrima-specialist-webmaster-php-e-commerce-web.png`)
+    res.setHeader('Content-Type', `image/png`);
+    res.setHeader('Content-Disposition', 'inline');
+    res.send(Buffer.from(await resp.arrayBuffer()))
+    return;
 
     const { fullname } = req.query;
     const contianerClient = AzureBlobClient('avatar');

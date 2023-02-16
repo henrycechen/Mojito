@@ -4,6 +4,18 @@ import { verifyRecaptchaResponse, verifyEnvironmentVariable, response405, respon
 
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
 
+/** VerifyToken v0.1.1
+ * 
+ * Last update 16/02/2023
+ * 
+ * This interface ONLY accepts POST method
+ * 
+ * Info required for POST request
+ * 
+ * - requestInfo: string, stringified { emailAddress, resetPasswordToken, expireDate }
+ * - recaptchaResponse: string
+ */
+
 export default async function VerifyToken(req: NextApiRequest, res: NextApiResponse) {
     const { method } = req;
     if ('GET' !== method) {

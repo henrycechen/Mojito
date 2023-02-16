@@ -13,13 +13,11 @@ import Terms from "../ui/Terms";
 import { LangConfigs } from '../lib/types';
 import { getRandomHexStr } from '../lib/utils';
 
-
-
 const defaultLang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
     title0: {
-        tw: '网络社区準則',
-        cn: '網絡社區准则',
+        tw: '網絡社區準則',
+        cn: '网络社区准则',
         en: 'Community Guidelines'
     },
     title1: {
@@ -30,7 +28,12 @@ const langConfigs: LangConfigs = {
     title2: {
         tw: '暱稱設定規則',
         cn: '昵称设置规则',
-        en: 'Guideline for nicknames'
+        en: 'Guidelines for nicknames'
+    },
+    title3: {
+        tw: '簡介設定規則',
+        cn: '简介设置规则',
+        en: 'Guidelines for brief intros'
     },
     publishedDate0: {
         tw: `更新日期：2023年2月13日`,
@@ -43,6 +46,11 @@ const langConfigs: LangConfigs = {
         en: `Updated: February 16, 2023`
     },
     publishedDate2: {
+        tw: `更新日期：2023年2月16日`,
+        cn: `更新日期：2023年2月16日`,
+        en: `Updated: February 13, 2023`
+    },
+    publishedDate3: {
         tw: `更新日期：2023年2月16日`,
         cn: `更新日期：2023年2月16日`,
         en: `Updated: February 13, 2023`
@@ -87,7 +95,7 @@ const langConfigs: LangConfigs = {
             '1. 尊重：頭像圖像不應包含任何可能被視為有害、歧視或歧視個人或團體的冒犯性或不當內容。',
             '2. 非欺騙性：頭像圖像不應用於冒充或歪曲個人或團體。',
             '3. 適當的尺寸：頭像圖像應具有適當的尺寸和分辨率，以避免像素化或失真。',
-            '4. 商業用途：頭像圖片不得宣傳或宣傳任何商業產品、服務或品牌除非得到允許。',
+            '4. 商業用途：頭像圖片不得宣傳或宣傳任何商業產品、服務或品牌，除非獲得許可。',
             '5. 受版權保護的圖像：頭像圖像不應是受知識產權保護的受版權保護的圖像、商標或徽標。',
             '6. 無個人信息：頭像圖像不應包含任何個人信息，例如聯繫方式、電話號碼或地址。',
         ],
@@ -95,7 +103,7 @@ const langConfigs: LangConfigs = {
             '1. 尊重：头像图像不应包含任何可能被视为有害、歧视或歧视个人或团体的冒犯性或不当内容。',
             '2. 非欺骗性：头像图像不应用于冒充或歪曲个人或团体。',
             '3. 适当的尺寸：头像图像应具有适当的尺寸和分辨率，以避免像素化或失真。',
-            '4. 非商业用途：头像图片不得宣传或宣传任何商业产品、服务或品牌除非得到允许。',
+            '4. 非商业用途：头像图片不得宣传或宣传任何商业产品、服务或品牌，除非获得许可。',
             '5.  受版权保护的图像：头像图像不应是受知识产权保护的受版权保护的图像、商标或徽标。',
             '6. 无个人信息：头像图像不应包含任何个人信息，例如联系方式、电话号码或地址。',
         ],
@@ -122,7 +130,7 @@ const langConfigs: LangConfigs = {
             '1. 尊重：暱稱不應包含攻擊性或貶損性語言，包括種族歧視、性別歧視或仇恨言論。暱稱也不應包含褻瀆或粗俗的語言。',
             '2. 非欺騙性：暱稱不得冒充或歪曲其他會員、個人或組織的身份。',
             '3. 無個人信息：暱稱不得包含個人隱私，如全名、地址或聯繫方式。',
-            '4. 非商業：暱稱不得宣傳或宣傳任何產品、服務或網站除非得到允許。',
+            '4. 非商業：暱稱不得宣傳或宣傳任何產品、服務或網站，除非獲得許可。',
             '5. 遵守法律：暱稱不得違反任何地方、國家或國際法律。',
             '6. 高可讀性：暱稱不得超過13個字符或使用難以閱讀或輸入的文字。',
             '7. 減少混淆：暱稱不應包含過多的標點符號或可能導致混淆或乾擾交流的符號。',
@@ -131,14 +139,36 @@ const langConfigs: LangConfigs = {
             '1. 尊重：昵称不应包含攻击性或贬损性语言，包括种族歧视、基于性别的歧视或仇恨言论。 昵称也不应包含亵渎或粗俗的语言。',
             '2. 非欺骗性：昵称不得冒充或歪曲其他会员、个人或组织的身份。',
             '3. 无个人信息：昵称不得包含个人隐私，如全名、地址或联系方式。',
-            '4. 非商业：昵称不得宣传或宣传任何产品、服务或网站除非得到允许。',
+            '4. 非商业：昵称不得宣传或宣传任何产品、服务或网站，除非获得许可。',
             '5. 遵守法律：昵称不得违反任何地方、国家或国际法律。',
             '6. 高可读性：昵称不得超过13个字符或使用难以阅读或输入的文字。',
             '7. 减少混淆：昵称不应包含过多的标点符号或可能导致混淆或干扰交流的符号。',
         ],
     },
+    terms3: {
+        en: [
+            '1. Brief intros should be brief and to the point, containing only relevant information about the member, such as their name, interests, and why they joined the community.',
+            '2. Brief intros should not contain any personal information that could compromise the member\'s privacy or security, such as their full address, phone number, or email address.',
+            '3. Brief intros should be respectful and appropriate, avoiding any offensive or inappropriate language, including hate speech, profanity, or derogatory comments.',
+            '4. Brief intros should not include any advertising or promotion of products or services unless permitted.',
+            '5. Brief intros should comply with all applicable laws and regulations, including those related to data privacy and protection.',
+        ],
+        tw: [
+            '1. 簡介应簡明扼要，只包含會員的相關信息，如姓名、興趣愛好、加入社區的原因等。',
+            '2. 簡介不應包含任何可能危及會員隱私或安全的個人信息，例如完整地址、電話號碼或電子郵件地址。',
+            '3. 簡介應尊重和適當，避免任何攻擊性或不適當的語言，包括仇恨言論、褻瀆或貶損性評論。',
+            '4. 簡介不得包含任何產品或服務的廣告或促銷，除非獲得許可。 ',
+            '5. 簡介應遵守所有適用的法律法規，包括與數據隱私和保護相關的法律法規。',
+        ],
+        cn: [
+            '1. 简介应简明扼要，只包含会员的相关信息，如姓名、兴趣爱好、加入社区的原因等。',
+            '2. 简介不应包含任何可能危及会员隐私或安全的个人信息，例如完整地址、电话号码或电子邮件地址。',
+            '3. 简介应尊重和适当，避免任何攻击性或不适当的语言，包括仇恨言论、亵渎或贬损性评论。',
+            '4. 简介不得包含任何产品或服务的广告或促销，除非获得许可。',
+            '5. 简介应遵守所有适用的法律法规，包括与数据隐私和保护相关的法律法规。',
+        ],
+    },
 }
-
 
 export default function CommunityGidelines() {
 
@@ -198,6 +228,19 @@ export default function CommunityGidelines() {
                     <Grid item md={7} sx={{ p: 1, paddingTop: { xs: 4, sm: 8, md: 16 } }}>
                         <Stack direction={'column'} spacing={2}>
                             {langConfigs.terms2[processStates.lang].map((term: string) => <Typography key={getRandomHexStr()} variant={'body1'}>{term}</Typography>)}
+                        </Stack>
+                    </Grid>
+                    <Grid item md={1}></Grid>
+                </Grid>
+                <Grid container>
+                    <Grid item md={1}></Grid>
+                    <Grid item md={3} sx={{ p: 1, paddingTop: 16 }}>
+                        <Typography variant={'h5'}>{langConfigs.title3[processStates.lang]}</Typography>
+                        <Typography variant={'body2'}>{langConfigs.publishedDate2[processStates.lang]}</Typography>
+                    </Grid>
+                    <Grid item md={7} sx={{ p: 1, paddingTop: { xs: 4, sm: 8, md: 16 } }}>
+                        <Stack direction={'column'} spacing={2}>
+                            {langConfigs.terms3[processStates.lang].map((term: string) => <Typography key={getRandomHexStr()} variant={'body1'}>{term}</Typography>)}
                         </Stack>
                     </Grid>
                     <Grid item md={1}></Grid>

@@ -114,10 +114,7 @@ type TMemberPageProcessStates = {
     selectedLayout: 'messagelayout' | 'listlayout' | 'postlayout' | 'settinglayout';
 }
 
-type TMemberInfoStates = {
-    avatarImageUrl: string;
-    nickname: string;
-}
+
 
 type TMessageLayoutStates = {
     selectedCategory: string;
@@ -238,7 +235,7 @@ const langConfigs: LangConfigs = {
     },
     like: {
         tw: '喜歡',
-        cn: '赞',
+        cn: '获赞',
         en: 'Like'
     },
     liked: {
@@ -332,11 +329,6 @@ const langConfigs: LangConfigs = {
         tw: '暱稱',
         cn: '昵称',
         en: 'Nickname'
-    },
-    nicknameLengthExceedLimit: {
-        tw: '暱稱過長，請重試',
-        cn: '昵称过长，请重试',
-        en: 'Nickname length exceeds limit'
     },
     update: {
         tw: '更新',
@@ -436,10 +428,20 @@ const langConfigs: LangConfigs = {
         cn: '简介',
         en: 'Brief intro'
     },
-    introduceYourself: {
-        tw: '來介紹一下你自己吧',
-        cn: '介绍一下自己吧',
-        en: 'Tell everybody something about yourself'
+    brieflyIntrodueYourself: {
+        tw: '撰寫您的簡介',
+        cn: '添加您的简介',
+        en: 'Write something about yourself'
+    },
+    briefIntroRequirement: {
+        tw: '*請添加符合規則的簡介並且長度不超過21個字符',
+        cn: '*请添加符合规则的简介并且长度不超过21个字符',
+        en: '*Please add a brief intro that complies with the rules and the length does not exceed 21 characters'
+    },
+    invalidBriefIntro: {
+        tw: '簡介長度超過21個字符或不合規，請重試',
+        cn: '简介长度超过21个字符或不合规，请重试',
+        en: 'Brief intro length exceeds limit or invalid'
     },
     //// Gender setting ////
     gender: {
@@ -472,7 +474,7 @@ const langConfigs: LangConfigs = {
         cn: '选择您的生日',
         en: 'Choose your birthday'
     },
-   
+
     memberId: {
         tw: 'Mojito 會員ID',
         cn: 'Mojito 会员ID',
@@ -623,10 +625,19 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
     //////// INFO - member ////////
     const { memberId } = memberInfo_ss;
 
+    type TMemberInfoStates = {
+        avatarImageUrl: string;
+        nickname: string;
+        briefIntro: string;
+        gender: number;
+    }
+
     //////// STATES - memberInfo ////////
     const [memberInfoStates, setMemberInfoStates] = React.useState<TMemberInfoStates>({
         avatarImageUrl: provideAvatarImageUrl(memberId, domain),
         nickname: memberInfo_ss.nickname,
+        briefIntro: memberInfo_ss.briefIntro,
+        gender: memberInfo_ss.gender,
     })
 
 
@@ -1128,8 +1139,8 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
 
     type TSettingLayoutStates = {
         selectedSettingId: number;
-    
-   
+
+
         briefIntro: string;
         gender: number;
         birthday: Dayjs | null;
@@ -1140,9 +1151,9 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
 
     //////// STATES - setting layout ////////
     const [settinglayoutStates, setSettingLayoutStates] = React.useState<TSettingLayoutStates>({
-        selectedSettingId: 3,
+        selectedSettingId: 4,
 
-   
+
         briefIntro: '',
         gender: -1,
         birthday: dayjs('2014-08-18T21:11:54'),
@@ -1288,9 +1299,9 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
             }
 
             const [nicknameSettingStates, setNicknameSettingStates] = React.useState<TNicknameSetting>({
-                alternativeName: '',
+                alternativeName: memberInfo_ss.nickname,
                 displayError: false,
-                disableButton: false,
+                disableButton: true,
                 progressStatus: 100
             });
 
@@ -1298,7 +1309,11 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
                 if (13 < `${event.target.value}`.length) {
                     setNicknameSettingStates({ ...nicknameSettingStates, displayError: true });
                 } else {
-                    setNicknameSettingStates({ ...nicknameSettingStates, alternativeName: event.target.value });
+                    if (memberInfoStates.nickname === event.target.value) {
+                        setNicknameSettingStates({ ...nicknameSettingStates, disableButton: true, alternativeName: event.target.value });
+                    } else {
+                        setNicknameSettingStates({ ...nicknameSettingStates, disableButton: false, alternativeName: event.target.value });
+                    }
                 }
             }
 
@@ -1316,9 +1331,10 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
                 });
 
                 if (200 === resp.status) {
+                    setMemberInfoStates({ ...memberInfoStates, nickname: nicknameSettingStates.alternativeName });
                     setNicknameSettingStates({ ...nicknameSettingStates, disableButton: true, progressStatus: 200 });
                     setTimeout(() => {
-                        setNicknameSettingStates({ ...nicknameSettingStates, disableButton: false, progressStatus: 100 })
+                        setNicknameSettingStates({ ...nicknameSettingStates, progressStatus: 100 })
                     }, 2000)
                 } else if (422 === resp.status) {
                     setNicknameSettingStates({ ...nicknameSettingStates, disableButton: false, progressStatus: 422 });
@@ -1331,7 +1347,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
             return (
                 <Box sx={{ paddingTop: { xs: 6, sm: 16 } }}>
 
-                    {/* input */}
+                    {/* nickname input */}
                     <CenterlizedBox>
                         <TextField
                             error={nicknameSettingStates.displayError}
@@ -1561,31 +1577,100 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
 
         //// Brief Intro ////
         const BriefIntroSetting = () => {
-            const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-                setSettingLayoutStates({ ...settinglayoutStates, briefIntro: event.target.value });
+            type TBriefIntroSetting = {
+                alternativeIntro: string;
+                displayError: boolean;
+                disableButton: boolean;
+                progressStatus: 100 | 200 | 300 | 422 | 500;
             }
 
-            const handleSubmit = () => { }
+            const [briefIntroSettingStates, setBriefIntroSettingStates] = React.useState<TBriefIntroSetting>({
+                alternativeIntro: memberInfoStates.briefIntro,
+                displayError: false,
+                disableButton: true,
+                progressStatus: 100
+            });
+
+            const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+                if (21 < `${event.target.value}`.length) {
+                    setBriefIntroSettingStates({ ...briefIntroSettingStates, displayError: true, disableButton: true, alternativeIntro: event.target.value });
+                } else {
+                    if (memberInfoStates.briefIntro === event.target.value) {
+                        setBriefIntroSettingStates({ ...briefIntroSettingStates, displayError: false, disableButton: true, alternativeIntro: event.target.value });
+                    } else {
+                        setBriefIntroSettingStates({ ...briefIntroSettingStates, displayError: false, disableButton: false, alternativeIntro: event.target.value });
+                    }
+
+                }
+            }
+
+            const handleSubmit = async () => {
+                if ('' === briefIntroSettingStates.alternativeIntro) {
+                    return;
+                }
+
+                // Prepare to update nickname
+                setBriefIntroSettingStates({ ...briefIntroSettingStates, disableButton: true, progressStatus: 300 });
+                const resp = await fetch(`/api/member/info/${memberId}/briefintro`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ alternativeIntro: briefIntroSettingStates.alternativeIntro })
+                });
+
+                if (200 === resp.status) {
+                    setMemberInfoStates({ ...memberInfoStates, briefIntro: briefIntroSettingStates.alternativeIntro });
+                    setBriefIntroSettingStates({ ...briefIntroSettingStates, disableButton: true, progressStatus: 200 });
+                    setTimeout(() => {
+                        setBriefIntroSettingStates({ ...briefIntroSettingStates, progressStatus: 100 })
+                    }, 2000)
+                } else if (422 === resp.status) {
+                    setBriefIntroSettingStates({ ...briefIntroSettingStates, disableButton: false, progressStatus: 422 });
+                } else {
+                    setBriefIntroSettingStates({ ...briefIntroSettingStates, disableButton: false, progressStatus: 500 });
+                }
+            }
 
             return (
                 <Container maxWidth='xs' sx={{ paddingTop: { xs: 6, sm: 12 } }}>
 
+                    {/* brief intro input */}
                     <CenterlizedBox>
                         <TextField
-                            required
+                            error={briefIntroSettingStates.displayError}
                             label={langConfigs.briefIntro[preferenceStates.lang]}
                             multiline
                             rows={3}
-                            value={settinglayoutStates.briefIntro}
-                            placeholder={langConfigs.introduceYourself[preferenceStates.lang]}
+                            value={briefIntroSettingStates.alternativeIntro}
+                            placeholder={langConfigs.brieflyIntrodueYourself[preferenceStates.lang]}
                             onChange={handleChange}
-                            size='small'
+                            size={'small'}
+                            fullWidth
                         />
                     </CenterlizedBox>
+
                     <CenterlizedBox sx={{ mt: 2 }}>
-                        <Button variant='contained' size='small'>
-                            <Typography>{langConfigs.submit[preferenceStates.lang]}</Typography>
+                        <Button variant='contained' color={![422, 500].includes(briefIntroSettingStates.progressStatus) ? 'primary' : 'error'} size='small' onClick={async () => { await handleSubmit() }} disabled={briefIntroSettingStates.disableButton}>
+                            {/* button: enabled, result: 100 (ready) */}
+                            {100 === briefIntroSettingStates.progressStatus && <Typography variant={'body2'}>{langConfigs.update[preferenceStates.lang]}</Typography>}
+                            {/* button: disabled/enabled, result: 200 (succeeded) */}
+                            {200 === briefIntroSettingStates.progressStatus && <Typography variant={'body2'}>{langConfigs.updateSucceeded[preferenceStates.lang]}</Typography>}
+                            {/* button: disabled, result: 300 (ongoing) */}
+                            {300 === briefIntroSettingStates.progressStatus && <Typography variant={'body2'}>{langConfigs.updatinging[preferenceStates.lang]}</Typography>}
+                            {/* button: disabled, result: 422 (ongoing) */}
+                            {422 === briefIntroSettingStates.progressStatus && <Typography variant={'body2'}>{langConfigs.invalidBriefIntro[preferenceStates.lang]}</Typography>}
+                            {/* button: enabled, result: 500 (failed) */}
+                            {500 === briefIntroSettingStates.progressStatus && <Typography variant={'body2'}>{langConfigs.updateFailed[preferenceStates.lang]}</Typography>}
                         </Button>
+                    </CenterlizedBox>
+
+                    {/* requirenment */}
+                    <CenterlizedBox mt={2}>
+                        <Typography color={'grey'} variant={'body2'} align={'center'}>{langConfigs.briefIntroRequirement[preferenceStates.lang]}</Typography>
+                    </CenterlizedBox>
+
+                    {/* requirenment */}
+                    <CenterlizedBox>
+                        <Typography color={'grey'} variant={'body2'} align={'center'}>{langConfigs.referToCommunityGuidelines[preferenceStates.lang]}</Typography>
                     </CenterlizedBox>
                 </Container>
             )
@@ -1593,24 +1678,60 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
 
         //// Gender ////
         const GenderSetting = () => {
+            type TGenderSettingStates = {
+                gender: number;
+                disableButton: boolean;
+                progressStatus: 100 | 200 | 300 | 400;
+            }
+
+            const [genderSettingStates, setGenderSettingStates] = React.useState<TGenderSettingStates>({
+                gender: memberInfoStates.gender,
+                disableButton: true,
+                progressStatus: 100,
+            });
+
+
             const handleChange = (event: SelectChangeEvent) => {
-                setSettingLayoutStates({ ...settinglayoutStates, gender: parseInt(event.target.value) })
+                setGenderSettingStates({ ...genderSettingStates, gender: parseInt(event.target.value), disableButton: memberInfoStates.gender === parseInt(event.target.value) });
             };
 
-            const handleSubmit = () => { };
+            const handleSubmit = async () => {
+                // if (memberInfoStates.gender === genderSettingStates.gender) {
+                //     return;
+                // }
+
+                // Prepare to update gender
+                setGenderSettingStates({ ...genderSettingStates, disableButton: true, progressStatus: 300 });
+                const resp = await fetch(`/api/member/info/${memberId}/gender`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ gender: genderSettingStates.gender })
+                });
+
+                if (200 === resp.status) {
+                    setGenderSettingStates({ ...genderSettingStates, disableButton: true, progressStatus: 200 });
+                    setTimeout(() => {
+                        setMemberInfoStates({ ...memberInfoStates, gender: genderSettingStates.gender });
+                    }, 2000)
+                } else {
+                    setGenderSettingStates({ ...genderSettingStates, disableButton: false, progressStatus: 400 });
+                }
+            };
 
             return (
-                <Container maxWidth='xs' sx={{ paddingTop: { xs: 6, sm: 16 } }}>
+                <Container maxWidth='xs' sx={{ paddingTop: { xs: 6, sm: 18 } }}>
+
+                    {/* gender select */}
                     <CenterlizedBox>
                         <FormControl sx={{ minWidth: 100 }}>
-                            <InputLabel id='gender-select-label'>{langConfigs.gender[preferenceStates.lang]}</InputLabel>
+                            <InputLabel id={'setting-gender-select-label'}>{langConfigs.gender[preferenceStates.lang]}</InputLabel>
                             <Select
-                                labelId='gender-select-label'
-                                id='gender-select'
-                                value={settinglayoutStates.gender.toString()}
+                                labelId={'setting-gender-select-label'}
+                                value={`${genderSettingStates.gender}`}
                                 label={langConfigs.gender[preferenceStates.lang]}
                                 onChange={handleChange}
-                                size='small'
+                                size={'small'}
+                                sx={{ width: 144 }}
                             >
                                 <MenuItem value={0}>{langConfigs.female[preferenceStates.lang]}</MenuItem>
                                 <MenuItem value={1}>{langConfigs.male[preferenceStates.lang]}</MenuItem>
@@ -1618,9 +1739,18 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
                             </Select>
                         </FormControl>
                     </CenterlizedBox>
+
+                    {/* 'update' button */}
                     <CenterlizedBox sx={{ mt: 2 }}>
-                        <Button variant='contained' size='small'>
-                            <Typography>{langConfigs.submit[preferenceStates.lang]}</Typography>
+                        <Button variant={'contained'} color={400 !== genderSettingStates.progressStatus ? 'primary' : 'error'} size={'small'} onClick={async () => { await handleSubmit() }} disabled={genderSettingStates.disableButton}>
+                            {/* button: enabled, result: 100 (ready) */}
+                            {100 === genderSettingStates.progressStatus && <Typography variant={'body2'}>{langConfigs.update[preferenceStates.lang]}</Typography>}
+                            {/* button: disabled/enabled, result: 200 (succeeded) */}
+                            {200 === genderSettingStates.progressStatus && <Typography variant={'body2'}>{langConfigs.updateSucceeded[preferenceStates.lang]}</Typography>}
+                            {/* button: disabled, result: 300 (ongoing) */}
+                            {300 === genderSettingStates.progressStatus && <Typography variant={'body2'}>{langConfigs.updatinging[preferenceStates.lang]}</Typography>}
+                            {/* button: enabled, result: 400 (failed) */}
+                            {400 === genderSettingStates.progressStatus && <Typography variant={'body2'}>{langConfigs.updateFailed[preferenceStates.lang]}</Typography>}
                         </Button>
                     </CenterlizedBox>
                 </Container>
@@ -1633,8 +1763,9 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
                 setSettingLayoutStates({ ...settinglayoutStates, birthday: value });
             };
             const handleSubmit = () => { };
+
             return (
-                <Container maxWidth='xs' sx={{ paddingTop: { xs: 6, sm: 14 } }}>
+                <Container maxWidth='xs' sx={{ paddingTop: { xs: 6, sm: 16 } }}>
                     <CenterlizedBox>
                         <LocalizationProvider dateAdapter={AdapterDayjs}>
                             <MobileDatePicker
@@ -1643,12 +1774,14 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
                                 value={settinglayoutStates.birthday}
                                 onChange={handleChange}
                                 renderInput={(params) => <TextField {...params} />}
+
                             />
                         </LocalizationProvider>
                     </CenterlizedBox>
+
                     <CenterlizedBox sx={{ mt: 2 }}>
                         <Button variant='contained' size='small'>
-                            <Typography>{langConfigs.submit[preferenceStates.lang]}</Typography>
+                            <Typography variant='body2'>{langConfigs.submit[preferenceStates.lang]}</Typography>
                         </Button>
                     </CenterlizedBox>
                 </Container>
@@ -1658,7 +1791,6 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
         //// Privacy ////
         const PrivacySettings = () => {
             const handleSelectLang = (event: SelectChangeEvent<string>) => {
-                setProcessStates({ ...processStates, lang: event.target.value });
                 setPreferenceStates({ ...preferenceStates, lang: event.target.value });
                 updatePreferenceStatesCache({ ...preferenceStates, lang: event.target.value })
             }
@@ -1666,7 +1798,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
                 setSettingLayoutStates({ ...settinglayoutStates, isWishToCancelChecked: !settinglayoutStates.isWishToCancelChecked });
             }
             return (
-                <Container maxWidth='xs' sx={{ paddingTop: { xs: 2.5 } }}>
+                <Container maxWidth='xs' sx={{ paddingTop: { xs: 4 } }}>
                     <FormGroup>
 
                         {/* visibility */}
@@ -1690,6 +1822,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
                                 value={preferenceStates.lang}
                                 onChange={handleSelectLang}
                                 size='small'
+                                sx={{ width: 144 }}
                             >
                                 <MenuItem value={'tw'}>{'繁体中文'}</MenuItem>
                                 <MenuItem value={'cn'}>{'简体中文'}</MenuItem>
@@ -1697,9 +1830,14 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
                             </Select>
                         </Box>
 
+                        <CenterlizedBox sx={{ mt: 2 }}>
+                            <Button variant='contained' size='small'>
+                                <Typography variant='body2'>{langConfigs.submit[preferenceStates.lang]}</Typography>
+                            </Button>
+                        </CenterlizedBox>
 
                         {/* cancel member */}
-                        <Typography variant={'body2'} >{langConfigs.cancelMembership[preferenceStates.lang]}</Typography>
+                        <Typography variant={'body2'} sx={{ mt: 2 }}>{langConfigs.cancelMembership[preferenceStates.lang]}</Typography>
                         <Box pl={{ xs: 0, sm: 2, md: 4 }}>
                             <FormControlLabel control={<Checkbox onChange={handleCheck} checked={settinglayoutStates.isWishToCancelChecked} />} label={langConfigs.wishToCancelMembership[preferenceStates.lang]} />
                         </Box>
@@ -1783,7 +1921,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
                 {/* //// middle column */}
                 <Grid item xs={12} sm={8} md={6} lg={6} xl={6}>
                     <Box sx={{ display: 'flex', flexDirection: 'row', borderRadius: 1, boxShadow: { xs: 0, sm: 2 }, minHeight: 440 }}>
-                        
+
                         {/* //// left column //// */}
                         <Box sx={{ minWidth: { xs: 100, sm: 160 }, padding: { xs: 0, sm: 2 } }}>
                             <MenuList>
@@ -1914,17 +2052,22 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
                 <Box>
 
                     {/* avatar */}
-                    <CenterlizedBox sx={{ marginTop: { xs: 4, sm: 6 } }}>
+                    <CenterlizedBox sx={{ mt: { xs: 4, sm: 6 } }}>
                         <Avatar src={memberInfoStates.avatarImageUrl} sx={{ height: { xs: 90, sm: 72 }, width: { xs: 90, sm: 72 } }}>{memberInfoStates.nickname?.charAt(0).toUpperCase()}</Avatar>
                     </CenterlizedBox>
 
                     {/* nickname */}
-                    <CenterlizedBox sx={{ marginTop: { xs: 0, sm: 1 } }}>
-                        <Typography variant='h6' textAlign={'center'}>{memberInfoStates.nickname}</Typography>
+                    <CenterlizedBox sx={{ mt: { xs: 1, sm: 1 } }}>
+                        <Typography variant='h5' textAlign={'center'}>{memberInfoStates.nickname}</Typography>
+                    </CenterlizedBox>
+
+                    {/* brief intro */}
+                    <CenterlizedBox sx={{ mt: { xs: 0 } }}>
+                        <Typography variant='body2' textAlign={'center'}>{memberInfoStates.briefIntro}</Typography>
                     </CenterlizedBox>
 
                     {/* info */}
-                    <Grid container columnSpacing={3} sx={{ marginTop: 1 }}>
+                    <Grid container columnSpacing={{ xs: 4, sm: 5 }} sx={{ mt: { xs: 3, sm: 4 } }}>
 
                         {/* blank space */}
                         <Grid item flexGrow={1}></Grid>
@@ -1962,7 +2105,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
                         {/* creation liked count */}
                         <Grid item>
                             <CenterlizedBox>
-                                <Typography variant='body1'>{langConfigs.liked[preferenceStates.lang]}</Typography>
+                                <Typography variant='body1'>{langConfigs.like[preferenceStates.lang]}</Typography>
                             </CenterlizedBox>
                             <CenterlizedBox>
                                 <Typography variant='body1'>{memberStatistics_ss.totalCreationLikedCount}</Typography>

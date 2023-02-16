@@ -45,6 +45,7 @@ export default async function MemberInfoById(req: NextApiRequest, res: NextApiRe
             
             nickname: 'WebMaster',
             briefIntro: '歡迎大家來到我們的社區:)',
+            gender: -1,
             birthdayBySecond: 840344435,
         }
 

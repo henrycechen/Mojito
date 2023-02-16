@@ -6,6 +6,8 @@
 export interface IMemberComprehensive {
     memberId: string; // 10 characters, UPPERCASE
 
+    //// info ////
+
     providerId: string; // "MojitoMemberSystem" | "GitHubOAuth" | ...
     registeredTimeBySecond: number; // Math.floor(new Date().getTime() / 1000)
     verifiedTimeBySecond: number;
@@ -23,12 +25,14 @@ export interface IMemberComprehensive {
     birthdayBySecond: number;
     lastBirthdayUpdatedTimeBySecond: number;
 
+    //// management ////
+
     status: number;
     allowPosting: boolean;
     allowCommenting: boolean;
 }
 
-export interface IRestrictedMemberInfo{
+export interface IRestrictedMemberInfo {
     memberId: string;
 
     providerId: string; // "MojitoMemberSystem" | "GitHubOAuth" | ...
@@ -37,6 +41,7 @@ export interface IRestrictedMemberInfo{
 
     nickname: string;
     briefIntro: string;
+    gender: number;
     birthdayBySecond: number;
 }
 

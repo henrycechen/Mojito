@@ -23,6 +23,19 @@ const langConfigs: LangConfigs = {
     }
 }
 
+/** RequestResetPassword v0.1.1
+ * 
+ * Last update 16/02/2023
+ * 
+ * This interface ONLY accepts POST method
+ * 
+ * Info required for POST request
+ * 
+ * - emailAddressHash: string
+ * - resetPasswordToken: string
+ * - password: string
+ */
+
 export default async function RequestResetPassword(req: NextApiRequest, res: NextApiResponse) {
     const { method } = req;
     if ('POST' !== method) {

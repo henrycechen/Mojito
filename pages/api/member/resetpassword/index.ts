@@ -13,7 +13,9 @@ const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
 const salt = process.env.APP_PASSWORD_SALT ?? '';
 
 /** This interface ONLY accepts POST method
+ * 
  * Info required for POST request
+ * 
  * - emailAddressHash: string
  * - resetPasswordToken: string
  * - password: string

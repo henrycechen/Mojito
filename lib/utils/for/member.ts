@@ -52,6 +52,7 @@ export function fakeRestrictedMemberInfo(): IRestrictedMemberInfo {
 
         nickname: '',
         briefIntro: '',
+        gender: -1,
         birthdayBySecond: 1580436000, // Date Fri Jan 31 2020 15:00:00 GMT+1300 (New Zealand Daylight Time)
     }
 }
