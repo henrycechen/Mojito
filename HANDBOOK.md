@@ -132,7 +132,7 @@ type ResetPasswordRequestInfo = {
 
 
 
-## 📘Member
+## 📘Credentials
 
 | Property | Type   | Desc                     |
 | -------- | ------ | ------------------------ |
@@ -157,6 +157,10 @@ type ResetPasswordRequestInfo = {
 | PartitionKey        | RowKey            | ResetPasswordToken |
 | ------------------- | ----------------- | ------------------ |
 | EmailAddressSHA1Str | `"ResetPassword"` | string             |
+
+
+
+## 📘Mapping
 
 ### [RL] FollowingMemberMapping
 
@@ -190,15 +194,17 @@ type ResetPasswordRequestInfo = {
 | ------------ | -------------------- | -------- |
 | MemberIdStr  | BlockedByMemberIdStr | boolean  |
 
+
+
+## 📘Registry
+
 ### [RL] Registry
 
 \* This table records the registry credentials
 
 | PartitionKey | RowKey               | MemberId | IsActive |
 | ------------ | -------------------- | -------- | -------- |
-| `"Nickname"` | nicknameBase64String | string   | boolea   |
-
-
+| `"Nickname"` | nicknameBase64String | string   | boolean  |
 
 
 
@@ -384,21 +390,27 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
     
     //// info ////
     memberId: string; // 8 ~ 9 characters, UPPERCASE, begin with 'M'
-    providerId?: string; // "MojitoMemberSystem" | "GitHubOAuth" | ...
+    providerId: string; // "MojitoMemberSystem" | "GitHubOAuth" | ...
     
-    registeredTimeBySeconds?: number; // Math.floor(new Date().getTime() / 1000) 
-    verifiedTimeBySeconds?: number;
-    emailAddress?: string;
+    registeredTimeBySecond: number; // Math.floor(new Date().getTime() / 1000) 
+    verifiedTimeBySecond: number;
     
+    emailAddress: string;
+    lastAvatarImageUpdatedTimeBySecond: number;
     
-    lastAvatarImageUpdatedTimeBySeconds?: number;
+    nickname: string;
+    lastNicknameUpdatedTimeBySecond: number;
     
-    nickname?: string;
-    nicknameBase64?: string;
+    lastPasswordUpdatedTimeBySecond: number;
   	
-    briefIntro?: string;
-    gender?: -1 | 0 | 1;
+    briefIntro: string;
+    lastBriefIntroUpdatedTimeBySecond?: number;
+    
+    gender?: -1 | 0 | 1
+    lastGenderUpdatedTimeBySecond?: number;
+    
     birthday?: string;
+    lastBirthdayUpdatedTimeBySecond?: number;
     
     //// management ////
     status?: number;
@@ -1139,7 +1151,7 @@ const { topicIdsArr } = postComprehensiveQueryResult;
        //// info ////
        memberId: "_", // 10 characters, UPPERCASE
        providerId: "MojitoMemberSystem",
-       registeredTimeBySeconds: 1670987135509,
+       registeredTimeBySecond: 1670987135509,
        emailAddress: "_",
        //// management ////
        status: 0,
@@ -1233,7 +1245,7 @@ const { topicIdsArr } = postComprehensiveQueryResult;
    ```json
    {
        //// info ////
-       verifiedTimeBySeconds: new Date().getTime(),
+       verifiedTimeBySecond: new Date().getTime(),
        gender: 0,
        //// management ////
        status: 200,
@@ -1348,7 +1360,7 @@ const { topicIdsArr } = postComprehensiveQueryResult;
           //// info ////
           memberId: "_", // 10 characters, UPPERCASE
           providerId: "GitHubOAuth", // login (register) with a GitHub account
-          registeredTimeBySeconds: 1670987135509,
+          registeredTimeBySecond: 1670987135509,
           emailAddress: "_",
           nickname: "_",
          	avatarImageFullName: "_",

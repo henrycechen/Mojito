@@ -163,7 +163,7 @@ export default async function GetRestrictedCommentComprehensiveById(req: NextApi
                         //// [!] comment author has not been blocked by cued member ////
                         // Step #5.4 upsert record (of INoticeInfo.Cued) in [PRL] Notice
                         const noticeTableClient = AzureTableClient('Notice');
-                        noticeTableClient.upsertEntity<INoticeInfo>({
+                        await noticeTableClient.upsertEntity<INoticeInfo>({
                             partitionKey: memberId_cued,
                             rowKey: createNoticeId('cue', authorId, postId, commentId), // combined id
                             Category: 'cue',

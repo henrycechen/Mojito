@@ -6,22 +6,38 @@
 export interface IMemberComprehensive {
     memberId: string; // 10 characters, UPPERCASE
 
-    providerId?: string; // "MojitoMemberSystem" | "GitHubOAuth" | ...
-    registeredTimeBySeconds?: number; // Math.floor(new Date().getTime() / 1000)
-    verifiedTimeBySeconds?: number;
+    providerId: string; // "MojitoMemberSystem" | "GitHubOAuth" | ...
+    registeredTimeBySecond: number; // Math.floor(new Date().getTime() / 1000)
+    verifiedTimeBySecond: number;
+    emailAddress: string;
 
-    emailAddress?: string;
+    nickname: string;
+    lastNicknameUpdatedTimeBySecond: number;
 
-    nickname?: string;
-    nicknameBase64?: string; // prevent duplicated nickname when re-naming
-    avatarImageFullName?: string;
-    briefIntro?: string;
-    gender?: -1 | 0 | 1;
-    birthday?: string;
+    briefIntro: string;
+    lastBriefIntroUpdatedTimeBySecond: number;
+
+    gender: number; // -1 | 0 | 1
+    lastGenderUpdatedTimeBySecond: number;
+
+    birthdayBySecond: number;
+    lastBirthdayUpdatedTimeBySecond: number;
 
     status: number;
-    allowPosting?: boolean;
-    allowCommenting?: boolean;
+    allowPosting: boolean;
+    allowCommenting: boolean;
+}
+
+export interface IRestrictedMemberInfo{
+    memberId: string;
+
+    providerId: string; // "MojitoMemberSystem" | "GitHubOAuth" | ...
+    registeredTimeBySecond: number; // Math.floor(new Date().getTime() / 1000)
+    verifiedTimeBySecond: number;
+
+    nickname: string;
+    briefIntro: string;
+    birthdayBySecond: number;
 }
 
 export interface IConciseMemberInfo {
@@ -29,22 +45,19 @@ export interface IConciseMemberInfo {
     nickname: string;
 }
 
-export interface IConciseMemberInfoWithTime extends IConciseMemberInfo {
+export interface IConciseMemberInfoWithCreatedTimeBySecond {
     memberId: string;
     nickname: string;
-    avatarImageFullName: string;
-    createdTime: number;
+    createdTimeBySecond: number;
 }
 
-export interface IConciseMemberInfoWithBriefIntroAndTime extends IConciseMemberInfo {
+export interface IConciseMemberInfoWithBriefIntroAndCreatedTimeBySecond {
     memberId: string;
     nickname: string;
-    avatarImageFullName: string;
     briefIntro: string | undefined;
-    createdTime: number;
+    createdTimeBySecond: number;
 }
 
-// [C] memberStatistics
 export interface IMemberStatistics {
     memberId: string;
 
@@ -100,7 +113,6 @@ export interface IConciseMemberStatistics {
     totalCreationSavedCount: number;
 }
 
-// [C] loginJournal
 export interface ILoginJournal {
     memberId: string;
     category: 'error' | 'success';

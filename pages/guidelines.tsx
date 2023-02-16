@@ -13,23 +13,41 @@ import Terms from "../ui/Terms";
 import { LangConfigs } from '../lib/types';
 import { getRandomHexStr } from '../lib/utils';
 
-type TProcessStates = {
-    lang: string;
-}
+
 
 const defaultLang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
-    title: {
+    title0: {
         tw: '网络社区準則',
         cn: '網絡社區准则',
         en: 'Community Guidelines'
     },
-    publishedDate: {
+    title1: {
+        tw: '頭像相片設定規則',
+        cn: '头像图片设置规则',
+        en: 'Guidelines for avatar images'
+    },
+    title2: {
+        tw: '暱稱設定規則',
+        cn: '昵称设置规则',
+        en: 'Guideline for nicknames'
+    },
+    publishedDate0: {
         tw: `更新日期：2023年2月13日`,
         cn: `更新日期：2023年2月13日`,
-        en: `Updated: February 13, 2022`
+        en: `Updated: February 13, 2023`
     },
-    terms: {
+    publishedDate1: {
+        tw: `更新日期：2023年2月16日`,
+        cn: `更新日期：2023年2月16日`,
+        en: `Updated: February 16, 2023`
+    },
+    publishedDate2: {
+        tw: `更新日期：2023年2月16日`,
+        cn: `更新日期：2023年2月16日`,
+        en: `Updated: February 13, 2023`
+    },
+    terms0: {
         tw: [
             '1. 尊重他人：我們希望社區的所有成員尊重和體諒他人，無論其種族、民族、宗教、性別、性取向或任何其他個人特徵如何。 不會容忍騷擾、仇恨言論和任何其他形式的歧視。',
             '2. 文明對話：我們鼓勵熱烈的辯論和討論，但所有成員都應進行建設性和相互尊重的對話。 不接受人身攻擊、辱罵和其他形式的不文明行為。',
@@ -63,11 +81,70 @@ const langConfigs: LangConfigs = {
             'By participating in this community, you agree to abide by these guidelines. If you violate these guidelines, your account may be suspended or terminated.',
             'Please remember to keep our community a friendly and respectful place for everyone to participate and enjoy.',
         ],
-    }
+    },
+    terms1: {
+        tw: [
+            '1. 尊重：頭像圖像不應包含任何可能被視為有害、歧視或歧視個人或團體的冒犯性或不當內容。',
+            '2. 非欺騙性：頭像圖像不應用於冒充或歪曲個人或團體。',
+            '3. 適當的尺寸：頭像圖像應具有適當的尺寸和分辨率，以避免像素化或失真。',
+            '4. 商業用途：頭像圖片不得宣傳或宣傳任何商業產品、服務或品牌除非得到允許。',
+            '5. 受版權保護的圖像：頭像圖像不應是受知識產權保護的受版權保護的圖像、商標或徽標。',
+            '6. 無個人信息：頭像圖像不應包含任何個人信息，例如聯繫方式、電話號碼或地址。',
+        ],
+        cn: [
+            '1. 尊重：头像图像不应包含任何可能被视为有害、歧视或歧视个人或团体的冒犯性或不当内容。',
+            '2. 非欺骗性：头像图像不应用于冒充或歪曲个人或团体。',
+            '3. 适当的尺寸：头像图像应具有适当的尺寸和分辨率，以避免像素化或失真。',
+            '4. 非商业用途：头像图片不得宣传或宣传任何商业产品、服务或品牌除非得到允许。',
+            '5.  受版权保护的图像：头像图像不应是受知识产权保护的受版权保护的图像、商标或徽标。',
+            '6. 无个人信息：头像图像不应包含任何个人信息，例如联系方式、电话号码或地址。',
+        ],
+        en: [
+            '1. Respectful: Avatar images should not contain any offensive or inappropriate content that could be considered harmful, discriminatory, or discriminatory towards individuals or groups.',
+            '2. Non-Deceptive: Avatar images should not be used to impersonate or misrepresent individuals or groups.',
+            '3. Appropriate Size: Avatar images should be of an appropriate size and resolution to avoid pixelation or distortion.',
+            '4. Non-Commercial: Avatar images should not promote or advertise any commercial products, services or brands unless permitted.',
+            '5. Copyrighted Images: Avatar images should not be copyrighted images, trademarks, or logos that are protected by intellectual property rights.',
+            '6. No Personal Information: Avatar images should not contain any personal information such as contact details, phone numbers, or addresses.',
+        ],
+    },
+    terms2: {
+        en: [
+            '1. Respectful: Nicknames should not contain offensive or derogatory language, including racial slurs, gender-based slurs, or hate speech. Nicknames also should not contain profanity or vulgar language.',
+            '2. Non-Deceptive: Nicknames should not impersonate or misrepresent the identity of other members, individuals, or organizations.',
+            '3. No Personal Information: Nicknames should not contain personal privacy, such as full names, addresses, or contact information.',
+            '4. Non-Commercial: Nicknames should not promote or advertise any products, services, or websites unless permitted.',
+            '5. Compliance with Laws: Nicknames should not violate any local, national, or international laws.',
+            '6. High-Readability: Nicknames should not be no longer than 13 characters or difficult to read or type.',
+            '7. Minimize Confusion: Nicknames should not contain excessive punctuation or symbols that may cause confusion or disrupt communication.',
+        ],
+        tw: [
+            '1. 尊重：暱稱不應包含攻擊性或貶損性語言，包括種族歧視、性別歧視或仇恨言論。暱稱也不應包含褻瀆或粗俗的語言。',
+            '2. 非欺騙性：暱稱不得冒充或歪曲其他會員、個人或組織的身份。',
+            '3. 無個人信息：暱稱不得包含個人隱私，如全名、地址或聯繫方式。',
+            '4. 非商業：暱稱不得宣傳或宣傳任何產品、服務或網站除非得到允許。',
+            '5. 遵守法律：暱稱不得違反任何地方、國家或國際法律。',
+            '6. 高可讀性：暱稱不得超過13個字符或使用難以閱讀或輸入的文字。',
+            '7. 減少混淆：暱稱不應包含過多的標點符號或可能導致混淆或乾擾交流的符號。',
+        ],
+        cn: [
+            '1. 尊重：昵称不应包含攻击性或贬损性语言，包括种族歧视、基于性别的歧视或仇恨言论。 昵称也不应包含亵渎或粗俗的语言。',
+            '2. 非欺骗性：昵称不得冒充或歪曲其他会员、个人或组织的身份。',
+            '3. 无个人信息：昵称不得包含个人隐私，如全名、地址或联系方式。',
+            '4. 非商业：昵称不得宣传或宣传任何产品、服务或网站除非得到允许。',
+            '5. 遵守法律：昵称不得违反任何地方、国家或国际法律。',
+            '6. 高可读性：昵称不得超过13个字符或使用难以阅读或输入的文字。',
+            '7. 减少混淆：昵称不应包含过多的标点符号或可能导致混淆或干扰交流的符号。',
+        ],
+    },
 }
 
 
 export default function CommunityGidelines() {
+
+    type TProcessStates = {
+        lang: string;
+    }
 
     const [processStates, setProcessStates] = React.useState<TProcessStates>({
         lang: defaultLang
@@ -86,15 +163,41 @@ export default function CommunityGidelines() {
                 <Grid container>
                     <Grid item md={1}></Grid>
                     <Grid item md={3} sx={{ p: 1, paddingTop: 16 }}>
-                        <Typography variant={'h5'}>{langConfigs.title[processStates.lang]}</Typography>
-                        <Typography variant={'body2'}>{langConfigs.publishedDate[processStates.lang]}</Typography>
+                        <Typography variant={'h5'}>{langConfigs.title0[processStates.lang]}</Typography>
+                        <Typography variant={'body2'}>{langConfigs.publishedDate0[processStates.lang]}</Typography>
                         <Button variant='text' sx={{ textTransform: 'none' }} onClick={setLang}>
-                            <Typography variant={'body2'}>{'简|繁|English'}</Typography>
+                            <Typography variant={'body2'}>{'繁|简|English'}</Typography>
                         </Button>
                     </Grid>
                     <Grid item md={7} sx={{ p: 1, paddingTop: { xs: 4, sm: 8, md: 16 } }}>
                         <Stack direction={'column'} spacing={2}>
-                            {langConfigs.terms[processStates.lang].map((term: string) => <Typography key={getRandomHexStr()} variant={'body1'}>{term}</Typography>)}
+                            {langConfigs.terms0[processStates.lang].map((term: string) => <Typography key={getRandomHexStr()} variant={'body1'}>{term}</Typography>)}
+                        </Stack>
+                    </Grid>
+                    <Grid item md={1}></Grid>
+                </Grid>
+                <Grid container>
+                    <Grid item md={1}></Grid>
+                    <Grid item md={3} sx={{ p: 1, paddingTop: 16 }}>
+                        <Typography variant={'h5'}>{langConfigs.title1[processStates.lang]}</Typography>
+                        <Typography variant={'body2'}>{langConfigs.publishedDate1[processStates.lang]}</Typography>
+                    </Grid>
+                    <Grid item md={7} sx={{ p: 1, paddingTop: { xs: 4, sm: 8, md: 16 } }}>
+                        <Stack direction={'column'} spacing={2}>
+                            {langConfigs.terms1[processStates.lang].map((term: string) => <Typography key={getRandomHexStr()} variant={'body1'}>{term}</Typography>)}
+                        </Stack>
+                    </Grid>
+                    <Grid item md={1}></Grid>
+                </Grid>
+                <Grid container>
+                    <Grid item md={1}></Grid>
+                    <Grid item md={3} sx={{ p: 1, paddingTop: 16 }}>
+                        <Typography variant={'h5'}>{langConfigs.title2[processStates.lang]}</Typography>
+                        <Typography variant={'body2'}>{langConfigs.publishedDate2[processStates.lang]}</Typography>
+                    </Grid>
+                    <Grid item md={7} sx={{ p: 1, paddingTop: { xs: 4, sm: 8, md: 16 } }}>
+                        <Stack direction={'column'} spacing={2}>
+                            {langConfigs.terms2[processStates.lang].map((term: string) => <Typography key={getRandomHexStr()} variant={'body1'}>{term}</Typography>)}
                         </Stack>
                     </Grid>
                     <Grid item md={1}></Grid>

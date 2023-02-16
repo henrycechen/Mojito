@@ -80,7 +80,7 @@ export default function PrivacyPolicy() {
                         <Typography variant={'h5'}>{langConfigs.title[processStates.lang]}</Typography>
                         <Typography variant={'body2'}>{langConfigs.publishedDate[processStates.lang]}</Typography>
                         <Button variant='text' sx={{ textTransform: 'none' }} onClick={setLang}>
-                            <Typography variant={'body2'}>{'简|繁|English'}</Typography>
+                            <Typography variant={'body2'}>{'繁|简|English'}</Typography>
                         </Button>
                     </Grid>
                     <Grid item md={7} sx={{ p: 1, paddingTop: { xs: 4, sm: 8, md: 16 } }}>

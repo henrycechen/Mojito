@@ -97,7 +97,7 @@ export default async function SignUp(req: NextApiRequest, res: NextApiResponse) 
         const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.insertOne({
             memberId,
             providerId,
-            registeredTimeBySeconds: Math.floor(new Date().getTime() / 1000),
+            registeredTimeBySecond: Math.floor(new Date().getTime() / 1000),
             emailAddress,
             nickname: emailAddress.split('@')[0],
             status: 0, // email address not verified

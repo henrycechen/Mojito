@@ -29,7 +29,7 @@ export default async function DeleteCreationById(req: NextApiRequest, res: NextA
         return;
     }
     // Verify post id
-    const { isValid, category, id: postId } = verifyId(req.body?.postId);
+    const { isValid, category, id: postId } = verifyId(req.query?.postId);
     if (!(isValid && 'post' === category)) {
         res.status(400).send('Invalid post id');
         return;

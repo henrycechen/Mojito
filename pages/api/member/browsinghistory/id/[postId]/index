@@ -7,7 +7,7 @@ import AzureTableClient from '../../../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from "../../../../../../modules/AtlasDatabaseClient";
 
 import { IMemberComprehensive, IMemberPostMapping, } from '../../../../../../lib/interfaces';
-import { verifyId, response405, response500, log } from '../../../../../../lib/utils';
+import { verifyId, response405, response500, logWithDate } from '../../../../../../lib/utils';
 
 /** This interface ONLY accepts DELETE requests
  * 
@@ -29,7 +29,7 @@ export default async function DeleteBrowsingHistoryById(req: NextApiRequest, res
         return;
     }
     // Verify post id
-    const { isValid, category, id: postId } = verifyId(req.body?.postId);
+    const { isValid, category, id: postId } = verifyId(req.query?.postId);
     if (!(isValid && 'post' === category)) {
         res.status(400).send('Invalid post id');
         return;
@@ -67,7 +67,7 @@ export default async function DeleteBrowsingHistoryById(req: NextApiRequest, res
         if (!res.headersSent) {
             response500(res, msg);
         }
-        log(msg, e);
+        logWithDate(msg, e);
         await atlasDbClient.close();
         return;
     }

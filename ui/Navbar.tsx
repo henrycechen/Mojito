@@ -29,13 +29,9 @@ import { LangConfigs } from '../lib/types';
 import { useRouter } from 'next/router';
 
 import { ColorModeContext } from './Theme';
+import { provideAvatarImageUrl } from '../lib/utils/for/member';
 
-type TNavBarProps = {
-    nickname: string;
-    avatarImageUrl: string;
-}
-
-const domain = process.env.NEXT_PUBLIC_APP_DOMAIN;
+const domain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? '';
 const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
     signIn: {
@@ -65,12 +61,21 @@ const langConfigs: LangConfigs = {
     }
 }
 
+type TNavBarProps = {
+    forceBrowserUpdateAvatarImage?: boolean;
+}
+
 export default function NavBar(props: TNavBarProps) {
 
+    const router = useRouter();
+
+    let viewerId = '';
 
     const { data: session, status } = useSession();
-    const mySession: any = { ...session }
-    const router = useRouter();
+    if ('authenticated' === status) {
+        const viewerSession: any = { ...session };
+        viewerId = viewerSession?.user?.id;
+    }
 
     const theme = useTheme();
     const colorMode = React.useContext(ColorModeContext);
@@ -81,8 +86,8 @@ export default function NavBar(props: TNavBarProps) {
     const handleClick = (actionIndex: number) => {
         setAnchorEl(null);
         if (actionIndex === 0) { router.push('/me/createpost') };
-        if (actionIndex === 1) { router.push(`/me/id/${mySession?.user?.id}?layout=message`) };
-        if (actionIndex === 2) { router.push(`/me/id/${mySession?.user?.id}?layout=post`) };
+        if (actionIndex === 1) { router.push(`/me/id/${viewerId}?layout=message`) };
+        if (actionIndex === 2) { router.push(`/me/id/${viewerId}?layout=post`) };
         if (actionIndex === 3) { signOut() };
     }
 
@@ -112,7 +117,7 @@ export default function NavBar(props: TNavBarProps) {
                         <Box sx={{ flexGrow: 0 }}>
                             <Tooltip title="Open settings">
                                 <IconButton onClick={handleOpenMemberMenu} sx={{ p: 0 }}>
-                                    <Avatar alt={props.nickname} src={props.avatarImageUrl} />
+                                    <Avatar src={provideAvatarImageUrl(viewerId, domain, props?.forceBrowserUpdateAvatarImage)} />
                                 </IconButton>
                             </Tooltip>
                             <Menu

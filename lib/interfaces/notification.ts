@@ -3,6 +3,16 @@
  * Last update 16/02/2023
  */
 
+export interface INoticeInfo {
+    partitionKey: string; // notified member id
+    rowKey: string; // notice id, combined id string
+    Category: 'cue' | 'reply' | 'like' | 'pin' | 'save' | 'follow';
+    InitiateId: string; // initiate member id
+    Nickname: string; // initiate member nickname
+    PostTitle?: string;
+    CommentBrief?: string;
+}
+
 export type INoticeInfoWithMemberInfo = {
     noticeId: string; // notice id
     category: string; //'cue' | 'reply' | 'like' | 'pin' | 'save' | 'follow';

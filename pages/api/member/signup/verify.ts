@@ -110,7 +110,7 @@ export default async function VerifyToken(req: NextApiRequest, res: NextApiRespo
         const memberComprehensiveCollectionUpdateResult = await memberComprehensiveCollectionClient.updateOne({ memberId, providerId }, {
             $set: {
                 //// info ////
-                verifiedTimeBySeconds: Math.floor(new Date().getTime() / 1000),
+                verifiedTimeBySecond: Math.floor(new Date().getTime() / 1000),
                 gender: -1, // "keep as secret"
                 //// management ////
                 status: 200,

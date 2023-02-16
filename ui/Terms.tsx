@@ -20,7 +20,7 @@ const langConfigs: LangConfigs = {
     }
 }
 
-export default function Terms(props: TComponentProps) {
+export default function TermsFooter(props: TComponentProps) {
     const { lang, sx } = props;
     return (
         <Typography variant={'body2'} color={'text.secondary'} align={'center'} {...sx}>

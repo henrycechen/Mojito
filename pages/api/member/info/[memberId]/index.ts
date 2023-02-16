@@ -7,8 +7,9 @@ import AzureTableClient from '../../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from "../../../../../modules/AtlasDatabaseClient";
 
 
-import { IMemberMemberMapping, INoticeInfo, IMemberPostMapping, IMemberComprehensive, IConciseMemberInfo, IMemberStatistics, ILoginJournal, INotificationStatistics, IAttitudeComprehensive, IAttitideMapping, ICommentComprehensive, IEditedCommentComprehensive, IRestrictedCommentComprehensive, IChannelStatistics, ITopicComprehensive, ITopicPostMapping, IPostComprehensive, IEditedPostComprehensive, IRestrictedPostComprehensive } from '../../../../../lib/interfaces';
+import { IMemberMemberMapping, INoticeInfo, IMemberPostMapping, IMemberComprehensive, IMemberStatistics, ILoginJournal, INotificationStatistics, IAttitudeComprehensive, IAttitideMapping, ICommentComprehensive, IEditedCommentComprehensive, IRestrictedCommentComprehensive, IChannelStatistics, ITopicComprehensive, ITopicPostMapping, IPostComprehensive, IEditedPostComprehensive, IRestrictedPostComprehensive } from '../../../../../lib/interfaces';
 import { verifyId, response405, response500, logWithDate } from '../../../../../lib/utils';
+import { IConciseMemberInfo, IRestrictedMemberInfo } from '../../../../../lib/interfaces/member';
 
 
 // TODO: unfinished
@@ -35,17 +36,22 @@ export default async function MemberInfoById(req: NextApiRequest, res: NextApiRe
 
 
     try {
-      
-        const info: IConciseMemberInfo = {
+
+        const info: IRestrictedMemberInfo = {
             memberId: 'M1234XXXX',
+            providerId: "MojitoMemberSystem",
+            registeredTimeBySecond: 1671484182,
+            verifiedTimeBySecond: 1671493378,
+            
             nickname: 'WebMaster',
-            avatarImageFullName: 'M1234XXXX.png'
+            briefIntro: '歡迎大家來到我們的社區:)',
+            birthdayBySecond: 840344435,
         }
-        
+
         res.send(info);
         // avatarImageUrl: 'https://p3-pc-sign.douyinpic.com/image-cut-tos-priv/3e1f26ab6652e8bab2146d9685309421~tplv-dy-resize-origshort-autoq-75:330.jpeg?x-expires=1988985600&x-signature=QXW59uArpZ4MLuzLDFUUD8X80Kg%3D&from=3213915784&s=PackSourceEnum_AWEME_DETAIL&se=false&sc=cover&biz_tag=pcweb_cover&l=202301140039005D37849F840BB8293C1A'
 
-        
+
     } catch (e: any) {
         let msg;
         if (e instanceof RestError) {

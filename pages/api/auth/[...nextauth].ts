@@ -217,10 +217,10 @@ export default NextAuth({
                     let memberComprehensiveCollectionInsertResult = await memberComprehensiveCollectionClient.insertOne({
                         memberId,
                         providerId,
-                        registeredTimeBySeconds: Math.floor(new Date().getTime() / 1000),
+                        registeredTimeBySecond: Math.floor(new Date().getTime() / 1000),
                         emailAddress,
                         nickname: nickname ?? '',
-                        lastAvatarImageUpdatedTimeBySeconds: Math.floor(new Date().getTime() / 1000),
+                        lastAvatarImageUpdatedTimeBySecond: Math.floor(new Date().getTime() / 1000),
                         status: 0, // email address not verified
                         allowPosting: false,
                         allowCommenting: false

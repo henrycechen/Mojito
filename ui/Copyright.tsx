@@ -21,7 +21,7 @@ const langConfigs: LangConfigs = {
     },
 }
 
-export default function Copyright(props: TComponentProps) {
+export default function CopyrightFooter(props: TComponentProps) {
     const { lang, sx } = props;
     return (
         <Typography variant={'body2'} color={'text.secondary'} align={'center'} {...sx}>

@@ -6,8 +6,23 @@ import { verifyNoticeId } from '../verify';
  * Last update 16/02/2023
  */
 
+export function noticeIdToUrl(id: string) {
+    const arr = id.split('-');
+    let str = '';
+    arr.forEach(s => {
+        const cat = s.slice(0, 1);
+        // if (new RegExp(/[CDP]/).test(cat)) {
+        if ('P' === cat) {
+            str = str + `/post/${s}`
+        }
+        if (['C', 'D'].includes(cat)) {
+            str = str + `?p=${s}`
+        }
+        // }
+    })
+    return str;
+}
 
-// Notification
 export function noticeInfoToString(info: INoticeInfoWithMemberInfo, lang: string): string {
     let _lang = lang;
     if (!['tw', 'cn', 'en'].includes(lang)) {
@@ -98,3 +113,4 @@ export function noticeInfoToString(info: INoticeInfoWithMemberInfo, lang: string
     }
     return '某位 Mojito 會員對您做了某些回應'
 }
+

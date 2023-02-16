@@ -7,7 +7,6 @@ import AzureTableClient from '../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from '../../../../modules/AtlasDatabaseClient';
 
 import { ILoginJournal, IMemberComprehensive, IMemberPostMapping, IMojitoMemberSystemLoginCredentials } from '../../../../lib/interfaces';
-import { MemberInfo } from '../../../../lib/types';
 import { createNoticeId, verifyId, response405, response500, logWithDate, verifyEnvironmentVariable, verifyRecaptchaResponse, verifyPassword } from '../../../../lib/utils';
 
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';

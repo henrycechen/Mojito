@@ -86,8 +86,8 @@ export interface IAtlasCollectionDocument {
 export interface IMemberComprehensive extends IAtlasCollectionDocument {
     memberId: string; // 10 characters, UPPERCASE
     providerId?: string; // "MojitoMemberSystem" | "GitHubOAuth" | ...
-    registeredTimeBySeconds?: number; // Math.floor(new Date().getTime() / 1000)
-    verifiedTimeBySeconds?: number;
+    registeredTimeBySecond?: number; // Math.floor(new Date().getTime() / 1000)
+    verifiedTimeBySecond?: number;
     emailAddress?: string;
     memberIndex?: number;
     nickname?: string;

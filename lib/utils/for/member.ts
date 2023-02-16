@@ -1,4 +1,4 @@
-import { IConciseMemberInfo, IConciseMemberStatistics } from '../../interfaces/member';
+import { IConciseMemberInfo, IConciseMemberStatistics, IRestrictedMemberInfo } from '../../interfaces/member';
 import { getRandomHexStr } from '../create';
 
 /** Utils for Member Class v0.1.1
@@ -6,8 +6,14 @@ import { getRandomHexStr } from '../create';
  * Last update 16/02/2023
  */
 
+export function provideAvatarImageUrl(memberId: string, domain: string, forceBrowserUpdate = false): string {
+    if (forceBrowserUpdate) {
+        return `${domain}/api/avatar/a/${memberId}.png?variant=${getRandomHexStr()}`;
+    } else {
+        return `${domain}/api/avatar/a/${memberId}.png`;
+    }
+}
 
-// Member
 export function getNicknameBrief(nickname: any): string {
     if (!('string' === typeof nickname && '' !== nickname)) {
         return `Mojito會員${Math.floor(Math.random() * Math.pow(10, 2)).toString(16).toUpperCase()}`;
@@ -28,20 +34,26 @@ export function getNicknameFromToken(token: any): string {
     return 'MojitoMember ' + getRandomHexStr(true);
 }
 
-export function provideAvatarImageUrl(memberId: string, domain: string, forceBrowserUpdate = false): string {
-    if (forceBrowserUpdate) {
-        return `${domain}/api/avatar/a/${memberId}.png?variant=${getRandomHexStr()}`;
-    } else {
-        return `${domain}/api/avatar/a/${memberId}.png`;
-    }
-}
-
 export function provideCuedMemberInfoArray(cuedMemberInfoDictionary: { [memberId: string]: IConciseMemberInfo }): IConciseMemberInfo[] {
     const memberIdArr = Object.keys(cuedMemberInfoDictionary);
     if (0 === memberIdArr.length) {
         return []
     }
     return memberIdArr.map(memberId => cuedMemberInfoDictionary[memberId]);
+}
+
+
+export function fakeRestrictedMemberInfo(): IRestrictedMemberInfo {
+    return {
+        memberId: '',
+        providerId: '',
+        registeredTimeBySecond: 1676332800, // Date Tue Feb 14 2023 13:00:00 GMT+1300 (New Zealand Daylight Time)
+        verifiedTimeBySecond: 1676332900,
+
+        nickname: '',
+        briefIntro: '',
+        birthdayBySecond: 1580436000, // Date Fri Jan 31 2020 15:00:00 GMT+1300 (New Zealand Daylight Time)
+    }
 }
 
 export function fakeConciseMemberInfo(): IConciseMemberInfo {

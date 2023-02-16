@@ -7,7 +7,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
  */
 
 // FIXME: milliseconds to seconds have not applied
-export function timeToString(timeBySeconds: any, lang: string): string {
+export function timeToString(timeBySecond: any, lang: string): string {
     let _lang = lang;
     if (!['tw', 'cn', 'en'].includes(lang)) {
         _lang = 'tw';
@@ -17,10 +17,10 @@ export function timeToString(timeBySeconds: any, lang: string): string {
         cn: { min: ' 分钟前', mins: ' 分钟前', hour: ' 小时前', hours: ' 小时前', houra: ' 小时', hoursa: ' 小时', day: ' 天前', days: ' 天前' },
         en: { min: ' minute', mins: ' minutes', hour: ' hour', hours: ' hours', houra: ' hour', hoursa: ' hours', day: ' day', days: ' days' }
     }[_lang];
-    if (!('number' === typeof timeBySeconds || 'string' === typeof timeBySeconds)) {
+    if (!('number' === typeof timeBySecond || 'string' === typeof timeBySecond)) {
         return `0${langConfigs?.min}`;
     }
-    const diff = new Date().getTime() - new Date(timeBySeconds).getTime(); // FIXME: Math.floor(new Date().getTime() / 1000) 
+    const diff = new Date().getTime() - new Date(timeBySecond).getTime(); // FIXME: Math.floor(new Date().getTime() / 1000) 
     if (24 * 3600000 < diff) {
         const d = Math.floor(diff / (24 * 3600000));
         return `${d}${1 === d ? langConfigs?.day : langConfigs?.days}`;;

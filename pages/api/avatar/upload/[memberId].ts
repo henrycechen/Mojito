@@ -80,7 +80,7 @@ export default async function AvatarImageUpload(req: NextApiRequest, res: NextAp
 
         //// Update member info ////
         const memberComprehensiveUpdateResult = await memberComprehensiveCollectionClient.updateOne({ memberId }, {
-            $set: { lastAvatarImageUpdatedTimeBySeconds: Math.floor(new Date().getTime() / 1000) }
+            $set: { lastAvatarImageUpdatedTimeBySecond: Math.floor(new Date().getTime() / 1000) }
         })
         if (!memberComprehensiveUpdateResult.acknowledged) {
             logWithDate(`Failed to update avatarImageFullName (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
