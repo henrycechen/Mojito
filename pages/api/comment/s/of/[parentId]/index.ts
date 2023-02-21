@@ -2,18 +2,29 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { MongoError } from 'mongodb';
 
 import AtlasDatabaseClient from '../../../../../../modules/AtlasDatabaseClient';
+import { logWithDate, response405, response500 } from '../../../../../../lib/utils/general';
+import { verifyId } from '../../../../../../lib/utils/verify';
+import { IPostComprehensive } from '../../../../../../lib/interfaces/post';
+import { ICommentComprehensive } from '../../../../../../lib/interfaces/comment';
+import { getRestrictedFromCommentComprehensive } from '../../../../../../lib/utils/for/comment';
 
-import { INoticeInfo, IMemberPostMapping, INotificationStatistics, IMemberComprehensive, IMemberStatistics, ILoginJournal, IAttitudeComprehensive, IAttitideMapping, ICommentComprehensive, IEditedCommentComprehensive, IRestrictedCommentComprehensive, IChannelStatistics, ITopicComprehensive, ITopicPostMapping, IPostComprehensive, IEditedPostComprehensive, IRestrictedPostComprehensive } from '../../../../../../lib/interfaces';
-import { verifyId, response405, response500, logWithDate, getRestrictedFromCommentComprehensive } from '../../../../../../lib/utils';
 
-// This interface only accepts GET requests
-// 
-// Info requried
-// - parentId: string (post / comment id)
-//
-// Info will be returned
-// - commentsArray: IRestrictedCommentComprehensive[] (for query with 'post' id category)
-// - subcommentsArray: IRestrictedCommentComprehensive[] (for query with 'comment' id category)
+const fname = GetCommentsByParentId.name;
+
+/** GetCommentsByParentId v0.1.1 FIXME: test mode
+ * 
+ * Last update: 21/02/2023
+ * 
+ * This interface only accepts GET requests
+ * 
+ * Info requried for GET requests
+ * - parentId: string (post / comment id)
+ * 
+ * Info will be returned for GET requests
+ * - commentsArray: IRestrictedCommentComprehensive[] (for query with 'post' id category)
+ * - subcommentsArray: IRestrictedCommentComprehensive[] (for query with 'comment' id category)
+ * 
+ */
 
 export default async function GetCommentsByParentId(req: NextApiRequest, res: NextApiResponse) {
     const { method } = req;
@@ -25,7 +36,6 @@ export default async function GetCommentsByParentId(req: NextApiRequest, res: Ne
 
 
 
-    // FIXME: test
     if ('P1234ABCD' === req.query?.parentId) {
         res.send([
 
@@ -131,25 +141,7 @@ export default async function GetCommentsByParentId(req: NextApiRequest, res: Ne
             totalDislikedCount: 1
         }])
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    return;
 
     const { isValid, category, id: parentId } = verifyId(req.query?.parentId);
     //// Verify id ////
@@ -201,14 +193,14 @@ export default async function GetCommentsByParentId(req: NextApiRequest, res: Ne
     } catch (e: any) {
         let msg: string;
         if (e instanceof MongoError) {
-            msg = 'Attempt to communicate with atlas mongodb.';
+            msg = `Attempt to communicate with atlas mongodb.`;
         } else {
             msg = `Uncategorized. ${e?.msg}`;
         }
         if (!res.headersSent) {
             response500(res, msg);
         }
-        logWithDate(msg, e);
+        logWithDate(msg, fname, e);
         await atlasDbClient.close();
         return;
     }

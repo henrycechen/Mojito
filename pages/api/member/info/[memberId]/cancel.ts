@@ -2,63 +2,94 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { MongoError } from 'mongodb';
 import { getToken } from 'next-auth/jwt'
 
-import AtlasDatabaseClient from "../../../../modules/AtlasDatabaseClient";
+import AtlasDatabaseClient from "../../../../../modules/AtlasDatabaseClient";
 
-import { INoticeInfo, INotificationStatistics, IMemberStatistics, IAttitudeComprehensive, ICommentComprehensive, IChannelStatistics, ITopicComprehensive, ITopicPostMapping, IPostComprehensive, IMemberComprehensive } from '../../../../lib/interfaces';
+import { IMemberComprehensive } from '../../../../../lib/interfaces/member';
+import { response405, response500, logWithDate } from '../../../../../lib/utils/general';
+import { verifyId } from '../../../../../lib/utils/verify';
 
-import { response405, response500, logWithDate } from '../../../../lib/utils';
+const fname = CancelMembership.name;
 
-/** This interface ONLY accepts DELETE requests
+/** CancelMembership v0.1.1
  * 
- * Info required for POST requests
+ * Last update: 19/02/2023
+ *  
+ * This interface ONLY accepts DELETE requests
+ * 
+ * Info required for DELETE requests
  * token: JWT
 */
 
 export default async function CancelMembership(req: NextApiRequest, res: NextApiResponse) {
+
     const { method } = req;
     if ('DELETE' !== method) {
         response405(req, res);
         return;
     }
+
     //// Verify identity ////
     const token = await getToken({ req });
     if (!(token && token?.sub)) {
-        res.status(400).send('Invalid identity');
+        res.status(401).send('Unauthorized');
         return;
     }
+
+    const { sub: tokenId } = token;
+
+    //// Verify member id ////
+    const { isValid, category, id: memberId } = verifyId(req.query?.memberId);
+
+    if (!(isValid && 'member' === category)) {
+        res.status(400).send('Invalid member id');
+        return;
+    }
+
+    //// Match the member id in token and the one in request ////
+    if (tokenId !== memberId) {
+        res.status(400).send('Requested member id and identity not matched');
+        return;
+    }
+
     //// Declare DB client ////
     const atlasDbClient = AtlasDatabaseClient();
     try {
-        const { sub: memberId } = token;
+
         await atlasDbClient.connect();
+
+        //// Verify member status ////
         const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
         const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne<IMemberComprehensive>({ memberId });
         if (null === memberComprehensiveQueryResult) {
             throw new Error(`Member attempt to cancel membership but have no document (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
         }
-        // Step #1 verify member status (of IMemberComprehensive)
+
         const { status: memberStatus } = memberComprehensiveQueryResult;
         if (0 > memberStatus) {
             res.status(403).send('Method not allowed due to member suspended or deactivated');
             await atlasDbClient.close();
             return;
         }
+
         const memberComprehensiveUpdateResult = await memberComprehensiveCollectionClient.updateOne({ memberId }, { $set: { status: -1 } });
         if (!memberComprehensiveUpdateResult.acknowledged) {
             res.status(500).send('Cancel insuccess');
         }
-        res.status(200).send('Cancel success')
+
+        res.status(200).send('Cancel success');
+        await atlasDbClient.close();
+        return;
     } catch (e: any) {
         let msg;
         if (e instanceof MongoError) {
-            msg = 'Attempt to communicate with atlas mongodb.';
+            msg = `Attempt to communicate with atlas mongodb.`;
         } else {
             msg = `Uncategorized. ${e?.msg}`;
         }
         if (!res.headersSent) {
             response500(res, msg);
         }
-        logWithDate(msg, e);
+        logWithDate(msg, fname, e);
         await atlasDbClient.close();
         return;
     }

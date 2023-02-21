@@ -6,40 +6,42 @@ import { MongoError } from 'mongodb';
 import AzureTableClient from '../../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from "../../../../../modules/AtlasDatabaseClient";
 
-import { INoticeInfo, IMemberPostMapping, INotificationStatistics, IMemberComprehensive, IConciseMemberInfo, IMemberStatistics, ILoginJournal, IAttitudeComprehensive, IAttitideMapping, ICommentComprehensive, IEditedCommentComprehensive, IRestrictedCommentComprehensive, IChannelStatistics, ITopicComprehensive, ITopicPostMapping, IPostComprehensive, IEditedPostComprehensive, IRestrictedPostComprehensive } from '../../../../../lib/interfaces';
-import { createId, createNoticeId, getRandomIdStr, getRandomIdStrL, getRandomHexStr, timeToString, getNicknameFromToken, getContentBrief, createCommentComprehensive, getRestrictedFromCommentComprehensive, getTopicBase64StringsArrayFromRequestBody, getImageUrlsArrayFromRequestBody, getParagraphsArrayFromRequestBody, getRestrictedFromPostComprehensive, verifyEmailAddress, verifyPassword, verifyId, verifyUrl, verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500, logWithDate } from '../../../../../lib/utils';
-const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
+import { response405, response500, logWithDate, getContentBrief } from '../../../../../lib/utils/general';
+import { createId, createNoticeId } from '../../../../../lib/utils/create';
+import { verifyId } from '../../../../../lib/utils/verify';
+import { IMemberComprehensive, IMemberStatistics } from '../../../../../lib/interfaces/member';
+import { ICommentComprehensive } from '../../../../../lib/interfaces/comment';
+import { IPostComprehensive } from '../../../../../lib/interfaces/post';
+import { IChannelStatistics } from '../../../../../lib/interfaces/channel';
+import { ITopicComprehensive } from '../../../../../lib/interfaces/topic';
+import { INoticeInfo, INotificationStatistics } from '../../../../../lib/interfaces/notification';
+import { getNicknameFromToken } from '../../../../../lib/utils/for/member';
+import { createCommentComprehensive } from '../../../../../lib/utils/for/comment';
 
 
-// This interface accepts POST requests
-//
-// Info required for POST method
-// - recaptchaResponse: string (query string)
-// - token: JWT (cookie)
-// - parentId: string (query)
-// - postId: string (body)
-// - content: string (body)
-// - cuedMemberInfoArr: IConciseMemberInfo[] (body, optional)
+const fname = CreateCommentOnParentById.name;
 
-export default async function CreateCommentOnParentId(req: NextApiRequest, res: NextApiResponse) {
+/** CreateCommentOnParentById v0.1.1 FIXME: test mode
+ * 
+ * Last update: 21/02/2023
+ * 
+ * This interface accepts POST requests
+ * 
+ * Info required for POST requests
+ * - token: JWT (cookie)
+ * - parentId: string (query)
+ * - postId: string (body)
+ * - content: string (body)
+ * - cuedMemberInfoArr: IConciseMemberInfo[] (body, optional)
+ * 
+ */
+
+export default async function CreateCommentOnParentById(req: NextApiRequest, res: NextApiResponse) {
     const { method } = req;
     if ('POST' !== method) {
         response405(req, res);
         return;
     }
-
-    console.log(req.body);
-    // req.body
-    //    {
-    //         "postId": "P1234ABCD",
-    //         "content": "123@JAY",
-    //         "cuedMemberInfoArr": [
-    //             {
-    //                 "memberId": "M1234X001",
-    //                 "nickname": "JAY"
-    //             }
-    //         ]
-    //     }
 
     const pId = req.query?.parentId ?? '';
     if ('P' === pId.slice(0, 1)) {
@@ -47,24 +49,8 @@ export default async function CreateCommentOnParentId(req: NextApiRequest, res: 
     } else {
         res.send(createId('subcomment'))
     }
-
     return;
 
-
-    // FIXME: deactived human/bot verification for tests
-    //// Verify human/bot ////
-    // const { recaptchaResponse } = req.query;
-    // const { status, message } = await verifyRecaptchaResponse(recaptchaServerSecret, recaptchaResponse);
-    // if (200 !== status) {
-    //     if (403 === status) {
-    //         res.status(403).send(message);
-    //         return;
-    //     }
-    //     if (500 === status) {
-    //         response500(res, message);
-    //         return;
-    //     }
-    // }
     const { isValid, category, id: parentId } = verifyId(req.query?.parentId);
     if (!isValid) {
         res.status(400).send('Invalid parent id');
@@ -167,7 +153,7 @@ export default async function CreateCommentOnParentId(req: NextApiRequest, res: 
             }
         });
         if (!memberStatisticsUpdateResult.acknowledged) {
-            logWithDate(`Document (ICommentComprehensive, comment id: ${commentId}) inserted in [C] commentComprehensive successfully but failed to update totalCommentCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`);
+            logWithDate(`Document (ICommentComprehensive, comment id: ${commentId}) inserted in [C] commentComprehensive successfully but failed to update totalCommentCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`, fname);
         }
         // Step #5.2 (cond.) totalSubcommentCount (of ICommentComprehensive) in [C] commentComprehensive (parent comment)
         if ('C' === commentId.slice(0, 1)) {
@@ -177,7 +163,7 @@ export default async function CreateCommentOnParentId(req: NextApiRequest, res: 
                 }
             });
             if (!commentComprehensiveUpdateResult.acknowledged) {
-                logWithDate(`Document (ICommentComprehensive, comment id: ${commentId}) was inserted in [C] commentComprehensive successfully but failed to update totalSubcommentCount (of ICommentComprehensive, comment id: ${parentId}) in [C] commentComprehensive`);
+                logWithDate(`Document (ICommentComprehensive, comment id: ${commentId}) was inserted in [C] commentComprehensive successfully but failed to update totalSubcommentCount (of ICommentComprehensive, comment id: ${parentId}) in [C] commentComprehensive`, fname);
             }
         }
         // Step #5.3 update totalCommentCount (of IPostComprehensive) in [C] postComprehensive
@@ -187,7 +173,7 @@ export default async function CreateCommentOnParentId(req: NextApiRequest, res: 
             }
         });
         if (!postComprehensiveUpdateResult.acknowledged) {
-            logWithDate(`Document (ICommentComprehensive, comment id: ${commentId}) was inserted in [C] commentComprehensive successfully but failed to update totalCommentCount (of IPostComprehensive, post id: ${postId}) in [C] postComprehensive`);
+            logWithDate(`Document (ICommentComprehensive, comment id: ${commentId}) was inserted in [C] commentComprehensive successfully but failed to update totalCommentCount (of IPostComprehensive, post id: ${postId}) in [C] postComprehensive`, fname);
         }
         // Step #5.4 update total comment count (of IChannelStatistics) in [C] channelStatistics
         const { channelId } = postComprehensiveQueryResult;
@@ -198,7 +184,7 @@ export default async function CreateCommentOnParentId(req: NextApiRequest, res: 
             }
         });
         if (!channelStatisticsUpdateResult.acknowledged) {
-            logWithDate(`Document (ICommentComprehensive, comment id: ${commentId}) inserted in [C] commentComprehensive successfully but failed to update totalCommentCount (of IChannelStatistics, channel id: ${channelId}) in [C] channelStatistics`);
+            logWithDate(`Document (ICommentComprehensive, comment id: ${commentId}) inserted in [C] commentComprehensive successfully but failed to update totalCommentCount (of IChannelStatistics, channel id: ${channelId}) in [C] channelStatistics`, fname);
         }
         // Step #5.5 (cond.) update totalCommentCount (of ITopicComprehensive) in [C] topicComprehensive
         const { topicIdsArr } = postComprehensiveQueryResult;
@@ -211,7 +197,7 @@ export default async function CreateCommentOnParentId(req: NextApiRequest, res: 
                     }
                 });
                 if (!topicComprehensiveUpdateResult.acknowledged) {
-                    logWithDate(`Document (ICommentComprehensive, comment id: ${commentId}) inserted in [C] commentComprehensive successfully but failed to update totalCommentCount (of ITopicComprehensive, topic id: ${topicId}) in [C] topicComprehensive`);
+                    logWithDate(`Document (ICommentComprehensive, comment id: ${commentId}) inserted in [C] commentComprehensive successfully but failed to update totalCommentCount (of ITopicComprehensive, topic id: ${topicId}) in [C] topicComprehensive`, fname);
                 }
             }
         }
@@ -227,7 +213,6 @@ export default async function CreateCommentOnParentId(req: NextApiRequest, res: 
                 //// [!] comment author has not been blocked by post / comment author ////
                 // Step #6.2 upsert record (INoticeInfo.Replied) in [PRL] Notice
                 const noticeTableClient = AzureTableClient('Notice');
-                //// FIXME: TEST-3G29WQD ////
                 const a = await noticeTableClient.upsertEntity<INoticeInfo>({
                     partitionKey: notifiedMemberId,
                     rowKey: createNoticeId('reply', memberId, postId, commentId),
@@ -237,13 +222,12 @@ export default async function CreateCommentOnParentId(req: NextApiRequest, res: 
                     PostTitle: title,
                     CommentBrief: getContentBrief(content)
                 }, 'Replace');
-                console.log(`TEST-3G29WQD: path='/api/comment/on/[id]/index.ts/' result: ` + a.version);
-                //// FIXME: TEST-3G29WQD ////
+             
                 // Step #6.3 update reply (INotificationStatistics) (of post author) in [C] notificationStatistics
                 const notificationStatisticsCollectionClient = atlasDbClient.db('statistics').collection<INotificationStatistics>('notification');
                 const notificationStatisticsUpdateResult = await notificationStatisticsCollectionClient.updateOne({ memberId: notifiedMemberId }, { $inc: { reply: 1 } });
                 if (!notificationStatisticsUpdateResult.acknowledged) {
-                    logWithDate(`Document (ICommentComprehensive, comment id: ${commentId}) inserted in [C] commentComprehensive successfully but failed to reply (of INotificationStatistics, member id: ${notifiedMemberId}) in [C] notificationStatistics`);
+                    logWithDate(`Document (ICommentComprehensive, comment id: ${commentId}) inserted in [C] commentComprehensive successfully but failed to reply (of INotificationStatistics, member id: ${notifiedMemberId}) in [C] notificationStatistics`, fname);
                 }
             }
             //// Handle notice.cue (cond.) ////
@@ -275,7 +259,7 @@ export default async function CreateCommentOnParentId(req: NextApiRequest, res: 
                         // Step #7.4 update cued count (INotificationStatistics) (of cued member) in [C] notificationStatistics
                         const notificationStatisticsUpdateResult = await notificationStatisticsCollectionClient.updateOne({ memberId: memberId_cued }, { $inc: { cue: 1 } });
                         if (!notificationStatisticsUpdateResult.acknowledged) {
-                            logWithDate(`Document (ICommentComprehensive, comment id: ${commentId}) inserted in [C] commentComprehensive successfully but failed to update cuedCount (of INotificationStatistics, member id: ${memberId_cued}) in [C] notificationStatistics`);
+                            logWithDate(`Document (ICommentComprehensive, comment id: ${commentId}) inserted in [C] commentComprehensive successfully but failed to update cuedCount (of INotificationStatistics, member id: ${memberId_cued}) in [C] notificationStatistics`, fname);
                         }
                     }
                 }
@@ -298,7 +282,7 @@ export default async function CreateCommentOnParentId(req: NextApiRequest, res: 
         if (!res.headersSent) {
             response500(res, msg);
         }
-        logWithDate(msg, e);
+        logWithDate(msg, fname, e);
         await atlasDbClient.close();
         return;
     }

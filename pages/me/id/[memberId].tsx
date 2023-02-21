@@ -9,7 +9,7 @@ import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 
-import { signIn, useSession, } from 'next-auth/react'
+import { signIn, signOut, useSession, } from 'next-auth/react'
 
 import SvgIcon from '@mui/material/SvgIcon';
 
@@ -64,7 +64,7 @@ import { useRouter } from 'next/router';
 
 import Navbar from '../../../ui/Navbar';
 
-import { IConciseMemberInfo, IConciseMemberInfoWithCreatedTimeBySecond, IConciseMemberInfoWithBriefIntroAndCreatedTimeBySecond, IConciseMemberStatistics, IRestrictedMemberInfo, } from '../../../lib/interfaces/member';
+import { IConciseMemberInfo, IConciseMemberInfoWithCreatedTimeBySecond, IConciseMemberInfoWithBriefIntroAndCreatedTimeBySecond, IConciseMemberStatistics, IRestrictedMemberComprehensive, } from '../../../lib/interfaces/member';
 import { IConcisePostComprehensiveWithMemberInfo } from '../../../lib/interfaces/post';
 import { INoticeInfoWithMemberInfo } from '../../../lib/interfaces/notification';
 import { IChannelInfoStates, IChannelInfoDictionary } from '../../../lib/interfaces/channel';
@@ -105,7 +105,7 @@ const restorePostsLayoutStatesFromCache = restoreFromLocalStorage(storageName2);
 
 type TMemberPageProps = {
     channelInfoDict_ss: IChannelInfoDictionary;
-    memberInfo_ss: IRestrictedMemberInfo;
+    memberInfo_ss: IRestrictedMemberComprehensive;
     memberStatistics_ss: IConciseMemberStatistics;
     redirect404: boolean;
 }
@@ -113,8 +113,6 @@ type TMemberPageProps = {
 type TMemberPageProcessStates = {
     selectedLayout: 'messagelayout' | 'listlayout' | 'postlayout' | 'settinglayout';
 }
-
-
 
 type TMessageLayoutStates = {
     selectedCategory: string;
@@ -128,7 +126,7 @@ type TListLayoutStates = {
 }
 
 type TPostsLayoutStates = {
-    selectedCategory: 'mycreations' | 'savedposts' | 'browsinghistory';
+    selectedCategoryId: 'mycreations' | 'savedposts' | 'browsinghistory';
     selectedHotPosts: boolean;
     selectedChannelId: string;
     memorizeChannelBarPositionX: number | undefined;
@@ -475,7 +473,6 @@ const langConfigs: LangConfigs = {
         cn: '选择您的生日',
         en: 'Choose your birthday'
     },
-
     //// Privacy setting ////
     privacySettings: {
         tw: '設定',
@@ -496,6 +493,16 @@ const langConfigs: LangConfigs = {
         tw: '注銷',
         cn: '注銷',
         en: 'Confirm'
+    },
+    cancelSucceeded: {
+        tw: '注銷成功',
+        cn: '注銷成功',
+        en: 'Success'
+    },
+    cancelFailed: {
+        tw: '注銷失敗，點擊以重試',
+        cn: '注銷失败，点击以重试',
+        en: 'Cancel membership failed, click to re-try',
     },
     allowVisitingSavedPosts: {
         tw: '允許他人訪問您的收藏',
@@ -527,8 +534,13 @@ const langConfigs: LangConfigs = {
     //// Black list ////
     blacklist: {
         tw: '黑名單',
-        cn: '黑名單',
+        cn: '黑名单',
         en: 'Blacklist'
+    },
+    noRecordOfBlacklist: {
+        tw: '您還沒有屏蔽其他任何會員',
+        cn: '您还没有拉黑任何会员',
+        en: 'You have not blocked any members'
     },
     undoBlock: {
         tw: '移除',
@@ -817,7 +829,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
                                                     <Typography variant='body2' align='left'>{getNicknameBrief(info.nickname)}</Typography>
 
                                                     {/* created time */}
-                                                    <Typography variant='body2' fontSize={{ xs: 12, align: 'right' }}>{timeToString(info.createdTime, preferenceStates.lang)}</Typography>
+                                                    <Typography variant='body2' fontSize={{ xs: 12, align: 'right' }}>{timeToString(info.createdTimeBySecond, preferenceStates.lang)}</Typography>
                                                 </TextButton>
                                             </Box>
                                         </Stack>
@@ -940,7 +952,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
 
                                         {/* created time */}
                                         {'followedby' === listLayoutStates.selectedCategory && <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }} >
-                                            <Typography variant={'body2'} align={'right'} sx={{ paddingRight: 1 }}>{timeToString(info.createdTime, preferenceStates.lang)}</Typography>
+                                            <Typography variant={'body2'} align={'right'} sx={{ paddingRight: 1 }}>{timeToString(info.createdTimeBySecond, preferenceStates.lang)}</Typography>
                                         </Box>}
                                     </Box>
                                 )}
@@ -965,7 +977,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
 
     //////// STATES - post layout ////////
     const [postLayoutStates, setPostLayoutStates] = React.useState<TPostsLayoutStates>({
-        selectedCategory: 'mycreations', // 'mycreations' | 'savedposts' | 'browsinghistory'
+        selectedCategoryId: 'mycreations', // 'mycreations' | 'savedposts' | 'browsinghistory'
         selectedHotPosts: false, // default
         selectedChannelId: 'all', // default
         memorizeChannelBarPositionX: undefined,
@@ -975,7 +987,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
     })
 
     const handleSelectPostCategory = (categoryId: 'mycreations' | 'savedposts' | 'browsinghistory') => (event: React.MouseEvent<HTMLButtonElement> | React.SyntheticEvent) => {
-        let states: TPostsLayoutStates = { ...postLayoutStates, selectedCategory: categoryId };
+        let states: TPostsLayoutStates = { ...postLayoutStates, selectedCategoryId: categoryId };
         // Step #1 update post layout states
         setPostLayoutStates(states);
         // Step #2 update post layout states cache
@@ -1045,7 +1057,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
     //////// STATES - (masonry) post info array ////////
     const [masonryPostInfoArr, setMasonryPostInfoArr] = React.useState<IConcisePostComprehensiveWithMemberInfo[]>([]);
 
-    React.useEffect(() => { updatePostsArr() }, [postLayoutStates.selectedHotPosts, postLayoutStates.selectedChannelId, postLayoutStates.selectedCategory]);
+    React.useEffect(() => { updatePostsArr() }, [postLayoutStates.selectedHotPosts, postLayoutStates.selectedChannelId, postLayoutStates.selectedCategoryId]);
 
     const updatePostsArr = async () => {
         const resp = await fetch(`/api/post/s/of${postLayoutStates.selectedHotPosts ? '/hot/24h' : '/new'}?channelId=${postLayoutStates.selectedChannelId}&withMemberInfo=true`);
@@ -1106,15 +1118,15 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
     })
 
     // Handle click on bottom-right icon button
-    const handleMultiProposeClick = (buttonId: number, postId: string) => (event: React.MouseEvent<HTMLButtonElement>) => {
-        // edit post
-        if (1 === buttonId) {
+    const handleMultiProposeButtonClick = (categoryId: string, postId: string) => (event: React.MouseEvent<HTMLButtonElement>) => {
+        // edit post |  | 
+        if ('mycreations' === categoryId) {
             router.push(`/me/editpost/${postId}`);
             return;
         }
 
         // undo save post
-        if (2 === buttonId) {
+        if ('savedposts' === categoryId) {
             // Step #1 mark post of chice as 'undo-saved'
             let update: { [postId: string]: number } = { ...behaviourStates.undoSaved };
             if (update.hasOwnProperty(postId)) {
@@ -1127,11 +1139,12 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
         }
 
         // delete browsing history
-        if (3 === buttonId) {
+        if ('browsinghistory' === categoryId) {
             // Step #1 remove post card
             const update = masonryPostInfoArr.filter(po => po.postId !== postId);
             setMasonryPostInfoArr([...update]);
             // Step #2 request to delete record
+
         }
     }
 
@@ -1139,28 +1152,13 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
 
     type TSettingLayoutStates = {
         selectedSettingId: number;
-
-
-        briefIntro: string;
-        gender: number;
-        birthday: Dayjs | null;
-        isWishToCancelChecked: boolean;
         blacklist: IConciseMemberInfoWithBriefIntroAndCreatedTimeBySecond[];
-        registerDate: string;
     }
 
     //////// STATES - setting layout ////////
     const [settinglayoutStates, setSettingLayoutStates] = React.useState<TSettingLayoutStates>({
-        selectedSettingId: 6,
-
-
-        briefIntro: '',
-        gender: -1,
-        birthday: dayjs('2014-08-18T21:11:54'),
-
-        isWishToCancelChecked: false,
+        selectedSettingId: 7,
         blacklist: [],
-        registerDate: '2022-11-10T22:44:24.373372Z'
     });
 
     React.useEffect(() => { updateSettingslayoutStates() }, [settinglayoutStates.selectedSettingId])
@@ -1168,7 +1166,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
     const updateSettingslayoutStates = async () => {
         // TODO: 1 ~ 6 have not satistied
         if (7 === settinglayoutStates.selectedSettingId) {
-            const resp = await fetch(`/api/member/block/blockedby/${memberId}`);
+            const resp = await fetch(`/api/member/blockedbyme/${memberId}`);
             if (200 !== resp.status) {
                 console.log(`Attempt to GET blocked member info array`);
                 return;
@@ -1184,10 +1182,6 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
 
     const handleSettingSelect = (settingId: number) => (event: React.SyntheticEvent) => {
         setSettingLayoutStates({ ...settinglayoutStates, selectedSettingId: settingId });
-    }
-
-    const handleUndoBlock = (memberId: string) => (event: React.MouseEvent<HTMLButtonElement>) => {
-
     }
 
     //////// COMPONENT - setting layout ////////
@@ -1708,8 +1702,9 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
 
                 if (200 === resp.status) {
                     setGenderSettingStates({ ...genderSettingStates, disableButton: true, progressStatus: 200 });
+                    setMemberInfoStates({ ...memberInfoStates, gender: genderSettingStates.gender });
                     setTimeout(() => {
-                        setMemberInfoStates({ ...memberInfoStates, gender: genderSettingStates.gender });
+                        setGenderSettingStates({ ...genderSettingStates, progressStatus: 100 });
                     }, 2000)
                 } else {
                     setGenderSettingStates({ ...genderSettingStates, disableButton: false, progressStatus: 400 });
@@ -1800,7 +1795,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
                 if (200 === resp.status) {
                     setBirthdaySettingStates({ ...birthdaySettingStates, disableButton: true, progressStatus: 200 });
                     setTimeout(() => {
-                        setMemberInfoStates({ ...memberInfoStates, birthdayBySecond: date });
+                        setBirthdaySettingStates({ ...birthdaySettingStates, progressStatus: 100 });
                     }, 2000)
                 } else {
                     setBirthdaySettingStates({ ...birthdaySettingStates, disableButton: false, progressStatus: 400 });
@@ -1842,23 +1837,37 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
         }
 
         //// Privacy ////
-        const PrivacySetting = () => {
-            type TPrivacySettingStates = {
-                allowVisitingMySavedPosts: boolean;
+        const PrivacySettings = () => {
+
+            type TPrivacySettingsStates = {
                 allowKeepingBrowsingHistory: boolean;
+                allowVisitingSavedPosts: boolean;
                 hidePostsAndCommentsOfBlockedMember: boolean;
-                countdown: number;
-                displayButton: boolean;
-                displayCountdown: boolean;
             }
 
-            const [privacySettingStates, setPrivacySettingStates] = React.useState<TPrivacySettingStates>({
-                allowVisitingMySavedPosts: false,
-                allowKeepingBrowsingHistory: false,
-                hidePostsAndCommentsOfBlockedMember: false,
+            const [previousSettingsStates, setPreviousSettingsStates] = React.useState<TPrivacySettingsStates>({
+                allowKeepingBrowsingHistory: memberInfo_ss.allowKeepingBrowsingHistory,
+                allowVisitingSavedPosts: memberInfo_ss.allowVisitingSavedPosts,
+                hidePostsAndCommentsOfBlockedMember: memberInfo_ss.hidePostsAndCommentsOfBlockedMember
+            });
+
+            const [privacySettingsStates, setPrivacySettingsStates] = React.useState<TPrivacySettingsStates>({ ...previousSettingsStates });
+
+            type TPrivacySettingProcessStates = {
+                countdown: number;
+                displayUpdateButton: boolean;
+                displayCancelButton: boolean;
+                displayCountdown: boolean;
+                disableButton: boolean;
+                progressStatus: 100 | 200 | 300 | 400;
+            }
+            const [privacySettingsProcessStates, setPrivacySettingsProcessStates] = React.useState<TPrivacySettingProcessStates>({
                 countdown: 5,
-                displayButton: false,
+                displayUpdateButton: false,
+                displayCancelButton: false,
                 displayCountdown: false,
+                disableButton: false,
+                progressStatus: 100,
             });
 
             const handleSelectLang = (event: SelectChangeEvent<string>) => {
@@ -1866,24 +1875,75 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
                 updatePreferenceStatesCache({ ...preferenceStates, lang: event.target.value })
             }
 
-            const handleToggle = (prop: keyof TPrivacySettingStates) => (event: React.ChangeEvent<HTMLInputElement>) => {
-                console.log(`${prop}`);
-                
+            const handleToggle = (prop: keyof TPrivacySettingsStates) => (event: React.ChangeEvent<HTMLInputElement>) => {
+                setPrivacySettingsStates({ ...privacySettingsStates, [prop]: !privacySettingsStates[prop] });
             }
+
+            React.useEffect(() => {
+                if (
+                    !(
+                        previousSettingsStates.allowKeepingBrowsingHistory === privacySettingsStates.allowKeepingBrowsingHistory
+                        && previousSettingsStates.allowVisitingSavedPosts === privacySettingsStates.allowVisitingSavedPosts
+                        && previousSettingsStates.hidePostsAndCommentsOfBlockedMember === privacySettingsStates.hidePostsAndCommentsOfBlockedMember
+                    )
+                ) {
+                    setPrivacySettingsProcessStates({ ...privacySettingsProcessStates, displayUpdateButton: true });
+                } else {
+                    setPrivacySettingsProcessStates({ ...privacySettingsProcessStates, displayUpdateButton: false });
+                }
+            }, [privacySettingsStates])
 
             const handleCheck = () => {
-                setPrivacySettingStates({ ...privacySettingStates, displayButton: !privacySettingStates.displayButton, countdown: 5, displayCountdown: false });
+                setPrivacySettingsProcessStates({
+                    ...privacySettingsProcessStates,
+                    displayCancelButton: !privacySettingsProcessStates.displayCancelButton,
+                    countdown: 5,
+                    displayCountdown: false,
+                    progressStatus: 100
+                });
             }
 
-            const handleCancel = async () => {
-                if (privacySettingStates.countdown > 0) {
-                    setPrivacySettingStates({ ...privacySettingStates, countdown: privacySettingStates.countdown - 1, displayCountdown: true });
+            const handleUpdate = async () => {
+                if (
+                    previousSettingsStates.allowKeepingBrowsingHistory === privacySettingsStates.allowKeepingBrowsingHistory
+                    && previousSettingsStates.allowVisitingSavedPosts === privacySettingsStates.allowVisitingSavedPosts
+                    && previousSettingsStates.hidePostsAndCommentsOfBlockedMember === privacySettingsStates.hidePostsAndCommentsOfBlockedMember
+                ) {
+                    return;
+                }
+
+                // Prepare to update privacy setting
+                setPrivacySettingsProcessStates({ ...privacySettingsProcessStates, displayCancelButton: false, disableButton: true, progressStatus: 300 });
+                const resp = await fetch(`/api/member/info/${memberId}/privacysetting`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ settings: { ...privacySettingsStates } })
+                });
+
+                if (200 === resp.status) {
+                    setPreviousSettingsStates({ ...privacySettingsStates });
+                    setPrivacySettingsProcessStates({ ...privacySettingsProcessStates, displayCancelButton: false, disableButton: true, progressStatus: 200 });
+                    setTimeout(() => {
+                        setPrivacySettingsProcessStates({ ...privacySettingsProcessStates, displayUpdateButton: false, progressStatus: 100 });
+                    }, 2000)
                 } else {
-                    alert('hahah')
+                    setPrivacySettingsProcessStates({ ...privacySettingsProcessStates, disableButton: false, progressStatus: 400 });
                 }
             }
 
-
+            const handleCancel = async () => {
+                if (privacySettingsProcessStates.countdown > 0) {
+                    setPrivacySettingsProcessStates({ ...privacySettingsProcessStates, countdown: privacySettingsProcessStates.countdown - 1, displayCountdown: true });
+                } else {
+                    const resp = await fetch(`/api/member/info/${memberId}/cancel`, { method: 'DELETE' });
+                    if (200 === resp.status) {
+                        setPrivacySettingsProcessStates({ ...privacySettingsProcessStates, displayCountdown: false, progressStatus: 200 });
+                        signOut();
+                    } else {
+                        setPrivacySettingsProcessStates({ ...privacySettingsProcessStates, displayCountdown: false, progressStatus: 400 });
+                    }
+                }
+            }
 
             return (
                 <Container maxWidth='xs' sx={{ paddingTop: { xs: 3, sm: 4 } }}>
@@ -1895,7 +1955,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
                             <Select
                                 value={preferenceStates.lang}
                                 onChange={handleSelectLang}
-                                size='small'
+                                size={'small'}
                                 sx={{ width: 144 }}
                             >
                                 <MenuItem value={'tw'}>{'繁体中文'}</MenuItem>
@@ -1906,23 +1966,36 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
 
                         {/* privacy */}
                         <Typography variant={'body2'} mt={4}>{langConfigs.privacy[preferenceStates.lang]}</Typography>
-                        <Box pl={{ xs: 0, sm: 2, md: 4 }}>
-                            <FormControlLabel control={<Switch defaultChecked onChange={handleToggle('allowVisitingMySavedPosts')}/>} label={<Typography variant={'body2'} align={'left'}>{langConfigs.allowVisitingSavedPosts[preferenceStates.lang]}</Typography>} sx={{ fontSize: 14 }} />
-                            <FormControlLabel control={<Switch defaultChecked onChange={handleToggle('allowKeepingBrowsingHistory')}/>} label={<Typography variant={'body2'} align={'left'}>{langConfigs.allowKeepingBrowsingHistory[preferenceStates.lang]}</Typography>} sx={{ fontSize: 14 }} />
-                            <FormControlLabel control={<Switch defaultChecked onChange={handleToggle('hidePostsAndCommentsOfBlockedMember')}/>} label={<Typography variant={'body2'} align={'left'}>{langConfigs.hidePostsAndCommentsOfBlockedMember[preferenceStates.lang]}</Typography>} sx={{ fontSize: 14 }} />
-                        </Box>
+                        <Stack pl={{ xs: 0, sm: 2, md: 4 }}>
+                            <FormControlLabel control={<Switch checked={privacySettingsStates.allowKeepingBrowsingHistory} onChange={handleToggle('allowKeepingBrowsingHistory')} />} label={<Typography variant={'body2'} align={'left'}>{langConfigs.allowKeepingBrowsingHistory[preferenceStates.lang]}</Typography>} sx={{ fontSize: 14 }} />
+                            <FormControlLabel control={<Switch checked={privacySettingsStates.allowVisitingSavedPosts} onChange={handleToggle('allowVisitingSavedPosts')} />} label={<Typography variant={'body2'} align={'left'}>{langConfigs.allowVisitingSavedPosts[preferenceStates.lang]}</Typography>} sx={{ fontSize: 14 }} />
+                            <FormControlLabel control={<Switch checked={privacySettingsStates.hidePostsAndCommentsOfBlockedMember} onChange={handleToggle('hidePostsAndCommentsOfBlockedMember')} />} label={<Typography variant={'body2'} align={'left'}>{langConfigs.hidePostsAndCommentsOfBlockedMember[preferenceStates.lang]}</Typography>} sx={{ fontSize: 14 }} />
+                            {/* 'update' button */}
+                            {privacySettingsProcessStates.displayUpdateButton && <Box mt={1} pl={{ xs: 0, sm: 3, md: 2 }}>
+                                <Button variant={'contained'} color={400 !== privacySettingsProcessStates.progressStatus ? 'primary' : 'error'} size={'small'} onClick={async () => { await handleUpdate() }} disabled={privacySettingsProcessStates.disableButton} fullWidth>
+                                    {/* button: enabled, result: 100 (ready) */}
+                                    {100 === privacySettingsProcessStates.progressStatus && <Typography variant={'body2'}>{langConfigs.update[preferenceStates.lang]}</Typography>}
+                                    {/* button: disabled, result: 300 (ongoing) */}
+                                    {300 === privacySettingsProcessStates.progressStatus && <Typography variant={'body2'}>{langConfigs.updatinging[preferenceStates.lang]}</Typography>}
+                                    {/* button: enabled, result: 400 (failed) */}
+                                    {400 === privacySettingsProcessStates.progressStatus && <Typography variant={'body2'}>{langConfigs.updateFailed[preferenceStates.lang]}</Typography>}
+                                </Button>
+                            </Box>}
+                        </Stack>
 
                         {/* cancel membership */}
                         <Typography variant={'body2'} sx={{ mt: 4 }}>{langConfigs.cancel[preferenceStates.lang]}</Typography>
                         <Box pl={{ xs: 0, sm: 2, md: 4 }}>
-                            <FormControlLabel control={<Checkbox onChange={handleCheck} checked={privacySettingStates.displayButton} />} label={langConfigs.wishToCancelMembership[preferenceStates.lang]} />
+                            <FormControlLabel control={<Checkbox onChange={handleCheck} checked={privacySettingsProcessStates.displayCancelButton} />} label={langConfigs.wishToCancelMembership[preferenceStates.lang]} />
                         </Box>
 
                         {/* 'cancel' button */}
-                        {privacySettingStates.displayButton && <Box mb={4} paddingX={2}>
+                        {privacySettingsProcessStates.displayCancelButton && <Box mb={4} pl={{ xs: 0, sm: 3, md: 6 }}>
                             <Button variant={'contained'} color={'error'} size={'small'} onClick={async () => { await handleCancel() }} fullWidth>
-                                {!privacySettingStates.displayCountdown && <Typography variant='body2'>{langConfigs.cancel[preferenceStates.lang]}</Typography>}
-                                {privacySettingStates.displayCountdown && <Typography variant='body2'>{langConfigs.clickXTimesToCancelMemberShip[preferenceStates.lang](privacySettingStates.countdown)}</Typography>}
+                                {(!privacySettingsProcessStates.displayCountdown && 100 === privacySettingsProcessStates.progressStatus) && <Typography variant='body2'>{langConfigs.cancel[preferenceStates.lang]}</Typography>}
+                                {(!privacySettingsProcessStates.displayCountdown && 200 === privacySettingsProcessStates.progressStatus) && <Typography variant='body2'>{langConfigs.cancelSucceeded[preferenceStates.lang]}</Typography>}
+                                {(!privacySettingsProcessStates.displayCountdown && 400 === privacySettingsProcessStates.progressStatus) && <Typography variant='body2'>{langConfigs.cancelFailed[preferenceStates.lang]}</Typography>}
+                                {privacySettingsProcessStates.displayCountdown && <Typography variant='body2'>{langConfigs.clickXTimesToCancelMemberShip[preferenceStates.lang](privacySettingsProcessStates.countdown)}</Typography>}
                             </Button>
                         </Box>}
                     </FormGroup>
@@ -1933,6 +2006,25 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
 
         //// Blocked member list ////
         const BlacklistSettings = () => {
+
+            const handleUndoBlock = async (blockedId: string) => {
+
+                // delete element (member info) from the array
+                const arr: IConciseMemberInfoWithBriefIntroAndCreatedTimeBySecond[] = [...settinglayoutStates.blacklist];
+                for (let i = 0; i < arr.length; i++) {
+                    if (blockedId === arr[i].memberId) {
+                        arr.splice(i, 1);
+                        setSettingLayoutStates({ ...settinglayoutStates, blacklist: [...arr] });
+                        break;
+                    }
+                }
+                const resp = await fetch(`/api/block/${blockedId}`, { method: 'POST' });
+                if (200 !== resp.status) {
+                    console.log(`Attempt to undo block for ${blockedId}`);
+                }
+            }
+
+            // black list
             return (
                 <Container maxWidth='xs' >
 
@@ -1945,7 +2037,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
                                 {/* member info */}
                                 <Stack direction={'row'} sx={{ maxHeight: 40 }}>
                                     <IconButton sx={{ padding: 0 }} onClick={handleClickOnInitiateInfo(info.memberId)}>
-                                        <Avatar src={info.avatarImageUrl} sx={{ width: 38, height: 38, bgcolor: 'grey' }}>{info.nickname?.charAt(0).toUpperCase()}</Avatar>
+                                        <Avatar src={provideAvatarImageUrl(memberId, domain)} sx={{ width: 38, height: 38, bgcolor: 'grey' }}>{info.nickname?.charAt(0).toUpperCase()}</Avatar>
                                     </IconButton>
                                     <Box ml={1}>
                                         <TextButton color='inherit' onClick={handleClickOnInitiateInfo(info.memberId)}>
@@ -1954,23 +2046,23 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
                                             <Typography variant='body2' align='left'>{getContentBrief(info.nickname, 14)}</Typography>
 
                                             {/* created time */}
-                                            <Typography variant='body2' fontSize={{ xs: 12, align: 'right' }}>{timeToString(info.createdTime, preferenceStates.lang)}</Typography>
+                                            <Typography variant='body2' fontSize={{ xs: 12, align: 'right' }}>{timeToString(info.createdTimeBySecond, preferenceStates.lang)}</Typography>
                                         </TextButton>
                                     </Box>
                                 </Stack>
 
                                 {/* undo follow button */}
                                 {'following' === listLayoutStates.selectedCategory && <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }} >
-                                    <Button variant='text' color='inherit' onClick={handleUndoBlock(info.memberId)}>
+                                    <Button variant='text' color='inherit' onClick={async () => { await handleUndoBlock(info.memberId) }}>
                                         <Typography variant={'body2'} align={'right'}>{langConfigs.undoBlock[preferenceStates.lang]}</Typography>
                                     </Button>
                                 </Box>}
 
                             </Box>
                         )}
-                        {0 === listLayoutStates.memberInfoArr.length &&
-                            <Box mt={{ xs: 3, sm: 2 }}>
-                                <Typography color={'text.secondary'} align={'center'}>{langConfigs.noFollowingMemberInfoRecord[preferenceStates.lang]}</Typography>
+                        {0 === settinglayoutStates.blacklist.length &&
+                            <Box mt={{ xs: 10, sm: 16 }}>
+                                <Typography color={'text.secondary'} align={'center'}>{langConfigs.noRecordOfBlacklist[preferenceStates.lang]}</Typography>
                             </Box>
                         }
                     </Stack>
@@ -1984,10 +2076,10 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
                 <Container maxWidth='xs' sx={{ paddingTop: { xs: 6, sm: 14 } }}>
 
                     {/* memberid */}
-                    <Typography variant='body1' color={'text.secondary'}>{`${langConfigs.memberId[preferenceStates.lang]}: ${memberId}`}</Typography>
+                    {/* <Typography variant='body1' color={'text.secondary'}>{`${langConfigs.memberId[preferenceStates.lang]}: ${memberId}`}</Typography> */}
 
                     {/* register date */}
-                    <Typography variant='body1'>{`${langConfigs.registerDate[preferenceStates.lang]}: ${new Date(settinglayoutStates.registerDate).toLocaleDateString()}`}</Typography>
+                    {/* <Typography variant='body1'>{`${langConfigs.registerDate[preferenceStates.lang]}: ${new Date(settinglayoutStates.registerDate).toLocaleDateString()}`}</Typography> */}
                 </Container>
             )
         }
@@ -1997,10 +2089,10 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
             <Grid container mt={2}>
 
                 {/* //// placeholder - left //// */}
-                <Grid item xs={0} sm={2} md={3} lg={3} xl={3} />
+                <Grid item xs={0} sm={1} md={2} lg={3} xl={3} />
 
                 {/* //// middle column */}
-                <Grid item xs={12} sm={8} md={6} lg={6} xl={6}>
+                <Grid item xs={12} sm={10} md={8} lg={6} xl={6}>
                     <Box sx={{ display: 'flex', flexDirection: 'row', borderRadius: 1, boxShadow: { xs: 0, sm: 2 }, minHeight: 440 }}>
 
                         {/* //// left column //// */}
@@ -2108,7 +2200,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
                             {3 === settinglayoutStates.selectedSettingId && <BriefIntroSetting />}
                             {4 === settinglayoutStates.selectedSettingId && <GenderSetting />}
                             {5 === settinglayoutStates.selectedSettingId && <BirthdaySetting />}
-                            {6 === settinglayoutStates.selectedSettingId && <PrivacySetting />}
+                            {6 === settinglayoutStates.selectedSettingId && <PrivacySettings />}
                             {7 === settinglayoutStates.selectedSettingId && <BlacklistSettings />}
                             {10 === settinglayoutStates.selectedSettingId && <RegisterInfo />}
                         </Container>
@@ -2118,7 +2210,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
 
 
                 {/* //// placeholder - right //// */}
-                <Grid item xs={0} sm={2} md={3} lg={3} xl={3} />
+                <Grid item xs={0} sm={1} md={2} lg={3} xl={3} />
             </Grid>
         )
     }
@@ -2147,13 +2239,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
                         <Typography variant='body2' textAlign={'center'}>{memberInfoStates.briefIntro}</Typography>
                     </CenterlizedBox>
 
-                    {/* <Grid container sx={{ px: 4, mt: 1 }}>
-                        <Grid item xs={1} sm={3} md={4} lg={5} xl={5}></Grid>
-                        <Grid item xs={10} sm={6} md={4} lg={2} xl={2}>
-                            <Divider></Divider>
-                        </Grid>
-                        <Grid item xs={1} sm={3} md={4} lg={5} xl={5}></Grid>
-                    </Grid> */}
+                    {/* divider */}
                     <CenterlizedBox sx={{ mt: { xs: 1, sm: 2 } }}>
                         <Box></Box>
                         <Box sx={{ width: { xs: 220, sm: 280 } }}><Divider></Divider></Box>
@@ -2268,7 +2354,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
                             <MenuList>
 
                                 {/* creations list item */}
-                                <MenuItem onClick={handleSelectPostCategory('mycreations')} selected={'mycreations' === postLayoutStates.selectedCategory}>
+                                <MenuItem onClick={handleSelectPostCategory('mycreations')} selected={'mycreations' === postLayoutStates.selectedCategoryId}>
                                     <ListItemIcon ><CreateIcon /></ListItemIcon>
                                     <ListItemText>
                                         <Typography>{langConfigs.myCreations[preferenceStates.lang]}</Typography>
@@ -2276,7 +2362,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
                                 </MenuItem>
 
                                 {/* saved post list item */}
-                                <MenuItem onClick={handleSelectPostCategory('savedposts')} selected={'savedposts' === postLayoutStates.selectedCategory}>
+                                <MenuItem onClick={handleSelectPostCategory('savedposts')} selected={'savedposts' === postLayoutStates.selectedCategoryId}>
                                     <ListItemIcon >
                                         <StarIcon />
                                     </ListItemIcon>
@@ -2286,7 +2372,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
                                 </MenuItem>
 
                                 {/* browsing history list item */}
-                                <MenuItem onClick={handleSelectPostCategory('browsinghistory')} selected={'browsinghistory' === postLayoutStates.selectedCategory}>
+                                <MenuItem onClick={handleSelectPostCategory('browsinghistory')} selected={'browsinghistory' === postLayoutStates.selectedCategoryId}>
                                     <ListItemIcon >
                                         <HistoryIcon />
                                     </ListItemIcon>
@@ -2350,21 +2436,21 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
 
                         {/* creations button */}
                         <Box pr={1 / 2}>
-                            <Button variant={'mycreations' === postLayoutStates.selectedCategory ? 'contained' : 'outlined'} size='small' sx={{ minWidth: 'max-content' }} onClick={handleSelectPostCategory('mycreations')}>
+                            <Button variant={'mycreations' === postLayoutStates.selectedCategoryId ? 'contained' : 'outlined'} size='small' sx={{ minWidth: 'max-content' }} onClick={handleSelectPostCategory('mycreations')}>
                                 {langConfigs.myCreations[preferenceStates.lang]}
                             </Button>
                         </Box>
 
                         {/*  saved post button */}
                         <Box pr={1 / 2}>
-                            <Button variant={'savedposts' === postLayoutStates.selectedCategory ? 'contained' : 'outlined'} size='small' sx={{ minWidth: 'max-content' }} onClick={handleSelectPostCategory('savedposts')}>
+                            <Button variant={'savedposts' === postLayoutStates.selectedCategoryId ? 'contained' : 'outlined'} size='small' sx={{ minWidth: 'max-content' }} onClick={handleSelectPostCategory('savedposts')}>
                                 {langConfigs.mySavedPosts[preferenceStates.lang]}
                             </Button>
                         </Box>
 
                         {/* browsing history button */}
                         <Box pr={1}>
-                            <Button variant={'browsinghistory' === postLayoutStates.selectedCategory ? 'contained' : 'outlined'} size='small' sx={{ minWidth: 'max-content' }} onClick={handleSelectPostCategory('browsinghistory')}>
+                            <Button variant={'browsinghistory' === postLayoutStates.selectedCategoryId ? 'contained' : 'outlined'} size='small' sx={{ minWidth: 'max-content' }} onClick={handleSelectPostCategory('browsinghistory')}>
                                 {langConfigs.browsingHistory[preferenceStates.lang]}
                             </Button>
                         </Box>
@@ -2422,7 +2508,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
                                                     <Grid item flexGrow={1}>
                                                         <Box display={'flex'} flexDirection={'row'}>
                                                             <Button variant={'text'} color={'inherit'} sx={{ textTransform: 'none' }} onClick={handleClickOnMemberInfo(info.memberId, info.postId)}>
-                                                                <Avatar src={info.avatarImageUrl} sx={{ width: 34, height: 34, bgcolor: 'grey' }}>{info.nickname?.charAt(0).toUpperCase()}</Avatar>
+                                                                <Avatar src={provideAvatarImageUrl(memberId, domain)} sx={{ width: 34, height: 34, bgcolor: 'grey' }}>{info.nickname?.charAt(0).toUpperCase()}</Avatar>
                                                                 <Box ml={1}>
                                                                     <Typography variant='body2'>{getNicknameBrief(info.nickname)}</Typography>
                                                                 </Box>
@@ -2432,10 +2518,10 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss, memberStatistics_ss, redire
 
                                                     {/* member behaviour / placeholder */}
                                                     {('authenticated' === status && viewerId === memberId) && <Grid item>
-                                                        <IconButton onClick={handleMultiProposeClick(processStates.selectedCategoryId, info.postId)}>
-                                                            {'mycreations' === postLayoutStates.selectedCategory && <CreateIcon color={'inherit'} />}
-                                                            {'savedposts' === postLayoutStates.selectedCategory && <StarIcon color={-1 === behaviourStates.undoSaved[info.postId] ? 'inherit' : 'primary'} />}
-                                                            {'browsinghistory' === postLayoutStates.selectedCategory && <DeleteIcon color={'inherit'} />}
+                                                        <IconButton onClick={handleMultiProposeButtonClick(postLayoutStates.selectedCategoryId, info.postId)}>
+                                                            {'mycreations' === postLayoutStates.selectedCategoryId && <CreateIcon color={'inherit'} />}
+                                                            {'savedposts' === postLayoutStates.selectedCategoryId && <StarIcon color={-1 === behaviourStates.undoSaved[info.postId] ? 'inherit' : 'primary'} />}
+                                                            {'browsinghistory' === postLayoutStates.selectedCategoryId && <DeleteIcon color={'inherit'} />}
                                                         </IconButton>
                                                     </Grid>}
                                                 </Grid>

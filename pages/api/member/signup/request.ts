@@ -7,11 +7,14 @@ import AzureTableClient from '../../../../modules/AzureTableClient';
 import AzureEmailCommunicationClient from '../../../../modules/AzureEmailCommunicationClient';
 import AtlasDatabaseClient from '../../../../modules/AtlasDatabaseClient';
 
-import { IVerifyEmailAddressCredentials, IMemberComprehensive } from '../../../../lib/interfaces';
-import { LangConfigs, EmailMessage, TVerifyEmailAddressRequestInfo } from '../../../../lib/types';
-import { getRandomHexStr, verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500, logWithDate } from '../../../../lib/utils';
+import { LangConfigs, TEmailMessage, TVerifyEmailAddressRequestInfo } from '../../../../lib/types';
 import { composeVerifyEmailAddressEmailContent } from '../../../../lib/email';
 import { loginProviderIdMapping } from '../../auth/[...nextauth]';
+import { logWithDate, response405, response500 } from '../../../../lib/utils/general';
+import { verifyEnvironmentVariable, verifyRecaptchaResponse } from '../../../../lib/utils/verify';
+import { IMemberComprehensive } from '../../../../lib/interfaces/member';
+import { getRandomHexStr } from '../../../../lib/utils/create';
+import { ILoginCredentials, IVerifyEmailAddressCredentials } from '../../../../lib/interfaces/credentials';
 
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
 
@@ -25,49 +28,59 @@ const langConfigs: LangConfigs = {
     }
 }
 
-//// [!] {emailAddress, providerId} are needed for requesting re-send verification email
+const fname = RequestVerificationEmail.name;
+
+/** RequestVerificationEmail v0.1.1
+ * 
+ * Last update: 
+ * 
+ * This interface ONLY accepts POST requests
+ * 
+ * Info required for POST requests
+ * - recaptchaResponse: string (query)
+ * - providerId: string (body)
+ * - emailAddressB64: string (body)
+ */
 
 export default async function RequestVerificationEmail(req: NextApiRequest, res: NextApiResponse) {
+
     const { method } = req;
     if ('POST' !== method) {
         response405(req, res);
         return;
     }
+
     //// Verify environment variables ////
     const environmentVariable = verifyEnvironmentVariable({ recaptchaServerSecret });
     if (!!environmentVariable) {
         const msg = `${environmentVariable} not found`;
         response500(res, msg);
-        logWithDate(msg);
+        logWithDate(msg, fname);
         return;
     }
+
+    //// Verify if requested by human ////
+    const { recaptchaResponse } = req.query;
+    const { status: recaptchStatus, message } = await verifyRecaptchaResponse(recaptchaServerSecret, recaptchaResponse);
+    if (200 !== recaptchStatus) {
+        if (403 === recaptchStatus) {
+            res.status(403).send(message);
+            return;
+        }
+        if (500 === recaptchStatus) {
+            response500(res, message);
+            return;
+        }
+    }
+
     //// Declare DB client ////
     const atlasDbClient = AtlasDatabaseClient();
     try {
-        const { recaptchaResponse } = req.query;
-        // Step #1 verify if it is bot
-        const { status: recaptchStatus, message } = await verifyRecaptchaResponse(recaptchaServerSecret, recaptchaResponse);
-        if (200 !== recaptchStatus) {
-            if (403 === recaptchStatus) {
-                res.status(403).send(message);
-                return;
-            }
-            if (500 === recaptchStatus) {
-                response500(res, message);
-                return;
-            }
-        }
-        // Step #2 verify request info
-        const requestInfo = req.body;
-        if (null === requestInfo || 'string' !== typeof requestInfo || '' === requestInfo) {
-            res.status(403).send('Invalid request body');
-            return;
-        }
-        const { providerId, emailAddressB64 } = JSON.parse(requestInfo);
-        //// [!] attemp to parse JSON string to object makes the probability of causing SyntaxError ////
-        // Step #3.1 verify email address
-        if ('string' !== typeof emailAddressB64 || '' === emailAddressB64) {
-            res.status(403).send('Invalid email address base 64 string');
+        const { providerId, emailAddressB64 } = req.body;
+
+        //// Verify email address ////
+        if (new RegExp(/^([A-Za-z0-9+/]{4})*([A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/).test(emailAddressB64)) {
+            res.status(403).send('Invalid base64 string');
             return;
         }
         const emailAddress = Buffer.from(emailAddressB64, 'base64').toString();
@@ -75,7 +88,8 @@ export default async function RequestVerificationEmail(req: NextApiRequest, res:
             res.status(403).send('Invalid email address');
             return;
         }
-        // Step #3.2 verify provider id
+
+        //// Verify provider id ///
         let isSupported = false;
         Object.keys(loginProviderIdMapping).forEach(provider => {
             if (loginProviderIdMapping[provider] === providerId) {
@@ -86,10 +100,13 @@ export default async function RequestVerificationEmail(req: NextApiRequest, res:
             res.status(406).send('Login provider not supported');
             return;
         }
+
+        //// Get email address hash ////
         const emailAddressHash = CryptoJS.SHA1(emailAddress).toString();
-        // Step #3.3 look up email address hash in [RL] Credentials
+
+        //// Look up record (of ILoginCredentials) in [RL] Credentials ////
         const credentialsTableClient = AzureTableClient('Credentials');
-        const loginCredentialsQuery = credentialsTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${emailAddressHash}' and RowKey eq '${providerId}'` } });
+        const loginCredentialsQuery = credentialsTableClient.listEntities<ILoginCredentials>({ queryOptions: { filter: `PartitionKey eq '${emailAddressHash}' and RowKey eq '${providerId}'` } });
         //// [!] attemp to reterieve entity makes the probability of causing RestError ////
         const loginCredentialsQueryResult = await loginCredentialsQuery.next();
         if (!loginCredentialsQueryResult.value) {
@@ -97,41 +114,43 @@ export default async function RequestVerificationEmail(req: NextApiRequest, res:
             return;
         }
         const { MemberId: memberId } = loginCredentialsQueryResult.value;
-        // Step #4.1 look up member status (IMemberComprehensive) in [C] memberComprehensive
+
+        //// Look up member status (of IMemberComprehensive) in [C] memberComprehensive ////
         await atlasDbClient.connect();
         const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
-        const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne<IMemberComprehensive>({ memberId, providerId });
+        const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne<IMemberComprehensive>({ memberId }, { projection: { _id: 0, status: 1 } });
         if (null === memberComprehensiveQueryResult) {
             //// [!] document (of IMemberComprehensive) not found ////
             const msg = 'Member management (document of IMemberComprehensive) not found in [C] memberComprehensive';
             response500(res, msg);
-            logWithDate(msg);
+            logWithDate(msg, fname);
             return;
         }
+
+        //// Verify member status ////
         const { status } = memberComprehensiveQueryResult;
-        if ('number' !== typeof status) {
-            //// [!] member status (property of IMemberComprehensive) not found or status (code) error ////
-            const msg = 'Member status (property of IMemberComprehensive) error in [C] memberComprehensive';
-            response500(res, msg);
-            logWithDate(msg);
-            return;
-        }
-        // Step #4.2 verify member status
         if (0 !== status) {
             res.status(409).send('Request for re-send verification email cannot be fulfilled');
             await atlasDbClient.close();
             return;
         }
-        // Step #3.4 create a new email address verification token
+
+        //// Create a new token and upsert entity (of IVerifyEmailAddressCredentials) in [RL] Credentials ////
         const verifyEmailAddressToken = getRandomHexStr(true);
-        // Step #3.5 upsert entity (IVerifyEmailAddressCredentials) in [RL] Credentials
-        credentialsTableClient.upsertEntity<IVerifyEmailAddressCredentials>({ partitionKey: emailAddressHash, rowKey: 'VerifyEmailAddress', VerifyEmailAddressToken: verifyEmailAddressToken }, 'Replace');
+        credentialsTableClient.upsertEntity<IVerifyEmailAddressCredentials>({
+            partitionKey: emailAddressHash,
+            rowKey: 'VerifyEmailAddress',
+            VerifyEmailAddressToken: verifyEmailAddressToken,
+            CreatedTimeBySecond: Math.floor(new Date().getTime() / 1000)
+        }, 'Replace');
+        await atlasDbClient.close();
+
         //// Response 200 ////
         res.status(200).send('Verification email sent');
-        await atlasDbClient.close();
-        // Step #4 send email
+
+        //// Send email ////
         const info: TVerifyEmailAddressRequestInfo = { emailAddress, providerId, verifyEmailAddressToken };
-        const emailMessage: EmailMessage = {
+        const emailMessage: TEmailMessage = {
             sender: '<donotreply@mojito.co.nz>',
             content: {
                 subject: langConfigs.emailSubject[lang],
@@ -143,19 +162,20 @@ export default async function RequestVerificationEmail(req: NextApiRequest, res:
         }
         const mailClient = AzureEmailCommunicationClient();
         await mailClient.send(emailMessage);
+        return;
     } catch (e: any) {
         let msg;
         if (e instanceof RestError) {
-            msg = 'Attempt to communicate with azure table storage.';
+            msg = `Attempt to communicate with azure table storage.`;
         } else if (e instanceof MongoError) {
-            msg = 'Attempt to communicate with atlas mongodb.';
+            msg = `Attempt to communicate with atlas mongodb.`;
         } else {
             msg = `Uncategorized. ${e?.msg}`;
         }
         if (!res.headersSent) {
             response500(res, msg);
         }
-        logWithDate(msg, e);
+        logWithDate(msg, fname, e);
         await atlasDbClient.close();
         return;
     }

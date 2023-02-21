@@ -56,6 +56,7 @@ import Link from '@mui/material/Link';
 import MemberInfoById from '../api/member/info/[memberId]';
 import Tooltip from '@mui/material/Tooltip';
 import { Alert } from '@mui/material';
+import { fakeConciseMemberInfo, fakeConciseMemberStatistics, provideAvatarImageUrl } from '../../lib/utils/for/member';
 
 const storageName0 = 'PreferenceStates';
 const updatePreferenceStatesCache = updateLocalStorage(storageName0);
@@ -225,8 +226,8 @@ export async function getServerSideProps(context: NextPageContext): Promise<{ pr
             props: {
                 restrictedPostComprehensive_ss: fakeRestrictedPostComprehensive(),
                 channelInfo_ss: fakeChannel(),
-                authorInfo_ss: {},
-                authorStatistics_ss: {},
+                authorInfo_ss: fakeConciseMemberInfo(),
+                authorStatistics_ss: fakeConciseMemberStatistics(),
                 redirect404: true
             }
         }
@@ -290,7 +291,7 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, a
     const {
         postId,
         memberId: authorId,
-        createdTime,
+        createdTimeBySecond,
         title,
         imageUrlsArr,
         paragraphsArr,
@@ -305,7 +306,6 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, a
     //////// INFO - post author ////////
     const {
         nickname,
-        avatarImageUrl
     } = authorInfo_ss;
 
     //////// STATES - preference ////////
@@ -489,7 +489,7 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, a
 
     const updateViewerInfoStates = async () => {
         // get followed member info
-        const resp = await fetch(`/api/member/info/${'viewerId'}/followed`);
+        const resp = await fetch(`/api/member/followedbyme/${'viewerId'}`);
         if (200 === resp.status) {
             try {
                 const memberInfoArr = await resp.json();
@@ -878,14 +878,14 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, a
 
                                     {/* member info & timestamp */}
                                     <TextButton color='inherit' sx={{ flexDirection: 'row', marginTop: 1 }}>
-                                        <Typography variant='body2'>{`${nickname} ${timeToString(createdTime, preferenceStates.lang)}`}</Typography>
+                                        <Typography variant='body2'>{`${nickname} ${timeToString(createdTimeBySecond, preferenceStates.lang)}`}</Typography>
                                     </TextButton>
                                 </Box>
 
                                 {/* post-title: mobile style */}
                                 <Stack mt={0.5} direction={'row'} sx={{ display: { xs: 'flex', sm: 'none' } }}>
                                     <IconButton sx={{ padding: 0 }}>
-                                        <Avatar src={avatarImageUrl} sx={{ width: 38, height: 38, bgcolor: 'grey' }}>{nickname?.charAt(0).toUpperCase()}</Avatar>
+                                        <Avatar src={provideAvatarImageUrl(authorId, domain)} sx={{ width: 38, height: 38, bgcolor: 'grey' }}>{nickname?.charAt(0).toUpperCase()}</Avatar>
                                     </IconButton>
                                     <Grid container ml={1}>
 
@@ -896,7 +896,7 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, a
                                                     {nickname}
                                                 </Typography>
                                                 <Typography variant='body2' fontSize={{ xs: 12 }} >
-                                                    {timeToString(createdTime, preferenceStates.lang)}
+                                                    {timeToString(createdTimeBySecond, preferenceStates.lang)}
                                                 </Typography>
                                             </TextButton>
                                         </Grid>
@@ -1013,7 +1013,7 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, a
                                                                 {nickname}
                                                             </Typography>
                                                             <Typography variant='body2' fontSize={{ xs: 12 }} >
-                                                                {timeToString(createdTime, preferenceStates.lang)}
+                                                                {timeToString(createdTimeBySecond, preferenceStates.lang)}
                                                             </Typography>
                                                         </TextButton>
                                                     </Box>
@@ -1071,7 +1071,7 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, a
                                                     {/* subcomment stack (conditional rendering)*/}
                                                     <Stack id={`stack-${commentId}`} marginTop={{ xs: 1.5, sm: 2 }} paddingLeft={3} sx={{ display: restrictedCommentComprehensiveWithMemberInfoDict[commentId].isExpended ? 'block' : 'none' }}>
                                                         {restrictedSubcommentComprehensiveDict.hasOwnProperty(commentId) && Object.keys(restrictedSubcommentComprehensiveDict[commentId]).map(subcommentId => {
-                                                            const { memberId, nickname, avatarImageUrl, createdTime, content, totalLikedCount } = restrictedSubcommentComprehensiveDict[commentId][subcommentId];
+                                                            const { memberId, nickname, avatarImageUrl, createdTimeBySecond, content, totalLikedCount } = restrictedSubcommentComprehensiveDict[commentId][subcommentId];
                                                             return (
                                                                 <Box key={subcommentId}>
                                                                     {/* member info */}
@@ -1085,7 +1085,7 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, a
                                                                                     {nickname}
                                                                                 </Typography>
                                                                                 <Typography variant='body2' fontSize={{ xs: 12 }} >
-                                                                                    {timeToString(createdTime, preferenceStates.lang)}
+                                                                                    {timeToString(createdTimeBySecond, preferenceStates.lang)}
                                                                                 </Typography>
                                                                             </TextButton>
                                                                         </Box>

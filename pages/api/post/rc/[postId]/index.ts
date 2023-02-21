@@ -7,12 +7,27 @@ import { getToken } from 'next-auth/jwt';
 import AzureTableClient from '../../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from '../../../../../modules/AtlasDatabaseClient';
 
-import { INoticeInfo, IMemberPostMapping, INotificationStatistics, IMemberStatistics, IChannelStatistics, ITopicComprehensive, ITopicPostMapping, IPostComprehensive, IEditedPostComprehensive, IMemberComprehensive } from '../../../../../lib/interfaces';
-import { getNicknameFromToken, getTopicBase64StringsArrayFromRequestBody, getRestrictedFromPostComprehensive, getImageUrlsArrayFromRequestBody, getParagraphsArrayFromRequestBody, verifyId, response405, response500, logWithDate, providePostComprehensiveUpdate, getCuedMemberInfoArrayFromRequestBody, provideEditedPostInfo, provideTopicComprehensive, createNoticeId } from '../../../../../lib/utils';
+import { IMemberMemberMapping, IMemberPostMapping } from '../../../../../lib/interfaces/mapping';
+import { logWithDate, response405, response500 } from '../../../../../lib/utils/general';
+import { verifyId } from '../../../../../lib/utils/verify';
+import { IPostComprehensive } from '../../../../../lib/interfaces/post';
+import { getCuedMemberInfoArrayFromRequestBody, providePostComprehensiveUpdate, getRestrictedFromPostComprehensive, getImageUrlsArrayFromRequestBody, getParagraphsArrayFromRequestBody, provideEditedPostInfo } from '../../../../../lib/utils/for/post';
+import { IMemberComprehensive, IMemberStatistics } from '../../../../../lib/interfaces/member';
+import { IChannelStatistics } from '../../../../../lib/interfaces/channel';
+import { ITopicComprehensive, ITopicPostMapping } from '../../../../../lib/interfaces/topic';
+import { getTopicBase64StringsArrayFromRequestBody, provideTopicComprehensive } from '../../../../../lib/utils/for/topic';
+import { INoticeInfo, INotificationStatistics } from '../../../../../lib/interfaces/notification';
+import { createNoticeId } from '../../../../../lib/utils/create';
+import { getNicknameFromToken } from '../../../../../lib/utils/for/member';
 
 const domain = process.env.NEXT_PUBLIC_APP_DOMAIN;
+const fname = GetRestrictedPostComprehensiveById.name;
 
-/** This interface accepts GET, PUT and DELETE method
+/** GetRestrictedPostComprehensiveById v0.1.1 FIXME: test mode
+ * 
+ * Last update: 
+ * 
+ * This interface accepts GET, PUT and DELETE method
  * 
  * Info required for GET method
  * - token: JWT
@@ -23,12 +38,6 @@ const domain = process.env.NEXT_PUBLIC_APP_DOMAIN;
 
 export default async function GetRestrictedPostComprehensiveById(req: NextApiRequest, res: NextApiResponse) {
 
-
-
-
-
-
-    // TEST DUMMY
     res.send({
         postId: 'P1234ABCD',
         memberId: 'M1234ABCD',
@@ -62,17 +71,6 @@ export default async function GetRestrictedPostComprehensiveById(req: NextApiReq
         totalCommentCount: 5,
         totalSavedCount: 12,
     })
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -122,7 +120,13 @@ export default async function GetRestrictedPostComprehensiveById(req: NextApiReq
                 const { status: memberStatus } = memberComprehensiveQueryResult;
                 if (0 < memberStatus) {
                     const historyMappingTableClient = AzureTableClient('HistoryMapping');
-                    await historyMappingTableClient.upsertEntity<IMemberPostMapping>({ partitionKey: viewerId, rowKey: postId, IsActive: true }, 'Replace');
+                    await historyMappingTableClient.upsertEntity<IMemberPostMapping>({
+                        partitionKey: viewerId,
+                        rowKey: postId,
+                        Nickname: '',
+                        CreatedTimeBySecond: Math.floor(new Date().getTime() / 1000),
+                        IsActive: true
+                    }, 'Replace');
                 }
             }
             //// Update statistics ////
@@ -134,7 +138,7 @@ export default async function GetRestrictedPostComprehensiveById(req: NextApiReq
                 }
             });
             if (!memberStatisticsUpdateResult.acknowledged) {
-                logWithDate(`Failed to update totalCreationHitCount (of IMemberStatistics, member id: ${authorId}) in [C] memberStatistics`);
+                logWithDate(`Failed to update totalCreationHitCount (of IMemberStatistics, member id: ${authorId}) in [C] memberStatistics`, fname);
             }
             // Step #3 update totalHitCount (of IPostComprehensive) in [C] postComprehensive
             const postComprehensiveUpdateResult = await postComprehensiveCollectionClient.updateOne({ postId }, {
@@ -143,7 +147,7 @@ export default async function GetRestrictedPostComprehensiveById(req: NextApiReq
                 }
             });
             if (!postComprehensiveUpdateResult.acknowledged) {
-                logWithDate(`Failed to update totalHitCount (of IPostComprehensive, post id: ${postId}) in [C] postComprehensive`);
+                logWithDate(`Failed to update totalHitCount (of IPostComprehensive, post id: ${postId}) in [C] postComprehensive`, fname);
             }
             if (token) {
                 const postComprehensiveUpdateResult = await postComprehensiveCollectionClient.updateOne({ postId }, {
@@ -152,7 +156,7 @@ export default async function GetRestrictedPostComprehensiveById(req: NextApiReq
                     }
                 });
                 if (!postComprehensiveUpdateResult.acknowledged) {
-                    logWithDate(`Failed to update totalMemberHitCount (of IPostComprehensive, post id: ${postId}) in [C] postComprehensive`);
+                    logWithDate(`Failed to update totalMemberHitCount (of IPostComprehensive, post id: ${postId}) in [C] postComprehensive`, fname);
                 }
             }
             // Step #4 update totalHitCount (of IChannelStatistics) in [C] channelStatistics
@@ -164,7 +168,7 @@ export default async function GetRestrictedPostComprehensiveById(req: NextApiReq
                 }
             });
             if (!channelStatisticsUpdateResult.acknowledged) {
-                logWithDate(`Failed to totalHitCount (of IChannelStatistics, channel id: ${channelId}) in [C] channelStatistics`);
+                logWithDate(`Failed to totalHitCount (of IChannelStatistics, channel id: ${channelId}) in [C] channelStatistics`, fname);
             }
             // Step #5 (cond.) update totalHitCount (of ITopicComprehensive) in [C] topicComprehensive
             const { topicIdsArr } = postComprehensiveQueryResult;
@@ -177,7 +181,7 @@ export default async function GetRestrictedPostComprehensiveById(req: NextApiReq
                         }
                     });
                     if (!topicComprehensiveUpdateResult.acknowledged) {
-                        logWithDate(`Failed to update totalHitCount (of ITopicStatistics, topic id:${topicId}, post id: ${postId}) in [C] topicStatistics`);
+                        logWithDate(`Failed to update totalHitCount (of ITopicStatistics, topic id:${topicId}, post id: ${postId}) in [C] topicStatistics`, fname);
                     }
                 }
             }
@@ -271,7 +275,7 @@ export default async function GetRestrictedPostComprehensiveById(req: NextApiReq
                 }
             });
             if (!memberStatisticsUpdateResult.acknowledged) {
-                logWithDate(`Document (IPostComprehensive, post id: ${postId}) updated in [C] postComprehensive successfully but failed to update totalCreationEditCount (of IMemberStatistics, member id: ${authorId}) in [C] memberStatistics`);
+                logWithDate(`Document (IPostComprehensive, post id: ${postId}) updated in [C] postComprehensive successfully but failed to update totalCreationEditCount (of IMemberStatistics, member id: ${authorId}) in [C] memberStatistics`, fname);
             }
             // Step #5 (cond.) update totalPostCount (ITopicComprehensive) in [C] topicComprehensive
             if (topicIdsArr.length !== 0) {
@@ -302,7 +306,7 @@ export default async function GetRestrictedPostComprehensiveById(req: NextApiReq
                             // case document (of topicComprehensive) [not found]
                             const topicComprehensiveUpdateResult = await topicComprehensiveCollectionClient.updateOne({ topicId }, { $set: provideTopicComprehensive(topicId, channelId) }, { upsert: true });
                             if (!topicComprehensiveUpdateResult.acknowledged) {
-                                logWithDate(`Document (IPostComprehensive, post id: ${postId}) inserted in [C] postComprehensive successfully but failed to update totalPostCount (of ITopicComprehensive, topic id: ${topicId}) in [C] topicComprehensive`);
+                                logWithDate(`Document (IPostComprehensive, post id: ${postId}) inserted in [C] postComprehensive successfully but failed to update totalPostCount (of ITopicComprehensive, topic id: ${topicId}) in [C] topicComprehensive`, fname);
                             }
                         }
                         // Step (cond.) #5.3 insert a new document (of ITopicPostMapping) in [C] topicPostMapping
@@ -314,7 +318,7 @@ export default async function GetRestrictedPostComprehensiveById(req: NextApiReq
                             status: 200
                         }, { upsert: true });
                         if (!topicPostMappingInsertResult.acknowledged) {
-                            logWithDate(`Document (ITopicPostMapping, post id: ${postId}) inserted in [C] postComprehensive successfully but failed to insert document (of ITopicPostMapping, topic id: ${topicId}) in [C] topicPostMapping`);
+                            logWithDate(`Document (ITopicPostMapping, post id: ${postId}) inserted in [C] postComprehensive successfully but failed to insert document (of ITopicPostMapping, topic id: ${topicId}) in [C] topicPostMapping`, fname);
                         }
                     }
                 }
@@ -329,7 +333,7 @@ export default async function GetRestrictedPostComprehensiveById(req: NextApiReq
                 for await (const cuedMemberInfo of cuedMemberIdsArrSliced) {
                     const { memberId: memberId_cued } = cuedMemberInfo;
                     // Step #6.3 look up record (of IMemberMemberMapping) in [RL] BlockingMemberMapping
-                    const _blockingMemberMappingQuery = blockingMemberMappingTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${memberId_cued}' and RowKey eq '${authorId}'` } });
+                    const _blockingMemberMappingQuery = blockingMemberMappingTableClient.listEntities<IMemberMemberMapping>({ queryOptions: { filter: `PartitionKey eq '${memberId_cued}' and RowKey eq '${authorId}'` } });
                     //// [!] attemp to reterieve entity makes the probability of causing RestError ////
                     const _blockingMemberMappingQueryResult = await _blockingMemberMappingQuery.next();
                     if (!_blockingMemberMappingQueryResult.value) {
@@ -342,7 +346,6 @@ export default async function GetRestrictedPostComprehensiveById(req: NextApiReq
                             Category: 'cue',
                             InitiateId: authorId,
                             Nickname: getNicknameFromToken(token),
-                            PostId: postId,
                             PostTitle: title,
                         }, 'Replace');
                         // Step #7.4 update cue (INotificationStatistics) (of cued member) in [C] notificationStatistics
@@ -352,7 +355,7 @@ export default async function GetRestrictedPostComprehensiveById(req: NextApiReq
                             }
                         });
                         if (!notificationStatisticsUpdateResult.acknowledged) {
-                            logWithDate(`Document (IPostComprehensive, post id: ${postId}) updated in [C] postComprehensive successfully but failed to update cue (of INotificationStatistics, member id: ${memberId_cued}) in [C] notificationStatistics`);
+                            logWithDate(`Document (IPostComprehensive, post id: ${postId}) updated in [C] postComprehensive successfully but failed to update cue (of INotificationStatistics, member id: ${memberId_cued}) in [C] notificationStatistics`, fname);
                         }
                     }
                 }
@@ -373,14 +376,14 @@ export default async function GetRestrictedPostComprehensiveById(req: NextApiReq
             const memberStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IMemberStatistics>('member');
             const memberStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId: authorId }, { $inc: { totalCreationDeleteCount: 1 } });
             if (!memberStatisticsUpdateResult.acknowledged) {
-                logWithDate(`Document (IPostComprehensive, post id: ${postId}) updated (deleted, status -1) in [C] postComprehensive successfully but failed to update totalCreationDeleteCount (of IMemberStatistics, member id: ${authorId}) in [C] memberStatistics`);
+                logWithDate(`Document (IPostComprehensive, post id: ${postId}) updated (deleted, status -1) in [C] postComprehensive successfully but failed to update totalCreationDeleteCount (of IMemberStatistics, member id: ${authorId}) in [C] memberStatistics`, fname);
             }
             // Step #2.2 update totalPostDeleteCount (of IChannelStatistics) in [C] channelStatistics
             const { channelId } = postComprehensiveQueryResult;
             const channelStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IChannelStatistics>('channel');
             const channelStatisticsUpdateResult = await channelStatisticsCollectionClient.updateOne({ channelId }, { $inc: { totalPostDeleteCount: 1 } });
             if (!channelStatisticsUpdateResult.acknowledged) {
-                logWithDate(`Document (IPostComprehensive, post id: ${postId}) updated (deleted, status -1) in [C] postComprehensive successfully but failed to update totalPostDeleteCount (of IChannelStatistics, channel id: ${channelId}) in [C] channelStatistics`);
+                logWithDate(`Document (IPostComprehensive, post id: ${postId}) updated (deleted, status -1) in [C] postComprehensive successfully but failed to update totalPostDeleteCount (of IChannelStatistics, channel id: ${channelId}) in [C] channelStatistics`, fname);
             }
             // Step #2.3 (cond.) update totalPostDeleteCount (of ITopicComprehensive) [C] topicComprehensive
             const { topicIdsArr } = postComprehensiveQueryResult;
@@ -391,12 +394,12 @@ export default async function GetRestrictedPostComprehensiveById(req: NextApiReq
                     // Step #4.1 update totalPostDeleteCount (of ITopicComprehensive) in [C] topicComprehensive
                     const topicComprehensiveUpdateResult = await topicComprehensiveCollectionClient.updateOne({ topicId }, { $inc: { totalPostDeleteCount: 1 } });
                     if (!topicComprehensiveUpdateResult.acknowledged) {
-                        logWithDate(`Document (IPostComprehensive, post id: ${postId}) updated (deleted, status -1) in [C] postComprehensive successfully but failed to update totalPostDeleteCount (of ITopicComprehensive, topic id: ${topicId}) in [C] topicComprehensive`);
+                        logWithDate(`Document (IPostComprehensive, post id: ${postId}) updated (deleted, status -1) in [C] postComprehensive successfully but failed to update totalPostDeleteCount (of ITopicComprehensive, topic id: ${topicId}) in [C] topicComprehensive`, fname);
                     }
                     // Step #4.2 update status (of ITopicPostMapping) in [C] topicPostMapping
                     const topicPostMappingInsertResult = await topicPostMappingCollectionClient.updateOne({ topicId, postId }, { $set: { status: -1 } });
                     if (!topicPostMappingInsertResult.acknowledged) {
-                        logWithDate(`Document (ITopicPostMapping, post id: ${postId}) updated (deleted, status -1) in [C] postComprehensive successfully but failed to update document (of ITopicPostMapping, topic id: ${topicId}, status -1) in [C] topicPostMapping`);
+                        logWithDate(`Document (ITopicPostMapping, post id: ${postId}) updated (deleted, status -1) in [C] postComprehensive successfully but failed to update document (of ITopicPostMapping, topic id: ${topicId}, status -1) in [C] topicPostMapping`, fname);
                     }
                 }
             }
@@ -409,16 +412,16 @@ export default async function GetRestrictedPostComprehensiveById(req: NextApiReq
             res.status(400).send('Improperly normalized request info');
             return;
         } else if (e instanceof RestError) {
-            msg = 'Attempt to communicate with azure table storage.';
+            msg = `Attempt to communicate with azure table storage.`;
         } else if (e instanceof MongoError) {
-            msg = 'Attempt to communicate with atlas mongodb.';
+            msg = `Attempt to communicate with atlas mongodb.`;
         } else {
             msg = `Uncategorized. ${e?.msg}`;
         }
         if (!res.headersSent) {
             response500(res, msg);
         }
-        logWithDate(msg, e);
+        logWithDate(msg, fname, e);
         await atlasDbClient.close();
         return;
     }

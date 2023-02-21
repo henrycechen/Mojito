@@ -7,7 +7,6 @@ export interface IMemberComprehensive {
     memberId: string; // 10 characters, UPPERCASE
 
     //// info ////
-
     providerId: string; // "MojitoMemberSystem" | "GitHubOAuth" | ...
     registeredTimeBySecond: number; // Math.floor(new Date().getTime() / 1000)
     verifiedTimeBySecond: number;
@@ -15,24 +14,36 @@ export interface IMemberComprehensive {
 
     nickname: string;
     lastNicknameUpdatedTimeBySecond: number;
-
     briefIntro: string;
     lastBriefIntroUpdatedTimeBySecond: number;
-
     gender: number; // -1 | 0 | 1
     lastGenderUpdatedTimeBySecond: number;
-
     birthdayBySecond: number;
     lastBirthdayUpdatedTimeBySecond: number;
+    lastSettingUpdatedTimeBySecond: number;
 
     //// management ////
-
     status: number;
+    allowPosting: boolean;
+    allowCommenting: boolean;
+
+    allowVisitingSavedPosts: boolean;
+    allowKeepingBrowsingHistory: boolean;
+    hidePostsAndCommentsOfBlockedMember: boolean;
+}
+
+export interface IMinimumMemberComprehensive {
+    memberId: string; // 10 characters, UPPERCASE
+    providerId: string; // "MojitoMemberSystem" | "GitHubOAuth" | ...
+    registeredTimeBySecond: number; // Math.floor(new Date().getTime() / 1000)
+    emailAddress: string;
+    nickname: string;
+    status: number; // email address not verified
     allowPosting: boolean;
     allowCommenting: boolean;
 }
 
-export interface IRestrictedMemberInfo {
+export interface IRestrictedMemberComprehensive {
     memberId: string;
 
     providerId: string; // "MojitoMemberSystem" | "GitHubOAuth" | ...
@@ -43,6 +54,10 @@ export interface IRestrictedMemberInfo {
     briefIntro: string;
     gender: number;
     birthdayBySecond: number;
+
+    allowVisitingSavedPosts: boolean;
+    allowKeepingBrowsingHistory: boolean;
+    hidePostsAndCommentsOfBlockedMember: boolean;
 }
 
 export interface IConciseMemberInfo {

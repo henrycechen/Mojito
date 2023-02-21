@@ -8,15 +8,18 @@ import Jimp from 'jimp';
 
 import AzureBlobClient from '../../../../modules/AzureBlobClient';
 
-import { logWithDate, response405, response500, verifyId } from '../../../../lib/utils';
+import { logWithDate, response405, response500 } from '../../../../lib/utils/general';
+import { verifyId } from '../../../../lib/utils/verify';
 import AtlasDatabaseClient from '../../../../modules/AtlasDatabaseClient';
-import { IMemberComprehensive } from '../../../../lib/interfaces';
+import { IMemberComprehensive } from '../../../../lib/interfaces/member';
 
 export const config = {
     api: {
         bodyParser: false
     }
 }
+
+const fname = AvatarImageUpload.name;
 
 /** AvatarImageUpload v0.1.2
  * 
@@ -25,7 +28,6 @@ export const config = {
  * This interface ONLY accepts POST requests
  * 
  * Info required for POST requests
- * 
  * - token: JWT
  * - file: image file (form)
 */
@@ -43,18 +45,17 @@ export default async function AvatarImageUpload(req: NextApiRequest, res: NextAp
         res.status(401).send('Unauthorized');
         return;
     }
-    const { sub: memberId_ref } = token;
+    const { sub: tokenId } = token;
 
     //// Verify member id ////
     const { isValid, category, id: memberId } = verifyId(req.query?.memberId);
-
     if (!(isValid && 'member' === category)) {
         res.status(400).send('Invalid member id');
         return;
     }
 
-    //// Match identity id and request member id ////
-    if (memberId_ref !== memberId) {
+    //// Match member id in token and the one in request ////
+    if (tokenId !== memberId) {
         res.status(400).send('Requested member id and identity not matched');
         return;
     }
@@ -64,17 +65,17 @@ export default async function AvatarImageUpload(req: NextApiRequest, res: NextAp
     try {
         //// Verify member status ////
         const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
-        const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne({ memberId });
+        const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne({ memberId }, { projection: { _id: 0, status: 1 } });
         if (null === memberComprehensiveQueryResult) {
             throw new Error(`Member attempt to upload avatar image but have no document (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
         }
         const { status: memberStatus } = memberComprehensiveQueryResult;
-
         if (0 > memberStatus) {
             res.status(403).send('Method not allowed due to member suspended or deactivated');
             await atlasDbClient.close();
             return;
         }
+
         //// Upload image asynchronously ////
         await uploadAsync(req, memberId);
 
@@ -83,25 +84,25 @@ export default async function AvatarImageUpload(req: NextApiRequest, res: NextAp
             $set: { lastAvatarImageUpdatedTimeBySecond: Math.floor(new Date().getTime() / 1000) }
         })
         if (!memberComprehensiveUpdateResult.acknowledged) {
-            logWithDate(`Failed to update avatarImageFullName (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
-            res.status(500).send(`Failed to update avatar image full name`);
-        } else {
-            res.status(200).end();
+            logWithDate(`Failed to update lastAvatarImageUpdatedTimeBySecond (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`, fname);
         }
+        //// Response 200 ////
+        res.status(200).end();
         await atlasDbClient.close();
+        return;
     } catch (e: any) {
         let msg;
         if (e instanceof RestError) {
-            msg = 'Attempt to communicate with azure table storage.';
+            msg = `Attempt to communicate with azure table storage.`;
         } else if (e instanceof MongoError) {
-            msg = 'Attempt to communicate with atlas mongodb.';
+            msg = `Attempt to communicate with atlas mongodb.`;
         } else {
             msg = `Uncategorized. ${e?.msg}`;
         }
         if (!res.headersSent) {
             response500(res, msg);
         }
-        logWithDate(msg, e);
+        logWithDate(msg, fname, e);
         await atlasDbClient.close();
         return;
     }
@@ -164,6 +165,7 @@ const uploadAsync = (req: NextApiRequest, memberId: string) => {
         bb.on('error', (e) => {
             reject(e);
         });
+        
         //// Read file from request ////
         req.pipe(bb);
     })

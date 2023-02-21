@@ -6,14 +6,17 @@ import { MongoError } from 'mongodb';
 import AtlasDatabaseClient from '../../../../../modules/AtlasDatabaseClient';
 import AzureTableClient from '../../../../../modules/AzureTableClient';
 
-import { logWithDate, response405, response500, verifyId } from '../../../../../lib/utils';
+import { response405, response500, logWithDate } from '../../../../../lib/utils/general';
 import { ILoginJournal, IMemberComprehensive } from '../../../../../lib/interfaces/member';
 import { INicknameRegistry } from '../../../../../lib/interfaces/registry';
 
 import CryptoJS from 'crypto-js';
 
-import { verifyPassword } from '../../../../../lib/utils/verify';
+import { verifyId, verifyPassword } from '../../../../../lib/utils/verify';
 import { IMojitoMemberSystemLoginCredentials } from '../../../../../lib/interfaces/credentials';
+
+const salt = process.env.APP_PASSWORD_SALT ?? '';
+const fname = UpdatePassword.name;
 
 /** UpdatePassword v0.1.1
  * 
@@ -22,13 +25,10 @@ import { IMojitoMemberSystemLoginCredentials } from '../../../../../lib/interfac
  * This interface ONLY accepts PUT requests
  * 
  * Info required for PUT requests
- * 
  * - token: JWT
  * - currentPassword: string (body)
  * - newPassword: string (body)
 */
-
-const salt = process.env.APP_PASSWORD_SALT ?? '';
 
 export default async function UpdatePassword(req: NextApiRequest, res: NextApiResponse) {
     const { method } = req;
@@ -43,7 +43,7 @@ export default async function UpdatePassword(req: NextApiRequest, res: NextApiRe
         res.status(401).send('Unauthorized');
         return;
     }
-    const { sub: memberId_ref } = token;
+    const { sub: tokenId } = token;
 
     //// Verify member id ////
     const { isValid, category, id: memberId } = verifyId(req.query?.memberId);
@@ -53,8 +53,8 @@ export default async function UpdatePassword(req: NextApiRequest, res: NextApiRe
         return;
     }
 
-    //// Match identity id and request member id ////
-    if (memberId_ref !== memberId) {
+    //// Match the member id in token and the one in request ////
+    if (tokenId !== memberId) {
         res.status(400).send('Requested member id and identity not matched');
         return;
     }
@@ -94,7 +94,7 @@ export default async function UpdatePassword(req: NextApiRequest, res: NextApiRe
         }
 
         const emailAddressHash = CryptoJS.SHA1(emailAddress).toString()
-        
+
         //// Match the current passwords (hash) ////
         const credentialsTableClient = AzureTableClient('Credentials');
         const loginCredentialsQuery = credentialsTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${emailAddressHash}' and RowKey eq 'MojitoMemberSystem'` } });
@@ -114,16 +114,17 @@ export default async function UpdatePassword(req: NextApiRequest, res: NextApiRe
             res.status(400).send('Provided current password does not match the record');
             return;
         }
-        
+
         //// Update PasswordHash (of IMojitoMemberSystemLoginCredentials) in [RL] Credentials ////
         await credentialsTableClient.upsertEntity<IMojitoMemberSystemLoginCredentials>({
             partitionKey: emailAddressHash,
             rowKey: 'MojitoMemberSystem',
             PasswordHash: CryptoJS.SHA256(newPassword + salt).toString(),
-            MemberId: memberId
+            MemberId: memberId,
+            LastUpdatedTimeBySecond: Math.floor(new Date().getTime() / 1000)
         }, 'Merge');
-        
-       
+
+
         //// Update lastPasswordUpdatedTimeBySecond (of IMemberComprehensive) in [C] memberComprehensive ////
         const memberComprehensiveUpdateResult = await memberComprehensiveCollectionClient.updateOne({ memberId }, {
             $set: {
@@ -132,7 +133,7 @@ export default async function UpdatePassword(req: NextApiRequest, res: NextApiRe
         })
 
         if (!memberComprehensiveUpdateResult.acknowledged) {
-            logWithDate(`Failed to update lastPasswordUpdatedTimeBySecond (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
+            logWithDate(`Failed to update lastPasswordUpdatedTimeBySecond (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`, fname);
             return;
         }
 
@@ -151,16 +152,16 @@ export default async function UpdatePassword(req: NextApiRequest, res: NextApiRe
     } catch (e: any) {
         let msg;
         if (e instanceof RestError) {
-            msg = 'Attempt to communicate with azure table storage.';
+            msg = `Attempt to communicate with azure table storage.`;
         } else if (e instanceof MongoError) {
-            msg = 'Attempt to communicate with atlas mongodb.';
+            msg = `Attempt to communicate with atlas mongodb.`;
         } else {
             msg = `Uncategorized. ${e?.msg}`;
         }
         if (!res.headersSent) {
             response500(res, msg);
         }
-        logWithDate(msg, e);
+        logWithDate(msg, fname, e);
         await atlasDbClient.close();
         return;
     }

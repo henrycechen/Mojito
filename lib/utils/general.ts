@@ -21,16 +21,16 @@ export function timeToString(timeBySecond: any, lang: string): string {
         return `0${langConfigs?.min}`;
     }
     const diff = new Date().getTime() - new Date(timeBySecond).getTime(); // FIXME: Math.floor(new Date().getTime() / 1000) 
-    if (24 * 3600000 < diff) {
-        const d = Math.floor(diff / (24 * 3600000));
+    if (86400 < diff) { // 24 * 60 * 60
+        const d = Math.floor(diff / (86400));
         return `${d}${1 === d ? langConfigs?.day : langConfigs?.days}`;;
     }
-    const mins = diff % 3600000;
-    const m = Math.floor(mins / 60000);
+    const mins = diff % 3600;
+    const m = Math.floor(mins / 60);
     if (mins === diff) {
         return `${m}${1 === m ? langConfigs?.min : langConfigs?.mins}`;
     }
-    const h = Math.floor(diff / 3600000);
+    const h = Math.floor(diff / 3600);
     if (3 > h) {
         return `${h}${1 === h ? langConfigs?.houra : langConfigs?.hoursa}${m}${1 === m ? langConfigs?.min : langConfigs?.mins}`;
     } else {
@@ -97,6 +97,6 @@ export function response500(response: NextApiResponse, msg: string) {
 }
 
 // Log
-export function logWithDate(msg: string, e: any = {}) {
-    console.log(`[${new Date().toISOString()}] ${msg} ${e?.stack}`);
+export function logWithDate(msg: string, origin = '', e: any = {}) {
+    console.log(`[${new Date().toISOString()}] ${'' === origin ? 'Unknown origin: ' : `${origin}: `} ${msg} ${e?.stack}`);
 }

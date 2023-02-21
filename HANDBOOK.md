@@ -142,21 +142,17 @@ type ResetPasswordRequestInfo = {
 
 \* This table records the password credentials for login procedure
 
-| PartitionKey        | RowKey                 | MemberId | PasswordHash          |
-| ------------------- | ---------------------- | -------- | --------------------- |
-| EmailAddressSHA1Str | `"MojitoMemberSystem"` | string   | string, SHA256 String |
+| PartitionKey        | RowKey                       | MemberId | PasswordHash          | LastUpdatedTimeBySecond |
+| ------------------- | ---------------------------- | -------- | --------------------- | ----------------------- |
+| EmailAddressSHA1Str | `"MojitoMemberSystem"`, etc. | string   | string, SHA256 String | number                  |
 
-| PartitionKey        | RowKey                                 | MemberId |
-| ------------------- | -------------------------------------- | -------- |
-| EmailAddressSHA1Str | `"GitHubOAuth"`, `"GoogleOAuth"`, etc. | string   |
+| PartitionKey        | RowKey                 | VerifyEmailAddressToken | CreatedTimeBySecond |
+| ------------------- | ---------------------- | ----------------------- | ------------------- |
+| EmailAddressSHA1Str | `"VerifyEmailAddress"` | string                  | number              |
 
-| PartitionKey        | RowKey                 | VerifyEmailAddressToken |
-| ------------------- | ---------------------- | ----------------------- |
-| EmailAddressSHA1Str | `"VerifyEmailAddress"` | string                  |
-
-| PartitionKey        | RowKey            | ResetPasswordToken |
-| ------------------- | ----------------- | ------------------ |
-| EmailAddressSHA1Str | `"ResetPassword"` | string             |
+| PartitionKey        | RowKey            | ResetPasswordToken | CreatedTimeBySecond |
+| ------------------- | ----------------- | ------------------ | ------------------- |
+| EmailAddressSHA1Str | `"ResetPassword"` | string             | number              |
 
 
 
@@ -166,33 +162,63 @@ type ResetPasswordRequestInfo = {
 
 \* This table records the following member ids of the partition key (member id)
 
-| PartitionKey | RowKey               | IsActive |
-| ------------ | -------------------- | -------- |
-| MemberIdStr  | FollowingMemberIdStr | boolean  |
+| PartitionKey | RowKey               | CreatedTimeBySecond | BriefIntro | IsActive |
+| ------------ | :------------------- | ------------------- | ---------- | -------- |
+| MemberIdStr  | FollowingMemberIdStr | number              | string     | boolean  |
 
 ### [PRL] FollowedByMemberMapping
 
 \* This table records the member ids of who have been following the partition key (member id)
 
-| PartitionKey | RowKey                | IsActive |
-| ------------ | --------------------- | -------- |
-| MemberIdStr  | FollowedByMemberIdStr | boolean  |
+| PartitionKey | RowKey                | CreatedTimeBySecond | BriefIntro | IsActive |
+| ------------ | --------------------- | ------------------- | ---------- | -------- |
+| MemberIdStr  | FollowedByMemberIdStr | number              | string     | boolean  |
 
 ### [RL] BlockingMemberMapping
 
 \* This table records the member ids blocked by the partition key (member id)
 
-| PartitionKey | RowKey              | IsActive |
-| ------------ | ------------------- | -------- |
-| MemberIdStr  | BlockingMemberIdStr | boolean  |
+| PartitionKey | RowKey              | CreatedTimeBySecond | BriefIntro | IsActive |
+| ------------ | ------------------- | ------------------- | ---------- | -------- |
+| MemberIdStr  | BlockingMemberIdStr | number              | string     | boolean  |
 
 ### [PRL] BlockedByMemberMapping
 
-\* This table records the member ids of who have been blocking the partition key (member id)
+\* This table records the member ids of who have blocked the partition key (member id)
 
-| PartitionKey | RowKey               | IsActive |
-| ------------ | -------------------- | -------- |
-| MemberIdStr  | BlockedByMemberIdStr | boolean  |
+| PartitionKey | RowKey               | CreatedTimeBySecond | BriefIntro | IsActive |
+| ------------ | -------------------- | ------------------- | ---------- | -------- |
+| MemberIdStr  | BlockedByMemberIdStr | number              | string     | boolean  |
+
+### [RL] HistoryMapping
+
+\* This table records the post ids viewed by the partition key (member id)
+
+| Key          | Type    | Desc           |
+| ------------ | ------- | -------------- |
+| PartitionKey | string  | MemberIdStr    |
+| RowKey       | string  | PostIdStr      |
+| IsActive     | boolean | Default `true` |
+
+### [RL] CreationsMapping
+
+\* This table records the post ids published by the partition key (member id)
+
+| Key          | Type    | Desc           |
+| ------------ | ------- | -------------- |
+| PartitionKey | string  | MemberIdStr    |
+| RowKey       | string  | PostIdStr      |
+| IsActive     | boolean | Default `true` |
+
+### [RL] SavedMapping
+
+\* This table records the post ids saved by the partition key (member id)
+
+| Key          | Type    | Desc           |
+| ------------ | ------- | -------------- |
+| PartitionKey | string  | MemberIdStr    |
+| RowKey       | string  | PostIdStr      |
+| IsActive     | boolean | Default `true` |
 
 
 
@@ -324,40 +350,6 @@ type ResetPasswordRequestInfo = {
 
 
 
-## 📘Post
-
-### [RL] HistoryMapping
-
-\* This table records the post ids viewed by the partition key (member id)
-
-| Key          | Type    | Desc           |
-| ------------ | ------- | -------------- |
-| PartitionKey | string  | MemberIdStr    |
-| RowKey       | string  | PostIdStr      |
-| IsActive     | boolean | Default `true` |
-
-### [RL] CreationsMapping
-
-\* This table records the post ids published by the partition key (member id)
-
-| Key          | Type    | Desc           |
-| ------------ | ------- | -------------- |
-| PartitionKey | string  | MemberIdStr    |
-| RowKey       | string  | PostIdStr      |
-| IsActive     | boolean | Default `true` |
-
-### [RL] SavedMapping
-
-\* This table records the post ids saved by the partition key (member id)
-
-| Key          | Type    | Desc           |
-| ------------ | ------- | -------------- |
-| PartitionKey | string  | MemberIdStr    |
-| RowKey       | string  | PostIdStr      |
-| IsActive     | boolean | Default `true` |
-
-
-
 ## Reference
 
 - Microsoft - Design for Querying [Link](https://learn.microsoft.com/en-us/azure/storage/tables/table-storage-design-for-query)
@@ -404,13 +396,15 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
     lastPasswordUpdatedTimeBySecond: number;
   	
     briefIntro: string;
-    lastBriefIntroUpdatedTimeBySecond?: number;
+    lastBriefIntroUpdatedTimeBySecond: number;
     
     gender?: -1 | 0 | 1
-    lastGenderUpdatedTimeBySecond?: number;
+    lastGenderUpdatedTimeBySecond: number;
     
     birthday?: string;
-    lastBirthdayUpdatedTimeBySecond?: number;
+    lastBirthdayUpdatedTimeBySecond: number;
+    
+    lastSettingsUpdatedTimeBySecond: number;
     
     //// management ////
     status?: number;
@@ -2281,7 +2275,7 @@ export default async function Verify(req: NextApiRequest, res: NextApiResponse) 
 在每次与API交互时，Request中都必须包含`recaptchaResponse`，否则服务器会拒绝服务并返回403状态码。
 
 ```typescript
-// step #1 verify if it is bot
+// step #1 verify if requested by human
 if ('string' !== typeof recaptchaResponse || '' === recaptchaResponse) {
     res.status(403).send('Invalid ReCAPTCHA response');
     return;
@@ -2449,6 +2443,65 @@ try {
     console.log(`Attempt to upload avatar image. ${e}`);
     return;
 }
+```
+
+
+
+## Block member by id
+
+```typescript
+let isBlocked: boolean;
+// Step #1 look up record (of IMemberMemberMapping) in [RL] BlockingMemberMapping
+const blockingMemberMappingTableClient = AzureTableClient('BlockingMemberMapping');
+const blockingMemberMappingQuery = blockingMemberMappingTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${memberId}' and RowKey eq '${memberId_object}'` } });
+//// [!] attemp to reterieve entity makes the probability of causing RestError ////
+const blockingMemberMappingQueryResult = await blockingMemberMappingQuery.next();
+// Step #1.2 verify if member has been blocked
+if (!blockingMemberMappingQueryResult.value) {
+    // Case [Block]
+    isBlocked = false;
+} else {
+    // verify isActive
+    isBlocked = !!blockingMemberMappingQueryResult.value;
+}
+if (isBlocked) {
+    // Case [Undo Block]
+    await blockingMemberMappingTableClient.upsertEntity<IMemberMemberMapping>({
+        partitionKey: memberId,
+        rowKey: memberId_object,
+        IsActive: false
+    }, 'Replace');
+    // Step #2.1 update totalUndoBlockingCount (of IMemberStatistics) in [C] memberStatistics
+    const memberStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IMemberStatistics>('member');
+    const memberStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId }, { $inc: { totalUndoBlockingCount: 1 } });
+    if (!memberStatisticsUpdateResult.acknowledged) {
+        logWithDate(`Failed to update totalUndoBlockingCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`);
+    }
+    // Step #2.2 update totalUndoBlockedByCount (of IMemberStatistics) in [C] memberStatistics
+    const memberBlockedStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId: memberId_object }, { $inc: { totalUndoBlockedByCount: 1 } });
+    if (!memberBlockedStatisticsUpdateResult.acknowledged) {
+        logWithDate(`Failed to update totalUndoBlockedByCount (of IMemberStatistics, member id: ${memberId_object}) in [C] memberStatistics`);
+    }
+} else {
+    // Case [Block]
+    await blockingMemberMappingTableClient.upsertEntity<IMemberMemberMapping>({
+        partitionKey: memberId,
+        rowKey: memberId_object,
+        IsActive: true
+    }, 'Replace');
+    // Step #2.1 update totalBlockingCount (of IMemberStatistics) in [C] memberStatistics
+    const memberStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IMemberStatistics>('member');
+    const memberStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId }, { $inc: { totalBlockingCount: 1 } });
+    if (!memberStatisticsUpdateResult.acknowledged) {
+        logWithDate(`Failed to update totalBlockingCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`);
+    }
+    // Step #2.2 update totalBlockedByCount (of IMemberStatistics) in [C] memberStatistics
+    const memberBlockedStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId: memberId_object }, { $inc: { totalBlockedByCount: 1 } });
+    if (!memberBlockedStatisticsUpdateResult.acknowledged) {
+        logWithDate(`Failed to update totalBlockedByCount (of IMemberStatistics, member id: ${memberId_object}) in [C] memberStatistics`);
+    }
+}
+await atlasDbClient.close();
 ```
 
 

@@ -3,40 +3,32 @@
  * Last update 16/02/2023
  */
 
-interface ICredentials {
-    partitionKey: string; // email address sh1 hash
-    rowKey: string;
-    [key: string]: any;
-}
-
-export interface ILoginCredentials extends ICredentials {
+export interface ILoginCredentials {
     partitionKey: string; // email address sh1 hash
     rowKey: string; // login provider id
     MemberId: string;
-    PasswordHash?: string;
+    PasswordHash: string;
+    LastUpdatedTimeBySecond: number;
 }
 
-export interface IMojitoMemberSystemLoginCredentials extends ILoginCredentials {
+export interface IMojitoMemberSystemLoginCredentials {
     partitionKey: string; // email address sh1 hash
     rowKey: 'MojitoMemberSystem'; // login provider id
     MemberId: string;
     PasswordHash: string;
+    LastUpdatedTimeBySecond: number;
 }
 
-export interface IVerifyEmailAddressCredentials extends ICredentials {
+export interface IVerifyEmailAddressCredentials {
     partitionKey: string; // email address sh1 hash
     rowKey: 'VerifyEmailAddress';
     VerifyEmailAddressToken: string;
+    CreatedTimeBySecond: number;
 }
 
-export interface IResetPasswordCredentials extends ICredentials {
+export interface IResetPasswordCredentials {
     partitionKey: string; // email address sh1 hash
     rowKey: 'ResetPassword';
     ResetPasswordToken: string;
-}
-
-export interface IUpdatePasswordCredentials extends ICredentials {
-    partitionKey: string; // email address sh1 hash
-    rowKey: 'UpdatePassword';
-    ResetPasswordToken: string;
+    CreateTimeBySecond: number; // Math.floor(new Date().getTime() / 1000) 
 }

@@ -1,7 +1,7 @@
 import { IConciseMemberInfo } from './member';
-/** Interfaces for Post Class v0.1.1
+/** Interfaces for Post Class v0.1.2
  * 
- * Last update 16/02/2023
+ * Last update 20/02/2023
  */
 
 
@@ -12,7 +12,7 @@ export interface IPostComprehensive {
     //// info ////
     postId: string; // 10 characters, UPPERCASE
     memberId: string;
-    createdTime: number; // created time of this document (post est.)
+    createdTimeBySecond: number; // created time of this document (post est.)
     title: string;
     imageUrlsArr: string[];
     paragraphsArr: string[];
@@ -57,7 +57,7 @@ export interface IRestrictedPostComprehensive {
     //// info ////
     postId: string; // 10 characters, UPPERCASE
     memberId: string;
-    createdTime: number; // created time of this document (post est.)
+    createdTimeBySecond: number; // created time of this document (post est.)
     title: string;
     imageUrlsArr: string[];
     paragraphsArr: string[];
@@ -83,7 +83,7 @@ export interface IRestrictedPostComprehensive {
 export interface IConcisePostComprehensive {
     postId: string; // 10 characters, UPPERCASE
     memberId: string;
-    createdTime: number; // created time of this document (post est.)
+    createdTimeBySecond: number; // created time of this document (post est.)
     title: string;
     imageUrlsArr: string[];
 
@@ -96,7 +96,7 @@ export interface IConcisePostComprehensiveWithMemberInfo {
     memberId: string;
     nickname: string;
     avatarImageFullName: string;
-    createdTime: number; // created time of this document (post est.)
+    createdTimeBySecond: number; // created time of this document (post est.)
     title: string;
     imageUrlsArr: string[];
 

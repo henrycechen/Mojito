@@ -3,12 +3,14 @@ import { getToken } from 'next-auth/jwt';
 import { RestError } from '@azure/storage-blob';
 import { MongoError } from 'mongodb';
 
-import { logWithDate, response405, response500, verifyId } from '../../../../../lib/utils';
+import AtlasDatabaseClient from '../../../../../modules/AtlasDatabaseClient';
+
 import { IMemberComprehensive } from '../../../../../lib/interfaces/member';
 import { INicknameRegistry } from '../../../../../lib/interfaces/registry';
+import { logWithDate, response405, response500 } from '../../../../../lib/utils/general';
+import { verifyId } from '../../../../../lib/utils/verify';
 
-import AtlasDatabaseClient from '../../../../../modules/AtlasDatabaseClient';
-import AzureTableClient from '../../../../../modules/AzureTableClient';
+const fname = UpdateBirthday.name;
 
 /** UpdateBirthday v0.1.1
  * 
@@ -24,6 +26,7 @@ import AzureTableClient from '../../../../../modules/AzureTableClient';
 
 
 export default async function UpdateBirthday(req: NextApiRequest, res: NextApiResponse) {
+
     const { method } = req;
     if ('PUT' !== method) {
         response405(req, res);
@@ -36,7 +39,7 @@ export default async function UpdateBirthday(req: NextApiRequest, res: NextApiRe
         res.status(401).send('Unauthorized');
         return;
     }
-    const { sub: memberId_ref } = token;
+    const { sub: tokenId } = token;
 
     //// Verify member id ////
     const { isValid, category, id: memberId } = verifyId(req.query?.memberId);
@@ -46,8 +49,8 @@ export default async function UpdateBirthday(req: NextApiRequest, res: NextApiRe
         return;
     }
 
-    //// Match identity id and request member id ////
-    if (memberId_ref !== memberId) {
+    //// Match the member id in token and the one in request ////
+    if (tokenId !== memberId) {
         res.status(400).send('Requested member id and identity not matched');
         return;
     }
@@ -59,7 +62,7 @@ export default async function UpdateBirthday(req: NextApiRequest, res: NextApiRe
 
         //// Verify member status ////
         const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
-        const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne({ memberId });
+        const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne({ memberId }, { projection: { _id: 0, status: 1 } });
         if (null === memberComprehensiveQueryResult) {
             throw new Error(`Member attempt to update (PUT) birthday but have no document (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
         }
@@ -97,16 +100,16 @@ export default async function UpdateBirthday(req: NextApiRequest, res: NextApiRe
     } catch (e: any) {
         let msg;
         if (e instanceof RestError) {
-            msg = 'Attempt to communicate with azure table storage.';
+            msg = `Attempt to communicate with azure table storage.`;
         } else if (e instanceof MongoError) {
-            msg = 'Attempt to communicate with atlas mongodb.';
+            msg = `Attempt to communicate with atlas mongodb.`;
         } else {
             msg = `Uncategorized. ${e?.msg}`;
         }
         if (!res.headersSent) {
             response500(res, msg);
         }
-        logWithDate(msg, e);
+        logWithDate(msg, fname, e);
         await atlasDbClient.close();
         return;
     }

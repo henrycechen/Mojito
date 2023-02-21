@@ -1,5 +1,3 @@
-import { IConciseMemberInfo } from "./interfaces";
-
 export type LangConfigs = {
     [key: string]: any
 };
@@ -20,7 +18,11 @@ export type TPreferenceStates = {
     mode: 'light' | 'dark';
 }
 
-export type EmailMessage = {
+type EmailRecipient = {
+    email: string;
+}
+
+export type TEmailMessage = {
     sender: '<donotreply@mojito.co.nz>';
     content: {
         subject: string;
@@ -32,10 +34,6 @@ export type EmailMessage = {
     }
 }
 
-type EmailRecipient = {
-    email: string;
-}
-
 export type TVerifyEmailAddressRequestInfo = {
     emailAddress: string;
     providerId: string;
@@ -45,5 +43,5 @@ export type TVerifyEmailAddressRequestInfo = {
 export type TResetPasswordRequestInfo = {
     emailAddress: string;
     resetPasswordToken: string;
-    expireDate: number;
+    expireDateBySecond: number;
 }

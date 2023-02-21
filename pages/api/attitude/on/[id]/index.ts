@@ -6,24 +6,40 @@ import { MongoError } from 'mongodb';
 import AzureTableClient from '../../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from "../../../../../modules/AtlasDatabaseClient";
 
-import { INoticeInfo, INotificationStatistics, IMemberStatistics, IAttitudeComprehensive, IChannelStatistics, ITopicComprehensive, IPostComprehensive, IMemberComprehensive, ICommentComprehensive } from '../../../../../lib/interfaces';
-import { getNicknameFromToken, getMappingFromAttitudeComprehensive, verifyId, response405, response500, logWithDate, provideAttitudeComprehensiveUpdate, createAttitudeComprehensive, createNoticeId, getContentBrief } from '../../../../../lib/utils';
-const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
+import { getContentBrief, logWithDate, response405, response500 } from '../../../../../lib/utils/general';
+import { verifyId } from '../../../../../lib/utils/verify';
+import { IMemberComprehensive, IMemberStatistics } from '../../../../../lib/interfaces/member';
+import { IAttitudeComprehensive } from '../../../../../lib/interfaces/attitude';
+import { createAttitudeComprehensive, getMappingFromAttitudeComprehensive, provideAttitudeComprehensiveUpdate } from '../../../../../lib/utils/for/attitude';
+import { ICommentComprehensive } from '../../../../../lib/interfaces/comment';
+import { IPostComprehensive } from '../../../../../lib/interfaces/post';
+import { IChannelStatistics } from '../../../../../lib/interfaces/channel';
+import { ITopicComprehensive } from '../../../../../lib/interfaces/topic';
+import { INoticeInfo, INotificationStatistics } from '../../../../../lib/interfaces/notification';
+import { createNoticeId } from '../../../../../lib/utils/create';
+import { getNicknameFromToken } from '../../../../../lib/utils/for/member';
 
-// This interface accepts GET and POST requests
-//
-// Info required for GET method
-// - recaptchaResponse: string (query string)
-// - token: JWT
-// - id: string (query, post id)
 
-// Info required for POST requests
-// - recaptchaResponse: string (query string)
-// - token: JWT
-// - id: string (query, post or comment id)
-// - attitude: number (body, POST only)
+const fname = GetOrPostAttitudeOnPostOrCommentById.name;
 
-export default async function AttitudeOnPostOrCommentById(req: NextApiRequest, res: NextApiResponse) {
+/** GetOrPostAttitudeOnPostOrCommentById v0.1.1 FIXME: test mode
+ * 
+ * This interface accepts GET and POST requests
+ * 
+ * Info required for GET method
+ * - recaptchaResponse: string (query string)
+ * - token: JWT
+ * - id: string (query, post id)
+ * 
+ * Info required for POST requests
+ * - recaptchaResponse: string (query string)
+ * - token: JWT
+ * - id: string (query, post or comment id)
+ * - attitude: number (body)
+ * 
+ */
+
+export default async function GetOrPostAttitudeOnPostOrCommentById(req: NextApiRequest, res: NextApiResponse) {
     const { method } = req;
     if (!['GET', 'POST'].includes(method ?? '')) {
         response405(req, res);
@@ -32,7 +48,7 @@ export default async function AttitudeOnPostOrCommentById(req: NextApiRequest, r
 
 
 
-    
+
     // FIXME: test
     res.send({
         attitude: 1,
@@ -41,25 +57,13 @@ export default async function AttitudeOnPostOrCommentById(req: NextApiRequest, r
             D12345ABCDF: 1
         },
     })
+    return;
 
 
 
 
 
-    // FIXME: deactived human/bot verification for tests
-    //// Verify human/bot ////
-    // const { recaptchaResponse } = req.query;
-    // const { status, message } = await verifyRecaptchaResponse(recaptchaServerSecret, recaptchaResponse);
-    // if (200 !== status) {
-    //     if (403 === status) {
-    //         res.status(403).send(message);
-    //         return;
-    //     }
-    //     if (500 === status) {
-    //         response500(res, message);
-    //         return;
-    //     }
-    // }
+
     //// Verify identity ////
     const token = await getToken({ req });
     if (!(token && token?.sub)) {
@@ -189,37 +193,37 @@ export default async function AttitudeOnPostOrCommentById(req: NextApiRequest, r
                             }
                         });
                         if (!memberStatisticsUpdateResult.acknowledged) {
-                            logWithDate(`Failed to update totalUndoLikedCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`);
+                            logWithDate(`Failed to update totalUndoLikedCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`, fname);
                         }
                         if (['comment', 'subcomment'].includes(category)) {
                             // [comment] Step #2 totalCommentUndoLikedCount (of IMemberStatistics) in [C] memberStatistics (of the comment author, a.k.a., notified member)
                             const commentAuthorStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId: notifiedMemberId }, { $inc: { totalCommentUndoLikedCount: 1 } });
                             if (!commentAuthorStatisticsUpdateResult.acknowledged) {
-                                logWithDate(`Failed to update totalCommentUndoLikedCount (of IMemberStatistics, member id: ${notifiedMemberId}) in [C] memberStatistics`);
+                                logWithDate(`Failed to update totalCommentUndoLikedCount (of IMemberStatistics, member id: ${notifiedMemberId}) in [C] memberStatistics`, fname);
                             }
                             // [comment] Step #3 totalUndoLikedCount (of ICommentComprehensive) in [C] commentComprehensive
                             const commentComprehensiveUpdateResult = await commentComprehensiveCollectionClient.updateOne({ commentId: id }, { $inc: { totalUndoLikedCount: 1 } });
                             if (!commentComprehensiveUpdateResult.acknowledged) {
-                                logWithDate(`Failed to update totalUndoLikedCount (of ICommetComprehensive, comment id: ${id}) in [C] commentComprehensive`);
+                                logWithDate(`Failed to update totalUndoLikedCount (of ICommetComprehensive, comment id: ${id}) in [C] commentComprehensive`, fname);
                             }
                         }
                         if ('post' === category) {
                             // [post] Step #2 totalCreationUndoLikedCount (of IMemberStatistics) in [C] memberStatistics (of the post author, a.k.a., notified member)
                             const postAuthorStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId: notifiedMemberId }, { $inc: { totalCreationUndoLikedCount: 1 } });
                             if (!postAuthorStatisticsUpdateResult.acknowledged) {
-                                logWithDate(`Failed to update totalCreationUndoLikedCount (of IMemberStatistics, member id: ${notifiedMemberId}) in [C] memberStatistics`);
+                                logWithDate(`Failed to update totalCreationUndoLikedCount (of IMemberStatistics, member id: ${notifiedMemberId}) in [C] memberStatistics`, fname);
                             }
                             // [post] Step #3 totalUndoLikedCount (of IPostComprehensive) in [C] postComprehensive
                             const postComprehensiveUpdateResult = await postComprehensiveCollectionClient.updateOne({ postId }, { $inc: { totalUndoLikedCount: 1 } });
                             if (!postComprehensiveUpdateResult.acknowledged) {
-                                logWithDate(`Failed to update totalUndoLikedCount (of IPostComprehensive, post id: ${postId}) in [C] postComprehensive`);
+                                logWithDate(`Failed to update totalUndoLikedCount (of IPostComprehensive, post id: ${postId}) in [C] postComprehensive`, fname);
                             }
                             // [post] Step #4 totalUndoLikedCount (of IChannelStatistics) in [C] channelStatistics
                             const { channelId } = postComprehensiveQueryResult;
                             const channelStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IChannelStatistics>('channel');
                             const channelStatisticsUpdateResult = await channelStatisticsCollectionClient.updateOne({ channelId }, { $inc: { totalUndoLikedCount: 1 } });
                             if (!channelStatisticsUpdateResult.acknowledged) {
-                                logWithDate(`Failed to update totalUndoLikedCount (of IChannelStatistics, channel id: ${channelId}) in [C] channelStatistics`);
+                                logWithDate(`Failed to update totalUndoLikedCount (of IChannelStatistics, channel id: ${channelId}) in [C] channelStatistics`, fname);
                             }
                             // [post] Step #5 (cond.) totalUndoLikedCount (of ITopicComprehensive) in [C] topicComprehensive 
                             const { topicIdsArr } = postComprehensiveQueryResult;
@@ -228,7 +232,7 @@ export default async function AttitudeOnPostOrCommentById(req: NextApiRequest, r
                                 for await (const topicId of topicIdsArr) {
                                     const topicComprehensiveUpdateResult = await topicComprehensiveCollectionClient.updateOne({ topicId }, { $inc: { totalUndoLikedCount: 1 } });
                                     if (!topicComprehensiveUpdateResult.acknowledged) {
-                                        logWithDate(`Failed to update totalUndoLikedCount (of ITopicComprehensive, topic id: ${topicId}) in [C] topicComprehensive`);
+                                        logWithDate(`Failed to update totalUndoLikedCount (of ITopicComprehensive, topic id: ${topicId}) in [C] topicComprehensive`, fname);
                                     }
                                 }
                             }
@@ -240,30 +244,30 @@ export default async function AttitudeOnPostOrCommentById(req: NextApiRequest, r
                         const memberStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IMemberStatistics>('member');
                         const memberStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId }, { $inc: { totalUndoDislikedCount: 1 } });
                         if (!memberStatisticsUpdateResult.acknowledged) {
-                            logWithDate(`Failed to update total totalUndoDislikedCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`);
+                            logWithDate(`Failed to update total totalUndoDislikedCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`, fname);
                         }
                         if (['comment', 'subcomment'].includes(category)) {
                             // [post] Step #2 totalCommentUndoDislikedCount (of IMemberStatistics) in [C] memberStatistics (of the comment author, a.k.a., notified member)
                             const commentAuthorStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId: notifiedMemberId }, { $inc: { totalCommentUndoDislikedCount: 1 } });
                             if (!commentAuthorStatisticsUpdateResult.acknowledged) {
-                                logWithDate(`Failed to update totalCommentUndoDislikedCount (of IMemberStatistics, member id: ${notifiedMemberId}) in [C] memberStatistics`);
+                                logWithDate(`Failed to update totalCommentUndoDislikedCount (of IMemberStatistics, member id: ${notifiedMemberId}) in [C] memberStatistics`, fname);
                             }
                             // [post] Step #3 update totalUndoDislikedCount (of ICommentComprehensive) in [C] commentComprehensive
                             const commentComprehensiveUpdateResult = await commentComprehensiveCollectionClient.updateOne({ commentId: id }, { $inc: { totalUndoDislikedCount: 1 } });
                             if (!commentComprehensiveUpdateResult.acknowledged) {
-                                logWithDate(`Failed to update totalUndoDislikedCount (of ICommetComprehensive, comment id: ${id}) in [C] commentComprehensive`);
+                                logWithDate(`Failed to update totalUndoDislikedCount (of ICommetComprehensive, comment id: ${id}) in [C] commentComprehensive`, fname);
                             }
                         }
                         if ('post' === category) {
                             // [post] Step #2 totalCreationUndoDislikedCount (of IMemberStatistics) in [C] memberStatistics (of the post author, a.k.a., notified member)
                             const postAuthorStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId: notifiedMemberId }, { $inc: { totalCreationUndoDislikedCount: 1 } });
                             if (!postAuthorStatisticsUpdateResult.acknowledged) {
-                                logWithDate(`Failed to update totalCreationUndoDislikedCount (of IMemberStatistics, member id: ${notifiedMemberId}) in [C] memberStatistics`);
+                                logWithDate(`Failed to update totalCreationUndoDislikedCount (of IMemberStatistics, member id: ${notifiedMemberId}) in [C] memberStatistics`, fname);
                             }
                             // [post] Step #3 update totalUndoDislikedCount (of IPostComprehensive) in [C] postComprehensive
                             const commentComprehensiveUpdateResult = await postComprehensiveCollectionClient.updateOne({ postId }, { $inc: { totalUndoDislikedCount: 1 } });
                             if (!commentComprehensiveUpdateResult.acknowledged) {
-                                logWithDate(`Failed to update totalUndoDislikedCount (of IPostComprehensive, post id: ${postId}) in [C] postComprehensive`);
+                                logWithDate(`Failed to update totalUndoDislikedCount (of IPostComprehensive, post id: ${postId}) in [C] postComprehensive`, fname);
                             }
                         }
                     }
@@ -280,37 +284,37 @@ export default async function AttitudeOnPostOrCommentById(req: NextApiRequest, r
                     }
                 });
                 if (!memberStatisticsUpdateResult.acknowledged) {
-                    logWithDate(`Failed to update total totalLikedCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`);
+                    logWithDate(`Failed to update total totalLikedCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`, fname);
                 }
                 if (['comment', 'subcomment'].includes(category)) {
                     // [comment] Step #2 update totalCommentLikedCount (of IMemberStatistics) in [C] memberStatistics (of the comment author, a.k.a, notified member)
                     const commentAuthorStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId: notifiedMemberId }, { $inc: { totalCommentLikedCount: 1 } });
                     if (!commentAuthorStatisticsUpdateResult.acknowledged) {
-                        logWithDate(`Failed to update total totalCommentLikedCount (of IMemberStatistics, member id: ${notifiedMemberId}) in [C] memberStatistics`);
+                        logWithDate(`Failed to update total totalCommentLikedCount (of IMemberStatistics, member id: ${notifiedMemberId}) in [C] memberStatistics`, fname);
                     }
                     // [comment] Step #3 update totalLikedCount (of ICommetComprehensive) in [C] commentComprehensive
                     const commentComprehensiveUpdateResult = await commentComprehensiveCollectionClient.updateOne({ commentId: id }, { $inc: { totalLikedCount: 1 } });
                     if (!commentComprehensiveUpdateResult.acknowledged) {
-                        logWithDate(`Failed to update totalLikedCount (of ICommetComprehensive in [C] commentComprehensive`);
+                        logWithDate(`Failed to update totalLikedCount (of ICommetComprehensive in [C] commentComprehensive`, fname);
                     }
                 }
                 if ('post' === category) {
                     // [post] Step #2 update totalCreationLikedCount (of IMemberStatistics) in [C] memberStatistics (of the post author, a.k.a, notified member)
                     const commentAuthorStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId: notifiedMemberId }, { $inc: { totalCreationLikedCount: 1 } });
                     if (!commentAuthorStatisticsUpdateResult.acknowledged) {
-                        logWithDate(`Failed to update total totalCreationLikedCount (of IMemberStatistics, member id: ${notifiedMemberId}) in [C] memberStatistics`);
+                        logWithDate(`Failed to update total totalCreationLikedCount (of IMemberStatistics, member id: ${notifiedMemberId}) in [C] memberStatistics`, fname);
                     }
                     // [post] Step #3 update totalLikedCount (of IPostComprehensive) in [C] postComprehensive
                     const postComprehensiveUpdateResult = await postComprehensiveCollectionClient.updateOne({ postId }, { $inc: { totalLikedCount: 1 } });
                     if (!postComprehensiveUpdateResult.acknowledged) {
-                        logWithDate(`Failed to update totalLikedCount (of IPostComprehensive, post id: ${postId}) in [C] postComprehensive`);
+                        logWithDate(`Failed to update totalLikedCount (of IPostComprehensive, post id: ${postId}) in [C] postComprehensive`, fname);
                     }
                     // [post] Step #4 update totalLikedCount (of IChannelStatistics) in [C] channelStatistics
                     const { channelId } = postComprehensiveQueryResult;
                     const channelStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IChannelStatistics>('channel');
                     const channelStatisticsUpdateResult = await channelStatisticsCollectionClient.updateOne({ channelId }, { $inc: { totalLikedCount: 1 } });
                     if (!channelStatisticsUpdateResult.acknowledged) {
-                        logWithDate(`Failed to update totalLikedCount (of IChannelStatistics, channel id: ${channelId}) in [C] channelStatistics`);
+                        logWithDate(`Failed to update totalLikedCount (of IChannelStatistics, channel id: ${channelId}) in [C] channelStatistics`, fname);
                     }
                     // [post] Step #5 (cond.) totalLikedCount (of ITopicComprehensive) in [C] topicComprehensive
                     const { topicIdsArr } = postComprehensiveQueryResult;
@@ -319,14 +323,14 @@ export default async function AttitudeOnPostOrCommentById(req: NextApiRequest, r
                         for await (const topicId of topicIdsArr) {
                             const topicComprehensiveUpdateResult = await topicComprehensiveCollectionClient.updateOne({ topicId }, { $inc: { totalLikedCount: 1 } });
                             if (!topicComprehensiveUpdateResult.acknowledged) {
-                                logWithDate(`Failed to update totalLikedCount (of ITopicComprehensive, topic id: ${topicId}) in [C] topicComprehensive`);
+                                logWithDate(`Failed to update totalLikedCount (of ITopicComprehensive, topic id: ${topicId}) in [C] topicComprehensive`, fname);
                             }
                         }
                     }
                 }
                 if (memberId !== notifiedMemberId) {
                     // Handle notice.like ////
-                    const { title } = memberComprehensiveQueryResult;
+                    const { title } = postComprehensiveQueryResult;
                     let content: string | undefined;
                     if (['comment', 'subcomment'].includes(category)) {
                         const commentComprehensiveQueryResult = await commentComprehensiveCollectionClient.findOne({ commentId: id });
@@ -346,16 +350,14 @@ export default async function AttitudeOnPostOrCommentById(req: NextApiRequest, r
                             Category: 'like',
                             InitiateId: memberId,
                             Nickname: getNicknameFromToken(token),
-                            PostId: postId,
                             PostTitle: title,
-                            CommentId: 'post' === category ? undefined : id,
                             CommentBrief: getContentBrief(content)
                         }, 'Replace');
                         // Step #5 update like (of INotificationStatistics, of post or comment author) in [C] notificationStatistics
                         const notificationStatisticsCollectionClient = atlasDbClient.db('statistics').collection<INotificationStatistics>('notification');
                         const notificationStatisticsUpdateResult = await notificationStatisticsCollectionClient.updateOne({ memberId: notifiedMemberId }, { $inc: { like: 1 } });
                         if (!notificationStatisticsUpdateResult.acknowledged) {
-                            logWithDate(`Failed to update like (of INotificationStatistics, member id: ${notifiedMemberId}) in [C] notificationStatistics`);
+                            logWithDate(`Failed to update like (of INotificationStatistics, member id: ${notifiedMemberId}) in [C] notificationStatistics`, fname);
                         }
                     }
                 }
@@ -366,30 +368,30 @@ export default async function AttitudeOnPostOrCommentById(req: NextApiRequest, r
                 const memberStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IMemberStatistics>('member');
                 const memberStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId }, { $inc: { totalDislikedCount: 1 } });
                 if (!memberStatisticsUpdateResult.acknowledged) {
-                    logWithDate(`Failed to update totalDislikedCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`);
+                    logWithDate(`Failed to update totalDislikedCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`, fname);
                 }
                 if (['comment', 'subcomment'].includes(category)) {
                     // [comment] Step #2 update totalCommentDislikedCount (of IMemberStatistics) [C] memberStatistics (of the comment author, a.k.a, notified member)
                     const commentAuthorStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId: notifiedMemberId }, { $inc: { totalCommentDislikedCount: 1 } });
                     if (!commentAuthorStatisticsUpdateResult.acknowledged) {
-                        logWithDate(`Failed to update totalCommentDislikedCount (of IMemberStatistics, member id: ${notifiedMemberId}) in [C] memberStatistics`);
+                        logWithDate(`Failed to update totalCommentDislikedCount (of IMemberStatistics, member id: ${notifiedMemberId}) in [C] memberStatistics`, fname);
                     }
                     // [comment] Step #3 update totalDislikedCount in (of ICommet/ISubcommentComprehensive) in [C] comment/subcommentComprehensive
                     const commentComprehensiveUpdateResult = await commentComprehensiveCollectionClient.updateOne({ commentId: id }, { $inc: { totalDislikedCount: 1 } });
                     if (!commentComprehensiveUpdateResult.acknowledged) {
-                        logWithDate(`Failed to update totalDislikedCount (of ICommetComprehensive, comment id: ${id}) in [C] commentComprehensive`);
+                        logWithDate(`Failed to update totalDislikedCount (of ICommetComprehensive, comment id: ${id}) in [C] commentComprehensive`, fname);
                     }
                 }
                 if ('post' === category) {
                     // [post] Step #2 update totalCreationDislikedCount (of IMemberStatistics) [C] memberStatistics (of the comment author, a.k.a, notified member)
                     const postAuthorStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId: notifiedMemberId }, { $inc: { totalCreationDislikedCount: 1 } });
                     if (!postAuthorStatisticsUpdateResult.acknowledged) {
-                        logWithDate(`Failed to update totalCreationDislikedCount (of IMemberStatistics, member id: ${notifiedMemberId}) in [C] memberStatistics`);
+                        logWithDate(`Failed to update totalCreationDislikedCount (of IMemberStatistics, member id: ${notifiedMemberId}) in [C] memberStatistics`, fname);
                     }
                     // [post] Step #3 update totalDislikedCount in (of IPostComprehensive) in [C] postComprehensive
                     const commentComprehensiveUpdateResult = await postComprehensiveCollectionClient.updateOne({ postId }, { $inc: { totalDislikedCount: 1 } });
                     if (!commentComprehensiveUpdateResult.acknowledged) {
-                        logWithDate(`Failed to update totalDislikedCount (of IPostComprehensive, post id: ${postId}) in [C] postComprehensive`);
+                        logWithDate(`Failed to update totalDislikedCount (of IPostComprehensive, post id: ${postId}) in [C] postComprehensive`, fname);
                     }
                 }
             }
@@ -399,16 +401,16 @@ export default async function AttitudeOnPostOrCommentById(req: NextApiRequest, r
     } catch (e: any) {
         let msg;
         if (e instanceof RestError) {
-            msg = 'Attempt to communicate with azure table storage.';
+            msg = `Attempt to communicate with azure table storage.`;
         } else if (e instanceof MongoError) {
-            msg = 'Attempt to communicate with atlas mongodb.';
+            msg = `Attempt to communicate with atlas mongodb.`;
         } else {
             msg = `Uncategorized. ${e?.msg}`;
         }
         if (!res.headersSent) {
             response500(res, msg);
         }
-        logWithDate(msg, e);
+        logWithDate(msg, fname, e);
         await atlasDbClient.close();
         return;
     }

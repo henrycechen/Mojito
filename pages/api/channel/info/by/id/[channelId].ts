@@ -2,7 +2,19 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { RestError } from '@azure/data-tables';
 
 import AzureTableClient from '../../../../../../modules/AzureTableClient';
-import { response405, response500, logWithDate } from '../../../../../../lib/utils';
+import { logWithDate, response405, response500 } from '../../../../../../lib/utils/general';
+const fname = GetChannelInfoById.name;
+
+/** GetChannelInfoById v0.1.1
+ * 
+ * Last update: 21/02/2023
+ * 
+ * This interface ONLY accepts GET requests
+ * 
+ * Info required for GET requests
+ * - channelId: string (query, member id)
+ * 
+ */
 
 export default async function GetChannelInfoById(req: NextApiRequest, res: NextApiResponse) {
     const { method } = req;
@@ -33,14 +45,14 @@ export default async function GetChannelInfoById(req: NextApiRequest, res: NextA
 
         let msg;
         if (e instanceof RestError) {
-            msg = 'Attempt to communicate with azure table storage.';
+            msg = `Attempt to communicate with azure table storage.`;
         } else {
             msg = `Uncategorized. ${e?.msg}`;
         }
         if (!res.headersSent) {
             response500(res, msg);
         }
-        logWithDate(msg, e);
+        logWithDate(msg, fname, e);
         return;
     }
 }

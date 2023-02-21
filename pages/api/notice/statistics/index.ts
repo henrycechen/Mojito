@@ -4,17 +4,20 @@ import { RestError } from '@azure/data-tables';
 import { MongoError } from 'mongodb';
 
 import AtlasDatabaseClient from "../../../../modules/AtlasDatabaseClient";
+import { logWithDate, response405, response500 } from '../../../../lib/utils/general';
+import { IMemberComprehensive } from '../../../../lib/interfaces/member';
+import { INotificationStatistics } from '../../../../lib/interfaces/notification';
 
-import { IMemberMemberMapping, INoticeInfo, INotificationStatistics, IMemberComprehensive, IMemberStatistics } from '../../../../lib/interfaces';
-import { createNoticeId, getNicknameFromToken, verifyId, response405, response500, logWithDate, } from '../../../../lib/utils';
-const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
+const fname = GetNotificationStatistics.name;
 
-/** This interface accepts GET and POST requests
+/** GetNotificationStatistics v0.1.1 FIXME: test mode
+ * 
+ * Last update:
+ * 
+ * This interface accepts GET and PUT requests
  * 
  * Info required for GET requests
- * 
- * recaptchaResponse: string (query string)
- * token: JWT
+ * - token: JWT
  * 
 */
 
@@ -24,29 +27,14 @@ export default async function GetNotificationStatistics(req: NextApiRequest, res
         response405(req, res);
         return;
     }
-    if ('GET' === method){
+    if ('GET' === method) {
         res.send({ cue: 16, reply: 23, like: 99, pin: 7, save: 56, follow: 34 })
     }
-    if ('PUT' === method){
+    if ('PUT' === method) {
         res.status(200).end();
     }
     return;
 
-
-    // FIXME: deactived human/bot verification for tests
-    //// Verify human/bot ////
-    // const { recaptchaResponse } = req.query;
-    // const { status, message } = await verifyRecaptchaResponse(recaptchaServerSecret, recaptchaResponse);
-    // if (200 !== status) {
-    //     if (403 === status) {
-    //         res.status(403).send(message);
-    //         return;
-    //     }
-    //     if (500 === status) {
-    //         response500(res, message);
-    //         return;
-    //     }
-    // }
     //// Verify identity ////
     const token = await getToken({ req });
     if (!(token && token?.sub)) {
@@ -72,7 +60,7 @@ export default async function GetNotificationStatistics(req: NextApiRequest, res
         const notificationStatisticsCollectionClient = atlasDbClient.db('statistics').collection<INotificationStatistics>('notification');
         const notificationStatisticsQueryResult = await notificationStatisticsCollectionClient.findOne({ memberId }, { projection: { _id: 0, memberId: 0, cue: 1, reply: 1, like: 1, pin: 1, save: 1, follow: 1 } });
         if (null === notificationStatisticsQueryResult) {
-            logWithDate(`Document (of INotificationStatistics, member id: ${memberId}) not found in [C] notificationStatistics`);
+            logWithDate(`Document (of INotificationStatistics, member id: ${memberId}) not found in [C] notificationStatistics`,fname);
             res.status(500).send('Notification statistics document not found');
             await atlasDbClient.close();
             return;
@@ -82,14 +70,14 @@ export default async function GetNotificationStatistics(req: NextApiRequest, res
     } catch (e: any) {
         let msg;
         if (e instanceof MongoError) {
-            msg = 'Attempt to communicate with atlas mongodb.';
+            msg = `Attempt to communicate with atlas mongodb.`;
         } else {
             msg = `Uncategorized. ${e?.msg}`;
         }
         if (!res.headersSent) {
             response500(res, msg);
         }
-        logWithDate(msg, e);
+        logWithDate(msg, fname, e);
         await atlasDbClient.close();
         return;
     }

@@ -3,7 +3,18 @@ import { RestError } from '@azure/data-tables';
 
 import AzureTableClient from '../../../../modules/AzureTableClient';
 import { IChannelInfoDictionary } from '../../../../lib/interfaces/channel';
-import { response405, response500, logWithDate } from '../../../../lib/utils';
+import { response405, response500, logWithDate } from '../../../../lib/utils/general';
+const fname = GetChannelInfoDictionary.name;
+
+/** GetChannelInfoDictionary v0.1.1
+ * 
+ * Last update: 21/02/2023
+ * 
+ * This interface ONLY accepts GET requests
+ * 
+ * No info required for GET requests
+ * 
+ */
 
 export default async function GetChannelInfoDictionary(req: NextApiRequest, res: NextApiResponse) {
     const { method } = req;
@@ -44,8 +55,10 @@ export default async function GetChannelInfoDictionary(req: NextApiRequest, res:
         } else {
             msg = `Uncategorized. ${e?.msg}`;
         }
-        response500(res, msg);
-        logWithDate(msg, e);
+        if (!res.headersSent) {
+            response500(res, msg);
+        }
+        logWithDate(msg, fname, e);
         return;
     }
 }

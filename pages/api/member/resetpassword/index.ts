@@ -6,16 +6,22 @@ import CryptoJS from 'crypto-js';
 import AzureTableClient from '../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from '../../../../modules/AtlasDatabaseClient';
 
-import { verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500, logWithDate, verifyEmailAddress, verifyPassword } from '../../../../lib/utils';
-import { IMojitoMemberSystemLoginCredentials, ILoginJournal } from '../../../../lib/interfaces';
+import { ILoginJournal } from '../../../../lib/interfaces/member';
+import { ILoginCredentials, IMojitoMemberSystemLoginCredentials, IResetPasswordCredentials } from '../../../../lib/interfaces/credentials';
+import { verifyRecaptchaResponse, verifyEnvironmentVariable, verifyEmailAddress, verifyPassword } from '../../../../lib/utils/verify';
+import { response405, response500, logWithDate } from '../../../../lib/utils/general';
 
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
 const salt = process.env.APP_PASSWORD_SALT ?? '';
+const fname = ResetPassword.name;
 
-/** This interface ONLY accepts POST method
+/** ResetPassword v0.1.1
+ * 
+ * Last update: 21/02/2023
+ * 
+ * This interface ONLY accepts POST method
  * 
  * Info required for POST request
- * 
  * - emailAddressHash: string
  * - resetPasswordToken: string
  * - password: string
@@ -27,19 +33,21 @@ export default async function ResetPassword(req: NextApiRequest, res: NextApiRes
         response405(req, res);
         return;
     }
+
     //// Verify environment variables ////
     const environmentVariable = verifyEnvironmentVariable({ recaptchaServerSecret, salt });
     if (!!environmentVariable) {
         const msg = `${environmentVariable} not found`;
         response500(res, msg);
-        logWithDate(msg);
+        logWithDate(msg, fname);
         return;
     }
+
     //// Declare DB client ////
     const atlasDbClient = AtlasDatabaseClient();
     try {
         const { recaptchaResponse } = req.query;
-        // Step #1 verify if it is bot
+        // Step #1 verify if requested by human
         const { status, message } = await verifyRecaptchaResponse(recaptchaServerSecret, recaptchaResponse);
         if (200 !== status) {
             if (403 === status) {
@@ -69,26 +77,26 @@ export default async function ResetPassword(req: NextApiRequest, res: NextApiRes
         const emailAddressHash = CryptoJS.SHA1(emailAddress).toString();
         // Step #3.2 look up login credentials record (by email address hash) in [RL] Credentials
         const credentialsTableClient = AzureTableClient('Credentials');
-        const loginCredentialsQuery = credentialsTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${emailAddressHash}' and RowKey eq 'MojitoMemberSystem'` } });
+        const loginCredentialsQuery = credentialsTableClient.listEntities<ILoginCredentials>({ queryOptions: { filter: `PartitionKey eq '${emailAddressHash}' and RowKey eq 'MojitoMemberSystem'` } });
         //// [!] attemp to reterieve entity makes the probability of causing RestError ////
         const loginCredentialsQueryResult = await loginCredentialsQuery.next();
-        if (!loginCredentialsQueryResult.value) {
+        if (loginCredentialsQueryResult.done) {
             const msg = 'Login credentials record not found';
             response500(res, msg);
             return;
         }
         const { MemberId: memberId } = loginCredentialsQueryResult.value;
         // Step #3.2 look up reset password credentials record (by email address hash) in [RL] Credentials
-        const resetPasswordCredentialsQuery = credentialsTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${emailAddressHash}' and RowKey eq 'ResetPassword'` } });
+        const resetPasswordCredentialsQuery = credentialsTableClient.listEntities<IResetPasswordCredentials>({ queryOptions: { filter: `PartitionKey eq '${emailAddressHash}' and RowKey eq 'ResetPassword'` } });
         //// [!] attemp to reterieve entity makes the probability of causing RestError ////
         const resetPasswordCredentialsQueryResult = await resetPasswordCredentialsQuery.next();
-        if (!resetPasswordCredentialsQueryResult.value) {
+        if (resetPasswordCredentialsQueryResult.done) {
             res.status(404).send('Password reset credentials not found');
             return;
         }
-        const { ResetPasswordToken: resetPasswordTokenReference, Timestamp: timestamp } = resetPasswordCredentialsQueryResult.value;
+        const { ResetPasswordToken: resetPasswordTokenReference, CreateTimeBySecond: createTimeBySecond } = resetPasswordCredentialsQueryResult.value;
         // Step #3.2 verify timestamp
-        if (15 * 60 * 1000 < new Date().getTime() - new Date(timestamp).getTime()) {
+        if (15 * 60 < (Math.floor(new Date().getTime() / 1000) - createTimeBySecond)) {
             res.status(408).send('Reset password token expired');
             return;
         }
@@ -98,8 +106,15 @@ export default async function ResetPassword(req: NextApiRequest, res: NextApiRes
             return;
         }
         // Step #4 update enitity (ILoginCredentials) in [RL] Credentials
-        await credentialsTableClient.upsertEntity<IMojitoMemberSystemLoginCredentials>({ partitionKey: emailAddressHash, rowKey: 'MojitoMemberSystem', PasswordHash: CryptoJS.SHA256(password + salt).toString(), MemberId: memberId }, 'Merge');
+        await credentialsTableClient.upsertEntity<IMojitoMemberSystemLoginCredentials>({
+            partitionKey: emailAddressHash,
+            rowKey: 'MojitoMemberSystem',
+            PasswordHash: CryptoJS.SHA256(password + salt).toString(),
+            MemberId: memberId,
+            LastUpdatedTimeBySecond: Math.floor(new Date().getTime() / 1000)
+        }, 'Merge');
         res.status(200).send('Password reset');
+
         // Step #5 write journal (ILoginJournal) in [C] loginJournal
         await atlasDbClient.connect();
         const loginJournalCollectionClient = atlasDbClient.db('journal').collection<ILoginJournal>('login');
@@ -110,6 +125,7 @@ export default async function ResetPassword(req: NextApiRequest, res: NextApiRes
             timestamp: new Date().toISOString(),
             message: 'Password reset.'
         });
+
         await atlasDbClient.close();
         return;
     } catch (e: any) {
@@ -118,16 +134,16 @@ export default async function ResetPassword(req: NextApiRequest, res: NextApiRes
             res.status(400).send('Improperly normalized request info');
             return;
         } else if (e instanceof RestError) {
-            msg = 'Attempt to communicate with azure table storage.';
+            msg = `Attempt to communicate with azure table storage.`;
         } else if (e instanceof MongoError) {
-            msg = 'Attempt to communicate with atlas mongodb.';
+            msg = `Attempt to communicate with atlas mongodb.`;
         } else {
             msg = `Uncategorized. ${e?.msg}`;
         }
         if (!res.headersSent) {
             response500(res, msg);
         }
-        logWithDate(msg, e);
+        logWithDate(msg, fname, e);
         await atlasDbClient.close();
         return;
     }

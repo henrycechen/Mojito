@@ -1,4 +1,4 @@
-import { IConciseMemberInfo, IConciseMemberStatistics, IRestrictedMemberInfo } from '../../interfaces/member';
+import { IConciseMemberInfo, IConciseMemberStatistics, IRestrictedMemberComprehensive } from '../../interfaces/member';
 import { getRandomHexStr } from '../create';
 
 /** Utils for Member Class v0.1.1
@@ -43,7 +43,7 @@ export function provideCuedMemberInfoArray(cuedMemberInfoDictionary: { [memberId
 }
 
 
-export function fakeRestrictedMemberInfo(): IRestrictedMemberInfo {
+export function fakeRestrictedMemberInfo(): IRestrictedMemberComprehensive {
     return {
         memberId: '',
         providerId: '',

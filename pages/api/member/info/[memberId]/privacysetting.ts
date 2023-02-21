@@ -3,29 +3,29 @@ import { getToken } from 'next-auth/jwt';
 import { RestError } from '@azure/storage-blob';
 import { MongoError } from 'mongodb';
 
-import { logWithDate, response405, response500 } from '../../../../../lib/utils/general';
-import { verifyId } from '../../../../../lib/utils/verify';
+import { logWithDate, response405, response500, } from '../../../../../lib/utils/general';
 import { IMemberComprehensive } from '../../../../../lib/interfaces/member';
 import { INicknameRegistry } from '../../../../../lib/interfaces/registry';
 
 import AtlasDatabaseClient from '../../../../../modules/AtlasDatabaseClient';
 import AzureTableClient from '../../../../../modules/AzureTableClient';
+import { verifyId } from '../../../../../lib/utils/verify';
 
-const fname = UpdateGender.name;
+const fname = UpdatePrivacySettings.name;
 
-/** UpdateGender v0.1.1
+/** UpdatePrivacySettings v0.1.1
  * 
- * Last update: 16/02/2023
+ * Last update: 19/02/2023
  * 
  * This interface ONLY accepts PUT requests
  * 
  * Info required for PUT requests
  * - token: JWT
- * - gender: number (body, -1 | 0 | 1)
+ * - setting: string (body, stringified json, TPrivacySettingsStates)
 */
 
 
-export default async function UpdateGender(req: NextApiRequest, res: NextApiResponse) {
+export default async function UpdatePrivacySettings(req: NextApiRequest, res: NextApiResponse) {
 
     const { method } = req;
     if ('PUT' !== method) {
@@ -62,9 +62,9 @@ export default async function UpdateGender(req: NextApiRequest, res: NextApiResp
 
         //// Verify member status ////
         const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
-        const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne({ memberId }, { projection: { _id: 0, status: 1 } });
+        const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne({ memberId });
         if (null === memberComprehensiveQueryResult) {
-            throw new Error(`Member attempt to update (PUT) gender but have no document (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
+            throw new Error(`Member attempt to update (PUT) brief intro but have no document (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
         }
 
         const { status: memberStatus } = memberComprehensiveQueryResult;
@@ -74,29 +74,39 @@ export default async function UpdateGender(req: NextApiRequest, res: NextApiResp
             return;
         }
 
-        //// Verify gender ////
-        const { gender } = req.body;
-        if (!('number' === typeof gender && [-1, 0, 1].includes(gender))) {
-            // TODO: Place nickname examination method here
-            res.status(400).send('Invalid gender code');
+        //// Verify alternative intro ////
+        const { settings } = req.body;
+        if (
+            !(
+                undefined !== settings
+                && settings.hasOwnProperty('allowKeepingBrowsingHistory')
+                && settings.hasOwnProperty('allowVisitingSavedPosts')
+                && settings.hasOwnProperty('hidePostsAndCommentsOfBlockedMember')
+            )
+        ) {
+            res.status(400).send('Update failed due to defavtive update setting object');
             return;
         }
 
         //// Update properties (of IMemberComprehensive) in [C] memberComprehensive ////
         const memberComprehensiveUpdateResult = await memberComprehensiveCollectionClient.updateOne({ memberId }, {
             $set: {
-                gender,
-                lastGenderUpdatedTimeBySecond: Math.floor(new Date().getTime() / 1000)
+                allowKeepingBrowsingHistory: settings.allowKeepingBrowsingHistory,
+                allowVisitingSavedPosts: settings.allowVisitingSavedPosts,
+                hidePostsAndCommentsOfBlockedMember: settings.hidePostsAndCommentsOfBlockedMember,
+                lastSettingsUpdatedTimeBySecond: Math.floor(new Date().getTime() / 1000)
             }
         })
 
         if (!memberComprehensiveUpdateResult.acknowledged) {
-            logWithDate(`Failed to update gender, lastGenderUpdatedTimeBySecond (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`, fname);
-            res.status(500).send(`Attempt to update gender`);
+            logWithDate(`Failed to update allowKeepingBrowsingHistory, allowVisitingSavedPosts, hidePostsAndCommentsOfBlockedMember, lastSettingUpdatedTimeBySecond (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`, fname);
+            res.status(500).send(`Attempt to update privacy settings`);
             return;
         }
 
-        res.status(200).send('Gender updated');
+        // TODO: is not allowed keeping browsing history, clear all records of IMemberPostMapping in [RL] HistoryMapping
+
+        res.status(200).send('Privacy settings updated');
         await atlasDbClient.close();
     } catch (e: any) {
         let msg;

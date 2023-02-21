@@ -5,18 +5,20 @@ import { MongoError } from 'mongodb';
 
 import AzureTableClient from '../../../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from "../../../../../../modules/AtlasDatabaseClient";
+import { logWithDate, response405, response500 } from '../../../../../../lib/utils/general';
+import { IMemberComprehensive } from '../../../../../../lib/interfaces/member';
 
-import { IMemberMemberMapping, INoticeInfo, INotificationStatistics, IMemberComprehensive, IMemberStatistics } from '../../../../../../lib/interfaces';
-import { createNoticeId, getNicknameFromToken, verifyId, response405, response500, logWithDate, } from '../../../../../../lib/utils';
-const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
+const fname = GetTopicsByChannelId.name;
 
-/** This interface ONLY accepts GET requests
+/** GetTopicsByChannelId v0.1.1
+ * 
+ * Last update: 
+ * 
+ * This interface ONLY accepts GET requests
  * 
  * Info required for GET requests
- * 
- * recaptchaResponse: string (query string)
- * channelId: string (query)
- * quantity: number (body, optional, maximum 20)
+ * - channelId: string (query)
+ * - quantity: number (body, optional, maximum 20)
 */
 
 export default async function GetTopicsByChannelId(req: NextApiRequest, res: NextApiResponse) {
@@ -25,20 +27,7 @@ export default async function GetTopicsByChannelId(req: NextApiRequest, res: Nex
         response405(req, res);
         return;
     }
-    // FIXME: deactived human/bot verification for tests
-    //// Verify human/bot ////
-    // const { recaptchaResponse } = req.query;
-    // const { status, message } = await verifyRecaptchaResponse(recaptchaServerSecret, recaptchaResponse);
-    // if (200 !== status) {
-    //     if (403 === status) {
-    //         res.status(403).send(message);
-    //         return;
-    //     }
-    //     if (500 === status) {
-    //         response500(res, message);
-    //         return;
-    //     }
-    // }
+    
     const fragment = req.query?.str;
     //// Verify notice category ////
     if (!('string' === typeof fragment && new RegExp(/^[-A-Za-z0-9+/]*={0,3}$/).test(fragment))) {
@@ -78,14 +67,14 @@ export default async function GetTopicsByChannelId(req: NextApiRequest, res: Nex
     } catch (e: any) {
         let msg;
         if (e instanceof MongoError) {
-            msg = 'Attempt to communicate with atlas mongodb.';
+            msg = `Attempt to communicate with atlas mongodb.`;
         } else {
             msg = `Uncategorized. ${e?.msg}`;
         }
         if (!res.headersSent) {
             response500(res, msg);
         }
-        logWithDate(msg, e);
+        logWithDate(msg, fname, e);
         await atlasDbClient.close();
         return;
     }

@@ -5,10 +5,12 @@ import CryptoJS from 'crypto-js';
 import AzureTableClient from '../../../../modules/AzureTableClient';
 import AzureEmailCommunicationClient from '../../../../modules/AzureEmailCommunicationClient';
 
-import { IResetPasswordCredentials } from '../../../../lib/interfaces';
-import { LangConfigs, EmailMessage, TResetPasswordRequestInfo } from '../../../../lib/types';
-import { getRandomHexStr, verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500, logWithDate } from '../../../../lib/utils';
+import { ILoginCredentials, IResetPasswordCredentials } from '../../../../lib/interfaces/credentials';
+import { LangConfigs, TEmailMessage, TResetPasswordRequestInfo } from '../../../../lib/types';
 import { composeResetPasswordEmailContent } from '../../../../lib/email';
+import { logWithDate, response405, response500 } from '../../../../lib/utils/general';
+import { verifyEnvironmentVariable, verifyRecaptchaResponse } from '../../../../lib/utils/verify';
+import { getRandomHexStr } from '../../../../lib/utils/create';
 
 const appSecret = process.env.APP_AES_SECRET ?? '';
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
@@ -23,14 +25,15 @@ const langConfigs: LangConfigs = {
     }
 }
 
-/** RequestResetPassword v0.1.1
+const fname = RequestResetPassword.name;
+
+/** RequestResetPassword v0.1.2
  * 
- * Last update 16/02/2023
+ * Last update: 21/02/2023
  * 
  * This interface ONLY accepts POST method
  * 
  * Info required for POST request
- * 
  * - emailAddressHash: string
  * - resetPasswordToken: string
  * - password: string
@@ -69,28 +72,30 @@ export default async function RequestResetPassword(req: NextApiRequest, res: Nex
             return;
         }
         const emailAddressHash = CryptoJS.SHA1(emailAddress).toString();
-        // Step #2.2 find member id by email address in [RL] Credentials
+
+        //// Look up record (of ILoginCredentials) in [RL] Credentials
         const credentialsTableClient = AzureTableClient('Credentials');
-        const loginCredentialsQuery = credentialsTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${emailAddressHash}' and RowKey eq 'MojitoMemberSystem'` } });
+        const loginCredentialsQuery = credentialsTableClient.listEntities<ILoginCredentials>({ queryOptions: { filter: `PartitionKey eq '${emailAddressHash}' and RowKey eq 'MojitoMemberSystem'` } });
         //// [!] attemp to reterieve entity makes the probability of causing RestError ////
         const loginCredentialsQueryResult = await loginCredentialsQuery.next();
-        if (!loginCredentialsQueryResult.value) {
+        if (loginCredentialsQueryResult.done) {
             res.status(404).send('Login credentials record not found');
             return;
         }
-        // Step #3.1 create a new reset password verification token
-        const resetPasswordToken = getRandomHexStr(true); // use UPPERCASE
+
+        //// Create a new reset password verification token ///
+        const resetPasswordToken = getRandomHexStr(true);
         const info: TResetPasswordRequestInfo = {
             emailAddress,
             resetPasswordToken: resetPasswordToken,
-            expireDate: new Date().getTime() + 15 * 60 * 1000 // set valid time for 15 minutes
+            expireDateBySecond: Math.floor(new Date().getTime() / 1000) + 54000 // set valid time for 15 minutes // Updated v0.1.2
         }
-        // Step #3.2 upsert entity (IResetPasswordCredentials) in [RL] Credentials
-        credentialsTableClient.upsertEntity<IResetPasswordCredentials>({ partitionKey: emailAddressHash, rowKey: 'ResetPassword', ResetPasswordToken: resetPasswordToken }, 'Replace');
-        //// Response 200 ////
-        res.status(200).send('Email sent');
-        // Step #4 send email
-        const emailMessage: EmailMessage = {
+
+        //// Upsert entity (IResetPasswordCredentials) in [RL] Credentials ////
+        credentialsTableClient.upsertEntity<IResetPasswordCredentials>({ partitionKey: emailAddressHash, rowKey: 'ResetPassword', ResetPasswordToken: resetPasswordToken, CreateTimeBySecond: Math.floor(new Date().getTime() / 1000) }, 'Replace');
+
+        //// Send email ////
+        const emailMessage: TEmailMessage = {
             sender: '<donotreply@mojito.co.nz>',
             content: {
                 subject: langConfigs.emailSubject[lang],
@@ -102,19 +107,23 @@ export default async function RequestResetPassword(req: NextApiRequest, res: Nex
         }
         const mailClient = AzureEmailCommunicationClient();
         await mailClient.send(emailMessage);
+
+        //// Response 200 ////
+        res.status(200).send('Email sent');
+        return;
     } catch (e: any) {
         let msg: string;
         if (e instanceof TypeError) {
             msg = 'Attempt to decode recaptcha verification response.';
         } else if (e instanceof RestError) {
-            msg = 'Attempt to communicate with azure table storage.';
+            msg = `Attempt to communicate with azure table storage.`;
         } else {
             msg = `Uncategorized. ${e?.msg}`;
         }
         if (!res.headersSent) {
             response500(res, msg);
         }
-        logWithDate(msg, e);
+        logWithDate(msg, fname, e);
         return;
     }
 }

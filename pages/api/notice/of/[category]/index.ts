@@ -5,32 +5,34 @@ import { MongoError } from 'mongodb';
 
 import AzureTableClient from '../../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from "../../../../../modules/AtlasDatabaseClient";
+import { logWithDate, response405, response500 } from '../../../../../lib/utils/general';
+import { createId, createNoticeId } from '../../../../../lib/utils/create';
+import { IMemberComprehensive } from '../../../../../lib/interfaces/member';
 
-import { IMemberComprehensive, } from '../../../../../lib/interfaces';
-import { response405, response500, logWithDate, createNoticeId, createId } from '../../../../../lib/utils';
-const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
+const fname = GetNoticeByCategory.name;
 
-/** This interface ONLY accepts GET requests
+/** GetNoticeByCategory v0.1.1
+ * 
+ * Last update:
+ * 
+ * This interface ONLY accepts GET requests
  * 
  * Info required for GET requests
- * token: JWT
- * category: string (query, notice category)
- * quantity: number (query string, optional, maximum 20)
+ * - token: JWT
+ * - category: string (query, notice category)
+ * - quantity: number (query string, optional, maximum 20)
 */
 
 export default async function GetNoticeByCategory(req: NextApiRequest, res: NextApiResponse) {
+
     const { method } = req;
     if ('GET' !== method) {
         response405(req, res);
         return;
     }
 
-
-    // /////////////////// TEST FIXME:
     const { category } = req.query;
     if ('like' === category) {
-        res.send([]);
-        return
         res.send([
             {
                 noticeId: `${createNoticeId('like', 'M2950ABBX', createId('post'))}`,
@@ -174,42 +176,44 @@ export default async function GetNoticeByCategory(req: NextApiRequest, res: Next
         const noticeTableClient = AzureTableClient('Notice');
         const noticeQuery = noticeTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${memberId}' and Category eq '${category}' and IsActive eq true` } });
         //// [!] attemp to reterieve entity makes the probability of causing RestError ////
-        let quantity: number;
-        if ('string' === typeof req.query?.quantity) {
-            quantity = parseInt(req.query.quantity);
-        } else {
-            quantity = 20;
-        }
-        if (20 < quantity) {
-            quantity = 20;
-        }
-        let noticeArray = [];
+        // let quantity: number;
+        // if ('string' === typeof req.query?.quantity) {
+        //     quantity = parseInt(req.query.quantity);
+        // } else {
+        //     quantity = 20;
+        // }
+        // if (20 < quantity) {
+        //     quantity = 20;
+        // }
+        let arr = [];
         let noticeQueryResult = await noticeQuery.next();
-        while ((!noticeQueryResult.value && noticeArray.length < quantity)) {
-            noticeArray.push({
-                noticeId: noticeQueryResult.value.rowKey,
+        // while ((!noticeQueryResult.value && noticeArray.length < quantity)) {
+        while (!noticeQueryResult.done) {
+            const { rowKey: noticeId, InitiateId: initiateId, Nickname: nickname, PostTitle: postTitle, CommentBrieft: commentBreif } = noticeQueryResult.value;
+            arr.push({
+                noticeId,
                 category,
-                initiateId: noticeQueryResult.value.InitiateId,
-                nickname: noticeQueryResult.value.Nickname,
+                initiateId,
+                nickname,
                 postTitle: noticeQueryResult.value?.postTitle,
                 commentBreif: noticeQueryResult.value?.commentBreif
             });
             noticeQueryResult = await noticeQuery.next();
         }
-        res.status(200).send(noticeArray);
+        res.status(200).send(arr);
     } catch (e: any) {
         let msg;
         if (e instanceof RestError) {
-            msg = 'Attempt to communicate with azure table storage.';
+            msg = `Attempt to communicate with azure table storage.`;
         } else if (e instanceof MongoError) {
-            msg = 'Attempt to communicate with atlas mongodb.';
+            msg = `Attempt to communicate with atlas mongodb.`;
         } else {
             msg = `Uncategorized. ${e?.msg}`;
         }
         if (!res.headersSent) {
             response500(res, msg);
         }
-        logWithDate(msg, e);
+        logWithDate(msg, fname, e);
         await atlasDbClient.close();
         return;
     }

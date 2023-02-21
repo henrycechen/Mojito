@@ -1,17 +1,17 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-
-import { verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500, logWithDate } from '../../../../lib/utils';
+import { logWithDate, response405, response500 } from '../../../../lib/utils/general';
+import { verifyEnvironmentVariable, verifyRecaptchaResponse } from '../../../../lib/utils/verify';
 
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
+const fname = VerifyToken.name;
 
 /** VerifyToken v0.1.1
  * 
- * Last update 16/02/2023
+ * Last update: 16/02/2023
  * 
  * This interface ONLY accepts POST method
  * 
  * Info required for POST request
- * 
  * - requestInfo: string, stringified { emailAddress, resetPasswordToken, expireDate }
  * - recaptchaResponse: string
  */
@@ -22,17 +22,18 @@ export default async function VerifyToken(req: NextApiRequest, res: NextApiRespo
         response405(req, res);
         return;
     }
-    const environmentVariable = verifyEnvironmentVariable({ recaptchaServerSecret });
+    
     //// Verify environment variables ////
+    const environmentVariable = verifyEnvironmentVariable({ recaptchaServerSecret });
     if (!!environmentVariable) {
         const msg = `${environmentVariable} not found`;
         response500(res, msg);
-        logWithDate(msg);
+        logWithDate(msg, fname);
         return;
     }
     try {
         const { requestInfo, recaptchaResponse } = req.query;
-        // Step #1 verify if it is bot
+        //// Verify if requested by human ////
         const { status: recaptchaStatus, message } = await verifyRecaptchaResponse(recaptchaServerSecret, recaptchaResponse);
         if (200 !== recaptchaStatus) {
             if (403 === recaptchaStatus) {
@@ -44,23 +45,26 @@ export default async function VerifyToken(req: NextApiRequest, res: NextApiRespo
                 return;
             }
         }
-        // Step #2 verify request info
+
+        //// Verify request info ////
         if ('string' !== typeof requestInfo || '' === requestInfo) {
             res.status(403).send('Invalid request info');
             return;
         }
-        // Step #3.1 decode base64 string to plain string
+
+        //// Decode base64 string to plain string ////
         const requestInfoStr = Buffer.from(requestInfo, 'base64').toString();
         // [!] attemp to parse info json string makes the probability of causing SyntaxError
-        const { emailAddress, resetPasswordToken, expireDate } = JSON.parse(requestInfoStr);
-        if (!(emailAddress && resetPasswordToken && expireDate)) {
+        const { emailAddress, resetPasswordToken, expireDateBySecond } = JSON.parse(requestInfoStr);
+        if (!(emailAddress && resetPasswordToken && expireDateBySecond)) {
             res.status(400).send('Defactive request info');
             return;
         }
-        if (new Date().getTime() > parseInt(expireDate)) {
+        if (Math.floor(new Date().getTime() / 1000) > parseInt(expireDateBySecond)) {
             res.status(403).send('Reset password token expired');
             return;
         }
+
         //// Verification pass ////
         res.status(200).send({ emailAddress, resetPasswordToken });
     } catch (e: any) {
@@ -76,7 +80,7 @@ export default async function VerifyToken(req: NextApiRequest, res: NextApiRespo
         if (!res.headersSent) {
             response500(res, msg);
         }
-        logWithDate(msg, e);
+        logWithDate(msg, fname, e);
         return;
     }
 }

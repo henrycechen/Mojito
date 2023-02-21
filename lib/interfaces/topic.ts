@@ -8,7 +8,7 @@ export interface ITopicComprehensive {
     //// info ////
     topicId: string; // base64 string from topic content string
     channelId: string;
-    createdTime: number; // create time of this document (topic est.)
+    createdTimeBySecond: number;
 
     //// management ////
     status: number;
@@ -37,6 +37,6 @@ export interface ITopicPostMapping {
     topicId: string;
     postId: string;
     channelId: string;
-    createdTime: number; // created time of this document (post est. time)
+    createdTimeBySecond: number; // created time of this document (post est. time)
     status: number;
 }

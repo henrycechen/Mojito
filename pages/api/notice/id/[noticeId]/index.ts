@@ -5,15 +5,21 @@ import { MongoError } from 'mongodb';
 
 import AzureTableClient from '../../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from "../../../../../modules/AtlasDatabaseClient";
+import { logWithDate, response405, response500 } from '../../../../../lib/utils/general';
+import { verifyId } from '../../../../../lib/utils/verify';
+import { IMemberComprehensive } from '../../../../../lib/interfaces/member';
 
-import { IMemberComprehensive, } from '../../../../../lib/interfaces';
-import { verifyId, response405, response500, logWithDate } from '../../../../../lib/utils';
+const fname = DeleteNoticeById.name;
 
-/** This interface ONLY accepts DELETE requests
+/** DeleteNoticeById v0.1.1
  * 
- * Info required for DELETE requests
- * token: JWT
- * category: string (query, notice category)
+ * Last update: 
+ * 
+ * This interface ONLY accepts DELETE requests
+ * 
+ * - Info required for DELETE requests
+ * - token: JWT
+ * - category: string (query, notice category)
 */
 
 export default async function DeleteNoticeById(req: NextApiRequest, res: NextApiResponse) {
@@ -61,16 +67,16 @@ export default async function DeleteNoticeById(req: NextApiRequest, res: NextApi
     } catch (e: any) {
         let msg;
         if (e instanceof RestError) {
-            msg = 'Attempt to communicate with azure table storage.';
+            msg = `Attempt to communicate with azure table storage.`;
         } else if (e instanceof MongoError) {
-            msg = 'Attempt to communicate with atlas mongodb.';
+            msg = `Attempt to communicate with atlas mongodb.`;
         } else {
             msg = `Uncategorized. ${e?.msg}`;
         }
         if (!res.headersSent) {
             response500(res, msg);
         }
-        logWithDate(msg, e);
+        logWithDate(msg, fname, e);
         await atlasDbClient.close();
         return;
     }

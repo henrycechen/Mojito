@@ -3,12 +3,16 @@ import { getToken } from 'next-auth/jwt'
 import { MongoError } from 'mongodb';
 
 import AtlasDatabaseClient from "../../../../../../../modules/AtlasDatabaseClient";
+import { logWithDate, response405, response500 } from '../../../../../../../lib/utils/general';
+import { IMemberComprehensive } from '../../../../../../../lib/interfaces/member';
 
-import { IMemberMemberMapping, INoticeInfo, INotificationStatistics, IMemberComprehensive, IMemberStatistics } from '../../../../../../../lib/interfaces';
-import { createNoticeId, getNicknameFromToken, verifyId, response405, response500, logWithDate, } from '../../../../../../../lib/utils';
-const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
+const fname = QueryMemberByNicknameBase64.name;
 
-/** This interface ONLY accepts GET requests
+/** QueryMemberByNicknameBase64 v0.1.1
+ * 
+ * Last update: 21/02/2023
+ * 
+ * This interface ONLY accepts GET requests
  * 
  * Info required for GET requests
  * 
@@ -17,25 +21,13 @@ const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
 */
 
 export default async function QueryMemberByNicknameBase64(req: NextApiRequest, res: NextApiResponse) {
+
     const { method } = req;
     if ('GET' !== method) {
         response405(req, res);
         return;
     }
-    // FIXME: deactived human/bot verification for tests
-    //// Verify human/bot ////
-    // const { recaptchaResponse } = req.query;
-    // const { status, message } = await verifyRecaptchaResponse(recaptchaServerSecret, recaptchaResponse);
-    // if (200 !== status) {
-    //     if (403 === status) {
-    //         res.status(403).send(message);
-    //         return;
-    //     }
-    //     if (500 === status) {
-    //         response500(res, message);
-    //         return;
-    //     }
-    // }
+
     const str = req.query?.str;
     //// Verify notice category ////
     if (!('string' === typeof str && new RegExp(/^[-A-Za-z0-9+/]*={0,3}$/).test(str))) {
@@ -66,14 +58,14 @@ export default async function QueryMemberByNicknameBase64(req: NextApiRequest, r
     } catch (e: any) {
         let msg;
         if (e instanceof MongoError) {
-            msg = 'Attempt to communicate with atlas mongodb.';
+            msg = `Attempt to communicate with atlas mongodb.`;
         } else {
             msg = `Uncategorized. ${e?.msg}`;
         }
         if (!res.headersSent) {
             response500(res, msg);
         }
-        logWithDate(msg, e);
+        logWithDate(msg, fname, e);
         await atlasDbClient.close();
         return;
     }

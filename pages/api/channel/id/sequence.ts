@@ -2,7 +2,19 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { RestError } from '@azure/data-tables';
 
 import AzureTableClient from '../../../../modules/AzureTableClient';
-import { response405, response500, logWithDate } from '../../../../lib/utils';
+import { response405, response500, logWithDate } from '../../../../lib/utils/general';
+
+const fname = GetChannelIdSequence.name;
+
+/** GetChannelIdSequence v0.1.1
+ * 
+ * Last update: 21/02/2023
+ * 
+ * This interface ONLY accepts GET requests
+ * 
+ * No info required for GET requests
+ * 
+ */
 
 export default async function GetChannelIdSequence(req: NextApiRequest, res: NextApiResponse) {
     const { method } = req;
@@ -28,12 +40,14 @@ export default async function GetChannelIdSequence(req: NextApiRequest, res: Nex
         if (e instanceof SyntaxError) {
             msg = `Attempt to parse post channel id array string.`;
         } else if (e instanceof RestError) {
-            msg = 'Attempt to communicate with azure table storage.';
+            msg = `Attempt to communicate with azure table storage.`;
         } else {
             msg = `Uncategorized. ${e?.msg}`;
         }
-        response500(res, msg);
-        logWithDate(msg, e);
+        if (!res.headersSent) {
+            response500(res, msg);
+        }
+        logWithDate(msg, fname, e);
         return;
     }
 }

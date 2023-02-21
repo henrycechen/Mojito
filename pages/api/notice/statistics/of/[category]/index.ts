@@ -5,10 +5,8 @@ import { MongoError } from 'mongodb';
 
 import AzureTableClient from '../../../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from "../../../../../../modules/AtlasDatabaseClient";
+import { response405 } from '../../../../../../lib/utils/general';
 
-import { IMemberMemberMapping, INoticeInfo, INotificationStatistics, IMemberComprehensive, IMemberStatistics } from '../../../../../../lib/interfaces';
-import { createNoticeId, getNicknameFromToken, verifyId, response405, response500, logWithDate, verifyRecaptchaResponse, } from '../../../../../../lib/utils';
-const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
 
 //////// API disabled ////////
 
@@ -91,7 +89,7 @@ export default async function ResetNotificationStatisticsByCategory(req: NextApi
     // } catch (e: any) {
     //     let msg;
     //     if (e instanceof MongoError) {
-    //         msg = 'Attempt to communicate with atlas mongodb.';
+    //         msg = `Attempt to communicate with atlas mongodb.`;
     //     } else {
     //         msg = `Uncategorized. ${e?.msg}`;
     //     }

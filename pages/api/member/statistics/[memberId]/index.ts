@@ -7,21 +7,21 @@ import AzureTableClient from '../../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from "../../../../../modules/AtlasDatabaseClient";
 
 
-import { IMemberMemberMapping, INoticeInfo, IMemberPostMapping, IMemberComprehensive, IConciseMemberInfo, IMemberStatistics, ILoginJournal, INotificationStatistics, IAttitudeComprehensive, IAttitideMapping, ICommentComprehensive, IEditedCommentComprehensive, IRestrictedCommentComprehensive, IChannelStatistics, ITopicComprehensive, ITopicPostMapping, IPostComprehensive, IEditedPostComprehensive, IRestrictedPostComprehensive } from '../../../../../lib/interfaces';
 
 import { IConciseMemberStatistics } from '../../../../../lib/interfaces/member';
-import { verifyId, response405, response500, logWithDate } from '../../../../../lib/utils';
+import { response405, response500, logWithDate } from '../../../../../lib/utils/general';
 
+const fname = GetMemberStatisticsById.name;
 
-// TODO: unfinished
-
-
-/** This interface ONLY accepts GET requests
+/** GetMemberStatisticsById v0.1.1 FIXME: test mode
+ * 
+ * Last update:
+ * 
+ * 
+ * This interface ONLY accepts GET requests
  * 
  * Info required for GET requests
- * 
- * recaptchaResponse: string (query string)
- * memberId: string (query, member id)
+ * - memberId: string (query, member id)
 */
 
 export default async function GetMemberStatisticsById(req: NextApiRequest, res: NextApiResponse) {
@@ -60,16 +60,16 @@ export default async function GetMemberStatisticsById(req: NextApiRequest, res: 
     } catch (e: any) {
         let msg;
         if (e instanceof RestError) {
-            msg = 'Attempt to communicate with azure table storage.';
+            msg = `Attempt to communicate with azure table storage.`;
         } else if (e instanceof MongoError) {
-            msg = 'Attempt to communicate with atlas mongodb.';
+            msg = `Attempt to communicate with atlas mongodb.`;
         } else {
             msg = `Uncategorized. ${e?.msg}`;
         }
         if (!res.headersSent) {
             response500(res, msg);
         }
-        logWithDate(msg, e);
+        logWithDate(msg, fname, e);
         // await atlasDbClient.close();
         return;
     }

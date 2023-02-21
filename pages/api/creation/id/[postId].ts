@@ -6,10 +6,21 @@ import { MongoError } from 'mongodb';
 import AzureTableClient from '../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from "../../../../modules/AtlasDatabaseClient";
 
-import { IChannelStatistics, IMemberComprehensive, IMemberPostMapping, IMemberStatistics, IPostComprehensive, ITopicComprehensive, } from '../../../../lib/interfaces';
-import { verifyId, response405, response500, logWithDate } from '../../../../lib/utils';
+import { verifyId } from '../../../../lib/utils/verify';
+import { response405, response500, logWithDate } from '../../../../lib/utils/general';
+import { IMemberComprehensive, IMemberStatistics } from '../../../../lib/interfaces/member';
+import { IPostComprehensive } from '../../../../lib/interfaces/post';
+import { IMemberPostMapping } from '../../../../lib/interfaces/mapping';
+import { IChannelStatistics } from '../../../../lib/interfaces/channel';
+import { ITopicComprehensive } from '../../../../lib/interfaces/topic';
 
-/** This interface ONLY accepts DELETE requests
+const fname = DeleteCreationById.name
+
+/** DeleteCreationById v0.1.1
+ * 
+ * Last update: 21/02/2023
+ * 
+ * This interface ONLY accepts DELETE requests
  * 
  * Info required for DELETE requests
  * token: JWT
@@ -17,6 +28,7 @@ import { verifyId, response405, response500, logWithDate } from '../../../../lib
 */
 
 export default async function DeleteCreationById(req: NextApiRequest, res: NextApiResponse) {
+
     const { method } = req;
     if ('DELETE' !== method) {
         response405(req, res);
@@ -72,7 +84,13 @@ export default async function DeleteCreationById(req: NextApiRequest, res: NextA
         }
         // Step #1.1 update record (of IMemberPostMapping) in [RL] CreationsMapping
         const noticeTableClient = AzureTableClient('CreationsMapping');
-        await noticeTableClient.upsertEntity<IMemberPostMapping>({ partitionKey: memberId, rowKey: postId, IsActive: false }, 'Merge');
+        await noticeTableClient.upsertEntity<IMemberPostMapping>({
+            partitionKey: memberId,
+            rowKey: postId,
+            Nickname: '',
+            CreatedTimeBySecond: Math.floor(new Date().getTime() / 1000),
+            IsActive: false
+        }, 'Merge');
         // Step #1.2 update status (of IPostComprehensive) in [C] postComprehensive
         const postComprehensiveUpdateResult = await postComprehensiveCollectionClient.updateOne({ postId }, { $set: { status: -1 } });
         if (!postComprehensiveUpdateResult.acknowledged) {
@@ -83,14 +101,14 @@ export default async function DeleteCreationById(req: NextApiRequest, res: NextA
         const memberStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IMemberStatistics>('member');
         const memberStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId }, { $inc: { totalCreationDeleteCount: 1 } });
         if (!memberStatisticsUpdateResult.acknowledged) {
-            logWithDate(`Document (IPostComprehensive, post id: ${postId}) updated (deleted, status -1) in [C] postComprehensive successfully but failed to update totalCreationDeleteCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`);
+            logWithDate(`Document (IPostComprehensive, post id: ${postId}) updated (deleted, status -1) in [C] postComprehensive successfully but failed to update totalCreationDeleteCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`, fname);
         }
         // Step #2.2 update totalPostDeleteCount (of IChannelStatistics) in [C] channelStatistics
         const { channelId } = postComprehensiveQueryResult;
         const channelStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IChannelStatistics>('channel');
         const channelStatisticsUpdateResult = await channelStatisticsCollectionClient.updateOne({ channelId }, { $inc: { totalPostDeleteCount: 1 } });
         if (!channelStatisticsUpdateResult.acknowledged) {
-            logWithDate(`Document (IPostComprehensive, post id: ${postId}) updated (deleted, status -1) in [C] postComprehensive successfully but failed to update totalPostDeleteCount (of IChannelStatistics, channel id: ${channelId}) in [C] channelStatistics`);
+            logWithDate(`Document (IPostComprehensive, post id: ${postId}) updated (deleted, status -1) in [C] postComprehensive successfully but failed to update totalPostDeleteCount (of IChannelStatistics, channel id: ${channelId}) in [C] channelStatistics`, fname);
         }
         // Step #2.3 (cond.) update totalPostDeleteCount (of ITopicComprehensive) in [C] topicComprehensive
         const { topicIdsArr } = postComprehensiveQueryResult;
@@ -99,7 +117,7 @@ export default async function DeleteCreationById(req: NextApiRequest, res: NextA
             for await (const topicId of topicIdsArr) {
                 const topicComprehensiveUpdateResult = await topicComprehensiveCollectionClient.updateOne({ topicId }, { $inc: { totalPostDeleteCount: 1 } });
                 if (!topicComprehensiveUpdateResult.acknowledged) {
-                    logWithDate(`Document (IPostComprehensive, post id: ${postId}) updated (deleted, status -1) in [C] postComprehensive successfully but failed to update totalPostDeleteCount (of ITopicComprehensive, topic id: ${topicId}) in [C] topicComprehensive`);
+                    logWithDate(`Document (IPostComprehensive, post id: ${postId}) updated (deleted, status -1) in [C] postComprehensive successfully but failed to update totalPostDeleteCount (of ITopicComprehensive, topic id: ${topicId}) in [C] topicComprehensive`, fname);
                 }
             }
         }
@@ -108,16 +126,16 @@ export default async function DeleteCreationById(req: NextApiRequest, res: NextA
     } catch (e: any) {
         let msg;
         if (e instanceof RestError) {
-            msg = 'Attempt to communicate with azure table storage.';
+            msg = `Attempt to communicate with azure table storage.`;
         } else if (e instanceof MongoError) {
-            msg = 'Attempt to communicate with atlas mongodb.';
+            msg = `Attempt to communicate with atlas mongodb.`;
         } else {
             msg = `Uncategorized. ${e?.msg}`;
         }
         if (!res.headersSent) {
             response500(res, msg);
         }
-        logWithDate(msg, e);
+        logWithDate(msg, fname, e);
         await atlasDbClient.close();
         return;
     }

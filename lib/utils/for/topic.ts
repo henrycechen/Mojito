@@ -21,11 +21,11 @@ export function getTopicBase64StringsArrayFromRequestBody(requestBody: any): str
     return requestBody['topicsArr'].map(topicContent => 'T' + Buffer.from(topicContent).toString('base64'));
 }
 
-export function provideTopicComprehensive(topicId: string, channelId: string,): ITopicComprehensive {
+export function provideTopicComprehensive(topicId: string, channelId: string): ITopicComprehensive {
     return {
         topicId, // base64 string from topic content string
         channelId,
-        createdTime: new Date().getTime(), // create time of this document (topic est.)
+        createdTimeBySecond: Math.floor(new Date().getTime() / 1000), // create time of this document (topic est.)
         status: 200,
         totalHitCount: 1, // total hit count of total posts of this topic
         totalSearchCount: 0,

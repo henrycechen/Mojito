@@ -98,7 +98,7 @@ export function getRestrictedFromPostComprehensive(postComprehensive: IPostCompr
         //// info ////
         postId: postComprehensive.postId,
         memberId: postComprehensive.memberId,
-        createdTime: postComprehensive.createdTime,
+        createdTimeBySecond: postComprehensive.createdTimeBySecond,
         title: '',
         imageUrlsArr: [],
         paragraphsArr: [],
@@ -143,7 +143,7 @@ export function fakeRestrictedPostComprehensive(): IRestrictedPostComprehensive 
     return {
         postId: '',
         memberId: '',
-        createdTime: 0,
+        createdTimeBySecond: 0,
         title: '',
         imageUrlsArr: [],
         paragraphsArr: [],

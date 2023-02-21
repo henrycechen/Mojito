@@ -7,14 +7,22 @@ import { MongoError } from 'mongodb';
 import AzureTableClient from '../../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from '../../../../../modules/AtlasDatabaseClient';
 
-import { IMemberComprehensive, IMemberPostMapping, IPostComprehensive, IRestrictedPostComprehensive } from '../../../../../lib/interfaces';
-import { createNoticeId, verifyId, response405, response500, logWithDate, getRestrictedFromPostComprehensive } from '../../../../../lib/utils';
+import { IMemberComprehensive, } from '../../../../../lib/interfaces/member';
+import { IPostComprehensive, IRestrictedPostComprehensive } from '../../../../../lib/interfaces/post';
+import { response405, response500, logWithDate, } from '../../../../../lib/utils/general';
+import { getRestrictedFromPostComprehensive } from '../../../../../lib/utils/for/post';
 
-/** This interface ONLY accepts GET requests
+const fname = GetSavedPosts.name;
+
+/** GetSavedPosts v0.1.1
+ * 
+ * Last update: 21/02/2023
+ * 
+ * This interface ONLY accepts GET requests
  * 
  * Info required for GET requests
  * - token: JWT
- * - quantity: number (query string, optional, maximum 20)
+ * - [?] quantity: number (query string, optional, maximum 20) 
  * - positionId: string (query string, the last post id of the last request, optional)
  * 
  * Info will be returned
@@ -22,17 +30,20 @@ import { createNoticeId, verifyId, response405, response500, logWithDate, getRes
 */
 
 export default async function GetSavedPosts(req: NextApiRequest, res: NextApiResponse) {
+
     const { method } = req;
     if ('GET' !== method) {
         response405(req, res);
         return;
     }
+
     //// Verify identity ////
     const token = await getToken({ req });
     if (!(token && token?.sub)) {
         res.status(400).send('Invalid identity');
         return;
     }
+
     //// Declare DB client ////
     const atlasDbClient = AtlasDatabaseClient();
     try {
@@ -81,16 +92,16 @@ export default async function GetSavedPosts(req: NextApiRequest, res: NextApiRes
     } catch (e: any) {
         let msg;
         if (e instanceof RestError) {
-            msg = 'Attempt to communicate with azure table storage.';
+            msg = `Attempt to communicate with azure table storage.`;
         } else if (e instanceof MongoError) {
-            msg = 'Attempt to communicate with atlas mongodb.';
+            msg = `Attempt to communicate with atlas mongodb.`;
         } else {
             msg = `Uncategorized. ${e?.msg}`;
         }
         if (!res.headersSent) {
             response500(res, msg);
         }
-        logWithDate(msg, e);
+        logWithDate(msg, fname, e);
         await atlasDbClient.close();
         return;
     }

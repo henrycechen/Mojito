@@ -5,13 +5,27 @@ import CryptoJS from 'crypto-js';
 
 import AzureTableClient from '../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from '../../../../modules/AtlasDatabaseClient';
+import { logWithDate, response405, response500 } from '../../../../lib/utils/general';
+import { verifyEmailAddress, verifyEnvironmentVariable, verifyRecaptchaResponse } from '../../../../lib/utils/verify';
+import { ILoginJournal, IMemberComprehensive, IMemberStatistics } from '../../../../lib/interfaces/member';
+import { INotificationStatistics } from '../../../../lib/interfaces/notification';
 
-import { verifyRecaptchaResponse, verifyEnvironmentVariable, response405, response500, logWithDate, verifyEmailAddress } from '../../../../lib/utils';
-import { INotificationStatistics, IMemberComprehensive, IMemberStatistics, ILoginJournal } from '../../../../lib/interfaces';
 
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
+const fname = VerifyEmailAddressToken.name;
 
-export default async function VerifyToken(req: NextApiRequest, res: NextApiResponse) {
+
+/** VerifyEmailAddressToken v0.1.1
+ * 
+ * Last update: 21/02/2023
+ * 
+ * This interface ONLY accepts POST requests
+ * 
+ * Info required for POST requests
+ * - recaptchaResponse: string (query)
+ * - requestInfo: {emailAddress, providerId, verifyEmailAddressToken} (body)
+ */
+export default async function VerifyEmailAddressToken(req: NextApiRequest, res: NextApiResponse) {
     const { method } = req;
     if ('POST' !== method) {
         response405(req, res);
@@ -22,14 +36,14 @@ export default async function VerifyToken(req: NextApiRequest, res: NextApiRespo
     if (!!environmentVariable) {
         const msg = `${environmentVariable} not found`;
         response500(res, msg);
-        logWithDate(msg);
+        logWithDate(msg,);
         return;
     }
     //// Declare DB client ////
     const atlasDbClient = AtlasDatabaseClient();
     try {
         const { recaptchaResponse } = req.query;
-        // Step #1 verify if it is bot
+        // Step #1 verify if requested by human
         const { status: recaptchaStatus, message } = await verifyRecaptchaResponse(recaptchaServerSecret, recaptchaResponse);
         if (200 !== recaptchaStatus) {
             if (403 === recaptchaStatus) {
@@ -205,16 +219,16 @@ export default async function VerifyToken(req: NextApiRequest, res: NextApiRespo
         } else if (e instanceof TypeError) {
             msg = 'Attempt to decode recaptcha verification response.';
         } else if (e instanceof RestError) {
-            msg = 'Attempt to communicate with azure table storage.';
+            msg = `Attempt to communicate with azure table storage.`;
         } else if (e instanceof MongoError) {
-            msg = 'Attempt to communicate with atlas mongodb.';
+            msg = `Attempt to communicate with atlas mongodb.`;
         } else {
             msg = `Uncategorized. ${e?.msg}`;
         }
         if (!res.headersSent) {
             response500(res, msg);
         }
-        logWithDate(msg, e);
+        logWithDate(msg, fname, e);
         await atlasDbClient.close();
         return;
     }

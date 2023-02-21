@@ -3,27 +3,29 @@ import { getToken } from 'next-auth/jwt';
 import { RestError } from '@azure/storage-blob';
 import { MongoError } from 'mongodb';
 
-import { logWithDate, response405, response500, verifyId } from '../../../../../lib/utils';
 import { IMemberComprehensive } from '../../../../../lib/interfaces/member';
 import { INicknameRegistry } from '../../../../../lib/interfaces/registry';
 
 import AtlasDatabaseClient from '../../../../../modules/AtlasDatabaseClient';
 import AzureTableClient from '../../../../../modules/AzureTableClient';
+import { logWithDate, response405, response500 } from '../../../../../lib/utils/general';
+import { verifyId } from '../../../../../lib/utils/verify';
+
+const fname = UpdateBriefIntro.name;
 
 /** UpdateBriefIntro v0.1.1
  * 
- * Last update: 16/02/2023
+ * Last update: 21/02/2023
  * 
  * This interface ONLY accepts PUT requests
  * 
  * Info required for PUT requests
- * 
  * - token: JWT
  * - alternativeIntro: string (body, length < 21)
 */
 
-
 export default async function UpdateBriefIntro(req: NextApiRequest, res: NextApiResponse) {
+
     const { method } = req;
     if ('PUT' !== method) {
         response405(req, res);
@@ -36,7 +38,7 @@ export default async function UpdateBriefIntro(req: NextApiRequest, res: NextApi
         res.status(401).send('Unauthorized');
         return;
     }
-    const { sub: memberId_ref } = token;
+    const { sub: tokenId } = token;
 
     //// Verify member id ////
     const { isValid, category, id: memberId } = verifyId(req.query?.memberId);
@@ -46,8 +48,8 @@ export default async function UpdateBriefIntro(req: NextApiRequest, res: NextApi
         return;
     }
 
-    //// Match identity id and request member id ////
-    if (memberId_ref !== memberId) {
+    //// Match the member id in token and the one in request ////
+    if (tokenId !== memberId) {
         res.status(400).send('Requested member id and identity not matched');
         return;
     }
@@ -59,7 +61,7 @@ export default async function UpdateBriefIntro(req: NextApiRequest, res: NextApi
 
         //// Verify member status ////
         const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
-        const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne({ memberId });
+        const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne({ memberId }, { projection: { _id: 0, status: 1 } });
         if (null === memberComprehensiveQueryResult) {
             throw new Error(`Member attempt to update (PUT) brief intro but have no document (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
         }
@@ -74,7 +76,7 @@ export default async function UpdateBriefIntro(req: NextApiRequest, res: NextApi
         //// Verify alternative intro ////
         const { alternativeIntro } = req.body;
         if (!('string' === typeof alternativeIntro && 21 > alternativeIntro.length)) {
-            // TODO: Place nickname examination method here
+            // TODO: place content (of brief intro) examination method here
             res.status(422).send('Alternative name exceeds length limit or has been occupied');
             return;
         }
@@ -88,26 +90,27 @@ export default async function UpdateBriefIntro(req: NextApiRequest, res: NextApi
         })
 
         if (!memberComprehensiveUpdateResult.acknowledged) {
-            logWithDate(`Failed to update briefIntro, lastBriefIntroUpdatedTimeBySecond (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
+            logWithDate(`Failed to update briefIntro, lastBriefIntroUpdatedTimeBySecond (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`, fname);
             res.status(500).send(`Attempt to update brief intro`);
             return;
         }
 
         res.status(200).send('Brief intro updated');
         await atlasDbClient.close();
+        return;
     } catch (e: any) {
         let msg;
         if (e instanceof RestError) {
-            msg = 'Attempt to communicate with azure table storage.';
+            msg = `Attempt to communicate with azure table storage.`;
         } else if (e instanceof MongoError) {
-            msg = 'Attempt to communicate with atlas mongodb.';
+            msg = `Attempt to communicate with atlas mongodb.`;
         } else {
             msg = `Uncategorized. ${e?.msg}`;
         }
         if (!res.headersSent) {
             response500(res, msg);
         }
-        logWithDate(msg, e);
+        logWithDate(msg, fname, e);
         await atlasDbClient.close();
         return;
     }

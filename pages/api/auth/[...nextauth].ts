@@ -7,17 +7,20 @@ import CryptoJS from 'crypto-js';
 import { User } from 'next-auth';
 
 import AzureTableClient from '../../../modules/AzureTableClient';
-import AtlasDatabaseClient from "../../../modules/AtlasDatabaseClient";
+import AtlasDatabaseClient from '../../../modules/AtlasDatabaseClient';
 import AzureEmailCommunicationClient from '../../../modules/AzureEmailCommunicationClient';
 import { RestError } from '@azure/storage-blob';
 import { MongoError } from 'mongodb';
 
-import { verifyRecaptchaResponse, verifyEnvironmentVariable, getRandomIdStr, logWithDate, getRandomHexStr } from '../../../lib/utils';
-import { IVerifyEmailAddressCredentials, IMemberComprehensive, ILoginCredentials, ILoginJournal } from '../../../lib/interfaces';
-import { LangConfigs, TVerifyEmailAddressRequestInfo, EmailMessage } from '../../../lib/types';
+import { LangConfigs, TVerifyEmailAddressRequestInfo, TEmailMessage } from '../../../lib/types';
 import { composeVerifyEmailAddressEmailContent } from '../../../lib/email';
 import AzureBlobClient from '../../../modules/AzureBlobClient';
 import Jimp from 'jimp';
+import { logWithDate } from '../../../lib/utils/general';
+import { ILoginJournal, IMemberComprehensive, IMinimumMemberComprehensive } from '../../../lib/interfaces/member';
+import { getRandomHexStr, getRandomIdStr } from '../../../lib/utils/create';
+import { ILoginCredentials, IVerifyEmailAddressCredentials } from '../../../lib/interfaces/credentials';
+import { verifyEnvironmentVariable, verifyRecaptchaResponse } from '../../../lib/utils/verify';
 
 type TLoginRequestInfo = {
     recaptchaResponse: any;
@@ -73,9 +76,9 @@ export default NextAuth({
         CredentialsProvider({
             id: 'mojito',
             credentials: {
-                recaptchaResponse: { label: "RecaptchaResponse", type: "text", placeholder: "" },
-                emailAddress: { label: "EmailAddress", type: "text", placeholder: "" },
-                password: { label: "Password", type: "password" },
+                recaptchaResponse: { label: 'RecaptchaResponse', type: 'text', placeholder: '' },
+                emailAddress: { label: 'EmailAddress', type: 'text', placeholder: '' },
+                password: { label: 'Password', type: 'password' },
             },
             async authorize(credentials, req) {
                 if (!credentials) {
@@ -153,14 +156,14 @@ export default NextAuth({
                     // user.image = image;
                     return true;
                 } catch (e: any) {
-                    let msg = ` '/api/auth/[...nextauth]/default/callbacks/signIn?provider=MojitoMemberSystem'`;
+                    let msg;
                     if (e instanceof MongoError) {
-                        msg = 'Attempt to communicate with atlas mongodb.' + msg;
+                        msg = `Attempt to communicate with atlas mongodb.`;
                         await atlasDbClient.close();
                     } else {
-                        msg = `Uncategorized. ${e?.msg}` + msg;
+                        msg = `Uncategorized. ${e?.msg}`;
                     }
-                    logWithDate(msg, e);
+                    logWithDate(msg, e, 'SignIn Callback (MojitoMemberSystem)');
                     return '/error';
                 }
             }
@@ -169,25 +172,36 @@ export default NextAuth({
                 const { name: nickname, email: emailAddress, image: avatarImageUrl } = user;
                 if ('string' !== typeof emailAddress || '' === emailAddress) {
                     // [!] an invalid email address was provided by third-party login provider
-                    logWithDate(`Attempt to login with ${providerId}, retrieved an invalid email address`);
+                    logWithDate(`Attempt to login with ${providerId}, retrieved an invalid email address`, `SignIn Callback`);
                     return `/signin?error=InappropriateEmailAddress&providerId=${providerId}`;
                 }
                 const emailAddressHash = CryptoJS.SHA1(emailAddress).toString();
                 // Step #1 look up email address hash in [RL] Credentials
                 const credentialsTableClient = AzureTableClient('Credentials');
-                const loginCredentialsQuery = credentialsTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${emailAddressHash}' and RowKey eq '${providerId}'` } });
+                const loginCredentialsQuery = credentialsTableClient.listEntities<ILoginCredentials>({ queryOptions: { filter: `PartitionKey eq '${emailAddressHash}' and RowKey eq '${providerId}'` } });
                 //// [!] attemp to reterieve entity makes the probability of causing RestError ////
                 const loginCredentialsQueryResult = await loginCredentialsQuery.next();
-                if (!loginCredentialsQueryResult.value) {
+                if (loginCredentialsQueryResult.done) {
                     //// (Situation A) [!] login credential record not found deemed unregistered ////
                     // Step #A2.1 create a new member id
                     const memberId = getRandomIdStr(true);
                     // Step #A2.2 upsert entity (ILoginCredentials) in [RL] Credentials
-                    credentialsTableClient.upsertEntity<ILoginCredentials>({ partitionKey: emailAddressHash, rowKey: providerId, MemberId: memberId }, 'Replace');
+                    credentialsTableClient.upsertEntity<ILoginCredentials>({
+                        partitionKey: emailAddressHash,
+                        rowKey: providerId,
+                        MemberId: memberId,
+                        PasswordHash: '',
+                        LastUpdatedTimeBySecond: Math.floor(new Date().getTime() / 1000)
+                    }, 'Replace');
                     // Step #A2.3 create a new email address verification token
                     const verifyEmailAddressToken = getRandomHexStr(true);
                     // Step #A2.4 upsert entity (IVerifyEmailAddressCredentials) in [RL] Credentials
-                    credentialsTableClient.upsertEntity<IVerifyEmailAddressCredentials>({ partitionKey: emailAddressHash, rowKey: 'VerifyEmailAddress', VerifyEmailAddressToken: verifyEmailAddressToken }, 'Replace');
+                    credentialsTableClient.upsertEntity<IVerifyEmailAddressCredentials>({
+                        partitionKey: emailAddressHash,
+                        rowKey: 'VerifyEmailAddress',
+                        VerifyEmailAddressToken: verifyEmailAddressToken,
+                        CreatedTimeBySecond: Math.floor(new Date().getTime() / 1000)
+                    }, 'Replace');
                     // Step #A2.5 (cond.) retrieve avatar image
                     if ('string' === typeof avatarImageUrl) {
                         try {
@@ -208,25 +222,24 @@ export default NextAuth({
                                 }
                             }
                         } catch (e: any) {
-                            logWithDate(`Attempt to fetch avatar image from login provider`, e);
+                            logWithDate(`Attempt to fetch avatar image from login provider`, e, `SignIn Callback (${providerId})`);
                         }
                     }
                     await atlasDbClient.connect();
                     // Step #A2.6 create document (MemberComprehensive) in [C] memberComprehensive
-                    const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
+                    const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMinimumMemberComprehensive>('member');
                     let memberComprehensiveCollectionInsertResult = await memberComprehensiveCollectionClient.insertOne({
                         memberId,
                         providerId,
                         registeredTimeBySecond: Math.floor(new Date().getTime() / 1000),
                         emailAddress,
                         nickname: nickname ?? '',
-                        lastAvatarImageUpdatedTimeBySecond: Math.floor(new Date().getTime() / 1000),
                         status: 0, // email address not verified
                         allowPosting: false,
                         allowCommenting: false
                     });
                     if (!memberComprehensiveCollectionInsertResult.acknowledged) {
-                        logWithDate(`Attempt to insert document (MemberComprehensive) for registering with ${providerId}`);
+                        logWithDate(`Attempt to insert document (MemberComprehensive) for registering with ${providerId}`, `SignIn Callback`);
                         return `/signin?error=ThirdPartyProviderSignin&providerId=${providerId}`;
                     }
                     // Step #A2.7 write journal in [C] loginJournal
@@ -241,7 +254,7 @@ export default NextAuth({
                     await atlasDbClient.close();
                     // Step #A3 send email
                     const info: TVerifyEmailAddressRequestInfo = { emailAddress, providerId, verifyEmailAddressToken };
-                    const emailMessage: EmailMessage = {
+                    const emailMessage: TEmailMessage = {
                         sender: '<donotreply@mojito.co.nz>',
                         content: {
                             subject: langConfigs.emailSubject[lang],
@@ -302,15 +315,15 @@ export default NextAuth({
                     return true;
                 }
             } catch (e: any) {
-                let msg = ` '/api/auth/[...nextauth]/default/callbacks/signIn/?provider=${provider}'`;
+                let msg;
                 if (e instanceof RestError) {
-                    msg = 'Attempt to communicate with azure table storage.' + msg;
+                    msg = `Attempt to communicate with azure table storage.` + msg;
                 } else if (e instanceof MongoError) {
-                    msg = 'Attempt to communicate with atlas mongodb.' + msg;
+                    msg = `Attempt to communicate with atlas mongodb.` + msg;
                 } else {
                     msg = `Uncategorized. ${e?.msg}` + msg;
                 }
-                logWithDate(msg, e);
+                logWithDate(msg, e, `SignIn Callback (${providerId})`);
                 await atlasDbClient.close();
                 return false;
             }
@@ -330,7 +343,7 @@ async function verifyLoginCredentials(credentials: TLoginRequestInfo): Promise<I
     }
     try {
         const { recaptchaResponse } = credentials;
-        // Step #1 verify if it is bot
+        // Step #1 verify if requested by human
         const { status } = await verifyRecaptchaResponse(recaptchaServerSecret, recaptchaResponse);
         if (200 !== status) {
             return null;
@@ -359,13 +372,13 @@ async function verifyLoginCredentials(credentials: TLoginRequestInfo): Promise<I
     } catch (e: any) {
         let msg: string;
         if (e instanceof ReferenceError) {
-            msg = `${environmentVariable} not found. '/api/auth/[...nextauth]/veriftLoginCredentials'`;
+            msg = `${environmentVariable} not found.`;
         } else if (e instanceof RestError) {
-            msg = `Attempt to communicate with azure table storage. '/api/auth/[...nextauth]/veriftLoginCredentials'`
+            msg = `Attempt to communicate with azure table storage.`
         } else {
-            msg = `Uncategorized. ${e?.msg} trace='/api/auth/[...nextauth]/veriftLoginCredentials'`;
+            msg = `Uncategorized.`;
         }
-        logWithDate(msg, e);
+        logWithDate(msg, e, 'verifyLoginCredentials');
         return null;
     }
 }
