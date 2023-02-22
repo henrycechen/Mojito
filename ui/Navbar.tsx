@@ -62,7 +62,7 @@ const langConfigs: LangConfigs = {
 }
 
 type TNavBarProps = {
-    forceBrowserUpdateAvatarImage?: boolean;
+    avatarImageUrl: string;
 }
 
 export default function NavBar(props: TNavBarProps) {
@@ -117,7 +117,7 @@ export default function NavBar(props: TNavBarProps) {
                         <Box sx={{ flexGrow: 0 }}>
                             <Tooltip title="Open settings">
                                 <IconButton onClick={handleOpenMemberMenu} sx={{ p: 0 }}>
-                                    <Avatar src={provideAvatarImageUrl(viewerId, domain, props?.forceBrowserUpdateAvatarImage)} />
+                                    <Avatar src={props.avatarImageUrl} />
                                 </IconButton>
                             </Tooltip>
                             <Menu

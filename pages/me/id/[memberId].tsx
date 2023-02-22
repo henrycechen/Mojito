@@ -76,8 +76,6 @@ import { verifyId, verifyNoticeId, verifyPassword } from '../../../lib/utils/ver
 import { provideAvatarImageUrl, getNicknameBrief, fakeConciseMemberInfo, fakeConciseMemberStatistics, fakeRestrictedMemberInfo } from '../../../lib/utils/for/member';
 import { noticeIdToUrl, noticeInfoToString } from '../../../lib/utils/for/notification';
 
-
-
 import { CenterlizedBox, ResponsiveCard, StyledSwitch, TextButton } from '../../../ui/Styled';
 
 import FormGroup from '@mui/material/FormGroup';
@@ -124,11 +122,6 @@ type TMessageLayoutStates = {
     selectedCategory: string;
     noticeInfoArr: INoticeInfoWithMemberInfo[];
     noticeStatistics: { [category: string]: number };
-}
-
-type TListLayoutStates = {
-    selectedCategory: 'following' | 'followedby';
-    memberInfoArr: IConciseMemberInfoWithCreatedTimeBySecond[];
 }
 
 type TPostsLayoutStates = {
@@ -279,13 +272,13 @@ const langConfigs: LangConfigs = {
         en: 'No records of notification'
     },
     noFollowingMemberInfoRecord: {
-        tw: '您沒有訂閲其他會員',
-        cn: '您没有关注其他会员',
+        tw: '您沒有訂閲其他用戶',
+        cn: '您没有关注其他用户',
         en: 'You have not followed any members'
     },
     noFollowedByMemberInfoRecord: {
-        tw: '暫時沒有其他會員訂閲您',
-        cn: '暂时没有其他会员关注您',
+        tw: '暫時沒有其他用戶訂閲您',
+        cn: '暂时没有其他用户关注您',
         en: 'No records of following member'
     },
     //// Avatar setting ////
@@ -637,6 +630,7 @@ let theme = createTheme({
         }
     }
 });
+
 theme = responsiveFontSizes(theme);
 
 //// Get multiple member info server-side ////
@@ -725,9 +719,6 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
         gender: memberComprehensive_ss.gender,
         birthdayBySecond: memberComprehensive_ss.birthdayBySecond,
     })
-
-
-
 
     //////// STATES - preference ////////
     const [preferenceStates, setPreferenceStates] = React.useState<TPreferenceStates>({
@@ -935,35 +926,52 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
     ////////////////////////   List Layout   ////////////////////////
 
+    type TListLayoutStates = {
+        selectedCategory: 'followedbyme' | 'followingme';
+    }
+
     //////// STATES - list layout ////////
     const [listLayoutStates, setListLayoutStates] = React.useState<TListLayoutStates>({
-        selectedCategory: 'following', // 'following' | 'followedby'
-        memberInfoArr: [],
+        selectedCategory: 'followedbyme', // 'followedbyme' | 'followingme'
     })
+
+    const [memberInfoArr, setMemberInfoArr] = React.useState<IConciseMemberInfoWithBriefIntroAndCreatedTimeBySecond[]>([]);
 
     React.useEffect(() => { updateMemberInfoArr() }, [])
     React.useEffect(() => { updateMemberInfoArr() }, [listLayoutStates.selectedCategory])
 
     const updateMemberInfoArr = async () => {
-        const resp = await fetch(`/api/member/follow/${listLayoutStates.selectedCategory}/${memberId}`);
+        const resp = await fetch(`/api/member/${listLayoutStates.selectedCategory}/${memberId}`);
         if (200 !== resp.status) {
             console.log(`Attempt to GET member info array of ${listLayoutStates.selectedCategory}`);
             return;
         }
         try {
             const arr = await resp.json();
-            setListLayoutStates({ ...listLayoutStates, memberInfoArr: arr });
+            setMemberInfoArr([...arr]);
         } catch (e) {
             console.log(`Attempt to get member info array  of ${listLayoutStates.selectedCategory} from resp. ${e}`)
         }
     }
 
-    const handleSelectListCategory = (categoryId: 'following' | 'followedby') => (event: React.MouseEvent<HTMLButtonElement>) => {
+    const handleSelectListCategory = (categoryId: 'followedbyme' | 'followingme') => (event: React.MouseEvent<HTMLButtonElement>) => {
         setListLayoutStates({ ...listLayoutStates, selectedCategory: categoryId });
     }
 
-    const handleUndoFollow = (memberId: string) => (event: React.MouseEvent<HTMLButtonElement>) => {
-
+    const handleUndoFollow = async (followedId: string) => {
+        // delete element (member info) from the array
+        const arr: IConciseMemberInfoWithBriefIntroAndCreatedTimeBySecond[] = [...memberInfoArr];
+        for (let i = 0; i < arr.length; i++) {
+            if (followedId === arr[i].memberId) {
+                arr.splice(i, 1);
+                setMemberInfoArr([...arr]);
+                break;
+            }
+        }
+        const resp = await fetch(`/api/follow/${followedId}`, { method: 'POST' });
+        if (200 !== resp.status) {
+            console.log(`Attempt to undo follow for ${followedId}`);
+        }
     }
 
     //////// COMPONENT - list layout ////////
@@ -981,58 +989,55 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
                             {/* section select */}
                             <Box sx={{ display: 'flex', justifyContent: 'space-evenly' }}>
-                                <Button sx={{ color: 'following' === listLayoutStates.selectedCategory ? 'primary' : 'grey.600' }} onClick={handleSelectListCategory('following')}>
-                                    <Box>
-                                        <Typography variant='body2' textAlign={'center'}>{langConfigs.myFollowing[preferenceStates.lang]}</Typography>
-                                    </Box>
+                                <Button sx={{ color: 'followedbyme' === listLayoutStates.selectedCategory ? 'primary' : 'grey.600' }} onClick={handleSelectListCategory('followedbyme')}>
+                                    <Typography variant='body2' textAlign={'center'}>{langConfigs.myFollowing[preferenceStates.lang]}</Typography>
                                 </Button>
-                                <Button sx={{ color: 'followedby' === listLayoutStates.selectedCategory ? 'primary' : 'grey.600' }} onClick={handleSelectListCategory('followedby')}>
-                                    <Box>
-                                        <Typography variant='body2' textAlign={'center'}>{langConfigs.myFollowedBy[preferenceStates.lang]}{0 === messagelayoutStates.noticeStatistics.follow ? '' : `+${messagelayoutStates.noticeStatistics.follow}`}</Typography>
-                                    </Box>
+                                <Button sx={{ color: 'followingme' === listLayoutStates.selectedCategory ? 'primary' : 'grey.600' }} onClick={handleSelectListCategory('followingme')}>
+                                    <Typography variant='body2' textAlign={'center'}>{langConfigs.myFollowedBy[preferenceStates.lang]}{0 === messagelayoutStates.noticeStatistics.follow ? '' : `+${messagelayoutStates.noticeStatistics.follow}`}</Typography>
                                 </Button>
                             </Box>
                             <Box mt={{ xs: 1, sm: 2 }}><Divider /></Box>
 
                             {/* member info list */}
                             <Stack padding={{ xs: 0, sm: 2 }} spacing={{ xs: 4, sm: 4, md: 5 }}>
-                                {0 !== listLayoutStates.memberInfoArr.length && listLayoutStates.memberInfoArr.map(info =>
+                                {0 !== memberInfoArr.length && memberInfoArr.map(info =>
 
                                     <Box key={info.memberId} mt={{ xs: 3, sm: 2 }} sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between' }} >
 
                                         {/* initiate info */}
                                         <Stack direction={'row'} sx={{ maxHeight: 40 }}>
                                             <IconButton sx={{ padding: 0 }} onClick={handleClickOnInitiateInfo(info.memberId)}>
-                                                <Avatar src={info.avatarImageUrl} sx={{ width: 38, height: 38, bgcolor: 'grey' }}>{info.nickname?.charAt(0).toUpperCase()}</Avatar>
+                                                <Avatar src={provideAvatarImageUrl(info.memberId, domain)} sx={{ width: 38, height: 38, bgcolor: 'grey' }}>{info.nickname?.charAt(0).toUpperCase()}</Avatar>
                                             </IconButton>
                                             <Box ml={1}>
                                                 <TextButton color='inherit' onClick={handleClickOnInitiateInfo(info.memberId)}>
 
                                                     {/* nickname */}
-                                                    <Typography variant='body2' align='left'>{getContentBrief(info.nickname, 14)}</Typography>
+                                                    <Typography variant='body2' align='left'>{getContentBrief(info.nickname, 13)}</Typography>
 
                                                     {/* brief intro */}
-                                                    <Typography variant='body2' fontSize={{ xs: 12, align: 'left' }} >{getContentBrief(info.briefIntro, 14)}</Typography>
+                                                    <Typography variant='body2' fontSize={{ xs: 12, align: 'left' }} >{getContentBrief(info.briefIntro, 13)}</Typography>
                                                 </TextButton>
                                             </Box>
                                         </Stack>
 
                                         {/* undo follow button */}
-                                        {'following' === listLayoutStates.selectedCategory && <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }} >
-                                            <Button variant='text' color='inherit' onClick={handleUndoFollow(info.memberId)}>
+                                        {'followedbyme' === listLayoutStates.selectedCategory && <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }} >
+                                            <Button variant='text' color='inherit' onClick={async () => { await handleUndoFollow(info.memberId) }}>
                                                 <Typography variant={'body2'} align={'right'}>{langConfigs.undoFollow[preferenceStates.lang]}</Typography>
                                             </Button>
                                         </Box>}
 
                                         {/* created time */}
-                                        {'followedby' === listLayoutStates.selectedCategory && <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }} >
+                                        {'followingme' === listLayoutStates.selectedCategory && <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }} >
                                             <Typography variant={'body2'} align={'right'} sx={{ paddingRight: 1 }}>{timeToString(info.createdTimeBySecond, preferenceStates.lang)}</Typography>
                                         </Box>}
                                     </Box>
                                 )}
-                                {0 === listLayoutStates.memberInfoArr.length &&
+                                {0 === memberInfoArr.length &&
                                     <Box mt={{ xs: 3, sm: 2 }}>
-                                        <Typography color={'text.secondary'} align={'center'}>{langConfigs.noFollowingMemberInfoRecord[preferenceStates.lang]}</Typography>
+                                        {'followedbyme' === listLayoutStates.selectedCategory && <Typography color={'text.secondary'} align={'center'}>{langConfigs.noFollowingMemberInfoRecord[preferenceStates.lang]}</Typography>}
+                                        {'followingme' === listLayoutStates.selectedCategory && <Typography color={'text.secondary'} align={'center'}>{langConfigs.noFollowedByMemberInfoRecord[preferenceStates.lang]}</Typography>}
                                     </Box>
                                 }
                             </Stack>
@@ -1270,7 +1275,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
             }
 
             const [avatarImageSettingStates, setAvatarImageSettingStates] = React.useState<TAvatarImageSettingStates>({
-                alternativeImageUrl: provideAvatarImageUrl(memberId, domain, true),
+                alternativeImageUrl: provideAvatarImageUrl(memberId, domain),
                 disableButton: true,
                 progressStatus: 0
             })
@@ -2082,7 +2087,6 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
         const BlacklistSettings = () => {
 
             const handleUndoBlock = async (blockedId: string) => {
-
                 // delete element (member info) from the array
                 const arr: IConciseMemberInfoWithBriefIntroAndCreatedTimeBySecond[] = [...settinglayoutStates.blacklist];
                 for (let i = 0; i < arr.length; i++) {
@@ -2353,7 +2357,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
     ///////// COMPONENT - member page /////////
     return (
         <ThemeProvider theme={theme}>
-            <Navbar forceBrowserUpdateAvatarImage={true} />
+            <Navbar avatarImageUrl={memberInfoStates.avatarImageUrl} />
 
             {/* //// first layer - member info //// */}
             <Box sx={{ minHeight: { xs: 160, md: 200 } }}>

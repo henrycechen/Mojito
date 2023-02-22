@@ -3,16 +3,16 @@ import { getToken } from 'next-auth/jwt'
 import { RestError } from '@azure/data-tables';
 import { MongoError } from 'mongodb';
 
-import AzureTableClient from '../../../../modules/AzureTableClient';
-import AtlasDatabaseClient from "../../../../modules/AtlasDatabaseClient";
+import AzureTableClient from '../../../modules/AzureTableClient';
+import AtlasDatabaseClient from "../../../modules/AtlasDatabaseClient";
 
-import { verifyId } from '../../../../lib/utils/verify';
-import { response405, response500, logWithDate, } from '../../../../lib/utils/general';
-import { IMemberMemberMapping } from '../../../../lib/interfaces/mapping';
-import { INoticeInfo, INotificationStatistics } from '../../../../lib/interfaces/notification';
-import { IMemberComprehensive, IMemberStatistics } from '../../../../lib/interfaces/member';
-import { createNoticeId } from '../../../../lib/utils/create';
-import { getNicknameFromToken } from '../../../../lib/utils/for/member';
+import { verifyId } from '../../../lib/utils/verify';
+import { response405, response500, logWithDate, } from '../../../lib/utils/general';
+import { IMemberMemberMapping } from '../../../lib/interfaces/mapping';
+import { INoticeInfo, INotificationStatistics } from '../../../lib/interfaces/notification';
+import { IMemberComprehensive, IMemberStatistics } from '../../../lib/interfaces/member';
+import { createNoticeId } from '../../../lib/utils/create';
+import { getNicknameFromToken } from '../../../lib/utils/for/member';
 
 const fname = FollowOrUndoFollowMemberById.name;
 
@@ -51,7 +51,7 @@ export default async function FollowOrUndoFollowMemberById(req: NextApiRequest, 
     const { sub: memberId } = token;
 
     //// Verify member id ////
-    const { isValid, category, id: objectId } = verifyId(req.query?.id);
+    const { isValid, category, id: objectId } = verifyId(req.query?.memberId);
     if (!(isValid && 'member' === category)) {
         res.status(400).send('Invalid member id');
         return;
@@ -189,7 +189,7 @@ export default async function FollowOrUndoFollowMemberById(req: NextApiRequest, 
             Nickname: nickname ?? '',
             BriefIntro: briefIntro ?? '',
             CreatedTimeBySecond: Math.floor(new Date().getTime() / 1000),
-            IsActive: isFollowed
+            IsActive: !isFollowed
         }, 'Replace');
         res.status(200).send(`${isFollowed ? 'Undo follow' : 'Follow'} success`);
     } catch (e: any) {

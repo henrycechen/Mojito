@@ -73,6 +73,7 @@ export function fakeConciseMemberStatistics(): IConciseMemberStatistics {
     return {
         memberId: '',
         totalCreationCount: 0,
+        totalCreationHitCount: 0,
         totalFollowedByCount: 0,
         totalCreationSavedCount: 0,
         totalCreationLikedCount: 0

@@ -4,45 +4,94 @@ import { RestError } from '@azure/data-tables';
 import { MongoError } from 'mongodb';
 
 import AtlasDatabaseClient from "../../../../modules/AtlasDatabaseClient";
-import { logWithDate, response500 } from '../../../../lib/utils/general';
+import { logWithDate, response405, response500 } from '../../../../lib/utils/general';
+import { verifyId } from '../../../../lib/utils/verify';
+import AzureTableClient from '../../../../modules/AzureTableClient';
+import { IMemberMemberMapping } from '../../../../lib/interfaces/mapping';
+import { IConciseMemberInfoWithBriefIntroAndCreatedTimeBySecond, IMemberComprehensive } from '../../../../lib/interfaces/member';
 
 const fname = GetMembersFollowingMe.name;
 
 //////// Find out who is following me ////////
 
-/** GetFollowingMembersById v0.1.1 FIXME: test mode
+/** GetFollowingMembersById v0.1.2 FIXME: test mode
  * 
- * Last update 20/02/2023
+ * Last update 22/02/2023
  * 
  * Info required for GET requests
- * - recaptchaResponse: string (query string)
  * - memberId: string
  * 
 */
 
 export default async function GetMembersFollowingMe(req: NextApiRequest, res: NextApiResponse) {
-    const { method } = req;
 
-    res.send([
-        {
-            memberId: 'M2950ABBX',
-            nickname: '550W不是Moss',
-            avatarImageUrl: 'https://cdn.icon-icons.com/icons2/1371/PNG/512/robot02_90810.png',
-            briefIntro: '刘华强的小Moss',
-            createdTime: 1675644625055,
-        },
-        {
-            memberId: 'M3380ACMM',
-            nickname: '測試一下名字最長可以有多長雖然可能會被拒絕',
-            avatarImageUrl: 'https://store.playstation.com/store/api/chihiro/00_09_000/container/PT/pt/19/EP4067-NPEB01320_00-AVPOPULUSM000897/image?w=320&h=320&bg_color=000000&opacity=100&_version=00_09_000',
-            briefIntro: '好厉害',
-            createdTime: 1675645871314,
-        }
-    ]);
+    const { method } = req;
+    if ('GET' !== method) {
+        response405(req, res);
+        return;
+    }
+
+    res.send([]);
+    return;
+
+    //// Verify identity ////
+    const token = await getToken({ req });
+    if (!(token && token?.sub)) {
+        res.status(401).send('Unauthorized');
+        return;
+    }
+    const { sub: tokenId } = token;
+
+    //// Verify id ////
+    const { isValid, category, id: memberId } = verifyId(req.query?.memberId);
+
+    if (!(isValid && 'member' === category)) {
+        res.status(400).send('Invalid member id');
+        return;
+    }
+
+    //// Match the member id in token and the one in request ////
+    if (tokenId !== memberId) {
+        res.status(400).send('Requested member id and identity not matched');
+        return;
+    }
 
     //// Declare DB client ////
     const atlasDbClient = AtlasDatabaseClient();
     try {
+        await atlasDbClient.connect();
+
+        //// Verify member status ////
+        const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
+        const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne({ memberId }, { projection: { _id: 0, status: 1 } });
+        if (null === memberComprehensiveQueryResult) {
+            throw new Error(`Member attempt to GET followed member info but have no document (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
+        }
+
+        const { status: memberStatus } = memberComprehensiveQueryResult;
+        if (0 > memberStatus) {
+            res.status(403).send('Method not allowed due to member suspended or deactivated');
+            await atlasDbClient.close();
+            return;
+        }
+        await atlasDbClient.close();
+
+        //// Look up record (of IMemberMemberMapping) in [PRL] FollowedByMemberMapping ////
+        const followingMemberMappingTableClient = AzureTableClient('FollowedByMemberMapping');
+        const followingMemberMappingQuery = followingMemberMappingTableClient.listEntities<IMemberMemberMapping>({ queryOptions: { filter: `PartitionKey eq '${memberId}' and IsActive eq true` } });
+        //// [!] attemp to reterieve entity makes the probability of causing RestError ////
+        let followingMemberMappingQueryResult = await followingMemberMappingQuery.next();
+        const arr: IConciseMemberInfoWithBriefIntroAndCreatedTimeBySecond[] = [];
+        while (!followingMemberMappingQueryResult.done) {
+            arr.push({
+                memberId: followingMemberMappingQueryResult.value.rowKey,
+                nickname: followingMemberMappingQueryResult.value.Nickname,
+                briefIntro: followingMemberMappingQueryResult.value.BriefIntro,
+                createdTimeBySecond: followingMemberMappingQueryResult.value.CreatedTimeBySecond,
+            })
+            followingMemberMappingQueryResult = await followingMemberMappingQuery.next();
+        }
+        res.status(200).send(arr);
 
     } catch (e: any) {
         let msg;

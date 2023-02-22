@@ -5,19 +5,22 @@ import { MongoError } from 'mongodb';
 
 import AtlasDatabaseClient from "../../../../modules/AtlasDatabaseClient";
 import { logWithDate, response405, response500 } from '../../../../lib/utils/general';
+import { verifyId } from '../../../../lib/utils/verify';
+import { IConciseMemberInfoWithBriefIntroAndCreatedTimeBySecond, IMemberComprehensive } from '../../../../lib/interfaces/member';
+import AzureTableClient from '../../../../modules/AzureTableClient';
+import { IMemberMemberMapping } from '../../../../lib/interfaces/mapping';
 
 const fname = GetMembersFollowedByMe.name;
 
 //////// Find out who am I following ////////
 
-/** GetMyFollowingMembersById v0.1.1 FIXME: test mode
+/** GetMyFollowingMembersById v0.1.2 FIXME: test mode
  * 
- * Last update 20/02/2023
+ * Last update 22/02/2023
  *  
- * This interface accepts GET and POST requests
+ * This interface only accepts GET requests
  * 
  * Info required for GET requests
- * - recaptchaResponse: string (query string)
  * - memberId: string
  * 
 */
@@ -25,26 +28,72 @@ const fname = GetMembersFollowedByMe.name;
 export default async function GetMembersFollowedByMe(req: NextApiRequest, res: NextApiResponse) {
 
     const { method } = req;
-    if ('POST' !== method) {
+    if ('GET' !== method) {
         response405(req, res);
         return;
     }
 
-    res.send([
-        {
-            memberId: 'M1234ABCD',
-            nickname: '县长马邦德',
-            avatarImageUrl: 'https://p3-pc-sign.douyinpic.com/image-cut-tos-priv/3e1f26ab6652e8bab2146d9685309421~tplv-dy-resize-origshort-autoq-75:330.jpeg?x-expires=1988985600&x-signature=QXW59uArpZ4MLuzLDFUUD8X80Kg%3D&from=3213915784&s=PackSourceEnum_AWEME_DETAIL&se=false&sc=cover&biz_tag=pcweb_cover&l=202301140039005D37849F840BB8293C1A',
-            briefIntro: '我來鵝城只辦三件事，公平！公平！還是他媽的公平！',
-            createdTime: 1675645871314,
-            createdTimeBySecond: 1675645871,
-        }
-    ])
+    res.send([]);
     return;
+
+    //// Verify identity ////
+    const token = await getToken({ req });
+    if (!(token && token?.sub)) {
+        res.status(401).send('Unauthorized');
+        return;
+    }
+    const { sub: tokenId } = token;
+
+    //// Verify id ////
+    const { isValid, category, id: memberId } = verifyId(req.query?.memberId);
+
+    if (!(isValid && 'member' === category)) {
+        res.status(400).send('Invalid member id');
+        return;
+    }
+
+    //// Match the member id in token and the one in request ////
+    if (tokenId !== memberId) {
+        res.status(400).send('Requested member id and identity not matched');
+        return;
+    }
 
     //// Declare DB client ////
     const atlasDbClient = AtlasDatabaseClient();
     try {
+        await atlasDbClient.connect();
+
+        //// Verify member status ////
+        const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
+        const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne({ memberId }, { projection: { _id: 0, status: 1 } });
+        if (null === memberComprehensiveQueryResult) {
+            throw new Error(`Member attempt to GET followed member info but have no document (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
+        }
+
+        const { status: memberStatus } = memberComprehensiveQueryResult;
+        if (0 > memberStatus) {
+            res.status(403).send('Method not allowed due to member suspended or deactivated');
+            await atlasDbClient.close();
+            return;
+        }
+        await atlasDbClient.close();
+
+        //// Look up record (of IMemberMemberMapping) in [RL] FollowingMemberMapping ////
+        const followingMemberMappingTableClient = AzureTableClient('FollowingMemberMapping');
+        const followingMemberMappingQuery = followingMemberMappingTableClient.listEntities<IMemberMemberMapping>({ queryOptions: { filter: `PartitionKey eq '${memberId}' and IsActive eq true` } });
+        //// [!] attemp to reterieve entity makes the probability of causing RestError ////
+        let followingMemberMappingQueryResult = await followingMemberMappingQuery.next();
+        const arr: IConciseMemberInfoWithBriefIntroAndCreatedTimeBySecond[] = [];
+        while (!followingMemberMappingQueryResult.done) {
+            arr.push({
+                memberId: followingMemberMappingQueryResult.value.rowKey,
+                nickname: followingMemberMappingQueryResult.value.Nickname,
+                briefIntro: followingMemberMappingQueryResult.value.BriefIntro,
+                createdTimeBySecond: followingMemberMappingQueryResult.value.CreatedTimeBySecond,
+            })
+            followingMemberMappingQueryResult = await followingMemberMappingQuery.next();
+        }
+        res.status(200).send(arr);
 
     } catch (e: any) {
         let msg;

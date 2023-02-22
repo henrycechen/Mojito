@@ -3,13 +3,13 @@ import { getToken } from 'next-auth/jwt'
 import { RestError } from '@azure/data-tables';
 import { MongoError } from 'mongodb';
 
-import AzureTableClient from '../../../../modules/AzureTableClient';
-import AtlasDatabaseClient from "../../../../modules/AtlasDatabaseClient";
+import AzureTableClient from '../../../modules/AzureTableClient';
+import AtlasDatabaseClient from "../../../modules/AtlasDatabaseClient";
 
-import { IMemberMemberMapping } from '../../../../lib/interfaces/mapping';
-import { IMemberComprehensive, IMemberStatistics, } from '../../../../lib/interfaces/member';
-import { response405, response500, logWithDate } from '../../../../lib/utils/general';
-import { verifyId } from '../../../../lib/utils/verify';
+import { IMemberMemberMapping } from '../../../lib/interfaces/mapping';
+import { IMemberComprehensive, IMemberStatistics, } from '../../../lib/interfaces/member';
+import { response405, response500, logWithDate } from '../../../lib/utils/general';
+import { verifyId } from '../../../lib/utils/verify';
 
 const fname = BlockOrUndoBlockMemberById.name;
 
@@ -147,7 +147,7 @@ export default async function BlockOrUndoBlockMemberById(req: NextApiRequest, re
             Nickname: nickname ?? '',
             BriefIntro: briefIntro ?? '',
             CreatedTimeBySecond: Math.floor(new Date().getTime() / 1000),
-            IsActive: isBlocked
+            IsActive: !isBlocked
         }, 'Replace');
 
         //// Response 200 ////

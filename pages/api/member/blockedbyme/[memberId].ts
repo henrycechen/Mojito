@@ -15,7 +15,7 @@ const fname = GetMembersBlockedByMe.name;
 
 //////// Find out who I have blocked ////////
 
-/** GetMembersBlockedByMyself v0.1.2
+/** GetMembersBlockedByMyself v0.1.2 FIXME: test mode
  * 
  * Last update: 21/02/2023
  * 
@@ -33,6 +33,10 @@ export default async function GetMembersBlockedByMe(req: NextApiRequest, res: Ne
         response405(req, res);
         return;
     }
+
+    res.send([]);
+    return;
+
     //// Verify identity ////
     const token = await getToken({ req });
     if (!(token && token?.sub)) {
@@ -62,9 +66,9 @@ export default async function GetMembersBlockedByMe(req: NextApiRequest, res: Ne
 
         //// Verify member status ////
         const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
-        const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne({ memberId });
+        const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne({ memberId }, { projection: { _id: 0, status: 1 } });
         if (null === memberComprehensiveQueryResult) {
-            throw new Error(`Member attempt to update (PUT) gender but have no document (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
+            throw new Error(`Member attempt to GET blocked member info but have no document (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
         }
 
         const { status: memberStatus } = memberComprehensiveQueryResult;
@@ -82,11 +86,10 @@ export default async function GetMembersBlockedByMe(req: NextApiRequest, res: Ne
         let blockingMemberMappingQueryResult = await blockingMemberMappingQuery.next();
         const arr: IConciseMemberInfoWithCreatedTimeBySecond[] = [];
         while (!blockingMemberMappingQueryResult.done) {
-            const { rowKey: memberId, Nickname: nickname, CreatedTimeBySecond: createdTimeBySecond } = blockingMemberMappingQueryResult.value;
             arr.push({
-                memberId,
-                nickname,
-                createdTimeBySecond,
+                memberId: blockingMemberMappingQueryResult.value.rowKey,
+                nickname: blockingMemberMappingQueryResult.value.Nickname,
+                createdTimeBySecond: blockingMemberMappingQueryResult.value.CreatedTimeBySecond,
             })
             blockingMemberMappingQueryResult = await blockingMemberMappingQuery.next();
         }
