@@ -21,7 +21,7 @@ export default async function GetAvatarImageByFullName(req: NextApiRequest, res:
     }
 
     // FIXME: test
-    const resp = await fetch(`https://www.nicepng.com/png/full/804-8049853_med-boukrima-specialist-webmaster-php-e-commerce-web.png`)
+    const resp = await fetch(`https://cdn.v2ex.com/avatar/39d1/8717/332407_xlarge.png?m=1676426176`)
     res.setHeader('Content-Type', `image/png`);
     res.setHeader('Content-Disposition', 'inline');
     res.send(Buffer.from(await resp.arrayBuffer()))

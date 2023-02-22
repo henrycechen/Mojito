@@ -38,10 +38,11 @@ import { useTheme } from '@emotion/react';
 import { useRouter } from 'next/router';
 
 import { TBrowsingHelper, LangConfigs } from '../lib/types';
-import { updateLocalStorage, restoreFromLocalStorage, getNicknameBrief } from '../lib/utils';
+import { updateLocalStorage, restoreFromLocalStorage } from '../lib/utils/general';
+import { getNicknameBrief } from '../lib/utils/for/member';
 import { CenterlizedBox, ResponsiveCard, StyledSwitch, TextButton } from '../ui/Styled';
 import Navbar from '../ui/Navbar';
-import { IConcisePostComprehensive, IConcisePostComprehensiveWithMemberInfo, IProcessStates } from '../lib/interfaces';
+import { IConcisePostComprehensive, IConcisePostComprehensiveWithMemberInfo } from '../lib/interfaces/post';
 import { IChannelInfoStates, IChannelInfoDictionary } from '../lib/interfaces/channel';
 import Copyright from '../ui/Copyright';
 
@@ -54,7 +55,7 @@ type THomePageProps = {
     redirect404: boolean;
 }
 
-interface IHomePageProcessStates extends IProcessStates {
+interface IHomePageProcessStates {
     lang: string;
     selectedChannelId: string;
     selectedHotPosts: boolean;

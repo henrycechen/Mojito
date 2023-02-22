@@ -7,7 +7,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
  */
 
 // FIXME: milliseconds to seconds have not applied
-export function timeToString(timeBySecond: any, lang: string): string {
+export function timeToString(timeBySecond: number, lang: string): string {
     let _lang = lang;
     if (!['tw', 'cn', 'en'].includes(lang)) {
         _lang = 'tw';
@@ -20,7 +20,7 @@ export function timeToString(timeBySecond: any, lang: string): string {
     if (!('number' === typeof timeBySecond || 'string' === typeof timeBySecond)) {
         return `0${langConfigs?.min}`;
     }
-    const diff = new Date().getTime() - new Date(timeBySecond).getTime(); // FIXME: Math.floor(new Date().getTime() / 1000) 
+    const diff = Math.floor(new Date().getTime() / 1000) - timeBySecond;
     if (86400 < diff) { // 24 * 60 * 60
         const d = Math.floor(diff / (86400));
         return `${d}${1 === d ? langConfigs?.day : langConfigs?.days}`;;

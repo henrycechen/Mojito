@@ -55,6 +55,7 @@ export interface IRestrictedMemberComprehensive {
     gender: number;
     birthdayBySecond: number;
 
+    status: number,
     allowVisitingSavedPosts: boolean;
     allowKeepingBrowsingHistory: boolean;
     hidePostsAndCommentsOfBlockedMember: boolean;
@@ -128,6 +129,7 @@ export interface IMemberStatistics {
 export interface IConciseMemberStatistics {
     memberId: string;
     totalCreationCount: number;
+    totalCreationHitCount: number;
     totalFollowedByCount: number;
     totalCreationLikedCount: number;
     totalCreationSavedCount: number;

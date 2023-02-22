@@ -44,13 +44,14 @@ export default async function GetMemberInfoById(req: NextApiRequest, res: NextAp
             memberId: 'M1234XXXX',
             providerId: "MojitoMemberSystem",
             registeredTimeBySecond: 1671484182,
-            verifiedTimeBySecond: 1671493378,
+            verifiedTimeBySecond: 1671593378,
 
             nickname: 'WebMaster',
             briefIntro: '歡迎大家來到我們的社區:)',
             gender: -1,
             birthdayBySecond: 840344435,
 
+            status: 200,
             allowKeepingBrowsingHistory: true,
             allowVisitingSavedPosts: true,
             hidePostsAndCommentsOfBlockedMember: false,

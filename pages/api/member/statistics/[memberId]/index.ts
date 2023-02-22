@@ -29,6 +29,7 @@ export default async function GetMemberStatisticsById(req: NextApiRequest, res: 
 
     res.send({
         totalCreationCount: 4,
+        totalCreationHitCount: 1783,
         totalFollowedByCount: 18,
         totalCreationSavedCount: 127,
         totalCreationLikedCount: 335,

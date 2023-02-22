@@ -32,9 +32,16 @@ import "swiper/css/pagination";
 
 import Navbar from '../../ui/Navbar';
 
-import { IAttitideMapping, IRestrictedCommentComprehensive, IRestrictedCommentComprehensiveWithMemberInfo, IConcisePostComprehensive, IProcessStates } from '../../lib/interfaces';
+import { IConcisePostComprehensive } from '../../lib/interfaces/post';
+import { IRestrictedCommentComprehensiveWithMemberInfo } from '../../lib/interfaces/comment';
+import { fakeChannel, } from '../../lib/utils/for/channel';
+import { fakeRestrictedPostComprehensive, } from '../../lib/utils/for/post';
+import { getRandomHexStr, } from '../../lib/utils/create';
+
+import { restoreFromLocalStorage, timeToString, updateLocalStorage } from '../../lib/utils/general';
+import { getNicknameBrief, provideCuedMemberInfoArray, } from '../../lib/utils/for/member';
+import { verifyId, verifyUrl } from '../../lib/utils/verify';
 import { LangConfigs } from '../../lib/types';
-import { fakeChannel, fakeRestrictedPostComprehensive, getNicknameBrief, getRandomHexStr, provideCuedMemberInfoArray, restoreFromLocalStorage, timeToString, updateLocalStorage, verifyId, verifyUrl } from '../../lib/utils';
 
 import { IConciseMemberInfo, IConciseMemberStatistics } from '../../lib/interfaces/member';
 import { IRestrictedPostComprehensive } from '../../lib/interfaces/post';
@@ -92,7 +99,7 @@ type TConciseMemberStatistics = {
     totalFollowedByCount: number;
 }
 
-interface IPostPageProcessStates extends IProcessStates {
+interface IPostPageProcessStates {
     lang: string;
     displayEditor: boolean;
     editorEnchorElement: any;
@@ -111,7 +118,7 @@ type TRestrictedCommentComprehensiveWithMemberInfoDict = {
     [commentId: string]: IRestrictedCommentComprehensiveWithMemberInfo;
 }
 
-const domain = process.env.NEXT_PUBLIC_APP_DOMAIN;
+const domain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? '';
 const defaultLang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
     title: {
@@ -996,7 +1003,7 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, a
                             {/* the comments (conditional rendering)*/}
                             {Object.keys(restrictedCommentComprehensiveWithMemberInfoDict).length !== 0 &&
                                 Object.keys(restrictedCommentComprehensiveWithMemberInfoDict).map(commentId => {
-                                    const { memberId, nickname, avatarImageUrl, createdTime, content, cuedMemberInfoArr, totalLikedCount } = restrictedCommentComprehensiveWithMemberInfoDict[commentId];
+                                    const { memberId, nickname, createdTime, content, cuedMemberInfoArr, totalLikedCount } = restrictedCommentComprehensiveWithMemberInfoDict[commentId];
                                     return (
                                         <Box key={commentId}>
                                             <Divider sx={{ display: { xs: 'block', sm: 'none' } }} />
@@ -1005,7 +1012,7 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, a
                                                 {/* member info */}
                                                 <Stack direction={'row'}>
                                                     <IconButton sx={{ padding: 0 }}>
-                                                        <Avatar src={avatarImageUrl} sx={{ width: 38, height: 38, bgcolor: 'grey' }}>{nickname?.charAt(0).toUpperCase()}</Avatar>
+                                                        <Avatar src={provideAvatarImageUrl(memberId, domain)} sx={{ width: 38, height: 38, bgcolor: 'grey' }}>{nickname?.charAt(0).toUpperCase()}</Avatar>
                                                     </IconButton>
                                                     <Box ml={1}>
                                                         <TextButton color='inherit'>
@@ -1161,7 +1168,7 @@ const Post = ({ restrictedPostComprehensive_ss, channelInfo_ss, authorInfo_ss, a
 
                                     {/* avatar */}
                                     <CenterlizedBox mt={1}>
-                                        <Avatar src={avatarImageUrl} sx={{ width: 56, height: 56, bgcolor: 'grey' }}>{nickname?.charAt(0).toUpperCase()}</Avatar>
+                                        <Avatar src={provideAvatarImageUrl(authorId, domain)} sx={{ width: 56, height: 56, bgcolor: 'grey' }}>{nickname?.charAt(0).toUpperCase()}</Avatar>
                                     </CenterlizedBox>
 
                                     {/* nickname */}
