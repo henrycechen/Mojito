@@ -118,11 +118,7 @@ type TMemberPageProcessStates = {
     selectedLayout: 'messagelayout' | 'listlayout' | 'postlayout' | 'settinglayout';
 }
 
-type TMessageLayoutStates = {
-    selectedCategory: string;
-    noticeInfoArr: INoticeInfoWithMemberInfo[];
-    noticeStatistics: { [category: string]: number };
-}
+
 
 type TPostsLayoutStates = {
     selectedCategoryId: 'mycreations' | 'savedposts' | 'browsinghistory';
@@ -761,30 +757,22 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
     }
 
     ////////////////////////  Message Layout ////////////////////////
+    type TMessageLayoutStates = {
+        selectedCategory: string;
+    }
 
     //////// STATES - message layout ////////
     const [messagelayoutStates, setMessageLayoutStates] = React.useState<TMessageLayoutStates>({
         selectedCategory: 'like', // default
-        noticeInfoArr: [],
-        noticeStatistics: { cue: 0, reply: 0, like: 0, pin: 0, save: 0, follow: 0 }
     });
+
+    const [noticeStatistics, setNoticeStatistics] = React.useState<{ [category: string]: number }>({ cue: 0, reply: 0, like: 0, pin: 0, save: 0, follow: 0 });
+    const [noticeInfoArr, setNoticeInfoArr] = React.useState<INoticeInfoWithMemberInfo[]>([]);
 
     React.useEffect(() => { updateNoticeArrayAndStatistics(); }, [])
     React.useEffect(() => { updateNoticeArray() }, [messagelayoutStates.selectedCategory])
 
-    const updateNoticeArray = async () => {
-        const resp = await fetch(`/api/notice/of/${messagelayoutStates.selectedCategory}`);
-        if (200 !== resp.status) {
-            console.log(`Attempt to GET notice of ${messagelayoutStates.selectedCategory}`);
-            return;
-        }
-        try {
-            const arr = await resp.json();
-            setMessageLayoutStates({ ...messagelayoutStates, noticeInfoArr: arr });
-        } catch (e) {
-            console.log(`Attempt to get notice array from resp. ${e}`)
-        }
-    }
+
 
     const updateNoticeArrayAndStatistics = async () => {
         let update_arr = [];
@@ -811,7 +799,8 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
         } catch (e) {
             console.log(`Attempt to get notice statistics (obj) from resp. ${e}`)
         }
-        setMessageLayoutStates({ ...messagelayoutStates, noticeInfoArr: [...update_arr], noticeStatistics: { ...update_stat } });
+        setMessageLayoutStates({ ...messagelayoutStates });
+        setNoticeStatistics({ ...update_stat });
         await resetNoticeStatistics();
     }
 
@@ -823,8 +812,23 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
         }
     }
 
+    const updateNoticeArray = async () => {
+        const resp = await fetch(`/api/notice/of/${messagelayoutStates.selectedCategory}`);
+        if (200 !== resp.status) {
+            console.log(`Attempt to GET notice of ${messagelayoutStates.selectedCategory}`);
+            return;
+        }
+        try {
+            const arr = await resp.json();
+            setNoticeInfoArr([...arr]);
+        } catch (e) {
+            console.log(`Attempt to get notice array from resp. ${e}`)
+        }
+    }
+
     const handleSelectNoticeCategory = (categoryId: string) => (event: React.MouseEvent<HTMLButtonElement>) => {
-        setMessageLayoutStates({ ...messagelayoutStates, selectedCategory: categoryId });
+        setMessageLayoutStates({ selectedCategory: categoryId });
+        setNoticeStatistics({ ...noticeStatistics, [categoryId]: 0 });
     }
 
     const handleClickOnInitiateInfo = (initiateId: string) => (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -845,33 +849,41 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
                 {/* middle column */}
                 <Grid item xs={12} sm={8} md={6} lg={6}>
-                    <ResponsiveCard>
+                    <ResponsiveCard sx={{ pt: { xs: 0, sm: 2 } }}>
                         <Stack>
 
                             {/* section select */}
                             <Box sx={{ display: 'flex', justifyContent: 'space-evenly' }}>
+
+                                {/* like */}
                                 <Button sx={{ color: 'like' === messagelayoutStates.selectedCategory ? 'primary' : 'grey.600' }} onClick={handleSelectNoticeCategory('like')}>
                                     <Box>
-                                        <CenterlizedBox sx={{ padding: 1, }}><ThumbUpIcon /></CenterlizedBox>
-                                        <Typography variant='body2' textAlign={'center'}>{langConfigs.liked[preferenceStates.lang]}{0 === messagelayoutStates.noticeStatistics.like ? '' : `+${messagelayoutStates.noticeStatistics.like}`}</Typography>
+                                        <CenterlizedBox sx={{ p: 1 }}><ThumbUpIcon /></CenterlizedBox>
+                                        <Typography variant={'body2'} textAlign={'center'}>{langConfigs.liked[preferenceStates.lang]}{0 === noticeStatistics.like ? '' : `+${noticeStatistics.like}`}</Typography>
                                     </Box>
                                 </Button>
+
+                                {/* save */}
                                 <Button sx={{ color: 'save' === messagelayoutStates.selectedCategory ? 'primary' : 'grey.600' }} onClick={handleSelectNoticeCategory('save')}>
                                     <Box>
-                                        <CenterlizedBox sx={{ padding: 1 }}><StarIcon /></CenterlizedBox>
-                                        <Typography variant='body2' textAlign={'center'}>{langConfigs.saved[preferenceStates.lang]}{0 === messagelayoutStates.noticeStatistics.save ? '' : `+${messagelayoutStates.noticeStatistics.save}`}</Typography>
+                                        <CenterlizedBox sx={{ p: 1 }}><StarIcon /></CenterlizedBox>
+                                        <Typography variant={'body2'} textAlign={'center'}>{langConfigs.saved[preferenceStates.lang]}{0 === noticeStatistics.save ? '' : `+${noticeStatistics.save}`}</Typography>
                                     </Box>
                                 </Button>
+
+                                {/* reply */}
                                 <Button sx={{ color: 'reply' === messagelayoutStates.selectedCategory ? 'primary' : 'grey.600' }} onClick={handleSelectNoticeCategory('reply')}>
                                     <Box>
-                                        <CenterlizedBox sx={{ padding: 1 }}><ChatBubbleIcon /></CenterlizedBox>
-                                        <Typography variant='body2' textAlign={'center'}>{langConfigs.replied[preferenceStates.lang]}{0 === messagelayoutStates.noticeStatistics.reply ? '' : `+${messagelayoutStates.noticeStatistics.reply}`}</Typography>
+                                        <CenterlizedBox sx={{ p: 1 }}><ChatBubbleIcon /></CenterlizedBox>
+                                        <Typography variant={'body2'} textAlign={'center'}>{langConfigs.replied[preferenceStates.lang]}{0 === noticeStatistics.reply ? '' : `+${noticeStatistics.reply}`}</Typography>
                                     </Box>
                                 </Button>
+
+                                {/* cue */}
                                 <Button sx={{ color: 'cue' === messagelayoutStates.selectedCategory ? 'primary' : 'grey.600' }} onClick={handleSelectNoticeCategory('cue')}>
                                     <Box>
-                                        <CenterlizedBox sx={{ padding: 1 }}><AlternateEmailIcon /></CenterlizedBox>
-                                        <Typography variant='body2' textAlign={'center'}>{langConfigs.cued[preferenceStates.lang]}{0 === messagelayoutStates.noticeStatistics.cue ? '' : `+${messagelayoutStates.noticeStatistics.cue}`}</Typography>
+                                        <CenterlizedBox sx={{ p: 1 }}><AlternateEmailIcon /></CenterlizedBox>
+                                        <Typography variant={'body2'} textAlign={'center'}>{langConfigs.cued[preferenceStates.lang]}{0 === noticeStatistics.cue ? '' : `+${noticeStatistics.cue}`}</Typography>
                                     </Box>
                                 </Button>
                             </Box>
@@ -879,35 +891,35 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
                             {/* message list */}
                             <Stack padding={{ xs: 0, sm: 2 }} spacing={{ xs: 4, sm: 4, md: 5 }}>
-                                {0 !== messagelayoutStates.noticeInfoArr.length && messagelayoutStates.noticeInfoArr.map(info =>
+                                {0 !== noticeInfoArr.length && noticeInfoArr.map(info =>
                                     <Box key={info.noticeId} mt={{ xs: 3, sm: 2 }} sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between' }} >
 
                                         {/* initiate info */}
                                         <Stack direction={'row'} sx={{ maxHeight: 40 }}>
-                                            <IconButton sx={{ padding: 0 }} onClick={handleClickOnInitiateInfo(info.initiateId)}>
-                                                <Avatar src={info.avatarImageUrl} sx={{ width: 38, height: 38, bgcolor: 'grey' }}>{info.nickname?.charAt(0).toUpperCase()}</Avatar>
+                                            <IconButton sx={{ px: 0 }} onClick={handleClickOnInitiateInfo(info.initiateId)}>
+                                                <Avatar src={provideAvatarImageUrl(info.initiateId, domain)} sx={{ width: 40, height: 40, bgcolor: 'grey' }}>{info.nickname?.charAt(0).toUpperCase()}</Avatar>
                                             </IconButton>
                                             <Box ml={1} width={100}>
-                                                <TextButton color='inherit' onClick={handleClickOnInitiateInfo(info.initiateId)}>
+                                                <TextButton color={'inherit'} onClick={handleClickOnInitiateInfo(info.initiateId)}>
 
                                                     {/* nickname */}
-                                                    <Typography variant='body2' align='left'>{getNicknameBrief(info.nickname)}</Typography>
+                                                    <Typography align={'left'} fontSize={14}>{getNicknameBrief(info.nickname)}</Typography>
 
                                                     {/* created time */}
-                                                    <Typography variant='body2' fontSize={{ xs: 12, align: 'right' }}>{timeToString(info.createdTimeBySecond, preferenceStates.lang)}</Typography>
+                                                    <Typography variant={'body2'} fontSize={{ xs: 12, align: 'right' }}>{timeToString(info.createdTimeBySecond, preferenceStates.lang)}</Typography>
                                                 </TextButton>
                                             </Box>
                                         </Stack>
 
                                         {/* notice info */}
                                         <Box sx={{ maxWidth: 300, display: 'flex', flexDirection: 'column', justifyContent: 'center', marginLeft: 2, }} >
-                                            <TextButton color='inherit' onClick={handleClickOnNoticeInfo(info.noticeId)}>
+                                            <TextButton color={'inherit'} onClick={handleClickOnNoticeInfo(info.noticeId)}>
                                                 <Typography variant={'body2'} align={'right'}>{noticeInfoToString(info, preferenceStates.lang)}</Typography>
                                             </TextButton>
                                         </Box>
                                     </Box>
                                 )}
-                                {0 === messagelayoutStates.noticeInfoArr.length &&
+                                {0 === noticeInfoArr.length &&
                                     <Box mt={{ xs: 3, sm: 2 }}>
                                         <Typography color={'text.secondary'} align={'center'}>{langConfigs.noNotificationRecord[preferenceStates.lang]}</Typography>
                                     </Box>
@@ -990,10 +1002,10 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                             {/* section select */}
                             <Box sx={{ display: 'flex', justifyContent: 'space-evenly' }}>
                                 <Button sx={{ color: 'followedbyme' === listLayoutStates.selectedCategory ? 'primary' : 'grey.600' }} onClick={handleSelectListCategory('followedbyme')}>
-                                    <Typography variant='body2' textAlign={'center'}>{langConfigs.myFollowing[preferenceStates.lang]}</Typography>
+                                    <Typography variant={'body2'} textAlign={'center'}>{langConfigs.myFollowing[preferenceStates.lang]}</Typography>
                                 </Button>
                                 <Button sx={{ color: 'followingme' === listLayoutStates.selectedCategory ? 'primary' : 'grey.600' }} onClick={handleSelectListCategory('followingme')}>
-                                    <Typography variant='body2' textAlign={'center'}>{langConfigs.myFollowedBy[preferenceStates.lang]}{0 === messagelayoutStates.noticeStatistics.follow ? '' : `+${messagelayoutStates.noticeStatistics.follow}`}</Typography>
+                                    <Typography variant={'body2'} textAlign={'center'}>{langConfigs.myFollowedBy[preferenceStates.lang]}{0 === noticeStatistics.follow ? '' : `+${noticeStatistics.follow}`}</Typography>
                                 </Button>
                             </Box>
                             <Box mt={{ xs: 1, sm: 2 }}><Divider /></Box>
@@ -1010,20 +1022,20 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                                                 <Avatar src={provideAvatarImageUrl(info.memberId, domain)} sx={{ width: 38, height: 38, bgcolor: 'grey' }}>{info.nickname?.charAt(0).toUpperCase()}</Avatar>
                                             </IconButton>
                                             <Box ml={1}>
-                                                <TextButton color='inherit' onClick={handleClickOnInitiateInfo(info.memberId)}>
+                                                <TextButton color={'inherit'} onClick={handleClickOnInitiateInfo(info.memberId)}>
 
                                                     {/* nickname */}
-                                                    <Typography variant='body2' align='left'>{getContentBrief(info.nickname, 13)}</Typography>
+                                                    <Typography variant={'body2'} align={'left'}>{getContentBrief(info.nickname, 13)}</Typography>
 
                                                     {/* brief intro */}
-                                                    <Typography variant='body2' fontSize={{ xs: 12, align: 'left' }} >{getContentBrief(info.briefIntro, 13)}</Typography>
+                                                    <Typography variant={'body2'} fontSize={{ xs: 12, align: 'left' }} >{getContentBrief(info.briefIntro, 13)}</Typography>
                                                 </TextButton>
                                             </Box>
                                         </Stack>
 
                                         {/* undo follow button */}
                                         {'followedbyme' === listLayoutStates.selectedCategory && <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }} >
-                                            <Button variant='text' color='inherit' onClick={async () => { await handleUndoFollow(info.memberId) }}>
+                                            <Button variant='text' color={'inherit'} onClick={async () => { await handleUndoFollow(info.memberId) }}>
                                                 <Typography variant={'body2'} align={'right'}>{langConfigs.undoFollow[preferenceStates.lang]}</Typography>
                                             </Button>
                                         </Box>}
@@ -1639,7 +1651,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
                     {/* forgot password link */}
                     <Box sx={{ mt: 6, paddingX: 2, textAlign: 'right' }} >
-                        <Link href='/forgot' variant='body2'>
+                        <Link href='/forgot' variant={'body2'}>
                             {langConfigs.forgotPassword[preferenceStates.lang]}
                         </Link>
                     </Box>
@@ -2071,10 +2083,10 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                         {/* 'cancel' button */}
                         {privacySettingsProcessStates.displayCancelButton && <Box mb={4} pl={{ xs: 0, sm: 3, md: 6 }}>
                             <Button variant={'contained'} color={'error'} size={'small'} onClick={async () => { await handleCancel() }} fullWidth>
-                                {(!privacySettingsProcessStates.displayCountdown && 100 === privacySettingsProcessStates.progressStatus) && <Typography variant='body2'>{langConfigs.cancel[preferenceStates.lang]}</Typography>}
-                                {(!privacySettingsProcessStates.displayCountdown && 200 === privacySettingsProcessStates.progressStatus) && <Typography variant='body2'>{langConfigs.cancelSucceeded[preferenceStates.lang]}</Typography>}
-                                {(!privacySettingsProcessStates.displayCountdown && 400 === privacySettingsProcessStates.progressStatus) && <Typography variant='body2'>{langConfigs.cancelFailed[preferenceStates.lang]}</Typography>}
-                                {privacySettingsProcessStates.displayCountdown && <Typography variant='body2'>{langConfigs.clickXTimesToCancelMemberShip[preferenceStates.lang](privacySettingsProcessStates.countdown)}</Typography>}
+                                {(!privacySettingsProcessStates.displayCountdown && 100 === privacySettingsProcessStates.progressStatus) && <Typography variant={'body2'}>{langConfigs.cancel[preferenceStates.lang]}</Typography>}
+                                {(!privacySettingsProcessStates.displayCountdown && 200 === privacySettingsProcessStates.progressStatus) && <Typography variant={'body2'}>{langConfigs.cancelSucceeded[preferenceStates.lang]}</Typography>}
+                                {(!privacySettingsProcessStates.displayCountdown && 400 === privacySettingsProcessStates.progressStatus) && <Typography variant={'body2'}>{langConfigs.cancelFailed[preferenceStates.lang]}</Typography>}
+                                {privacySettingsProcessStates.displayCountdown && <Typography variant={'body2'}>{langConfigs.clickXTimesToCancelMemberShip[preferenceStates.lang](privacySettingsProcessStates.countdown)}</Typography>}
                             </Button>
                         </Box>}
                     </FormGroup>
@@ -2103,7 +2115,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
             }
 
             return (
-                <Stack spacing={3}>
+                <Stack spacing={3} sx={{ px: 1 }}>
                     <Box mt={{ xs: 0, sm: 0 }}></Box>
                     {0 !== settinglayoutStates.blacklist.length && settinglayoutStates.blacklist.map(info =>
 
@@ -2111,17 +2123,17 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
                             {/* member info */}
                             <Stack direction={'row'} sx={{ maxHeight: 40 }}>
-                                <IconButton onClick={handleClickOnInitiateInfo(info.memberId)}>
-                                    <Avatar src={provideAvatarImageUrl(memberId, domain)} sx={{ width: 38, height: 38, bgcolor: 'grey' }}>{info.nickname?.charAt(0).toUpperCase()}</Avatar>
+                                <IconButton sx={{ px: 0 }} onClick={handleClickOnInitiateInfo(info.memberId)}>
+                                    <Avatar src={provideAvatarImageUrl(memberId, domain)} sx={{ width: 40, height: 40, bgcolor: 'grey' }}>{info.nickname?.charAt(0).toUpperCase()}</Avatar>
                                 </IconButton>
                                 <Box ml={1}>
-                                    <TextButton color='inherit' onClick={handleClickOnInitiateInfo(info.memberId)}>
+                                    <TextButton color={'inherit'} onClick={handleClickOnInitiateInfo(info.memberId)}>
 
                                         {/* nickname */}
-                                        <Typography variant='body2' align='left' fontSize={{ xs: 14, sm: 14 }}>{getContentBrief(info.nickname, 14)}</Typography>
+                                        <Typography variant={'body2'} align={'left'} fontSize={{ xs: 14, sm: 14 }}>{getNicknameBrief(info.nickname)}</Typography>
 
                                         {/* created time */}
-                                        <Typography variant='body2' fontSize={{ xs: 12, align: 'right' }}>{timeToString(info.createdTimeBySecond, preferenceStates.lang)}</Typography>
+                                        <Typography variant={'body2'} fontSize={{ xs: 12, align: 'right' }}>{timeToString(info.createdTimeBySecond, preferenceStates.lang)}</Typography>
                                     </TextButton>
                                 </Box>
                             </Stack>
@@ -2160,7 +2172,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                     <Table aria-label='simple table'>
                         {/* info */}
                         <TableRow>
-                            <TableCell sx={{ px: 0, pt: 0, pb: 1 }}><Typography variant='body2' color={'text.secondary'}>{langConfigs.memberInfo[preferenceStates.lang]}</Typography></TableCell>
+                            <TableCell sx={{ px: 0, pt: 0, pb: 1 }}><Typography variant={'body2'} color={'text.secondary'}>{langConfigs.memberInfo[preferenceStates.lang]}</Typography></TableCell>
                             <TableCell sx={{ px: 0, pt: 0, pb: 1 }}></TableCell>
                         </TableRow>
                         {/* memberId */}
@@ -2172,7 +2184,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                         <TableRow>
                             <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }}>{langConfigs.emailAddress[preferenceStates.lang]}</TableCell>
                             <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none', maxWidth: { xs: 120, sm: 160 } }} align='right'>
-                                <Typography variant='body2' sx={{ overflowWrap: 'anywhere' }}>{emailAddress}</Typography>
+                                <Typography variant={'body2'} sx={{ overflowWrap: 'anywhere' }}>{emailAddress}</Typography>
                             </TableCell>
                         </TableRow>
                         {/* registeredDate */}
@@ -2195,7 +2207,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
                         {/* statistics */}
                         <TableRow>
-                            <TableCell sx={{ px: 0, pt: 0, pb: 1 }}><Typography variant='body2' color={'text.secondary'}>{langConfigs.memberStatistics[preferenceStates.lang]}</Typography></TableCell>
+                            <TableCell sx={{ px: 0, pt: 0, pb: 1 }}><Typography variant={'body2'} color={'text.secondary'}>{langConfigs.memberStatistics[preferenceStates.lang]}</Typography></TableCell>
                             <TableCell sx={{ px: 0, pt: 0, pb: 1 }}></TableCell>
                         </TableRow>
                         <TableRow>
@@ -2245,7 +2257,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                                         <AccountCircleIcon />
                                     </ListItemIcon>
                                     <ListItemText>
-                                        <Typography variant='body2'>{langConfigs.avatar[preferenceStates.lang]}</Typography>
+                                        <Typography variant={'body2'}>{langConfigs.avatar[preferenceStates.lang]}</Typography>
                                     </ListItemText>
                                 </MenuItem>
 
@@ -2255,7 +2267,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                                         <LabelIcon />
                                     </ListItemIcon>
                                     <ListItemText>
-                                        <Typography variant='body2'>{langConfigs.nickname[preferenceStates.lang]}</Typography>
+                                        <Typography variant={'body2'}>{langConfigs.nickname[preferenceStates.lang]}</Typography>
                                     </ListItemText>
                                 </MenuItem>
 
@@ -2265,7 +2277,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                                         <LockIcon />
                                     </ListItemIcon>
                                     <ListItemText>
-                                        <Typography variant='body2'>{langConfigs.password[preferenceStates.lang]}</Typography>
+                                        <Typography variant={'body2'}>{langConfigs.password[preferenceStates.lang]}</Typography>
                                     </ListItemText>
                                 </MenuItem>}
 
@@ -2275,7 +2287,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                                         <InterestsIcon />
                                     </ListItemIcon>
                                     <ListItemText>
-                                        <Typography variant='body2'>{langConfigs.briefIntro[preferenceStates.lang]}</Typography>
+                                        <Typography variant={'body2'}>{langConfigs.briefIntro[preferenceStates.lang]}</Typography>
                                     </ListItemText>
                                 </MenuItem>
 
@@ -2285,7 +2297,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                                         <OpacityIcon />
                                     </ListItemIcon>
                                     <ListItemText>
-                                        <Typography variant='body2'>{langConfigs.gender[preferenceStates.lang]}</Typography>
+                                        <Typography variant={'body2'}>{langConfigs.gender[preferenceStates.lang]}</Typography>
                                     </ListItemText>
                                 </MenuItem>
 
@@ -2295,7 +2307,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                                         <CakeIcon />
                                     </ListItemIcon>
                                     <ListItemText>
-                                        <Typography variant='body2'>{langConfigs.birthday[preferenceStates.lang]}</Typography>
+                                        <Typography variant={'body2'}>{langConfigs.birthday[preferenceStates.lang]}</Typography>
                                     </ListItemText>
                                 </MenuItem>
 
@@ -2305,7 +2317,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                                         <CheckBoxIcon />
                                     </ListItemIcon>
                                     <ListItemText>
-                                        <Typography variant='body2'>{langConfigs.privacySettings[preferenceStates.lang]}</Typography>
+                                        <Typography variant={'body2'}>{langConfigs.privacySettings[preferenceStates.lang]}</Typography>
                                     </ListItemText>
                                 </MenuItem>
 
@@ -2315,7 +2327,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                                         <BlockIcon />
                                     </ListItemIcon>
                                     <ListItemText>
-                                        <Typography variant='body2'>{langConfigs.blacklist[preferenceStates.lang]}</Typography>
+                                        <Typography variant={'body2'}>{langConfigs.blacklist[preferenceStates.lang]}</Typography>
                                     </ListItemText>
                                 </MenuItem>
 
@@ -2325,7 +2337,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                                         <InfoIcon />
                                     </ListItemIcon>
                                     <ListItemText>
-                                        <Typography variant='body2'>{langConfigs.info[preferenceStates.lang]}</Typography>
+                                        <Typography variant={'body2'}>{langConfigs.info[preferenceStates.lang]}</Typography>
                                     </ListItemText>
                                 </MenuItem>
                             </MenuList>
@@ -2375,7 +2387,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
                     {/* brief intro */}
                     <CenterlizedBox sx={{ mt: { xs: 0 } }}>
-                        <Typography variant='body2' textAlign={'center'} fontSize={{ xs: 14, sm: 15 }}>{memberInfoStates.briefIntro}</Typography>
+                        <Typography variant={'body2'} textAlign={'center'} fontSize={{ xs: 14, sm: 15 }}>{memberInfoStates.briefIntro}</Typography>
                     </CenterlizedBox>
 
                     {/* divider */}
@@ -2394,40 +2406,40 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                         {/* creation count */}
                         <Grid item>
                             <CenterlizedBox>
-                                <Typography variant='body2'>{langConfigs.creations[preferenceStates.lang]}</Typography>
+                                <Typography variant={'body2'}>{langConfigs.creations[preferenceStates.lang]}</Typography>
                             </CenterlizedBox>
                             <CenterlizedBox>
-                                <Typography variant='body2'>{memberStatistics_ss.totalCreationCount}</Typography>
+                                <Typography variant={'body2'}>{memberStatistics_ss.totalCreationCount}</Typography>
                             </CenterlizedBox>
                         </Grid>
 
                         {/* followed by count */}
                         <Grid item>
                             <CenterlizedBox>
-                                <Typography variant='body2'>{langConfigs.followedBy[preferenceStates.lang]}</Typography>
+                                <Typography variant={'body2'}>{langConfigs.followedBy[preferenceStates.lang]}</Typography>
                             </CenterlizedBox>
                             <CenterlizedBox>
-                                <Typography variant='body2'>{memberStatistics_ss.totalFollowedByCount}</Typography>
+                                <Typography variant={'body2'}>{memberStatistics_ss.totalFollowedByCount}</Typography>
                             </CenterlizedBox>
                         </Grid>
 
                         {/* creation saved count */}
                         <Grid item>
                             <CenterlizedBox>
-                                <Typography variant='body2'>{langConfigs.saved[preferenceStates.lang]}</Typography>
+                                <Typography variant={'body2'}>{langConfigs.saved[preferenceStates.lang]}</Typography>
                             </CenterlizedBox>
                             <CenterlizedBox>
-                                <Typography variant='body2'>{memberStatistics_ss.totalCreationSavedCount}</Typography>
+                                <Typography variant={'body2'}>{memberStatistics_ss.totalCreationSavedCount}</Typography>
                             </CenterlizedBox>
                         </Grid>
 
                         {/* creation liked count */}
                         <Grid item>
                             <CenterlizedBox>
-                                <Typography variant='body2'>{langConfigs.like[preferenceStates.lang]}</Typography>
+                                <Typography variant={'body2'}>{langConfigs.like[preferenceStates.lang]}</Typography>
                             </CenterlizedBox>
                             <CenterlizedBox>
-                                <Typography variant='body2'>{memberStatistics_ss.totalCreationLikedCount}</Typography>
+                                <Typography variant={'body2'}>{memberStatistics_ss.totalCreationLikedCount}</Typography>
                             </CenterlizedBox>
                         </Grid>
 
@@ -2596,7 +2608,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
                         {/* the 'all' button */}
                         <Button variant={'all' === postLayoutStates.selectedChannelId ? 'contained' : 'text'} size='small' onClick={handleChannelSelect('all')} >
-                            <Typography variant='body2' color={'all' === postLayoutStates.selectedChannelId ? 'white' : 'text.secondary'} sx={{ backgroundColor: 'primary' }}>
+                            <Typography variant={'body2'} color={'all' === postLayoutStates.selectedChannelId ? 'white' : 'text.secondary'} sx={{ backgroundColor: 'primary' }}>
                                 {langConfigs.allPosts[preferenceStates.lang]}
                             </Typography>
                         </Button>
@@ -2649,7 +2661,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                                                             <Button variant={'text'} color={'inherit'} sx={{ textTransform: 'none' }} onClick={handleClickOnMemberInfo(info.memberId, info.postId)}>
                                                                 <Avatar src={provideAvatarImageUrl(memberId, domain)} sx={{ width: 34, height: 34, bgcolor: 'grey' }}>{info.nickname?.charAt(0).toUpperCase()}</Avatar>
                                                                 <Box ml={1}>
-                                                                    <Typography variant='body2'>{getNicknameBrief(info.nickname)}</Typography>
+                                                                    <Typography variant={'body2'}>{getNicknameBrief(info.nickname)}</Typography>
                                                                 </Box>
                                                             </Button>
                                                         </Box>

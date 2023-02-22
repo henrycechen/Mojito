@@ -15,9 +15,9 @@ const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
 const fname = VerifyEmailAddressToken.name;
 
 
-/** VerifyEmailAddressToken v0.1.1
+/** VerifyEmailAddressToken v0.1.3
  * 
- * Last update: 21/02/2023
+ * Last update: 23/02/2023
  * 
  * This interface ONLY accepts POST requests
  * 
@@ -184,7 +184,7 @@ export default async function VerifyEmailAddressToken(req: NextApiRequest, res: 
             totalUndoBlockedByCount: 0
         });
         if (!memberStatisticsCollectionInsertResult.acknowledged) {
-            throw new Error(`Attempt to insert document (IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`)
+            logWithDate(`Attempt to insert document (IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`, fname); // v0.1.3
         }
         // Step #7 insert a new document (INotificationStatistics) in [C] notificationStatistics
         const notificationStatisticsCollectionClient = atlasDbClient.db('statistics').collection<INotificationStatistics>('notification');
@@ -198,7 +198,7 @@ export default async function VerifyEmailAddressToken(req: NextApiRequest, res: 
             follow: 0,
         });
         if (!notificationCollectionInsertResult.acknowledged) {
-            throw new Error(`Attempt to insert document (of INotificationStatistics, member id: ${memberId}) in [C] notificationStatistics`);
+            logWithDate(`Attempt to insert document (of INotificationStatistics, member id: ${memberId}) in [C] notificationStatistics`, fname); // v0.1.3
         }
         res.status(200).send('Email address verified');
         // Step #8 write journal (ILoginJournal) in [C] loginJournal

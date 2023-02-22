@@ -6,31 +6,32 @@
 export interface INoticeInfo {
     partitionKey: string; // notified member id
     rowKey: string; // notice id, combined id string
-    Category: 'cue' | 'reply' | 'like' | 'pin' | 'save' | 'follow';
+    Category: string;
     InitiateId: string; // initiate member id
     Nickname: string; // initiate member nickname
-    PostTitle?: string;
-    CommentBrief?: string;
+    PostTitle: string;
+    CommentBrief: string;
+    CreatedTimeBySecond: number;
+    IsActive: boolean;
 }
 
-export type INoticeInfoWithMemberInfo = {
+export interface INoticeInfoWithMemberInfo {
     noticeId: string; // notice id
     category: string; //'cue' | 'reply' | 'like' | 'pin' | 'save' | 'follow';
     initiateId: string; // initiate member id
     nickname: string; // initiate member nickname
-    avatarImageFullName: string;
-    createdTime: number;
-    postTitle?: string;
-    commentBrief?: string;
+    postTitle: string;
+    commentBrief: string;
+    createdTimeBySecond: number;
 }
 
 // [C] notificationStatistics
 export interface INotificationStatistics {
-    memberId?: string; // member id
-    cue?: number; // cued times accumulated from last count reset
-    reply?: number;
-    like?: number;
-    pin?: number;
-    save?: number;
-    follow?: number;
+    memberId: string; // member id
+    cue: number; // cued times accumulated from last count reset
+    reply: number;
+    like: number;
+    pin: number;
+    save: number;
+    follow: number;
 }

@@ -34,7 +34,23 @@ export default async function GetMembersBlockedByMe(req: NextApiRequest, res: Ne
         return;
     }
 
-    res.send([]);
+    res.send([
+        {
+            memberId: 'M3380ACMB',
+            nickname: '測試一下名字',
+            createdTimeBySecond: 1675795871,
+        },
+        {
+            memberId: 'M3380ACMM',
+            nickname: '測試一下名字最長可以有多長',
+            createdTimeBySecond: 1675645871,
+        },
+        {
+            memberId: 'M3380ACMD',
+            nickname: '測試一下名字nggg可以有多長',
+            createdTimeBySecond: 1675145871,
+        }
+    ]);
     return;
 
     //// Verify identity ////
