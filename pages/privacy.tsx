@@ -11,7 +11,7 @@ import Navbar from "../ui/Navbar";
 import Terms from "../ui/Terms";
 
 import { LangConfigs } from '../lib/types';
-import { getRandomHexStr } from '../lib/utils';
+import { getRandomHexStr } from '../lib/utils/create';
 
 type TProcessStates = {
     lang: string;

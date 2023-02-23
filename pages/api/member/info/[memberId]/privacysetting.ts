@@ -10,6 +10,7 @@ import { INicknameRegistry } from '../../../../../lib/interfaces/registry';
 import AtlasDatabaseClient from '../../../../../modules/AtlasDatabaseClient';
 import AzureTableClient from '../../../../../modules/AzureTableClient';
 import { verifyId } from '../../../../../lib/utils/verify';
+import { IMemberPostMapping } from '../../../../../lib/interfaces/mapping';
 
 const fname = UpdatePrivacySettings.name;
 
@@ -80,6 +81,7 @@ export default async function UpdatePrivacySettings(req: NextApiRequest, res: Ne
             !(
                 undefined !== settings
                 && settings.hasOwnProperty('allowKeepingBrowsingHistory')
+                && settings.hasOwnProperty('allowVisitingFollowedMembers')
                 && settings.hasOwnProperty('allowVisitingSavedPosts')
                 && settings.hasOwnProperty('hidePostsAndCommentsOfBlockedMember')
             )
@@ -92,6 +94,7 @@ export default async function UpdatePrivacySettings(req: NextApiRequest, res: Ne
         const memberComprehensiveUpdateResult = await memberComprehensiveCollectionClient.updateOne({ memberId }, {
             $set: {
                 allowKeepingBrowsingHistory: settings.allowKeepingBrowsingHistory,
+                allowVisitingFollowedMembers: settings.allowVisitingFollowedMembers,
                 allowVisitingSavedPosts: settings.allowVisitingSavedPosts,
                 hidePostsAndCommentsOfBlockedMember: settings.hidePostsAndCommentsOfBlockedMember,
                 lastSettingsUpdatedTimeBySecond: Math.floor(new Date().getTime() / 1000)
@@ -104,10 +107,18 @@ export default async function UpdatePrivacySettings(req: NextApiRequest, res: Ne
             return;
         }
 
-        // TODO: is not allowed keeping browsing history, clear all records of IMemberPostMapping in [RL] HistoryMapping
-
-        res.status(200).send('Privacy settings updated');
         await atlasDbClient.close();
+        res.status(200).send('Privacy settings updated');
+
+        if (!settings.allowKeepingBrowsingHistory) {
+            const browsingHistoryMappingTableClient = AzureTableClient('HistoryMapping');
+            const historyQuery = browsingHistoryMappingTableClient.listEntities<IMemberPostMapping>({ queryOptions: { filter: `PartitionKey eq '${memberId}' and IsActive eq true` } });
+            let result = await historyQuery.next();
+            while (!result.done) {
+                await browsingHistoryMappingTableClient.updateEntity({ partitionKey: memberId, rowKey: result.value.rowKey, IsActive: false }, 'Merge');
+            }
+        }
+        return;
     } catch (e: any) {
         let msg;
         if (e instanceof RestError) {

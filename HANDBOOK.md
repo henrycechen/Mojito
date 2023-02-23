@@ -398,18 +398,23 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
     briefIntro: string;
     lastBriefIntroUpdatedTimeBySecond: number;
     
-    gender?: -1 | 0 | 1
+    gender: -1 | 0 | 1
     lastGenderUpdatedTimeBySecond: number;
     
-    birthday?: string;
+    birthday: string;
     lastBirthdayUpdatedTimeBySecond: number;
     
     lastSettingsUpdatedTimeBySecond: number;
     
     //// management ////
-    status?: number;
-    allowPosting?: boolean;
-    allowCommenting?: boolean;
+    status: number;
+    allowPosting: boolean;
+    allowCommenting: boolean;
+    
+    allowKeepingBrowsingHistory: boolean;
+    allowVisitingFollowedMembers: boolean;
+    allowVisitingSavedPosts: boolean;
+    hidePostsAndCommentsOfBlockedMember: boolean;
 }
 ```
 
@@ -1898,6 +1903,29 @@ console.log('response', response.data);
 | PermissionDenied             |        |      |
 | MemberSuspendedOrDeactivated | signin |      |
 | MemberDeactivated            | signin |      |
+
+
+
+## MemberInfo
+
+```typescript
+{/* initiate info */}
+<Stack direction={'row'} sx={{ maxHeight: 40 }}>
+    {/* <IconButton sx={{ px: 0 }} onClick={handleClickOnInitiateInfo(info.initiateId)}> */}
+    <Avatar src={provideAvatarImageUrl(info.initiateId, domain)} sx={{ width: 40, height: 40, bgcolor: 'grey' }}>{info.nickname?.charAt(0).toUpperCase()}</Avatar>
+    {/* </IconButton> */}
+    <Box ml={1} width={100}>
+        <TextButton color={'inherit'} onClick={handleClickOnInitiateInfo(info.initiateId)}>
+
+            {/* nickname */}
+            <Typography align={'left'} fontSize={14}>{getNicknameBrief(info.nickname)}</Typography>
+
+            {/* created time */}
+            <Typography variant={'body2'} fontSize={{ xs: 12, align: 'right' }}>{timeToString(info.createdTimeBySecond, preferenceStates.lang)}</Typography>
+        </TextButton>
+    </Box>
+</Stack>
+```
 
 
 

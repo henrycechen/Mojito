@@ -29,7 +29,7 @@ export default async function GetOrUpdateNotificationStatistics(req: NextApiRequ
 
 
     if ('GET' === method) {
-        res.send({ cue: 16, reply: 23, like: 99, pin: 7, save: 56, follow: 34 })
+        res.send({ cue: 24, reply: 19, like: 166, pin: 7, save: 43, follow: 17 })
     }
     if ('PUT' === method) {
         res.status(200).end();

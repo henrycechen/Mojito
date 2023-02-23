@@ -16,7 +16,7 @@ export function provideAvatarImageUrl(memberId: string, domain: string, forceBro
 
 export function getNicknameBrief(nickname: any): string {
     if (!('string' === typeof nickname && '' !== nickname)) {
-        return `Mojito會員${Math.floor(Math.random() * Math.pow(10, 2)).toString(16).toUpperCase()}`;
+        return `Mojito用戶${Math.floor(Math.random() * Math.pow(10, 2)).toString(16).toUpperCase()}`;
     }
     if (nickname.length > 13) {
         return `${nickname.slice(0, 13)}...`;
@@ -56,6 +56,7 @@ export function fakeRestrictedMemberInfo(): IRestrictedMemberComprehensive {
         birthdayBySecond: 1580436000, // Date Fri Jan 31 2020 15:00:00 GMT+1300 (New Zealand Daylight Time)
 
         status: 0,
+        allowVisitingFollowedMembers: false,
         allowVisitingSavedPosts: false,
         allowKeepingBrowsingHistory: false,
         hidePostsAndCommentsOfBlockedMember: false

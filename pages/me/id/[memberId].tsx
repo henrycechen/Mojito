@@ -118,22 +118,6 @@ type TMemberPageProcessStates = {
     selectedLayout: 'messagelayout' | 'listlayout' | 'postlayout' | 'settinglayout';
 }
 
-
-
-type TPostsLayoutStates = {
-    selectedCategoryId: 'mycreations' | 'savedposts' | 'browsinghistory';
-    selectedHotPosts: boolean;
-    selectedChannelId: string;
-    memorizeChannelBarPositionX: number | undefined;
-    memorizeViewPortPositionY: number | undefined;
-    memorizeLastViewedPostId: string | undefined;
-    wasRedirected: boolean;
-}
-
-type TBehaviourStates = {
-    undoSaved: { [postId: string]: number }
-}
-
 const domain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? '';
 const defaultLang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
@@ -152,45 +136,75 @@ const langConfigs: LangConfigs = {
         cn: '我的关注',
         en: 'My following'
     },
-    myFollowedBy: {
-        tw: '訂閲我的會員',
-        cn: '我的粉丝',
-        en: 'My fans'
-    },
-    undoFollow: {
-        tw: '取消關注',
-        cn: '取关',
-        en: 'Undo'
+    hisFollowing: {
+        tw: '作者的訂閲',
+        cn: '作者的关注和粉丝',
+        en: `Author's following`
     },
     authorsFollowing: {
         tw: '作者的訂閲',
-        cn: '作者的粉丝',
+        cn: '作者的关注',
         en: `Author's following`
-    },
-    posts: {
-        tw: '帖子',
-        cn: '帖子',
-        en: 'Posts'
-    },
-    creations: {
-        tw: '創作',
-        cn: '发布',
-        en: 'Creations'
     },
     followedBy: {
         tw: '訂閲',
         cn: '粉丝',
         en: 'Followed'
     },
+    myFollowedBy: {
+        tw: '訂閲我的用戶',
+        cn: '我的粉丝',
+        en: 'My fans'
+    },
+    authorsFollowedBy: {
+        tw: '訂閲作者的用戶',
+        cn: '作者的粉丝',
+        en: `Author's following`
+    },
+    undoFollow: {
+        tw: '取消訂閲',
+        cn: '取关',
+        en: 'Undo'
+    },
+    posts: {
+        tw: '帖子',
+        cn: '帖子',
+        en: 'Posts'
+    },
+    authorsPosts: {
+        tw: '作者的創作和收藏',
+        cn: '作者的发布和收藏',
+        en: `Author's creations and saved posts`
+    },
+    creations: {
+        tw: '創作',
+        cn: '发布',
+        en: 'Creations'
+    },
     myCreations: {
         tw: '我的創作',
         cn: '我的发布',
         en: 'My creations'
     },
-    authorsPosts: {
-        tw: '作者的帖子',
-        cn: '作者的帖子',
-        en: `Author's posts`
+    authorsCreations: {
+        tw: '作者的創作',
+        cn: '作者的发布',
+        en: `Author's creations`
+    },
+    saved: {
+        tw: '收藏',
+        cn: '收藏',
+        en: 'Saved'
+    },
+    mySavedPosts: {
+        tw: '我的收藏',
+        cn: '我的收藏',
+        en: 'Saved'
+    },
+    authorsSavedPosts: {
+        tw: '作者的收藏',
+        cn: '作者的收藏',
+        en: `Author's saved posts`
     },
     allPosts: {
         tw: '全部',
@@ -206,21 +220,6 @@ const langConfigs: LangConfigs = {
         tw: '新帖',
         cn: '最新',
         en: 'Newest'
-    },
-    saved: {
-        tw: '收藏',
-        cn: '收藏',
-        en: 'Saved'
-    },
-    mySavedPosts: {
-        tw: '我的收藏',
-        cn: '我的收藏',
-        en: 'Saved'
-    },
-    authorsSaved: {
-        tw: '作者的收藏',
-        cn: '作者的收藏',
-        en: `Author's saved`
     },
     like: {
         tw: '喜歡',
@@ -272,9 +271,19 @@ const langConfigs: LangConfigs = {
         cn: '您没有关注其他用户',
         en: 'You have not followed any members'
     },
+    authorNoFollowingMemberInfoRecord: {
+        tw: '作者沒有訂閲其他用戶',
+        cn: '作者没有关注其他用户',
+        en: 'Author has not followed any members'
+    },
     noFollowedByMemberInfoRecord: {
         tw: '暫時沒有其他用戶訂閲您',
         cn: '暂时没有其他用户关注您',
+        en: 'No records of following member'
+    },
+    authorNoFollowedByMemberInfoRecord: {
+        tw: '暫時沒有其他用戶訂閲作者',
+        cn: '暂时没有其他用户关注作者',
         en: 'No records of following member'
     },
     //// Avatar setting ////
@@ -495,10 +504,15 @@ const langConfigs: LangConfigs = {
         cn: '注銷失败，点击以重试',
         en: 'Cancel membership failed, click to re-try',
     },
+    allowVisitingFollowedMembers: {
+        tw: '允許他人查看您的訂閲',
+        cn: '允许他人查看您的订阅',
+        en: 'Allow other members visiting your followed members'
+    },
     allowVisitingSavedPosts: {
         tw: '允許他人訪問您的收藏',
         cn: '允许他人访问您的收藏',
-        en: 'Allow other member visiting your saved posts'
+        en: 'Allow other members visiting your saved posts'
     },
     clickXTimesToCancelMemberShip: {
         tw: (t: number) => 0 !== t ? `繼續點擊${t}次以注銷賬號` : `繼續點擊以注銷賬號`,
@@ -512,8 +526,8 @@ const langConfigs: LangConfigs = {
 
     },
     hidePostsAndCommentsOfBlockedMember: {
-        tw: '隱藏屏蔽的會員的作品和評論',
-        cn: '隐藏屏蔽的会员的作品与评论',
+        tw: '隱藏屏蔽的用戶的作品和評論',
+        cn: '隐藏屏蔽的用户的作品与评论',
         en: 'Hide posts and comments from blocked member'
 
     },
@@ -529,8 +543,8 @@ const langConfigs: LangConfigs = {
         en: 'Blacklist'
     },
     noRecordOfBlacklist: {
-        tw: '您還沒有屏蔽其他任何會員',
-        cn: '您还没有拉黑任何会员',
+        tw: '您還沒有屏蔽其他任何用戶',
+        cn: '您还没有拉黑任何用户',
         en: 'You have not blocked any members'
     },
     undoBlock: {
@@ -682,7 +696,6 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
     }, [])
 
     const { data: session, status } = useSession();
-    // const theme: any = useTheme();
 
     //////// INFO - viewer //////// (conditional.)
     let viewerId = '';
@@ -693,11 +706,10 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
     //////// REF - masonry ////////
     const masonryWrapper = React.useRef<any>();
-    const [width, setWidth] = React.useState(636);
-    // [!] set width on select layout moved to process states section
+    const [width, setWidth] = React.useState(375); // default 636, now use the width of iphonse se3
 
-    //////// INFO - member ////////
-    const { memberId } = memberComprehensive_ss;
+    //////// INFO - member (authod) ////////
+    const { memberId: authorId } = memberComprehensive_ss;
 
     type TMemberInfoStates = {
         avatarImageUrl: string;
@@ -709,7 +721,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
     //////// STATES - memberInfo ////////
     const [memberInfoStates, setMemberInfoStates] = React.useState<TMemberInfoStates>({
-        avatarImageUrl: provideAvatarImageUrl(memberId, domain),
+        avatarImageUrl: provideAvatarImageUrl(authorId, domain),
         nickname: memberComprehensive_ss.nickname,
         briefIntro: memberComprehensive_ss.briefIntro,
         gender: memberComprehensive_ss.gender,
@@ -769,10 +781,17 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
     const [noticeStatistics, setNoticeStatistics] = React.useState<{ [category: string]: number }>({ cue: 0, reply: 0, like: 0, pin: 0, save: 0, follow: 0 });
     const [noticeInfoArr, setNoticeInfoArr] = React.useState<INoticeInfoWithMemberInfo[]>([]);
 
-    React.useEffect(() => { updateNoticeArrayAndStatistics(); }, [])
-    React.useEffect(() => { updateNoticeArray() }, [messagelayoutStates.selectedCategory])
+    React.useEffect(() => {
+        if ('authenticated' === status && authorId === viewerId) {
+            updateNoticeArrayAndStatistics();
+        }
+    }, [])
 
-
+    React.useEffect(() => {
+        if ('authenticated' === status && authorId === viewerId) {
+            updateNoticeArray();
+        }
+    }, [messagelayoutStates.selectedCategory])
 
     const updateNoticeArrayAndStatistics = async () => {
         let update_arr = [];
@@ -887,36 +906,36 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                                     </Box>
                                 </Button>
                             </Box>
-                            <Box mt={{ xs: 1, sm: 2 }}><Divider /></Box>
+                            <Box mt={{ xs: 1, sm: 2 }} mb={{ xs: 2, sm: 1 }}><Divider /></Box>
 
                             {/* message list */}
-                            <Stack padding={{ xs: 0, sm: 2 }} spacing={{ xs: 4, sm: 4, md: 5 }}>
+                            <Stack padding={{ xs: 0, sm: 2 }} spacing={{ xs: 3, sm: 4 }}>
                                 {0 !== noticeInfoArr.length && noticeInfoArr.map(info =>
-                                    <Box key={info.noticeId} mt={{ xs: 3, sm: 2 }} sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between' }} >
+                                    <Box key={info.noticeId} sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between' }} >
 
-                                        {/* initiate info */}
-                                        <Stack direction={'row'} sx={{ maxHeight: 40 }}>
-                                            <IconButton sx={{ px: 0 }} onClick={handleClickOnInitiateInfo(info.initiateId)}>
+                                        {/* member info */}
+                                        <Button variant={'text'} color={'inherit'} sx={{ pl: { xs: 0, sm: 1 }, textTransform: 'none' }} onClick={handleClickOnInitiateInfo(info.initiateId)}>
+                                            <Box sx={{ display: 'flex', flexDirection: 'row' }}>
+
+                                                {/* avatar */}
                                                 <Avatar src={provideAvatarImageUrl(info.initiateId, domain)} sx={{ width: 40, height: 40, bgcolor: 'grey' }}>{info.nickname?.charAt(0).toUpperCase()}</Avatar>
-                                            </IconButton>
-                                            <Box ml={1} width={100}>
-                                                <TextButton color={'inherit'} onClick={handleClickOnInitiateInfo(info.initiateId)}>
+                                                <Box ml={1}>
 
                                                     {/* nickname */}
-                                                    <Typography align={'left'} fontSize={14}>{getNicknameBrief(info.nickname)}</Typography>
+                                                    <Typography align={'left'} variant={'body2'}>{getNicknameBrief(info.nickname)}</Typography>
 
                                                     {/* created time */}
-                                                    <Typography variant={'body2'} fontSize={{ xs: 12, align: 'right' }}>{timeToString(info.createdTimeBySecond, preferenceStates.lang)}</Typography>
-                                                </TextButton>
+                                                    <Typography fontSize={{ xs: 12 }} align={'right'}>{timeToString(info.createdTimeBySecond, preferenceStates.lang)}</Typography>
+                                                </Box>
                                             </Box>
-                                        </Stack>
+                                        </Button>
 
                                         {/* notice info */}
-                                        <Box sx={{ maxWidth: 300, display: 'flex', flexDirection: 'column', justifyContent: 'center', marginLeft: 2, }} >
-                                            <TextButton color={'inherit'} onClick={handleClickOnNoticeInfo(info.noticeId)}>
+                                        <TextButton color={'inherit'} sx={{ p: 1 }} onClick={handleClickOnNoticeInfo(info.noticeId)}>
+                                            <Box sx={{ maxWidth: { xs: 170, sm: 190, md: 240 } }}>
                                                 <Typography variant={'body2'} align={'right'}>{noticeInfoToString(info, preferenceStates.lang)}</Typography>
-                                            </TextButton>
-                                        </Box>
+                                            </Box>
+                                        </TextButton>
                                     </Box>
                                 )}
                                 {0 === noticeInfoArr.length &&
@@ -937,7 +956,6 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
     }
 
     ////////////////////////   List Layout   ////////////////////////
-
     type TListLayoutStates = {
         selectedCategory: 'followedbyme' | 'followingme';
     }
@@ -953,7 +971,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
     React.useEffect(() => { updateMemberInfoArr() }, [listLayoutStates.selectedCategory])
 
     const updateMemberInfoArr = async () => {
-        const resp = await fetch(`/api/member/${listLayoutStates.selectedCategory}/${memberId}`);
+        const resp = await fetch(`/api/member/${listLayoutStates.selectedCategory}/${authorId}`);
         if (200 !== resp.status) {
             console.log(`Attempt to GET member info array of ${listLayoutStates.selectedCategory}`);
             return;
@@ -968,6 +986,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
     const handleSelectListCategory = (categoryId: 'followedbyme' | 'followingme') => (event: React.MouseEvent<HTMLButtonElement>) => {
         setListLayoutStates({ ...listLayoutStates, selectedCategory: categoryId });
+        setNoticeStatistics({ ...noticeStatistics, follow: 0 });
     }
 
     const handleUndoFollow = async (followedId: string) => {
@@ -1001,11 +1020,20 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
                             {/* section select */}
                             <Box sx={{ display: 'flex', justifyContent: 'space-evenly' }}>
+
+                                {/* followed by me */}
                                 <Button sx={{ color: 'followedbyme' === listLayoutStates.selectedCategory ? 'primary' : 'grey.600' }} onClick={handleSelectListCategory('followedbyme')}>
-                                    <Typography variant={'body2'} textAlign={'center'}>{langConfigs.myFollowing[preferenceStates.lang]}</Typography>
+                                    <Typography variant={'body2'} textAlign={'center'}>
+                                        {viewerId === authorId ? langConfigs.myFollowing[preferenceStates.lang] : langConfigs.authorsFollowing[preferenceStates.lang]}
+                                    </Typography>
                                 </Button>
+
+                                {/* following me */}
                                 <Button sx={{ color: 'followingme' === listLayoutStates.selectedCategory ? 'primary' : 'grey.600' }} onClick={handleSelectListCategory('followingme')}>
-                                    <Typography variant={'body2'} textAlign={'center'}>{langConfigs.myFollowedBy[preferenceStates.lang]}{0 === noticeStatistics.follow ? '' : `+${noticeStatistics.follow}`}</Typography>
+                                    <Typography variant={'body2'} textAlign={'center'}>
+                                        {viewerId === authorId ? langConfigs.myFollowedBy[preferenceStates.lang] : langConfigs.authorsFollowedBy[preferenceStates.lang]}
+                                        {0 === noticeStatistics.follow ? '' : `+${noticeStatistics.follow}`}
+                                    </Typography>
                                 </Button>
                             </Box>
                             <Box mt={{ xs: 1, sm: 2 }}><Divider /></Box>
@@ -1048,8 +1076,12 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                                 )}
                                 {0 === memberInfoArr.length &&
                                     <Box mt={{ xs: 3, sm: 2 }}>
-                                        {'followedbyme' === listLayoutStates.selectedCategory && <Typography color={'text.secondary'} align={'center'}>{langConfigs.noFollowingMemberInfoRecord[preferenceStates.lang]}</Typography>}
-                                        {'followingme' === listLayoutStates.selectedCategory && <Typography color={'text.secondary'} align={'center'}>{langConfigs.noFollowedByMemberInfoRecord[preferenceStates.lang]}</Typography>}
+                                        {'followedbyme' === listLayoutStates.selectedCategory && <Typography color={'text.secondary'} align={'center'}>
+                                            {viewerId === authorId ? langConfigs.noFollowingMemberInfoRecord[preferenceStates.lang] : langConfigs.authorNoFollowingMemberInfoRecord[preferenceStates.lang]}
+                                        </Typography>}
+                                        {'followingme' === listLayoutStates.selectedCategory && <Typography color={'text.secondary'} align={'center'}>
+                                            {viewerId === authorId ? langConfigs.noFollowedByMemberInfoRecord[preferenceStates.lang] : langConfigs.authorNoFollowedByMemberInfoRecord[preferenceStates.lang]}
+                                        </Typography>}
                                     </Box>
                                 }
                             </Stack>
@@ -1065,6 +1097,15 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
     }
 
     ////////////////////////   Post Layout   ////////////////////////
+    type TPostsLayoutStates = {
+        selectedCategoryId: 'mycreations' | 'savedposts' | 'browsinghistory';
+        selectedHotPosts: boolean;
+        selectedChannelId: string;
+        memorizeChannelBarPositionX: number | undefined;
+        memorizeViewPortPositionY: number | undefined;
+        memorizeLastViewedPostId: string | undefined;
+        wasRedirected: boolean;
+    }
 
     //////// STATES - post layout ////////
     const [postLayoutStates, setPostLayoutStates] = React.useState<TPostsLayoutStates>({
@@ -1085,6 +1126,10 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
         updatePostsLayoutStatesCache(states);
         // Step #3 reset helper
         setBrowsingHelper({ ...browsingHelper, memorizeViewPortPositionY: undefined });
+    }
+
+    type TBehaviourStates = {
+        undoSaved: { [postId: string]: number }
     }
 
     //////// STATES - browsing helper ////////
@@ -1163,7 +1208,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
     // Handle restore browsing position after reload
     React.useEffect(() => {
-        if (processStates.selectedLayout === 'postlayout' && processStates.wasRedirected) {
+        if (processStates.selectedLayout === 'postlayout' && postLayoutStates.wasRedirected) {
             const postId = postLayoutStates.memorizeLastViewedPostId;
             // Step #1 restore browsing position
             if (!postId) {
@@ -1257,7 +1302,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
     const updateSettingslayoutStates = async () => {
         // TODO: 1 ~ 6 have not satistied
         if (7 === settinglayoutStates.selectedSettingId) {
-            const resp = await fetch(`/api/member/blockedbyme/${memberId}`);
+            const resp = await fetch(`/api/member/blockedbyme/${authorId}`);
             if (200 !== resp.status) {
                 console.log(`Attempt to GET blocked member info array`);
                 return;
@@ -1287,7 +1332,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
             }
 
             const [avatarImageSettingStates, setAvatarImageSettingStates] = React.useState<TAvatarImageSettingStates>({
-                alternativeImageUrl: provideAvatarImageUrl(memberId, domain),
+                alternativeImageUrl: provideAvatarImageUrl(authorId, domain),
                 disableButton: true,
                 progressStatus: 0
             })
@@ -1323,9 +1368,9 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
                 // Post avatar image file
                 formData.append('image', bb);
-                await axios.post(`/api/avatar/upload/${memberId}`, formData, config)
+                await axios.post(`/api/avatar/upload/${authorId}`, formData, config)
                     .then((response: AxiosResponse) => {
-                        setMemberInfoStates({ ...memberInfoStates, avatarImageUrl: provideAvatarImageUrl(memberId, domain, true) });
+                        setMemberInfoStates({ ...memberInfoStates, avatarImageUrl: provideAvatarImageUrl(authorId, domain, true) });
                     })
                     .catch((error: AxiosError) => {
                         setAvatarImageSettingStates({ ...avatarImageSettingStates, disableButton: true, progressStatus: 400 });
@@ -1408,7 +1453,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
                 // Prepare to update nickname
                 setNicknameSettingStates({ ...nicknameSettingStates, disableButton: true, progressStatus: 300 });
-                const resp = await fetch(`/api/member/info/${memberId}/nickname`, {
+                const resp = await fetch(`/api/member/info/${authorId}/nickname`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ alternativeName: nicknameSettingStates.alternativeName })
@@ -1530,7 +1575,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                 // Prepare to update password
                 setPasswordSettingStates({ ...passwordSettingStates, displayError0: false, displayError1: false, disableButton: true, progressStatus: 300 });
 
-                const resp = await fetch(`/api/member/info/${memberId}/password`, {
+                const resp = await fetch(`/api/member/info/${authorId}/password`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ currentPassword: passwordSettingStates.currentPassword, newPassword: passwordSettingStates.newPassword })
@@ -1695,7 +1740,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
                 // Prepare to update nickname
                 setBriefIntroSettingStates({ ...briefIntroSettingStates, disableButton: true, progressStatus: 300 });
-                const resp = await fetch(`/api/member/info/${memberId}/briefintro`, {
+                const resp = await fetch(`/api/member/info/${authorId}/briefintro`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ alternativeIntro: briefIntroSettingStates.alternativeIntro })
@@ -1785,7 +1830,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
                 // Prepare to update gender
                 setGenderSettingStates({ ...genderSettingStates, disableButton: true, progressStatus: 300 });
-                const resp = await fetch(`/api/member/info/${memberId}/gender`, {
+                const resp = await fetch(`/api/member/info/${authorId}/gender`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ gender: genderSettingStates.gender })
@@ -1877,7 +1922,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                 // Prepare to update birthday
                 setBirthdaySettingStates({ ...birthdaySettingStates, disableButton: true, progressStatus: 300 });
                 const date = Math.floor(birthdaySettingStates.date?.toDate().getTime() / 1000);
-                const resp = await fetch(`/api/member/info/${memberId}/birthday`, {
+                const resp = await fetch(`/api/member/info/${authorId}/birthday`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ date })
@@ -1932,12 +1977,14 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
             type TPrivacySettingsStates = {
                 allowKeepingBrowsingHistory: boolean;
+                allowVisitingFollowedMembers: boolean;
                 allowVisitingSavedPosts: boolean;
                 hidePostsAndCommentsOfBlockedMember: boolean;
             }
 
             const [previousSettingsStates, setPreviousSettingsStates] = React.useState<TPrivacySettingsStates>({
                 allowKeepingBrowsingHistory: memberComprehensive_ss.allowKeepingBrowsingHistory,
+                allowVisitingFollowedMembers: memberComprehensive_ss.allowVisitingFollowedMembers,
                 allowVisitingSavedPosts: memberComprehensive_ss.allowVisitingSavedPosts,
                 hidePostsAndCommentsOfBlockedMember: memberComprehensive_ss.hidePostsAndCommentsOfBlockedMember
             });
@@ -1952,6 +1999,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                 disableButton: boolean;
                 progressStatus: 100 | 200 | 300 | 400;
             }
+
             const [privacySettingsProcessStates, setPrivacySettingsProcessStates] = React.useState<TPrivacySettingProcessStates>({
                 countdown: 5,
                 displayUpdateButton: false,
@@ -1974,6 +2022,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                 if (
                     !(
                         previousSettingsStates.allowKeepingBrowsingHistory === privacySettingsStates.allowKeepingBrowsingHistory
+                        && previousSettingsStates.allowVisitingFollowedMembers === privacySettingsStates.allowVisitingFollowedMembers
                         && previousSettingsStates.allowVisitingSavedPosts === privacySettingsStates.allowVisitingSavedPosts
                         && previousSettingsStates.hidePostsAndCommentsOfBlockedMember === privacySettingsStates.hidePostsAndCommentsOfBlockedMember
                     )
@@ -1997,6 +2046,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
             const handleUpdate = async () => {
                 if (
                     previousSettingsStates.allowKeepingBrowsingHistory === privacySettingsStates.allowKeepingBrowsingHistory
+                    && previousSettingsStates.allowVisitingFollowedMembers === privacySettingsStates.allowVisitingFollowedMembers
                     && previousSettingsStates.allowVisitingSavedPosts === privacySettingsStates.allowVisitingSavedPosts
                     && previousSettingsStates.hidePostsAndCommentsOfBlockedMember === privacySettingsStates.hidePostsAndCommentsOfBlockedMember
                 ) {
@@ -2005,7 +2055,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
                 // Prepare to update privacy setting
                 setPrivacySettingsProcessStates({ ...privacySettingsProcessStates, displayCancelButton: false, disableButton: true, progressStatus: 300 });
-                const resp = await fetch(`/api/member/info/${memberId}/privacysetting`, {
+                const resp = await fetch(`/api/member/info/${authorId}/privacysetting`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ settings: { ...privacySettingsStates } })
@@ -2026,7 +2076,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                 if (privacySettingsProcessStates.countdown > 0) {
                     setPrivacySettingsProcessStates({ ...privacySettingsProcessStates, countdown: privacySettingsProcessStates.countdown - 1, displayCountdown: true });
                 } else {
-                    const resp = await fetch(`/api/member/info/${memberId}/cancel`, { method: 'DELETE' });
+                    const resp = await fetch(`/api/member/info/${authorId}/cancel`, { method: 'DELETE' });
                     if (200 === resp.status) {
                         setPrivacySettingsProcessStates({ ...privacySettingsProcessStates, displayCountdown: false, progressStatus: 200 });
                         signOut();
@@ -2059,13 +2109,17 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                         <Typography variant={'body2'} mt={4}>{langConfigs.privacy[preferenceStates.lang]}</Typography>
                         <Stack pl={{ xs: 0, sm: 2, md: 4 }}>
                             <FormControlLabel control={<Switch checked={privacySettingsStates.allowKeepingBrowsingHistory} onChange={handleToggle('allowKeepingBrowsingHistory')} />} label={<Typography variant={'body2'} align={'left'}>{langConfigs.allowKeepingBrowsingHistory[preferenceStates.lang]}</Typography>} sx={{ fontSize: 14 }} />
+                            <FormControlLabel control={<Switch checked={privacySettingsStates.allowVisitingFollowedMembers} onChange={handleToggle('allowVisitingFollowedMembers')} />} label={<Typography variant={'body2'} align={'left'}>{langConfigs.allowVisitingFollowedMembers[preferenceStates.lang]}</Typography>} sx={{ fontSize: 14 }} />
                             <FormControlLabel control={<Switch checked={privacySettingsStates.allowVisitingSavedPosts} onChange={handleToggle('allowVisitingSavedPosts')} />} label={<Typography variant={'body2'} align={'left'}>{langConfigs.allowVisitingSavedPosts[preferenceStates.lang]}</Typography>} sx={{ fontSize: 14 }} />
                             <FormControlLabel control={<Switch checked={privacySettingsStates.hidePostsAndCommentsOfBlockedMember} onChange={handleToggle('hidePostsAndCommentsOfBlockedMember')} />} label={<Typography variant={'body2'} align={'left'}>{langConfigs.hidePostsAndCommentsOfBlockedMember[preferenceStates.lang]}</Typography>} sx={{ fontSize: 14 }} />
+
                             {/* 'update' button */}
                             {privacySettingsProcessStates.displayUpdateButton && <Box mt={1} pl={{ xs: 0, sm: 3, md: 2 }}>
                                 <Button variant={'contained'} color={400 !== privacySettingsProcessStates.progressStatus ? 'primary' : 'error'} size={'small'} onClick={async () => { await handleUpdate() }} disabled={privacySettingsProcessStates.disableButton} fullWidth>
                                     {/* button: enabled, result: 100 (ready) */}
                                     {100 === privacySettingsProcessStates.progressStatus && <Typography variant={'body2'}>{langConfigs.update[preferenceStates.lang]}</Typography>}
+                                    {/* button: disabled, result: 200 (succeeded) */}
+                                    {200 === privacySettingsProcessStates.progressStatus && <Typography variant={'body2'}>{langConfigs.updateSucceeded[preferenceStates.lang]}</Typography>}
                                     {/* button: disabled, result: 300 (ongoing) */}
                                     {300 === privacySettingsProcessStates.progressStatus && <Typography variant={'body2'}>{langConfigs.updatinging[preferenceStates.lang]}</Typography>}
                                     {/* button: enabled, result: 400 (failed) */}
@@ -2124,7 +2178,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                             {/* member info */}
                             <Stack direction={'row'} sx={{ maxHeight: 40 }}>
                                 <IconButton sx={{ px: 0 }} onClick={handleClickOnInitiateInfo(info.memberId)}>
-                                    <Avatar src={provideAvatarImageUrl(memberId, domain)} sx={{ width: 40, height: 40, bgcolor: 'grey' }}>{info.nickname?.charAt(0).toUpperCase()}</Avatar>
+                                    <Avatar src={provideAvatarImageUrl(authorId, domain)} sx={{ width: 40, height: 40, bgcolor: 'grey' }}>{info.nickname?.charAt(0).toUpperCase()}</Avatar>
                                 </IconButton>
                                 <Box ml={1}>
                                     <TextButton color={'inherit'} onClick={handleClickOnInitiateInfo(info.memberId)}>
@@ -2178,7 +2232,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                         {/* memberId */}
                         <TableRow>
                             <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }}>{langConfigs.memberId[preferenceStates.lang]}</TableCell>
-                            <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }} align='right'>{memberId}</TableCell>
+                            <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }} align='right'>{authorId}</TableCell>
                         </TableRow>
                         {/* email address */}
                         <TableRow>
@@ -2451,7 +2505,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                     <Stack spacing={1} direction='row' mt={2} sx={{ pb: 1, justifyContent: 'center', overflow: 'auto' }}>
 
                         {/* s0 - message layout */}
-                        {('authenticated' === status && viewerId === memberId) && <Button variant={'contained'} size='small' color={'messagelayout' === processStates.selectedLayout ? 'primary' : 'inherit'} onClick={handleSelectLayout('messagelayout')}>
+                        {('authenticated' === status && viewerId === authorId) && <Button variant={'contained'} size='small' color={'messagelayout' === processStates.selectedLayout ? 'primary' : 'inherit'} onClick={handleSelectLayout('messagelayout')}>
                             <Typography variant={'body2'} color={'dark' === theme.palette.mode ? 'black' : 'inherit'}  >
                                 {langConfigs.message[preferenceStates.lang]}
                             </Typography>
@@ -2460,19 +2514,19 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                         {/* s1 - list layout - my/author's following */}
                         <Button variant={'contained'} size='small' color={'listlayout' === processStates.selectedLayout ? 'primary' : 'inherit'} onClick={handleSelectLayout('listlayout')}>
                             <Typography variant={'body2'} color={'dark' === theme.palette.mode ? 'black' : 'inherit'}  >
-                                {viewerId === memberId ? langConfigs.following[preferenceStates.lang] : langConfigs.authorsFollowing[preferenceStates.lang]}
+                                {viewerId === authorId ? langConfigs.following[preferenceStates.lang] : langConfigs.hisFollowing[preferenceStates.lang]}
                             </Typography>
                         </Button>
 
                         {/* s2 - post layout - my/author's posts */}
                         <Button variant={'contained'} size='small' color={'postlayout' === processStates.selectedLayout ? 'primary' : 'inherit'} onClick={handleSelectLayout('postlayout')}>
                             <Typography variant={'body2'} color={'dark' === theme.palette.mode ? 'black' : 'inherit'}  >
-                                {viewerId === memberId ? langConfigs.posts[preferenceStates.lang] : langConfigs.authorsPosts[preferenceStates.lang]}
+                                {viewerId === authorId ? langConfigs.posts[preferenceStates.lang] : langConfigs.authorsPosts[preferenceStates.lang]}
                             </Typography>
                         </Button>
 
                         {/* s3 - setting layout */}
-                        {('authenticated' === status && viewerId === memberId) && <Button variant={'contained'} size='small' color={'settinglayout' === processStates.selectedLayout ? 'primary' : 'inherit'} onClick={handleSelectLayout('settinglayout')}>
+                        {('authenticated' === status && viewerId === authorId) && <Button variant={'contained'} size='small' color={'settinglayout' === processStates.selectedLayout ? 'primary' : 'inherit'} onClick={handleSelectLayout('settinglayout')}>
                             <Typography variant={'body2'} color={'dark' === theme.palette.mode ? 'black' : 'inherit'}  >
                                 {langConfigs.settings[preferenceStates.lang]}
                             </Typography>
@@ -2494,7 +2548,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
             <Grid container display={'postlayout' === processStates.selectedLayout ? 'flex' : 'none'}>
 
                 {/* //// placeholder left //// */}
-                <Grid item xs={0} sm={1} md={2} lg={2} xl={2}></Grid>
+                <Grid item xs={0} sm={1} md={2} lg={2} xl={1}></Grid>
 
                 {/* //// left column //// */}
                 <Grid item xs={0} sm={0} md={2} lg={2} xl={2}>
@@ -2508,29 +2562,27 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                                 <MenuItem onClick={handleSelectPostCategory('mycreations')} selected={'mycreations' === postLayoutStates.selectedCategoryId}>
                                     <ListItemIcon ><CreateIcon /></ListItemIcon>
                                     <ListItemText>
-                                        <Typography>{langConfigs.myCreations[preferenceStates.lang]}</Typography>
+                                        <Typography>{memberComprehensive_ss.memberId === viewerId ? langConfigs.myCreations[preferenceStates.lang] : langConfigs.authorsCreations[preferenceStates.lang]}</Typography>
                                     </ListItemText>
                                 </MenuItem>
 
                                 {/* saved post list item */}
                                 <MenuItem onClick={handleSelectPostCategory('savedposts')} selected={'savedposts' === postLayoutStates.selectedCategoryId}>
-                                    <ListItemIcon >
-                                        <StarIcon />
-                                    </ListItemIcon>
+                                    <ListItemIcon ><StarIcon /></ListItemIcon>
                                     <ListItemText>
-                                        <Typography>{langConfigs.mySavedPosts[preferenceStates.lang]}</Typography>
+                                        <Typography>{memberComprehensive_ss.memberId === viewerId ? langConfigs.mySavedPosts[preferenceStates.lang] : langConfigs.authorsSavedPosts[preferenceStates.lang]}</Typography>
                                     </ListItemText>
                                 </MenuItem>
 
                                 {/* browsing history list item */}
-                                <MenuItem onClick={handleSelectPostCategory('browsinghistory')} selected={'browsinghistory' === postLayoutStates.selectedCategoryId}>
+                                {'authenticated' === status && <MenuItem onClick={handleSelectPostCategory('browsinghistory')} selected={'browsinghistory' === postLayoutStates.selectedCategoryId}>
                                     <ListItemIcon >
                                         <HistoryIcon />
                                     </ListItemIcon>
                                     <ListItemText>
                                         <Typography>{langConfigs.browsingHistory[preferenceStates.lang]}</Typography>
                                     </ListItemText>
-                                </MenuItem>
+                                </MenuItem>}
                             </MenuList>
                         </ResponsiveCard>
 
@@ -2580,31 +2632,25 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                 </Grid>
 
                 {/* //// right column //// */}
-                <Grid item xs={12} sm={10} md={6} lg={6} xl={6}>
+                <Grid item xs={12} sm={10} md={6} lg={6} xl={7}>
 
                     {/* channel bar (mobile mode) */}
-                    <Stack id={'channel-bar'} direction={'row'} sx={{ display: { sm: 'flex', md: 'none' }, padding: 1, overflow: 'auto' }}>
+                    <Stack id={'channel-bar'} direction={'row'} spacing={1} sx={{ display: { sm: 'flex', md: 'none' }, padding: 1, overflow: 'auto' }}>
 
                         {/* creations button */}
-                        <Box pr={1 / 2}>
-                            <Button variant={'mycreations' === postLayoutStates.selectedCategoryId ? 'contained' : 'outlined'} size='small' sx={{ minWidth: 'max-content' }} onClick={handleSelectPostCategory('mycreations')}>
-                                {langConfigs.myCreations[preferenceStates.lang]}
-                            </Button>
-                        </Box>
+                        <Button variant={'mycreations' === postLayoutStates.selectedCategoryId ? 'contained' : 'outlined'} size='small' sx={{ minWidth: 'max-content' }} onClick={handleSelectPostCategory('mycreations')}>
+                            <Typography>{memberComprehensive_ss.memberId === viewerId ? langConfigs.myCreations[preferenceStates.lang] : langConfigs.authorsCreations[preferenceStates.lang]}</Typography>
+                        </Button>
 
                         {/*  saved post button */}
-                        <Box pr={1 / 2}>
-                            <Button variant={'savedposts' === postLayoutStates.selectedCategoryId ? 'contained' : 'outlined'} size='small' sx={{ minWidth: 'max-content' }} onClick={handleSelectPostCategory('savedposts')}>
-                                {langConfigs.mySavedPosts[preferenceStates.lang]}
-                            </Button>
-                        </Box>
+                        <Button variant={'savedposts' === postLayoutStates.selectedCategoryId ? 'contained' : 'outlined'} size='small' sx={{ minWidth: 'max-content' }} onClick={handleSelectPostCategory('savedposts')}>
+                            <Typography variant='body2'>{langConfigs.mySavedPosts[preferenceStates.lang]}</Typography>
+                        </Button>
 
                         {/* browsing history button */}
-                        <Box pr={1}>
-                            <Button variant={'browsinghistory' === postLayoutStates.selectedCategoryId ? 'contained' : 'outlined'} size='small' sx={{ minWidth: 'max-content' }} onClick={handleSelectPostCategory('browsinghistory')}>
-                                {langConfigs.browsingHistory[preferenceStates.lang]}
-                            </Button>
-                        </Box>
+                        <Button variant={'browsinghistory' === postLayoutStates.selectedCategoryId ? 'contained' : 'outlined'} size='small' sx={{ minWidth: 'max-content' }} onClick={handleSelectPostCategory('browsinghistory')}>
+                            <Typography variant='body2'>{langConfigs.browsingHistory[preferenceStates.lang]}</Typography>
+                        </Button>
 
                         {/* the 'all' button */}
                         <Button variant={'all' === postLayoutStates.selectedChannelId ? 'contained' : 'text'} size='small' onClick={handleChannelSelect('all')} >
@@ -2614,79 +2660,93 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                         </Button>
 
                         {/* other channels */}
-                        {channelInfoStates.channelIdSequence.map(id => {
-                            const { channelId, name } = channelInfoDict_ss[id];
-                            return (
-                                <Button variant={channelId === postLayoutStates.selectedChannelId ? 'contained' : 'text'} key={`button-${channelId}`} size='small' sx={{ minWidth: 'en' === preferenceStates.lang ? 'max-content' : 64 }} onClick={handleChannelSelect(channelId)}>
-                                    <Typography
-                                        variant={'body2'}
-                                        color={channelId === postLayoutStates.selectedChannelId ? 'white' : 'text.secondary'}
-                                        sx={{ backgroundColor: 'primary' }}>
-                                        {name[preferenceStates.lang]}
-                                    </Typography>
-                                </Button>
-                            )
-                        })}
+                        {channelInfoStates.channelIdSequence.map(id =>
+                            <Button
+                                key={`button-${channelInfoDict_ss[id].channelId}`}
+                                variant={channelInfoDict_ss[id].channelId === postLayoutStates.selectedChannelId ? 'contained' : 'text'}
+                                size='small'
+                                sx={{ minWidth: 'en' === preferenceStates.lang ? 'max-content' : 64 }}
+                                onClick={handleChannelSelect(channelInfoDict_ss[id].channelId)}
+                            >
+                                <Typography
+                                    variant={'body2'}
+                                    color={channelInfoDict_ss[id].channelId === postLayoutStates.selectedChannelId ? 'white' : 'text.secondary'}
+                                    sx={{ backgroundColor: 'primary' }}
+                                >
+                                    {channelInfoDict_ss[id].name[preferenceStates.lang]}
+                                </Typography>
+                            </Button>
+
+                        )}
                     </Stack>
 
                     {/* mansoy */}
                     <Box ml={1} ref={masonryWrapper}>
-                        <Masonry columns={{ xs: 2, sm: 3, md: 3, lg: 3, xl: 4 }}>
+                        <Masonry columns={{ xs: 2, sm: 3, md: 2, lg: 3, xl: 4 }}>
 
                             {/* posts */}
-                            {0 !== masonryPostInfoArr.length && masonryPostInfoArr.map(info => {
-                                return (
-                                    <Paper key={info.postId} id={info.postId} sx={{ maxWidth: 300, '&:hover': { cursor: 'pointer' } }}>
-                                        <Stack>
-                                            {/* image */}
-                                            <Box
-                                                component={'img'}
-                                                src={info.imageUrlsArr[0]}
-                                                sx={{ maxWidth: { xs: width / 2, sm: 300 }, height: 'max-content', borderTopLeftRadius: 4, borderTopRightRadius: 4 }}
-                                                onClick={handleClickOnPost(info.postId)}
-                                            ></Box>
+                            {0 !== masonryPostInfoArr.length && masonryPostInfoArr.map(info =>
+                                <Paper key={info.postId} id={info.postId} sx={{ maxWidth: 300, '&:hover': { cursor: 'pointer' } }}>
+                                    <Stack>
+                                        {/* image */}
+                                        <Box
+                                            component={'img'}
+                                            src={info.imageUrlsArr[0]}
+                                            sx={{
+                                                maxWidth: { xs: width / 2, sm: 300 },
+                                                maxHeight: 'max-content',
+                                                borderTopLeftRadius: 4,
+                                                borderTopRightRadius: 4
+                                            }}
+                                            onClick={handleClickOnPost(info.postId)}
+                                        />
 
-                                            {/* title */}
-                                            <Box paddingTop={2} paddingX={2} onClick={handleClickOnPost(info.postId)}>
-                                                <Typography variant={'body1'}>{info.title}</Typography>
-                                            </Box>
+                                        {/* title */}
+                                        <Box paddingTop={2} paddingX={2} onClick={handleClickOnPost(info.postId)}>
+                                            <Typography variant={'body1'}>{info.title}</Typography>
+                                        </Box>
 
-                                            {/* member info & member behaviour */}
-                                            <Box paddingTop={1} >
-                                                <Grid container>
+                                        {/* member info & member behaviour */}
+                                        <Box paddingTop={1} >
+                                            <Grid container>
 
-                                                    {/* member info */}
-                                                    <Grid item flexGrow={1}>
-                                                        <Box display={'flex'} flexDirection={'row'}>
-                                                            <Button variant={'text'} color={'inherit'} sx={{ textTransform: 'none' }} onClick={handleClickOnMemberInfo(info.memberId, info.postId)}>
-                                                                <Avatar src={provideAvatarImageUrl(memberId, domain)} sx={{ width: 34, height: 34, bgcolor: 'grey' }}>{info.nickname?.charAt(0).toUpperCase()}</Avatar>
-                                                                <Box ml={1}>
-                                                                    <Typography variant={'body2'}>{getNicknameBrief(info.nickname)}</Typography>
-                                                                </Box>
-                                                            </Button>
-                                                        </Box>
-                                                    </Grid>
+                                                {/* member info */}
+                                                <Grid item flexGrow={1}>
+                                                    <Box display={'flex'} flexDirection={'row'}>
+                                                        <Button variant={'text'} color={'inherit'} sx={{ textTransform: 'none' }} onClick={handleClickOnMemberInfo(info.memberId, info.postId)}>
+                                                            <Avatar src={provideAvatarImageUrl(authorId, domain)} sx={{ width: 34, height: 34, bgcolor: 'grey' }}>{info.nickname?.charAt(0).toUpperCase()}</Avatar>
+                                                            <Box ml={1}>
 
-                                                    {/* member behaviour / placeholder */}
-                                                    {('authenticated' === status && viewerId === memberId) && <Grid item>
-                                                        <IconButton onClick={handleMultiProposeButtonClick(postLayoutStates.selectedCategoryId, info.postId)}>
-                                                            {'mycreations' === postLayoutStates.selectedCategoryId && <CreateIcon color={'inherit'} />}
-                                                            {'savedposts' === postLayoutStates.selectedCategoryId && <StarIcon color={-1 === behaviourStates.undoSaved[info.postId] ? 'inherit' : 'primary'} />}
-                                                            {'browsinghistory' === postLayoutStates.selectedCategoryId && <DeleteIcon color={'inherit'} />}
-                                                        </IconButton>
-                                                    </Grid>}
+                                                                {/* nickname */}
+                                                                <Typography variant={'body2'}>{getNicknameBrief(info.nickname)}</Typography>
+
+                                                                {/* created time */}
+                                                                <Typography fontSize={12} align={'left'}>{timeToString(info.createdTimeBySecond, preferenceStates.lang)}</Typography>
+                                                            </Box>
+                                                        </Button>
+                                                    </Box>
                                                 </Grid>
-                                            </Box>
-                                        </Stack>
-                                    </Paper>
-                                )
-                            })}
+
+                                                {/* member behaviour / placeholder */}
+                                                {('authenticated' === status && viewerId === authorId) && <Grid item>
+                                                    <IconButton onClick={handleMultiProposeButtonClick(postLayoutStates.selectedCategoryId, info.postId)}>
+                                                        {'mycreations' === postLayoutStates.selectedCategoryId && <CreateIcon color={'inherit'} />}
+                                                        {'savedposts' === postLayoutStates.selectedCategoryId && <StarIcon color={'inherit'} />}
+                                                        {'browsinghistory' === postLayoutStates.selectedCategoryId && <DeleteIcon color={'inherit'} />}
+                                                    </IconButton>
+                                                </Grid>}
+                                            </Grid>
+                                        </Box>
+                                    </Stack>
+                                </Paper>
+                            )}
                         </Masonry>
                     </Box>
+
                 </Grid>
 
                 {/* //// placeholder - right //// */}
-                <Grid item xs={0} sm={1} md={2} lg={2} xl={2}></Grid>
+                <Grid item xs={0} sm={1} md={2} lg={2} xl={1}></Grid>
             </Grid>
 
             {/* list layout */}

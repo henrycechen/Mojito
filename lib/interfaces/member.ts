@@ -27,8 +27,9 @@ export interface IMemberComprehensive {
     allowPosting: boolean;
     allowCommenting: boolean;
 
-    allowVisitingSavedPosts: boolean;
     allowKeepingBrowsingHistory: boolean;
+    allowVisitingFollowedMembers: boolean;
+    allowVisitingSavedPosts: boolean;
     hidePostsAndCommentsOfBlockedMember: boolean;
 }
 
@@ -56,8 +57,9 @@ export interface IRestrictedMemberComprehensive {
     birthdayBySecond: number;
 
     status: number,
-    allowVisitingSavedPosts: boolean;
     allowKeepingBrowsingHistory: boolean;
+    allowVisitingFollowedMembers: boolean;
+    allowVisitingSavedPosts: boolean;
     hidePostsAndCommentsOfBlockedMember: boolean;
 }
 

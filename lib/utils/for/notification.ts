@@ -31,8 +31,8 @@ export function noticeInfoToString(info: INoticeInfoWithMemberInfo, lang: string
     const { isValid, category, entity } = verifyNoticeId(info.noticeId);
     if (!(isValid && ['cue', 'reply', 'like', 'pin', 'save', 'follow'].includes(category))) {
         switch (_lang) {
-            case 'tw': return `某位 Mojito 會員對您做了某些回應`;
-            case 'cn': return `某位 Mojito 会员对您做了某些回应`;
+            case 'tw': return `某位 Mojito 用戶對您做了某些回應`;
+            case 'cn': return `某位 Mojito 用户对您做了某些回应`;
             case 'en': return `A Mojito member has done something regarding you`;
         }
     }
@@ -111,6 +111,6 @@ export function noticeInfoToString(info: INoticeInfoWithMemberInfo, lang: string
             case 'en': return `Followed you`;
         }
     }
-    return '某位 Mojito 會員對您做了某些回應'
+    return '某位 Mojito 用戶對您做了某些回應'
 }
 

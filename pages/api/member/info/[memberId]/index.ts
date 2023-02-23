@@ -53,6 +53,7 @@ export default async function GetMemberInfoById(req: NextApiRequest, res: NextAp
 
             status: 200,
             allowKeepingBrowsingHistory: true,
+            allowVisitingFollowedMembers: true,
             allowVisitingSavedPosts: true,
             hidePostsAndCommentsOfBlockedMember: false,
         }

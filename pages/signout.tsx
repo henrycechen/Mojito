@@ -40,7 +40,7 @@ export async function getServerSideProps(context: NextPageContext) {
 const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfig: LangConfigs = {
     appSignout: {
-        tw: '确认要登出吗？',
+        tw: '確認要登出嗎？ ',
         cn: '确认要登出吗？',
         en: 'Confirm to sign out?'
     },

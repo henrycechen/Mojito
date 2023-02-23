@@ -142,8 +142,8 @@ const langConfigs: LangConfigs = {
         en: (parentId: string, nickname: string) => 'P' === parentId.slice(0, 1) ? `Comment on this post` : `Reply to @${nickname}`,
     },
     noFollowedMember: {
-        tw: '您還未曾關注其他會員哦',
-        cn: '您还没有关注其他会员',
+        tw: '您還未曾關注其他用戶',
+        cn: '您还没有关注其他用户',
         en: 'You have not followed any member'
     },
     replyToComment: {

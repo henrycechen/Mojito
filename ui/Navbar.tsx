@@ -62,7 +62,7 @@ const langConfigs: LangConfigs = {
 }
 
 type TNavBarProps = {
-    avatarImageUrl: string;
+    avatarImageUrl?: string;
 }
 
 export default function NavBar(props: TNavBarProps) {
@@ -70,11 +70,18 @@ export default function NavBar(props: TNavBarProps) {
     const router = useRouter();
 
     let viewerId = '';
+    let avatarImageUrl = ''
 
     const { data: session, status } = useSession();
     if ('authenticated' === status) {
         const viewerSession: any = { ...session };
         viewerId = viewerSession?.user?.id;
+        const { avatarImageUrl: url } = props;
+        if ('string' === typeof url) {
+            avatarImageUrl = url;
+        } else {
+            avatarImageUrl = provideAvatarImageUrl(viewerId, domain);
+        }
     }
 
     const theme = useTheme();

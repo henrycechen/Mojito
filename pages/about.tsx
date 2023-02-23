@@ -11,7 +11,7 @@ import Navbar from "../ui/Navbar";
 import Terms from "../ui/Terms";
 
 import { LangConfigs } from '../lib/types';
-import { getRandomHexStr } from '../lib/utils';
+import { getRandomHexStr } from '../lib/utils/create';
 
 type TProcessStates = {
     lang: string;
@@ -29,7 +29,7 @@ const langConfigs: LangConfigs = {
             '欢迎来到我们的在线社区！ 我们的目标是创造一个安全友好的空间，让人们可以聚在一起学习、分享和相互联系。',
             '我们相信每个人都可以做出有价值的贡献，我们致力于营造一个积极和包容的环境，让所有的声音都能被听到和尊重。 无论您是经验丰富的专家还是初学者，我们都鼓励您与社区分享您的知识和经验。',
             '我们致力于确保我们的准则得到遵守，并且每个人都感到欢迎和舒适参与。 如果您有任何问题或疑虑，请随时与我们联系。',
-            '我们希望您会喜欢成为 Mojito 的会员，并期待与您联系！',
+            '我们希望您会喜欢成为 Mojito 的会员，并期待与您的联系！',
             '此致，',
             'The Mojito Team',
         ],
@@ -37,7 +37,7 @@ const langConfigs: LangConfigs = {
             '歡迎來到我們的在線社區！ 我們的目標是創造一個安全友好的空間，讓人們可以聚在一起學習、分享和相互聯繫。',
             '我們相信每個人都可以做出有價值的貢獻，我們致力於營造一個積極和包容的環境，讓所有的聲音都能被聽到和尊重。 無論您是經驗豐富的專家還是初學者，我們都鼓勵您與社區分享您的知識和經驗。',
             '我們致力於確保我們的準則得到遵守，並且每個人都感到歡迎和舒適參與。 如果您有任何問題或疑慮，請隨時與我們聯繫。',
-            '我們希望您會喜歡成為 Mojito 的會員，並期待與您聯繫！',
+            '我們希望您會喜歡成為 Mojito 的會員，並期待與您的聯繫！',
             '此致，',
             'The Mojito Team',
         ],
