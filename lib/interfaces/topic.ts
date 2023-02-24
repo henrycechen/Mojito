@@ -16,12 +16,16 @@ export interface ITopicComprehensive {
     //// total statistics ////
     totalHitCount: number; // total hit count of total posts of this topic
     totalSearchCount: number;
+    
     totalPostCount: number;
     totalPostDeleteCount: number;
+
     totalLikedCount: number;
     totalUndoLikedCount: number;
+
     totalCommentCount: number;
     totalCommentDeleteCount: number;
+    
     totalSavedCount: number;
     totalUndoSavedCount: number;
 }

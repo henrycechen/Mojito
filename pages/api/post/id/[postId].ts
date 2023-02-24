@@ -1,96 +1,89 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { RestError } from '@azure/data-tables';
 import { MongoError } from 'mongodb';
-
 import { getToken } from 'next-auth/jwt';
 
 import AzureTableClient from '../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from '../../../../modules/AtlasDatabaseClient';
 
-import { IMemberMemberMapping, IMemberPostMapping } from '../../../../lib/interfaces/mapping';
-import { logWithDate, response405, response500 } from '../../../../lib/utils/general';
+import { IMemberPostMapping } from '../../../../lib/interfaces/mapping';
+import { response405, response500, logWithDate, } from '../../../../lib/utils/general';
 import { verifyId } from '../../../../lib/utils/verify';
 import { IPostComprehensive } from '../../../../lib/interfaces/post';
-import { getCuedMemberInfoArrayFromRequestBody, providePostComprehensiveUpdate, getRestrictedFromPostComprehensive, getImageUrlsArrayFromRequestBody, getParagraphsArrayFromRequestBody, provideEditedPostInfo } from '../../../../lib/utils/for/post';
+import { getRestrictedFromPostComprehensive } from '../../../../lib/utils/for/post';
 import { IMemberComprehensive, IMemberStatistics } from '../../../../lib/interfaces/member';
 import { IChannelStatistics } from '../../../../lib/interfaces/channel';
-import { ITopicComprehensive, ITopicPostMapping } from '../../../../lib/interfaces/topic';
-import { getTopicBase64StringsArrayFromRequestBody, provideTopicComprehensive } from '../../../../lib/utils/for/topic';
-import { INoticeInfo, INotificationStatistics } from '../../../../lib/interfaces/notification';
-import { createNoticeId } from '../../../../lib/utils/create';
-import { getNicknameFromToken } from '../../../../lib/utils/for/member';
+import { ITopicComprehensive } from '../../../../lib/interfaces/topic';
 
-const domain = process.env.NEXT_PUBLIC_APP_DOMAIN;
-const fname = GetOrUpdateOrDeleteRestrictedPostComprehensiveById.name;
+const fname = GetRestrictedPostComprehensiveById.name;
 
-/** GetOrUpdateOrDeleteRestrictedPostComprehensiveById v0.1.1 FIXME: test mode
+/** GetRestrictedPostComprehensiveById v0.1.1 FIXME: test mode
  * 
- * Last update: 
+ * Last update: 24/02/2023
  * 
- * This interface ONLY accepts GET method  (, PUT/DELETE method moved to /api/creation/id/[postId].ts )
+ * This interface ONLY accepts GET method  ( PUT/DELETE moved to /api/creation )
  * 
  * Info required for GET method
- * - token: JWT
- * - title: string
- * - channelId: string
- * - topicsArr: string[] (body, optional)
+ * - token: JWT (optional)
  */
 
-export default async function GetOrUpdateOrDeleteRestrictedPostComprehensiveById(req: NextApiRequest, res: NextApiResponse) {
+const ifo = {
+    postId: 'P1234ABCD',
+    memberId: 'M1234ABCD',
+    createdTimeBySecond: 1673389239,
+    title: '《周杰倫的床邊故事》',
+    imageUrlsArr: [
+        'https://img3.chinadaily.com.cn/images/202008/24/5f431dc9a310a85979164989.jpeg',
+        'https://upload.wikimedia.org/wikipedia/zh/b/b2/JayChouBedtimeStories-2016_Cover.jpg'
+    ],
+    paragraphsArr: [
+        `《周杰倫的床邊故事》(英語：Jay Chou's Bedtime Stories)是臺灣男歌手周杰倫的第14張錄音室專輯，2016年6月8日开始预购，6月24日正式發行[2][3]。`,
+        `本專輯為周杰倫與妻子昆凌結婚生子後發行的首張專輯，為周杰倫個人第14張專輯[4]。新專輯以床邊故事命名，專輯設計打造成有聲書概念，訴說10個與眾不同、充滿想像的音樂故事[5][6][7]。專輯中與張惠妹首度合唱，是繼《依然范特西》專輯中的《千里之外》與費玉清的合作後，再次跨公司與線上歌手合唱，並且收錄於專輯中[8][9]`,
+        `這是@WebMaster從維基百科搬過來的...@县长马邦德是@WebMaster的老闆`
+    ],
+    cuedMemberInfoArr: [
+        { memberId: 'M1234XXXX', nickname: 'WebMaster' },
+        { memberId: 'M1234ABCD', nickname: '县长马邦德' },
+    ],
+    channelId: 'hobby',
+    topicIdsArr: [
+        '5ZGo5p2w5Lym', // 周杰伦
+        '6Z+z5LmQ' // 音乐
+    ],
+    pinnedCommentId: '',
+    status: 201,
+    editedTimeBySecond: 1673479039454,
 
-    res.send({
-        postId: 'P1234ABCD',
-        memberId: 'M1234ABCD',
-        createdTime: 1673389239310,
-        title: '《周杰倫的床邊故事》',
-        imageUrlsArr: [
-            'https://img3.chinadaily.com.cn/images/202008/24/5f431dc9a310a85979164989.jpeg',
-            'https://upload.wikimedia.org/wikipedia/zh/b/b2/JayChouBedtimeStories-2016_Cover.jpg'
-        ],
-        paragraphsArr: [
-            `《周杰倫的床邊故事》(英語：Jay Chou's Bedtime Stories)是臺灣男歌手周杰倫的第14張錄音室專輯，2016年6月8日开始预购，6月24日正式發行[2][3]。`,
-            `本專輯為周杰倫與妻子昆凌結婚生子後發行的首張專輯，為周杰倫個人第14張專輯[4]。新專輯以床邊故事命名，專輯設計打造成有聲書概念，訴說10個與眾不同、充滿想像的音樂故事[5][6][7]。專輯中與張惠妹首度合唱，是繼《依然范特西》專輯中的《千里之外》與費玉清的合作後，再次跨公司與線上歌手合唱，並且收錄於專輯中[8][9]`,
-            `這是@WebMaster從維基百科搬過來的...@县长马邦德是@WebMaster的老闆`
-        ],
-        cuedMemberInfoArr: [
-            { memberId: 'M1234XXXX', nickname: 'WebMaster' },
-            { memberId: 'M1234ABCD', nickname: '县长马邦德' },
-        ],
-        channelId: 'hobby',
-        topicIdsArr: [
-            '5ZGo5p2w5Lym', // 周杰伦
-            '6Z+z5LmQ' // 音乐
-        ],
-        pinnedCommentId: '',
-        status: 201,
-        editedTime: 1673479039454,
+    totalHitCount: 1480,
+    totalLikedCount: 24,
+    totalDislikedCount: 1,
+    totalCommentCount: 5,
+    totalSavedCount: 12,
+}
 
-        totalHitCount: 1480,
-        totalLikedCount: 24,
-        totalDislikedCount: 1,
-        totalCommentCount: 5,
-        totalSavedCount: 12,
-    })
+export default async function GetRestrictedPostComprehensiveById(req: NextApiRequest, res: NextApiResponse) {
 
-
-
-
+    res.send(ifo)
+    return;
 
     const { method } = req;
-    if (!['GET', 'PUT', 'DELETE'].includes(method ?? '')) {
+    if ('GET' !== method) {
         response405(req, res);
         return;
     }
-    const { isValid, id: postId } = verifyId(req.query?.postId);
+
     //// Verify post id ////
+    const { isValid, id: postId } = verifyId(req.query?.postId);
     if (!isValid) {
         res.status(400).send('Invalid post id');
         return;
     }
+
     //// Declare DB client ////
     const atlasDbClient = AtlasDatabaseClient();
     try {
         await atlasDbClient.connect();
+
         // Look up post status (IPostComprehensive) in [C] postComprehensive
         const postComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IPostComprehensive>('post');
         const postComprehensiveQueryResult = await postComprehensiveCollectionClient.findOne({ postId });
@@ -99,38 +92,57 @@ export default async function GetOrUpdateOrDeleteRestrictedPostComprehensiveById
             await atlasDbClient.close();
             return;
         }
-        const token = await getToken({ req });
+
+        //// Verify post status ////
+        const { status: postStatus } = postComprehensiveQueryResult;
+        if (0 > postStatus) {
+            res.status(404).send('Method not allowed due to post deleted');
+            await atlasDbClient.close();
+            return;
+        }
+
+        //// Response 200 ////
+        res.status(200).send(getRestrictedFromPostComprehensive(postComprehensiveQueryResult));
+
         const { memberId: authorId } = postComprehensiveQueryResult;
-        //// GET | post info ////
-        if ('GET' === method) {
-            res.status(200).send(getRestrictedFromPostComprehensive(postComprehensiveQueryResult));
-            //// Update mapping ////
-            // Step #1 (cond.) upsert record (of IHistoryMapping, of the post viewer) in [RL] HistoryMapping 
-            if (token && token?.sub) {
-                //// [!] request post info with identity ///
-                // Step #1.1 get viewer id
-                const { sub: viewerId } = token;
-                // Step #1.2 look up member status (od IMemberComprehensive) in [C] memberComprehensive
-                const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
-                const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne({ memberId: viewerId });
-                if (null === memberComprehensiveQueryResult) {
-                    throw new Error(`Member attempt to create document (of IMemberPostMapping, browsing history, by viewing a post) but have no document (of IMemberComprehensive, member id: ${viewerId}) in [C] memberComprehensive`);
-                }
-                // Step #1.3 verify member status
-                const { status: memberStatus } = memberComprehensiveQueryResult;
-                if (0 < memberStatus) {
-                    const historyMappingTableClient = AzureTableClient('HistoryMapping');
-                    await historyMappingTableClient.upsertEntity<IMemberPostMapping>({
-                        partitionKey: viewerId,
-                        rowKey: postId,
-                        Nickname: '',
-                        CreatedTimeBySecond: Math.floor(new Date().getTime() / 1000),
-                        IsActive: true
-                    }, 'Replace');
-                }
+
+        let viewerId = '';
+        let viewerIsMemberButNotAuthor = false;
+
+        //// Update browsing history mapping ////
+        const token = await getToken({ req });
+        if (token && token?.sub) {
+
+            viewerId = token.sub;
+
+            //// Look up member status (od IMemberComprehensive) in [C] memberComprehensive ////
+            const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
+            const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne({ memberId: viewerId }, { projection: { _id: 0, status: 1 } });
+            if (null === memberComprehensiveQueryResult) {
+                throw new Error(`Member attempt to upsert entity (of browsing history, of IMemberPostMapping) but have no document (of IMemberComprehensive, member id: ${viewerId}) in [C] memberComprehensive`);
             }
-            //// Update statistics ////
-            // Step #2 update totalCreationHitCount (of IMemberStatistics) in [C] memberStatistics
+
+            //// Verify member status ////
+            const { status: memberStatus } = memberComprehensiveQueryResult;
+            if (0 < memberStatus) {
+                const { title } = postComprehensiveQueryResult;
+                const historyMappingTableClient = AzureTableClient('HistoryMapping');
+                await historyMappingTableClient.upsertEntity<IMemberPostMapping>({
+                    partitionKey: viewerId,
+                    rowKey: postId,
+                    Nickname: '',
+                    Title: title,
+                    CreatedTimeBySecond: Math.floor(new Date().getTime() / 1000),
+                    IsActive: true
+                }, 'Merge');
+                viewerIsMemberButNotAuthor = authorId !== viewerId;
+            }
+        }
+
+        //// Update statistics ////
+
+        // Update totalCreationHitCount (of IMemberStatistics) in [C] memberStatistics ////
+        if (authorId !== viewerId) { // [!] No counting author's hit 
             const memberStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IMemberStatistics>('member');
             const memberStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId: authorId }, {
                 $inc: {
@@ -140,272 +152,47 @@ export default async function GetOrUpdateOrDeleteRestrictedPostComprehensiveById
             if (!memberStatisticsUpdateResult.acknowledged) {
                 logWithDate(`Failed to update totalCreationHitCount (of IMemberStatistics, member id: ${authorId}) in [C] memberStatistics`, fname);
             }
-            // Step #3 update totalHitCount (of IPostComprehensive) in [C] postComprehensive
-            const postComprehensiveUpdateResult = await postComprehensiveCollectionClient.updateOne({ postId }, {
-                $inc: {
-                    totalHitCount: 1
-                }
-            });
-            if (!postComprehensiveUpdateResult.acknowledged) {
-                logWithDate(`Failed to update totalHitCount (of IPostComprehensive, post id: ${postId}) in [C] postComprehensive`, fname);
+        }
+
+        //// Update totalHitCount (of IPostComprehensive) in [C] postComprehensive ////
+        let hitCountUpdate = viewerIsMemberButNotAuthor ? { totalHitCount: 1, totalMemberHitCount: 1 } : { totalHitCount: 1 };
+        const postComprehensiveUpdateResult = await postComprehensiveCollectionClient.updateOne({ postId }, {
+            $inc: { ...hitCountUpdate }
+        });
+        if (!postComprehensiveUpdateResult.acknowledged) {
+            logWithDate(`Failed to update totalHitCount/totalMemberHitCount (of IPostComprehensive, post id: ${postId}) in [C] postComprehensive`, fname);
+        }
+
+        //// Update totalHitCount (of IChannelStatistics) in [C] channelStatistics ////
+        const { channelId } = postComprehensiveQueryResult;
+        const channelStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IChannelStatistics>('channel');
+        const channelStatisticsUpdateResult = await channelStatisticsCollectionClient.updateOne({ channelId }, {
+            $inc: {
+                totalHitCount: 1
             }
-            if (token) {
-                const postComprehensiveUpdateResult = await postComprehensiveCollectionClient.updateOne({ postId }, {
+        });
+        if (!channelStatisticsUpdateResult.acknowledged) {
+            logWithDate(`Failed to totalHitCount (of IChannelStatistics, channel id: ${channelId}) in [C] channelStatistics`, fname);
+        }
+
+        //// (Cond.) Update totalHitCount (of ITopicComprehensive) in [C] topicComprehensive ////
+        const { topicIdsArr } = postComprehensiveQueryResult;
+        if (Array.isArray(topicIdsArr) && topicIdsArr.length !== 0) {
+            const topicComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<ITopicComprehensive>('topic');
+            for await (const topicId of topicIdsArr) {
+                const topicComprehensiveUpdateResult = await topicComprehensiveCollectionClient.updateOne({ topicId }, {
                     $inc: {
-                        totalMemberHitCount: 1
+                        totalHitCount: 1
                     }
                 });
-                if (!postComprehensiveUpdateResult.acknowledged) {
-                    logWithDate(`Failed to update totalMemberHitCount (of IPostComprehensive, post id: ${postId}) in [C] postComprehensive`, fname);
+                if (!topicComprehensiveUpdateResult.acknowledged) {
+                    logWithDate(`Failed to update totalHitCount (of ITopicStatistics, topic id:${topicId}, post id: ${postId}) in [C] topicStatistics`, fname);
                 }
             }
-            // Step #4 update totalHitCount (of IChannelStatistics) in [C] channelStatistics
-            const { channelId } = postComprehensiveQueryResult;
-            const channelStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IChannelStatistics>('channel');
-            const channelStatisticsUpdateResult = await channelStatisticsCollectionClient.updateOne({ channelId }, {
-                $inc: {
-                    totalHitCount: 1
-                }
-            });
-            if (!channelStatisticsUpdateResult.acknowledged) {
-                logWithDate(`Failed to totalHitCount (of IChannelStatistics, channel id: ${channelId}) in [C] channelStatistics`, fname);
-            }
-            // Step #5 (cond.) update totalHitCount (of ITopicComprehensive) in [C] topicComprehensive
-            const { topicIdsArr } = postComprehensiveQueryResult;
-            if (Array.isArray(topicIdsArr) && topicIdsArr.length !== 0) {
-                const topicComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<ITopicComprehensive>('topic');
-                for await (const topicId of topicIdsArr) {
-                    const topicComprehensiveUpdateResult = await topicComprehensiveCollectionClient.updateOne({ topicId }, {
-                        $inc: {
-                            totalHitCount: 1
-                        }
-                    });
-                    if (!topicComprehensiveUpdateResult.acknowledged) {
-                        logWithDate(`Failed to update totalHitCount (of ITopicStatistics, topic id:${topicId}, post id: ${postId}) in [C] topicStatistics`, fname);
-                    }
-                }
-            }
-            await atlasDbClient.close();
-            return;
         }
-        //// Verify identity ////
-        if (!(token && token?.sub)) {
-            res.status(400).send('Invalid identity');
-            return;
-        }
-        //// Verify permission ////
-        const { sub: memberId } = token;
-        if (authorId !== memberId) {
-            res.status(403).send('Identity lack permissions');
-            return;
-        }
-        //// Verify member status ////
-        const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
-        const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne({ memberId: authorId });
-        if (null === memberComprehensiveQueryResult) {
-            throw new Error(`Member attempt to edit or delete document (of IPostComprehensive) but have no document (of IMemberComprehensive, member id: ${authorId}) in [C] memberComprehensive`);
-        }
-        const { status: memberStatus, allowPosting } = memberComprehensiveQueryResult;
-        if (!(0 < memberStatus && allowPosting)) {
-            res.status(403).send('Method not allowed due to member suspended or deactivated');
-            await atlasDbClient.close();
-            return;
-        }
-        //// Verify post status ////
-        const { status: postStatus } = postComprehensiveQueryResult;
-        if (0 > postStatus) {
-            res.status(405).send('Method not allowed due to post deleted');
-            await atlasDbClient.close();
-            return;
-        }
-        //// PUT | edit post ////
-        if ('PUT' === method) {
-            // Step #1.1 verify title
-            const { title } = req.body;
-            if (!('string' === typeof title && '' !== title)) {
-                res.status(400).send('Improper or blank post title');
-                return;
-            }
-            // Step #1.2 verify channel id
-            const { channelId } = req.body;
-            if (!('string' === typeof channelId && '' !== channelId)) {
-                res.status(400).send('Improper channel id');
-                await atlasDbClient.close();
-                return;
-            }
-            const channelInfoTableClient = AzureTableClient('ChannelInfo');
-            const channelInfoQuery = channelInfoTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq 'Info' and RowKey eq '${channelId}' and IsActive eq true` } });
-            // [!] attemp to reterieve entity makes the probability of causing RestError
-            let channelInfoQueryResult = await channelInfoQuery.next();
-            if (!channelInfoQueryResult.value) {
-                res.status(400).send('Channel id not found');
-                await atlasDbClient.close();
-                return;
-            }
-            // Step #2 explicitly get topic id array and cued member info array
-            const topicIdsArr = getTopicBase64StringsArrayFromRequestBody(req.body);
-            const cuedMemberInfoArr = getCuedMemberInfoArrayFromRequestBody(req.body);
-            // Step #3 update document (of IPostComprehensive) in [C] postComprehensive
-            const postComprehensiveUpdateResult = await postComprehensiveCollectionClient.updateOne({ postId }, {
-                $set: providePostComprehensiveUpdate(
-                    title,
-                    getImageUrlsArrayFromRequestBody(req.body),
-                    getParagraphsArrayFromRequestBody(req.body),
-                    cuedMemberInfoArr,
-                    channelId,
-                    topicIdsArr
-                ),
-                $inc: {
-                    totalEditCount: 1
-                },
-                $push: {
-                    edited: provideEditedPostInfo(postComprehensiveQueryResult)
-                }
-            });
-            if (!postComprehensiveUpdateResult.acknowledged) {
-                throw new Error(`Failed to update postInfo, totalEditCount and editedPostInfo (of IPostComprehensive, post id: ${postId}) in [C] postComprehensive`);
-            }
-            res.status(200).send('Edit post success');
-            //// Update statistics ////
-            // Step #4 update totalCreationEditCount (of IMemberStatistics) in [C] memberStatistics
-            const memberStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IMemberStatistics>('member');
-            const memberStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId: authorId }, {
-                $inc: {
-                    totalCreationEditCount: 1
-                }
-            });
-            if (!memberStatisticsUpdateResult.acknowledged) {
-                logWithDate(`Document (IPostComprehensive, post id: ${postId}) updated in [C] postComprehensive successfully but failed to update totalCreationEditCount (of IMemberStatistics, member id: ${authorId}) in [C] memberStatistics`, fname);
-            }
-            // Step #5 (cond.) update totalPostCount (ITopicComprehensive) in [C] topicComprehensive
-            if (topicIdsArr.length !== 0) {
-                const _topicIdsArr = [];
-                // Step #5.1 delete outdated mapping (ITopicPostMapping) in [C] topicPostMapping and collect topic ids that have mapping (with this post)
-                const topicPostMappingCollectionClient = atlasDbClient.db('mapping').collection<ITopicPostMapping>('topic-post');
-                const topicComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<ITopicComprehensive>('topic');
-                const mappingQuery = topicPostMappingCollectionClient.find({ postId });
-                let mappingQureyResult = await mappingQuery.next();
-                while (null !== mappingQureyResult) {
-                    const { topicId } = mappingQureyResult;
-                    if (!topicIdsArr.includes(topicId)) {
-                        // set mapping status to -1 (of ITopicPostMapping)
-                        topicPostMappingCollectionClient.updateOne({ topicId, postId }, { $set: { status: -1 } });
-                        // accumulate post delete count
-                        topicComprehensiveCollectionClient.updateOne({ topicId }, { $inc: { totalPostDeleteCount: 1 } })
-                    } else {
-                        // collect the topic id that possesses mapping (with this post)
-                        _topicIdsArr.push(topicId);
-                    }
-                }
-                // Step #5.2 accumulate totalPostCount or create new mapping (ITopicPostMapping) for the topics that have no mapping (with this post) in [C] topicComprehensive
-                for await (const topicId of topicIdsArr) {
-                    if (!_topicIdsArr.includes(topicId)) {
-                        // case document (of topicComprehensive) [found]
-                        const topicComprehensiveQueryResult = await topicComprehensiveCollectionClient.findOneAndUpdate({ topicId }, { $inc: { totalPostCount: 1 } });
-                        if (!topicComprehensiveQueryResult.ok) {
-                            // case document (of topicComprehensive) [not found]
-                            const topicComprehensiveUpdateResult = await topicComprehensiveCollectionClient.updateOne({ topicId }, { $set: provideTopicComprehensive(topicId, channelId) }, { upsert: true });
-                            if (!topicComprehensiveUpdateResult.acknowledged) {
-                                logWithDate(`Document (IPostComprehensive, post id: ${postId}) inserted in [C] postComprehensive successfully but failed to update totalPostCount (of ITopicComprehensive, topic id: ${topicId}) in [C] topicComprehensive`, fname);
-                            }
-                        }
-                        // Step (cond.) #5.3 insert a new document (of ITopicPostMapping) in [C] topicPostMapping
-                        const topicPostMappingInsertResult = await topicPostMappingCollectionClient.updateOne({ topicId }, {
-                            topicId,
-                            postId,
-                            channelId,
-                            createdTime: new Date().getTime(),
-                            status: 200
-                        }, { upsert: true });
-                        if (!topicPostMappingInsertResult.acknowledged) {
-                            logWithDate(`Document (ITopicPostMapping, post id: ${postId}) inserted in [C] postComprehensive successfully but failed to insert document (of ITopicPostMapping, topic id: ${topicId}) in [C] topicPostMapping`, fname);
-                        }
-                    }
-                }
-            }
-            //// Handle notice.cue (cond.) ////
-            // Step #6.1 verify cued member ids array
-            if (cuedMemberInfoArr.length !== 0) {
-                const blockingMemberMappingTableClient = AzureTableClient('BlockingMemberMapping');
-                const notificationStatisticsCollectionClient = atlasDbClient.db('statistics').collection<INotificationStatistics>('notification');
-                // Step #6.2 maximum 9 members are allowed to cued at one time (in one comment)
-                const cuedMemberIdsArrSliced = cuedMemberInfoArr.slice(0, 9);
-                for await (const cuedMemberInfo of cuedMemberIdsArrSliced) {
-                    const { memberId: memberId_cued } = cuedMemberInfo;
-                    // Step #6.3 look up record (of IMemberMemberMapping) in [RL] BlockingMemberMapping
-                    const _blockingMemberMappingQuery = blockingMemberMappingTableClient.listEntities<IMemberMemberMapping>({ queryOptions: { filter: `PartitionKey eq '${memberId_cued}' and RowKey eq '${authorId}'` } });
-                    //// [!] attemp to reterieve entity makes the probability of causing RestError ////
-                    const _blockingMemberMappingQueryResult = await _blockingMemberMappingQuery.next();
-                    if (!_blockingMemberMappingQueryResult.value) {
-                        //// [!] comment author has not been blocked by cued member ////
-                        // Step #6.4 upsert record (of INoticeInfo.Cued) in [PRL] Notice
-                        const noticeTableClient = AzureTableClient('Notice');
-                        noticeTableClient.upsertEntity<INoticeInfo>({
-                            partitionKey: memberId_cued,
-                            rowKey: createNoticeId('cue', authorId, postId), // combined id
-                            Category: 'cue',
-                            InitiateId: authorId,
-                            Nickname: getNicknameFromToken(token),
-                            PostTitle: title,
-                        }, 'Replace');
-                        // Step #7.4 update cue (INotificationStatistics) (of cued member) in [C] notificationStatistics
-                        const notificationStatisticsUpdateResult = await notificationStatisticsCollectionClient.updateOne({ memberId: memberId_cued }, {
-                            $inc: {
-                                cue: 1
-                            }
-                        });
-                        if (!notificationStatisticsUpdateResult.acknowledged) {
-                            logWithDate(`Document (IPostComprehensive, post id: ${postId}) updated in [C] postComprehensive successfully but failed to update cue (of INotificationStatistics, member id: ${memberId_cued}) in [C] notificationStatistics`, fname);
-                        }
-                    }
-                }
-            }
-            await atlasDbClient.close();
-            return;
-        }
-        //// DELETE | delete post ////
-        if ('DELETE' === method) {
-            // Step #1 update post status (of IPostComprehensive) [C] postComprehensive
-            const postComprehensiveUpdateResult = await postComprehensiveCollectionClient.updateOne({ postId }, { $set: { status: -1 } });
-            if (!postComprehensiveUpdateResult.acknowledged) {
-                throw new Error(`Failed to update status (-1, of IPostComprehensive, post id: ${postId}) in [C] postComprehensive`);
-            }
-            res.status(200).send('Delete post success');
-            //// Update statistics ////
-            // Step #2.1 update totalCreationDeleteCount (of IMemberStatistics) (of post author) in [C] memberStatistics
-            const memberStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IMemberStatistics>('member');
-            const memberStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId: authorId }, { $inc: { totalCreationDeleteCount: 1 } });
-            if (!memberStatisticsUpdateResult.acknowledged) {
-                logWithDate(`Document (IPostComprehensive, post id: ${postId}) updated (deleted, status -1) in [C] postComprehensive successfully but failed to update totalCreationDeleteCount (of IMemberStatistics, member id: ${authorId}) in [C] memberStatistics`, fname);
-            }
-            // Step #2.2 update totalPostDeleteCount (of IChannelStatistics) in [C] channelStatistics
-            const { channelId } = postComprehensiveQueryResult;
-            const channelStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IChannelStatistics>('channel');
-            const channelStatisticsUpdateResult = await channelStatisticsCollectionClient.updateOne({ channelId }, { $inc: { totalPostDeleteCount: 1 } });
-            if (!channelStatisticsUpdateResult.acknowledged) {
-                logWithDate(`Document (IPostComprehensive, post id: ${postId}) updated (deleted, status -1) in [C] postComprehensive successfully but failed to update totalPostDeleteCount (of IChannelStatistics, channel id: ${channelId}) in [C] channelStatistics`, fname);
-            }
-            // Step #2.3 (cond.) update totalPostDeleteCount (of ITopicComprehensive) [C] topicComprehensive
-            const { topicIdsArr } = postComprehensiveQueryResult;
-            if (Array.isArray(topicIdsArr) && topicIdsArr.length !== 0) {
-                const topicComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<ITopicComprehensive>('topic');
-                const topicPostMappingCollectionClient = atlasDbClient.db('mapping').collection<ITopicPostMapping>('topic-post');
-                for await (const topicId of topicIdsArr) {
-                    // Step #4.1 update totalPostDeleteCount (of ITopicComprehensive) in [C] topicComprehensive
-                    const topicComprehensiveUpdateResult = await topicComprehensiveCollectionClient.updateOne({ topicId }, { $inc: { totalPostDeleteCount: 1 } });
-                    if (!topicComprehensiveUpdateResult.acknowledged) {
-                        logWithDate(`Document (IPostComprehensive, post id: ${postId}) updated (deleted, status -1) in [C] postComprehensive successfully but failed to update totalPostDeleteCount (of ITopicComprehensive, topic id: ${topicId}) in [C] topicComprehensive`, fname);
-                    }
-                    // Step #4.2 update status (of ITopicPostMapping) in [C] topicPostMapping
-                    const topicPostMappingInsertResult = await topicPostMappingCollectionClient.updateOne({ topicId, postId }, { $set: { status: -1 } });
-                    if (!topicPostMappingInsertResult.acknowledged) {
-                        logWithDate(`Document (ITopicPostMapping, post id: ${postId}) updated (deleted, status -1) in [C] postComprehensive successfully but failed to update document (of ITopicPostMapping, topic id: ${topicId}, status -1) in [C] topicPostMapping`, fname);
-                    }
-                }
-            }
-            await atlasDbClient.close();
-            return;
-        }
+
+        await atlasDbClient.close();
+        return;
     } catch (e: any) {
         let msg;
         if (e instanceof SyntaxError) {

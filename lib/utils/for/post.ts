@@ -10,6 +10,15 @@ import { getRandomHexStr } from '../create';
 import { verifyNoticeId, verifyUrl } from '../verify';
 
 // Post
+
+export function provideCoverImageUrl(postId: string, domain: string, forceBrowserUpdate = false): string {
+    if (forceBrowserUpdate) {
+        return `${domain}/api/coverimage/a/${postId}.png?variant=${getRandomHexStr()}`;
+    } else {
+        return `${domain}/api/coverimage/a/${postId}.png`;
+    }
+}
+
 export function getImageUrlsArrayFromRequestBody(requestBody: any): string[] {
     if ('object' !== typeof requestBody) {
         return [];
@@ -78,7 +87,7 @@ export function provideEditedPostInfo(postComprehensive: IPostComprehensive): IE
     return {
         editedTime: new Date().getTime(),
         titleBeforeEdit: postComprehensive.title,
-        imageUrlsArrBeforeEdit: [...postComprehensive.imageUrlsArr],
+        imageFullnameArrBeforeEdit: [...postComprehensive.imageFullnameArr],
         paragraphsArrBeforeEdit: [...postComprehensive.paragraphsArr],
         cuedMemberInfoArrBeforeEdit: [...postComprehensive.cuedMemberInfoArr],
         channelIdBeforeEdit: postComprehensive.channelId,
@@ -89,51 +98,50 @@ export function provideEditedPostInfo(postComprehensive: IPostComprehensive): IE
 }
 
 export function getRestrictedFromPostComprehensive(postComprehensive: IPostComprehensive): IRestrictedPostComprehensive {
-    const { status, totalLikedCount, totalUndoLikedCount, totalDislikedCount, totalUndoDislikedCount, totalCommentCount, totalCommentDeleteCount, totalSavedCount, totalUndoSavedCount } = postComprehensive;
-    const totalLiked = totalLikedCount - totalUndoLikedCount;
-    const totalDisliked = totalDislikedCount - totalUndoDislikedCount;
-    const totalComment = totalCommentCount - totalCommentDeleteCount;
-    const totalSaved = totalSavedCount - totalUndoSavedCount;
+    const { status } = postComprehensive;
+
     const restricted: IRestrictedPostComprehensive = {
-        //// info ////
+
         postId: postComprehensive.postId,
         memberId: postComprehensive.memberId,
         createdTimeBySecond: postComprehensive.createdTimeBySecond,
         title: '',
-        imageUrlsArr: [],
+        imageFullnameArr: [],
         paragraphsArr: [],
         cuedMemberInfoArr: [],
         channelId: postComprehensive.channelId,
         topicIdsArr: [],
         pinnedCommentId: null,
 
-        //// management ////
         status: status,
+        allowEditing: postComprehensive.allowEditing,
+        allowCommenting: postComprehensive.allowCommenting,
 
-        //// statistics ////
         totalHitCount: postComprehensive.totalHitCount,
-        totalLikedCount: totalLiked,
-        totalDislikedCount: totalDisliked,
-        totalCommentCount: totalComment,
-        totalSavedCount: totalSaved,
+        totalLikedCount: postComprehensive.totalLikedCount - postComprehensive.totalUndoLikedCount,
+        totalDislikedCount: postComprehensive.totalDislikedCount - postComprehensive.totalUndoDislikedCount,
+        totalCommentCount: postComprehensive.totalCommentCount - postComprehensive.totalCommentDeleteCount,
+        totalSavedCount: postComprehensive.totalSavedCount - postComprehensive.totalUndoSavedCount,
 
-        //// edit info ////
-        editedTime: null,
+        editedTimeBySecond: null,
     };
+
     if ('number' === typeof status && 0 > status) {
         return restricted;
     }
+
     restricted.title = postComprehensive.title;
-    restricted.imageUrlsArr.push(...postComprehensive.imageUrlsArr);
+    restricted.imageFullnameArr.push(...postComprehensive.imageFullnameArr);
     restricted.paragraphsArr.push(...postComprehensive.paragraphsArr);
     restricted.cuedMemberInfoArr.push(...postComprehensive.cuedMemberInfoArr);
     restricted.topicIdsArr.push(...postComprehensive.topicIdsArr);
     restricted.pinnedCommentId = postComprehensive.pinnedCommentId;
+
     if ('number' === typeof status && 1 === status % 100) {
         const { edited } = postComprehensive;
         if (Array.isArray(edited) && edited.length !== 0) {
             const lastEdit = edited[edited.length - 1];
-            restricted.editedTime = lastEdit.editedTime;
+            restricted.editedTimeBySecond = lastEdit.editedTimeBySecond;
         }
     }
     return restricted;
@@ -145,18 +153,20 @@ export function fakeRestrictedPostComprehensive(): IRestrictedPostComprehensive 
         memberId: '',
         createdTimeBySecond: 0,
         title: '',
-        imageUrlsArr: [],
+        imageFullnameArr: [],
         paragraphsArr: [],
         cuedMemberInfoArr: [],
         channelId: '',
         topicIdsArr: [],
         pinnedCommentId: null,
         status: -1,
+        allowEditing: false,
+        allowCommenting: false,
         totalHitCount: 0,
         totalLikedCount: 0,
         totalDislikedCount: 0,
         totalCommentCount: 0,
         totalSavedCount: 0,
-        editedTime: 0
+        editedTimeBySecond: 0
     }
 }

@@ -3,11 +3,14 @@ import { IConciseMemberInfo } from './member';
 // [C] postComprehensive
 export interface IPostComprehensive {
     //// info ////
-    postId: string; // 10 characters, UPPERCASE
+    postId: string; // 10 characters, UPPERCASE, also used as coverImageFullname (e.g., P12345ABCDE.png)
     memberId: string;
     createdTimeBySecond: number; // created time of this document (post est.)
     title: string;
-    imageUrlsArr: string[];
+
+    // imageUrlsArr: string[]; // [!] depreacted
+    imageFullnameArr: string[];
+
     paragraphsArr: string[];
     cuedMemberInfoArr: IConciseMemberInfo[];
     channelId: string;
@@ -16,18 +19,25 @@ export interface IPostComprehensive {
 
     //// management ////
     status: number;
+    allowEditing: boolean;
+    allowCommenting: boolean;
 
     //// statistics ////
     totalHitCount: number; // viewed times accumulator
     totalMemberHitCount: number;
+
     totalLikedCount: number;
     totalUndoLikedCount: number;
+
     totalDislikedCount: number;
     totalUndoDislikedCount: number;
+
     totalCommentCount: number;
     totalCommentDeleteCount: number;
+
     totalSavedCount: number;
     totalUndoSavedCount: number;
+
     totalEditCount: number;
 
     //// edit info ////
@@ -35,13 +45,15 @@ export interface IPostComprehensive {
 }
 
 export interface IEditedPostComprehensive {
-    editedTime: number;
+    editedTimeBySecond: number;
     titleBeforeEdit: string;
-    imageUrlsArrBeforeEdit: string[];
+    // imageUrlsArrBeforeEdit: string[]; // [!] depreacted
+    imageFullnameArrBeforeEdit: string[];
     paragraphsArrBeforeEdit: string[];
     cuedMemberInfoArrBeforeEdit: IConciseMemberInfo[];
     channelIdBeforeEdit: string;
     topicIdsArrBeforeEdit: string[];
+    
     totalLikedCountBeforeEdit: number;
     totalDislikedCountBeforeEdit: number;
 }
@@ -53,7 +65,7 @@ export interface IRestrictedPostComprehensive {
     createdTimeBySecond: number; // created time of this document (post est.)
     title: string;
 
-    imageUrlsArr: string[]; // [!] depreacted
+    // imageUrlsArr: string[]; // [!] depreacted
     imageFullnameArr: string[];
 
     paragraphsArr: string[];
@@ -64,6 +76,8 @@ export interface IRestrictedPostComprehensive {
 
     //// management ////
     status: number;
+    allowEditing: boolean;
+    allowCommenting: boolean;
 
     //// statistics ////
     totalHitCount: number; // viewed times accumulator
@@ -73,7 +87,7 @@ export interface IRestrictedPostComprehensive {
     totalSavedCount: number;
 
     //// edit info ////
-    editedTime: number | null;
+    editedTimeBySecond: number | null;
 }
 
 export interface IConcisePostComprehensive {

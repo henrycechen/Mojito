@@ -1,10 +1,7 @@
 import { IConciseMemberInfo, IConciseMemberStatistics, IRestrictedMemberComprehensive } from '../../interfaces/member';
 import { getRandomHexStr } from '../create';
 
-/** Utils for Member Class v0.1.1
- * 
- * Last update 16/02/2023
- */
+// Utils for Member Class v0.1.1
 
 export function provideAvatarImageUrl(memberId: string, domain: string, forceBrowserUpdate = false): string {
     if (forceBrowserUpdate) {

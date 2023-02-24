@@ -29,13 +29,18 @@ export interface IChannelStatistics {
 
     //// total statistics ////
     totalHitCount: number;
+
     totalTopicCount: number;
+
     totalPostCount: number;
     totalPostDeleteCount: number;
+
     totalLikedCount: number;
     totalUndoLikedCount: number;
+
     totalCommentCount: number; // subcomment included
     totalCommentDeleteCount: number;
+    
     totalSavedCount: number;
     totalUnavedCount: number;
 }
