@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 
 // will be returned 
-// - IConcisePostComprehensiveWithMemberInfo
+// - IConcisePostComprehensive
 
 
 

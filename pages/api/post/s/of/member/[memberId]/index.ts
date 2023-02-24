@@ -8,6 +8,7 @@ import AtlasDatabaseClient from "../../../../../../../modules/AtlasDatabaseClien
 import { logWithDate, response405, response500 } from '../../../../../../../lib/utils/general';
 import { verifyId } from '../../../../../../../lib/utils/verify';
 import { IMemberComprehensive } from '../../../../../../../lib/interfaces/member';
+import { createId } from '../../../../../../../lib/utils/create';
 
 const fname = GetPostsByMemberId.name;
 
@@ -23,6 +24,85 @@ const fname = GetPostsByMemberId.name;
  * - quantity: number (query string, optional, maximum 20)
  * - positionId: string (query string, the last post id of the last request, optional)
 */
+
+const bb1 = [
+
+    {
+        postId: createId('post'),
+        memberId: 'M1234XXXX',
+        nickname: 'WebMaster',
+
+        createdTimeBySecond: 1674610376,
+        imageUrlsArr: ['https://i.imgur.com/cYDG24D.jpeg'],
+        title: '在Imgur上看到的Elonald Trusk',
+
+        totalHitCount: 100,
+        totalLikedCount: 3
+    },
+
+    {
+        postId: createId('post'),
+        memberId: 'M1234XXXX',
+
+        nickname: 'WebMaster',
+        
+
+        createdTimeBySecond: 1674610376,
+        imageUrlsArr: ['https://i.imgur.com/IWP1cL4.jpeg'],
+        title: 'Just a Golden Retriever in the Fall Leaves',
+
+        totalHitCount: 100,
+        totalLikedCount: 3
+    },
+
+    {
+        postId: createId('post'),
+        memberId: 'M1234XXXX',
+
+        nickname: 'WebMaster',
+
+        createdTimeBySecond: 1674610376,
+        imageUrlsArr: ['https://i.imgur.com/Ne2hcBt.jpeg'],
+        title: 'Home of Stephen King, Bangor, ME',
+
+        totalHitCount: 100,
+        totalLikedCount: 3
+    },
+
+    {
+        postId: createId('post'),
+        memberId: 'M1234XXXX',
+
+        nickname: 'WebMaster',
+        
+
+        createdTimeBySecond: 1674610376,
+        imageUrlsArr: ['https://i.imgur.com/9qTKlKW.jpeg'],
+        title: 'The Fellowship of the Ring (1978)',
+
+        totalHitCount: 100,
+        totalLikedCount: 3
+    },
+
+    {
+        postId: createId('post'),
+        memberId: 'M1234XXXX',
+
+        nickname: 'WebMaster',
+        
+
+        createdTimeBySecond: 1674610376,
+        imageUrlsArr: ['https://i.imgur.com/fQdY6Fs.jpeg'],
+        title: 'beautiful art by Sam Yang',
+
+        totalHitCount: 100,
+        totalLikedCount: 3
+    },
+];
+
+const bb2 = [];
+
+const bb3 = [];
 
 export default async function GetPostsByMemberId(req: NextApiRequest, res: NextApiResponse) {
 

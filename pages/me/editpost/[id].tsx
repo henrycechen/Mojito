@@ -30,7 +30,7 @@ import Navbar from '../../../ui/Navbar';
 import Copyright from '../../../ui/Copyright';
 
 import { useRouter } from 'next/router';
-import { LangConfigs, PostInfo, ChannelInfo, ChannelDictionary } from '../../../lib/types';
+import { LangConfigs } from '../../../lib/types';
 
 import Input from '@mui/material/Input';
 import ListItemText from '@mui/material/ListItemText';

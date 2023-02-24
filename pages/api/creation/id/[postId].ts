@@ -14,20 +14,20 @@ import { IMemberPostMapping } from '../../../../lib/interfaces/mapping';
 import { IChannelStatistics } from '../../../../lib/interfaces/channel';
 import { ITopicComprehensive } from '../../../../lib/interfaces/topic';
 
-const fname = DeleteCreationById.name
+const fname = UpdateOrDeleteCreationById.name
 
-/** DeleteCreationById v0.1.1
+/** UpdateOrDeleteCreationById v0.1.1 FIXME: PUT and DELTE method moved from /api/post/rc/[postId].ts
  * 
  * Last update: 21/02/2023
  * 
- * This interface ONLY accepts DELETE requests
+ * This interface accepts PUT and DELETE requests
  * 
  * Info required for DELETE requests
  * token: JWT
  * postId: string (query)
 */
 
-export default async function DeleteCreationById(req: NextApiRequest, res: NextApiResponse) {
+export default async function UpdateOrDeleteCreationById(req: NextApiRequest, res: NextApiResponse) {
 
     const { method } = req;
     if ('DELETE' !== method) {

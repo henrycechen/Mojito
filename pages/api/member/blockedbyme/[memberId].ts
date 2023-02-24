@@ -7,7 +7,7 @@ import AzureTableClient from '../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from "../../../../modules/AtlasDatabaseClient";
 
 import { IMemberMemberMapping } from '../../../../lib/interfaces/mapping';
-import { IMemberComprehensive, IConciseMemberInfoWithCreatedTimeBySecond } from '../../../../lib/interfaces/member';
+import { IMemberComprehensive, IConciseMemberInfo } from '../../../../lib/interfaces/member';
 import { logWithDate, response405, response500 } from '../../../../lib/utils/general';
 import { verifyId } from '../../../../lib/utils/verify';
 
@@ -28,12 +28,6 @@ const fname = GetMembersBlockedByMe.name;
 
 export default async function GetMembersBlockedByMe(req: NextApiRequest, res: NextApiResponse) {
 
-    const { method } = req;
-    if ('GET' !== method) {
-        response405(req, res);
-        return;
-    }
-
     res.send([
         {
             memberId: 'M3380ACMB',
@@ -52,6 +46,12 @@ export default async function GetMembersBlockedByMe(req: NextApiRequest, res: Ne
         }
     ]);
     return;
+
+    const { method } = req;
+    if ('GET' !== method) {
+        response405(req, res);
+        return;
+    }
 
     //// Verify identity ////
     const token = await getToken({ req });
@@ -100,11 +100,12 @@ export default async function GetMembersBlockedByMe(req: NextApiRequest, res: Ne
         const blockingMemberMappingQuery = blockingMemberMappingTableClient.listEntities<IMemberMemberMapping>({ queryOptions: { filter: `PartitionKey eq '${memberId}' and IsActive eq true` } });
         //// [!] attemp to reterieve entity makes the probability of causing RestError ////
         let blockingMemberMappingQueryResult = await blockingMemberMappingQuery.next();
-        const arr: IConciseMemberInfoWithCreatedTimeBySecond[] = [];
+        const arr: IConciseMemberInfo[] = [];
         while (!blockingMemberMappingQueryResult.done) {
             arr.push({
                 memberId: blockingMemberMappingQueryResult.value.rowKey,
                 nickname: blockingMemberMappingQueryResult.value.Nickname,
+                briefIntro: '', // [!] this info is not supplied
                 createdTimeBySecond: blockingMemberMappingQueryResult.value.CreatedTimeBySecond,
             })
             blockingMemberMappingQueryResult = await blockingMemberMappingQuery.next();

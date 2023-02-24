@@ -6,7 +6,7 @@ import { MongoError } from 'mongodb';
 import AtlasDatabaseClient from "../../../../modules/AtlasDatabaseClient";
 import { logWithDate, response405, response500 } from '../../../../lib/utils/general';
 import { verifyId } from '../../../../lib/utils/verify';
-import { IConciseMemberInfoWithBriefIntroAndCreatedTimeBySecond, IMemberComprehensive } from '../../../../lib/interfaces/member';
+import { IConciseMemberInfo, IMemberComprehensive } from '../../../../lib/interfaces/member';
 import AzureTableClient from '../../../../modules/AzureTableClient';
 import { IMemberMemberMapping } from '../../../../lib/interfaces/mapping';
 
@@ -21,20 +21,23 @@ const fname = GetMembersFollowedByMe.name;
  * This interface only accepts GET requests
  * 
  * Info required for GET requests
- * - memberId: string
+ * - token: JWT (optional)
+ * - memberId: string (query)
  * 
+ * Info will be returned
+ * - arr: IConciseMemberInfo[]
 */
 
 export default async function GetMembersFollowedByMe(req: NextApiRequest, res: NextApiResponse) {
+    
+    res.send([]);
+    return;
 
     const { method } = req;
     if ('GET' !== method) {
         response405(req, res);
         return;
     }
-
-    res.send([]);
-    return;
 
     //// Verify identity ////
     let tokenId = ''; // v0.1.3
@@ -70,7 +73,7 @@ export default async function GetMembersFollowedByMe(req: NextApiRequest, res: N
         }
         await atlasDbClient.close();
 
-        const arr: IConciseMemberInfoWithBriefIntroAndCreatedTimeBySecond[] = [];
+        const arr: IConciseMemberInfo[] = [];
         if (tokenId === memberId || isAllowed) { // v0.1.3
             //// Look up record (of IMemberMemberMapping) in [RL] FollowingMemberMapping ////
             const followingMemberMappingTableClient = AzureTableClient('FollowingMemberMapping');

@@ -1,11 +1,4 @@
 import { IConciseMemberInfo } from './member';
-/** Interfaces for Post Class v0.1.2
- * 
- * Last update 20/02/2023
- */
-
-
-
 
 // [C] postComprehensive
 export interface IPostComprehensive {
@@ -59,7 +52,10 @@ export interface IRestrictedPostComprehensive {
     memberId: string;
     createdTimeBySecond: number; // created time of this document (post est.)
     title: string;
-    imageUrlsArr: string[];
+
+    imageUrlsArr: string[]; // [!] depreacted
+    imageFullnameArr: string[];
+
     paragraphsArr: string[];
     cuedMemberInfoArr: IConciseMemberInfo[];
     channelId: string;
@@ -81,25 +77,11 @@ export interface IRestrictedPostComprehensive {
 }
 
 export interface IConcisePostComprehensive {
-    postId: string; // 10 characters, UPPERCASE
-    memberId: string;
-    createdTimeBySecond: number; // created time of this document (post est.)
-    title: string;
-    imageUrlsArr: string[];
-
-    totalHitCount: number; // viewed times accumulator
-    totalLikedCount: number;
-}
-
-export interface IConcisePostComprehensiveWithMemberInfo {
-    postId: string; // 10 characters, UPPERCASE
+    postId: string; // 10 characters, UPPERCASE, also used as coverImageFullname (e.g., P12345ABCDE.png)
     memberId: string;
     nickname: string;
-    avatarImageFullName: string;
-    createdTimeBySecond: number; // created time of this document (post est.)
     title: string;
-    imageUrlsArr: string[];
-
+    createdTimeBySecond: number; // created time of this document (post est.)
     totalHitCount: number; // viewed times accumulator
     totalLikedCount: number;
 }

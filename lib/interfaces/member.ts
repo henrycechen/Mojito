@@ -1,7 +1,4 @@
-/** Interfaces for Member Class v0.1.1
- * 
- * Last update 16/02/2023
- */
+// Interfaces for Member Class v0.1.1
 
 export interface IMemberComprehensive {
     memberId: string; // 10 characters, UPPERCASE
@@ -33,6 +30,7 @@ export interface IMemberComprehensive {
     hidePostsAndCommentsOfBlockedMember: boolean;
 }
 
+// *registration process specialized
 export interface IMinimumMemberComprehensive {
     memberId: string; // 10 characters, UPPERCASE
     providerId: string; // "MojitoMemberSystem" | "GitHubOAuth" | ...
@@ -66,20 +64,10 @@ export interface IRestrictedMemberComprehensive {
 export interface IConciseMemberInfo {
     memberId: string;
     nickname: string;
-}
-
-export interface IConciseMemberInfoWithCreatedTimeBySecond {
-    memberId: string;
-    nickname: string;
+    briefIntro: string;
     createdTimeBySecond: number;
 }
 
-export interface IConciseMemberInfoWithBriefIntroAndCreatedTimeBySecond {
-    memberId: string;
-    nickname: string;
-    briefIntro: string | undefined;
-    createdTimeBySecond: number;
-}
 
 export interface IMemberStatistics {
     memberId: string;

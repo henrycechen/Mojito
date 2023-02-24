@@ -42,7 +42,7 @@ import { updateLocalStorage, restoreFromLocalStorage } from '../lib/utils/genera
 import { getNicknameBrief } from '../lib/utils/for/member';
 import { CenterlizedBox, ResponsiveCard, StyledSwitch, TextButton } from '../ui/Styled';
 import Navbar from '../ui/Navbar';
-import { IConcisePostComprehensive, IConcisePostComprehensiveWithMemberInfo } from '../lib/interfaces/post';
+import { IConcisePostComprehensive, IConcisePostComprehensive } from '../lib/interfaces/post';
 import { IChannelInfoStates, IChannelInfoDictionary } from '../lib/interfaces/channel';
 import Copyright from '../ui/Copyright';
 
@@ -292,7 +292,7 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
     }
 
     //////// STATE - posts (masonry) ////////
-    const [masonryPostInfoArr, setMasonryPostInfoArr] = React.useState<IConcisePostComprehensiveWithMemberInfo[]>([]);
+    const [masonryPostInfoArr, setMasonryPostInfoArr] = React.useState<IConcisePostComprehensive[]>([]);
 
     React.useEffect(() => { updatePostsArr() }, [processStates.selectedChannelId, processStates.selectedHotPosts]);
 

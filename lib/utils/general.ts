@@ -6,7 +6,6 @@ import type { NextApiRequest, NextApiResponse } from 'next';
  * Last update 16/02/2023
  */
 
-// FIXME: milliseconds to seconds have not applied
 export function timeToString(timeBySecond: number, lang: string): string {
     let _lang = lang;
     if (!['tw', 'cn', 'en'].includes(lang)) {
@@ -46,6 +45,17 @@ export function getContentBrief(content: any, length = 21): string {
         return `${content.slice(0, length)}...`;
     }
     return content;
+}
+
+export function statiaticsToString(num: number): string {
+    if (num > 1000000) {
+        `${num / 1000000}M`
+    } else if (num > 1000) {
+        `${num / 1000}K`
+    } else {
+        return `${num}`;
+    }
+    return '';
 }
 
 type TStates = {

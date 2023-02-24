@@ -4,30 +4,30 @@ import { MongoError } from 'mongodb';
 
 import { getToken } from 'next-auth/jwt';
 
-import AzureTableClient from '../../../../../modules/AzureTableClient';
-import AtlasDatabaseClient from '../../../../../modules/AtlasDatabaseClient';
+import AzureTableClient from '../../../../modules/AzureTableClient';
+import AtlasDatabaseClient from '../../../../modules/AtlasDatabaseClient';
 
-import { IMemberMemberMapping, IMemberPostMapping } from '../../../../../lib/interfaces/mapping';
-import { logWithDate, response405, response500 } from '../../../../../lib/utils/general';
-import { verifyId } from '../../../../../lib/utils/verify';
-import { IPostComprehensive } from '../../../../../lib/interfaces/post';
-import { getCuedMemberInfoArrayFromRequestBody, providePostComprehensiveUpdate, getRestrictedFromPostComprehensive, getImageUrlsArrayFromRequestBody, getParagraphsArrayFromRequestBody, provideEditedPostInfo } from '../../../../../lib/utils/for/post';
-import { IMemberComprehensive, IMemberStatistics } from '../../../../../lib/interfaces/member';
-import { IChannelStatistics } from '../../../../../lib/interfaces/channel';
-import { ITopicComprehensive, ITopicPostMapping } from '../../../../../lib/interfaces/topic';
-import { getTopicBase64StringsArrayFromRequestBody, provideTopicComprehensive } from '../../../../../lib/utils/for/topic';
-import { INoticeInfo, INotificationStatistics } from '../../../../../lib/interfaces/notification';
-import { createNoticeId } from '../../../../../lib/utils/create';
-import { getNicknameFromToken } from '../../../../../lib/utils/for/member';
+import { IMemberMemberMapping, IMemberPostMapping } from '../../../../lib/interfaces/mapping';
+import { logWithDate, response405, response500 } from '../../../../lib/utils/general';
+import { verifyId } from '../../../../lib/utils/verify';
+import { IPostComprehensive } from '../../../../lib/interfaces/post';
+import { getCuedMemberInfoArrayFromRequestBody, providePostComprehensiveUpdate, getRestrictedFromPostComprehensive, getImageUrlsArrayFromRequestBody, getParagraphsArrayFromRequestBody, provideEditedPostInfo } from '../../../../lib/utils/for/post';
+import { IMemberComprehensive, IMemberStatistics } from '../../../../lib/interfaces/member';
+import { IChannelStatistics } from '../../../../lib/interfaces/channel';
+import { ITopicComprehensive, ITopicPostMapping } from '../../../../lib/interfaces/topic';
+import { getTopicBase64StringsArrayFromRequestBody, provideTopicComprehensive } from '../../../../lib/utils/for/topic';
+import { INoticeInfo, INotificationStatistics } from '../../../../lib/interfaces/notification';
+import { createNoticeId } from '../../../../lib/utils/create';
+import { getNicknameFromToken } from '../../../../lib/utils/for/member';
 
 const domain = process.env.NEXT_PUBLIC_APP_DOMAIN;
-const fname = GetRestrictedPostComprehensiveById.name;
+const fname = GetOrUpdateOrDeleteRestrictedPostComprehensiveById.name;
 
-/** GetRestrictedPostComprehensiveById v0.1.1 FIXME: test mode
+/** GetOrUpdateOrDeleteRestrictedPostComprehensiveById v0.1.1 FIXME: test mode
  * 
  * Last update: 
  * 
- * This interface accepts GET, PUT and DELETE method
+ * This interface ONLY accepts GET method  (, PUT/DELETE method moved to /api/creation/id/[postId].ts )
  * 
  * Info required for GET method
  * - token: JWT
@@ -36,7 +36,7 @@ const fname = GetRestrictedPostComprehensiveById.name;
  * - topicsArr: string[] (body, optional)
  */
 
-export default async function GetRestrictedPostComprehensiveById(req: NextApiRequest, res: NextApiResponse) {
+export default async function GetOrUpdateOrDeleteRestrictedPostComprehensiveById(req: NextApiRequest, res: NextApiResponse) {
 
     res.send({
         postId: 'P1234ABCD',

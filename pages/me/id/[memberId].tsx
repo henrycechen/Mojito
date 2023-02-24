@@ -64,8 +64,8 @@ import { useRouter } from 'next/router';
 
 import Navbar from '../../../ui/Navbar';
 
-import { IConciseMemberInfo, IConciseMemberInfoWithCreatedTimeBySecond, IConciseMemberInfoWithBriefIntroAndCreatedTimeBySecond, IConciseMemberStatistics, IRestrictedMemberComprehensive, } from '../../../lib/interfaces/member';
-import { IConcisePostComprehensiveWithMemberInfo } from '../../../lib/interfaces/post';
+import { IConciseMemberInfo, IConciseMemberStatistics, IRestrictedMemberComprehensive } from '../../../lib/interfaces/member';
+import { IConcisePostComprehensive } from '../../../lib/interfaces/post';
 import { INoticeInfoWithMemberInfo } from '../../../lib/interfaces/notification';
 import { IChannelInfoStates, IChannelInfoDictionary } from '../../../lib/interfaces/channel';
 
@@ -279,12 +279,37 @@ const langConfigs: LangConfigs = {
     noFollowedByMemberInfoRecord: {
         tw: '暫時沒有其他用戶訂閲您',
         cn: '暂时没有其他用户关注您',
-        en: 'No records of following member'
+        en: 'No records of following members'
     },
     authorNoFollowedByMemberInfoRecord: {
         tw: '暫時沒有其他用戶訂閲作者',
         cn: '暂时没有其他用户关注作者',
-        en: 'No records of following member'
+        en: 'No records of following members'
+    },
+    noCreationsRecord: {
+        tw: '您還未發表任何作品',
+        cn: '您还未发表任何作品',
+        en: 'No records of creations'
+    },
+    authorNoCreationsRecord: {
+        tw: '作者還未發表任何作品',
+        cn: '作者还未发表任何作品',
+        en: 'No records of creations'
+    },
+    noSavedPostsRecord: {
+        tw: '您還未收藏任何作品',
+        cn: '您还未收藏任何作品',
+        en: 'No records of saved posts'
+    },
+    authorNoSavedPostsRecord: {
+        tw: '作者還未收藏任何作品',
+        cn: '作者还未收藏任何作品',
+        en: 'No records of saved posts'
+    },
+    noBrowsingHistoryRecord: {
+        tw: '暫時沒有您的瀏覽記錄',
+        cn: '暂时没有您的浏览记录',
+        en: 'No records of browsing history'
     },
     //// Avatar setting ////
     avatar: {
@@ -733,6 +758,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
         lang: defaultLang,
         mode: 'light'
     })
+
     React.useEffect(() => { restorePreferenceStatesFromCache(setPreferenceStates) }, [])
 
     //////// STATES - process ////////
@@ -767,6 +793,8 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
         updateProcessStatesCache(_processStates);
         return;
     }
+
+
 
     ////////////////////////  Message Layout ////////////////////////
     type TMessageLayoutStates = {
@@ -925,7 +953,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                                                     <Typography align={'left'} variant={'body2'}>{getNicknameBrief(info.nickname)}</Typography>
 
                                                     {/* created time */}
-                                                    <Typography fontSize={{ xs: 12 }} align={'right'}>{timeToString(info.createdTimeBySecond, preferenceStates.lang)}</Typography>
+                                                    <Typography fontSize={{ xs: 12 }} align={'left'}>{timeToString(info.createdTimeBySecond, preferenceStates.lang)}</Typography>
                                                 </Box>
                                             </Box>
                                         </Button>
@@ -939,7 +967,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                                     </Box>
                                 )}
                                 {0 === noticeInfoArr.length &&
-                                    <Box mt={{ xs: 3, sm: 2 }}>
+                                    <Box minHeight={200} mt={10}>
                                         <Typography color={'text.secondary'} align={'center'}>{langConfigs.noNotificationRecord[preferenceStates.lang]}</Typography>
                                     </Box>
                                 }
@@ -955,6 +983,8 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
         )
     }
 
+
+
     ////////////////////////   List Layout   ////////////////////////
     type TListLayoutStates = {
         selectedCategory: 'followedbyme' | 'followingme';
@@ -965,7 +995,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
         selectedCategory: 'followedbyme', // 'followedbyme' | 'followingme'
     })
 
-    const [memberInfoArr, setMemberInfoArr] = React.useState<IConciseMemberInfoWithBriefIntroAndCreatedTimeBySecond[]>([]);
+    const [memberInfoArr, setMemberInfoArr] = React.useState<IConciseMemberInfo[]>([]);
 
     React.useEffect(() => { updateMemberInfoArr() }, [])
     React.useEffect(() => { updateMemberInfoArr() }, [listLayoutStates.selectedCategory])
@@ -991,7 +1021,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
     const handleUndoFollow = async (followedId: string) => {
         // delete element (member info) from the array
-        const arr: IConciseMemberInfoWithBriefIntroAndCreatedTimeBySecond[] = [...memberInfoArr];
+        const arr: IConciseMemberInfo[] = [...memberInfoArr];
         for (let i = 0; i < arr.length; i++) {
             if (followedId === arr[i].memberId) {
                 arr.splice(i, 1);
@@ -1075,7 +1105,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                                     </Box>
                                 )}
                                 {0 === memberInfoArr.length &&
-                                    <Box mt={{ xs: 3, sm: 2 }}>
+                                    <Box minHeight={200} mt={10}>
                                         {'followedbyme' === listLayoutStates.selectedCategory && <Typography color={'text.secondary'} align={'center'}>
                                             {viewerId === authorId ? langConfigs.noFollowingMemberInfoRecord[preferenceStates.lang] : langConfigs.authorNoFollowingMemberInfoRecord[preferenceStates.lang]}
                                         </Typography>}
@@ -1096,9 +1126,11 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
         )
     }
 
+
+
     ////////////////////////   Post Layout   ////////////////////////
     type TPostsLayoutStates = {
-        selectedCategoryId: 'mycreations' | 'savedposts' | 'browsinghistory';
+        selectedCategory: 'mycreations' | 'savedposts' | 'browsinghistory';
         selectedHotPosts: boolean;
         selectedChannelId: string;
         memorizeChannelBarPositionX: number | undefined;
@@ -1109,7 +1141,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
     //////// STATES - post layout ////////
     const [postLayoutStates, setPostLayoutStates] = React.useState<TPostsLayoutStates>({
-        selectedCategoryId: 'mycreations', // 'mycreations' | 'savedposts' | 'browsinghistory'
+        selectedCategory: 'mycreations', // 'mycreations' | 'savedposts' | 'browsinghistory'
         selectedHotPosts: false, // default
         selectedChannelId: 'all', // default
         memorizeChannelBarPositionX: undefined,
@@ -1119,17 +1151,13 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
     })
 
     const handleSelectPostCategory = (categoryId: 'mycreations' | 'savedposts' | 'browsinghistory') => (event: React.MouseEvent<HTMLButtonElement> | React.SyntheticEvent) => {
-        let states: TPostsLayoutStates = { ...postLayoutStates, selectedCategoryId: categoryId };
+        let states: TPostsLayoutStates = { ...postLayoutStates, selectedCategory: categoryId };
         // Step #1 update post layout states
         setPostLayoutStates(states);
         // Step #2 update post layout states cache
         updatePostsLayoutStatesCache(states);
         // Step #3 reset helper
         setBrowsingHelper({ ...browsingHelper, memorizeViewPortPositionY: undefined });
-    }
-
-    type TBehaviourStates = {
-        undoSaved: { [postId: string]: number }
     }
 
     //////// STATES - browsing helper ////////
@@ -1191,12 +1219,24 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
     }
 
     //////// STATES - (masonry) post info array ////////
-    const [masonryPostInfoArr, setMasonryPostInfoArr] = React.useState<IConcisePostComprehensiveWithMemberInfo[]>([]);
+    const [masonryPostInfoArr, setMasonryPostInfoArr] = React.useState<IConcisePostComprehensive[]>([]);
 
-    React.useEffect(() => { updatePostsArr() }, [postLayoutStates.selectedHotPosts, postLayoutStates.selectedChannelId, postLayoutStates.selectedCategoryId]);
+    React.useEffect(() => { updatePostsArr() }, [postLayoutStates.selectedHotPosts, postLayoutStates.selectedChannelId, postLayoutStates.selectedCategory]);
 
     const updatePostsArr = async () => {
-        const resp = await fetch(`/api/post/s/of${postLayoutStates.selectedHotPosts ? '/hot/24h' : '/new'}?channelId=${postLayoutStates.selectedChannelId}&withMemberInfo=true`);
+        let url = '';
+
+        if ('mycreations' === postLayoutStates.selectedCategory) {
+            url = `/api/creation/s/of/${authorId}`;
+        }
+        if ('savedposts' === postLayoutStates.selectedCategory) {
+            url = `/api/member/saved/${authorId}`;
+        }
+        if ('browsinghistory' === postLayoutStates.selectedCategory) {
+            url = `/api/member/browsinghistory/${authorId}`;
+        }
+
+        const resp = await fetch(`${url}?channelId=${postLayoutStates.selectedChannelId}&sort=${postLayoutStates.selectedHotPosts ? 'hot' : 'new'}`);
         if (200 === resp.status) {
             try {
                 setMasonryPostInfoArr(await resp.json());
@@ -1219,10 +1259,10 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                 setBrowsingHelper({ ...browsingHelper, memorizeViewPortPositionY: postLayoutStates.memorizeViewPortPositionY });
             }
             // Step #2 update process states and cache
-            let states1: TMemberPageProcessStates = { ...processStates, wasRedirected: false };
+            let states1: TMemberPageProcessStates = { ...processStates };
             setProcessStates({ ...states1 });
             updateProcessStatesCache(states1);
-            let states2: TPostsLayoutStates = { ...postLayoutStates, memorizeLastViewedPostId: undefined, memorizeViewPortPositionY: undefined };
+            let states2: TPostsLayoutStates = { ...postLayoutStates, memorizeLastViewedPostId: undefined, memorizeViewPortPositionY: undefined, wasRedirected: false };
             // Step #3 update post layout states and cache
             setPostLayoutStates({ ...states2 })
             updatePostsLayoutStatesCache(states2);
@@ -1249,13 +1289,12 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
         router.push(`/me/id/${memberId}`);
     }
 
-    const [behaviourStates, setBehaviourStates] = React.useState<TBehaviourStates>({
-        undoSaved: {}
-    })
+    ///////// STATES - behaviour /////////
+    const [undoSavedPostArr, setUndoSavedPostArr] = React.useState<string[]>([]);
 
     // Handle click on bottom-right icon button
-    const handleMultiProposeButtonClick = (categoryId: string, postId: string) => (event: React.MouseEvent<HTMLButtonElement>) => {
-        // edit post |  | 
+    const handleMultiProposeButtonClick = async (categoryId: string, postId: string) => {
+        // edit post 
         if ('mycreations' === categoryId) {
             router.push(`/me/editpost/${postId}`);
             return;
@@ -1264,14 +1303,17 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
         // undo save post
         if ('savedposts' === categoryId) {
             // Step #1 mark post of chice as 'undo-saved'
-            let update: { [postId: string]: number } = { ...behaviourStates.undoSaved };
-            if (update.hasOwnProperty(postId)) {
-                update[postId] = -1 * update[postId]
+            if (undoSavedPostArr.includes(postId)) {
+                const update = undoSavedPostArr.filter(id => postId !== id);
+                setUndoSavedPostArr([...update]);
             } else {
-                update[postId] = -1
+                setUndoSavedPostArr([...undoSavedPostArr, postId]);
             }
-            setBehaviourStates({ ...behaviourStates, undoSaved: { ...update } });
             // Step #2 request to delete record
+            const resp = await fetch(``);
+            if (200 !== resp.status) {
+                console.log('Attempt to undo/do save post');
+            }
         }
 
         // delete browsing history
@@ -1280,7 +1322,14 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
             const update = masonryPostInfoArr.filter(po => po.postId !== postId);
             setMasonryPostInfoArr([...update]);
             // Step #2 request to delete record
-
+            const resp = await fetch(`/api/member/browsinghistory/${authorId}`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ postId })
+            });
+            if (200 !== resp.status) {
+                console.log('Attempt to delete browsing history record');
+            }
         }
     }
 
@@ -1288,7 +1337,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
     type TSettingLayoutStates = {
         selectedSettingId: number;
-        blacklist: IConciseMemberInfoWithBriefIntroAndCreatedTimeBySecond[];
+        blacklist: IConciseMemberInfo[];
     }
 
     //////// STATES - setting layout ////////
@@ -2154,7 +2203,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
             const handleUndoBlock = async (blockedId: string) => {
                 // delete element (member info) from the array
-                const arr: IConciseMemberInfoWithBriefIntroAndCreatedTimeBySecond[] = [...settinglayoutStates.blacklist];
+                const arr: IConciseMemberInfo[] = [...settinglayoutStates.blacklist];
                 for (let i = 0; i < arr.length; i++) {
                     if (blockedId === arr[i].memberId) {
                         arr.splice(i, 1);
@@ -2199,12 +2248,9 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
                         </Box>
                     )}
-                    {0 === settinglayoutStates.blacklist.length &&
-                        <Box >
-                            <Box height={100}></Box>
-                            <Typography color={'text.secondary'} align={'center'}>{langConfigs.noRecordOfBlacklist[preferenceStates.lang]}</Typography>
-                        </Box>
-                    }
+                    {0 === settinglayoutStates.blacklist.length && <Box minHeight={200} mt={10}>
+                        <Typography color={'text.secondary'} align={'center'}>{langConfigs.noRecordOfBlacklist[preferenceStates.lang]}</Typography>
+                    </Box>}
                 </Stack>
             )
         }
@@ -2551,15 +2597,15 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                 <Grid item xs={0} sm={1} md={2} lg={2} xl={1}></Grid>
 
                 {/* //// left column //// */}
-                <Grid item xs={0} sm={0} md={2} lg={2} xl={2}>
-                    <Stack spacing={0} sx={{ marginX: 1, display: { xs: 'none', sm: 'none', md: 'block' } }} >
+                <Grid item xs={0} sm={0} md={2} lg={2} xl={2} sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'right' }}>
+                    <Stack spacing={0} sx={{ pr: 1, display: { xs: 'none', sm: 'none', md: 'block' } }} >
 
                         {/* my posts / saved posts / browsing history switch */}
                         <ResponsiveCard sx={{ padding: 1 }}>
                             <MenuList>
 
                                 {/* creations list item */}
-                                <MenuItem onClick={handleSelectPostCategory('mycreations')} selected={'mycreations' === postLayoutStates.selectedCategoryId}>
+                                <MenuItem onClick={handleSelectPostCategory('mycreations')} selected={'mycreations' === postLayoutStates.selectedCategory}>
                                     <ListItemIcon ><CreateIcon /></ListItemIcon>
                                     <ListItemText>
                                         <Typography>{memberComprehensive_ss.memberId === viewerId ? langConfigs.myCreations[preferenceStates.lang] : langConfigs.authorsCreations[preferenceStates.lang]}</Typography>
@@ -2567,7 +2613,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                                 </MenuItem>
 
                                 {/* saved post list item */}
-                                <MenuItem onClick={handleSelectPostCategory('savedposts')} selected={'savedposts' === postLayoutStates.selectedCategoryId}>
+                                <MenuItem onClick={handleSelectPostCategory('savedposts')} selected={'savedposts' === postLayoutStates.selectedCategory}>
                                     <ListItemIcon ><StarIcon /></ListItemIcon>
                                     <ListItemText>
                                         <Typography>{memberComprehensive_ss.memberId === viewerId ? langConfigs.mySavedPosts[preferenceStates.lang] : langConfigs.authorsSavedPosts[preferenceStates.lang]}</Typography>
@@ -2575,7 +2621,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                                 </MenuItem>
 
                                 {/* browsing history list item */}
-                                {'authenticated' === status && <MenuItem onClick={handleSelectPostCategory('browsinghistory')} selected={'browsinghistory' === postLayoutStates.selectedCategoryId}>
+                                {('authenticated' === status && authorId === viewerId) && <MenuItem onClick={handleSelectPostCategory('browsinghistory')} selected={'browsinghistory' === postLayoutStates.selectedCategory}>
                                     <ListItemIcon >
                                         <HistoryIcon />
                                     </ListItemIcon>
@@ -2619,15 +2665,15 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                             </MenuList>
                         </ResponsiveCard>
 
-                        {/* hotest / newest switch */}
-                        <ResponsiveCard sx={{ padding: 0, paddingY: 2, paddingLeft: 2 }}>
+                        {/* hotest / newest switch (*disabled since 24/02/2023) */}
+                        {/* <ResponsiveCard sx={{ padding: 0, paddingY: 2, paddingLeft: 2 }}>
                             <FormControlLabel
                                 control={<StyledSwitch sx={{ ml: 1 }} checked={postLayoutStates.selectedHotPosts} />}
                                 label={postLayoutStates.selectedHotPosts ? langConfigs.hotPosts[preferenceStates.lang] : langConfigs.newPosts[preferenceStates.lang]}
                                 onChange={handleSwitchChange}
                                 sx={{ marginRight: 0 }}
                             />
-                        </ResponsiveCard>
+                        </ResponsiveCard> */}
                     </Stack>
                 </Grid>
 
@@ -2638,19 +2684,19 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                     <Stack id={'channel-bar'} direction={'row'} spacing={1} sx={{ display: { sm: 'flex', md: 'none' }, padding: 1, overflow: 'auto' }}>
 
                         {/* creations button */}
-                        <Button variant={'mycreations' === postLayoutStates.selectedCategoryId ? 'contained' : 'outlined'} size='small' sx={{ minWidth: 'max-content' }} onClick={handleSelectPostCategory('mycreations')}>
-                            <Typography>{memberComprehensive_ss.memberId === viewerId ? langConfigs.myCreations[preferenceStates.lang] : langConfigs.authorsCreations[preferenceStates.lang]}</Typography>
+                        <Button variant={'mycreations' === postLayoutStates.selectedCategory ? 'contained' : 'outlined'} size='small' sx={{ minWidth: 'max-content' }} onClick={handleSelectPostCategory('mycreations')}>
+                            <Typography variant='body2'>{memberComprehensive_ss.memberId === viewerId ? langConfigs.myCreations[preferenceStates.lang] : langConfigs.authorsCreations[preferenceStates.lang]}</Typography>
                         </Button>
 
                         {/*  saved post button */}
-                        <Button variant={'savedposts' === postLayoutStates.selectedCategoryId ? 'contained' : 'outlined'} size='small' sx={{ minWidth: 'max-content' }} onClick={handleSelectPostCategory('savedposts')}>
+                        <Button variant={'savedposts' === postLayoutStates.selectedCategory ? 'contained' : 'outlined'} size='small' sx={{ minWidth: 'max-content' }} onClick={handleSelectPostCategory('savedposts')}>
                             <Typography variant='body2'>{langConfigs.mySavedPosts[preferenceStates.lang]}</Typography>
                         </Button>
 
                         {/* browsing history button */}
-                        <Button variant={'browsinghistory' === postLayoutStates.selectedCategoryId ? 'contained' : 'outlined'} size='small' sx={{ minWidth: 'max-content' }} onClick={handleSelectPostCategory('browsinghistory')}>
+                        {('authenticated' === status && authorId === viewerId) && <Button variant={'browsinghistory' === postLayoutStates.selectedCategory ? 'contained' : 'outlined'} size='small' sx={{ minWidth: 'max-content' }} onClick={handleSelectPostCategory('browsinghistory')}>
                             <Typography variant='body2'>{langConfigs.browsingHistory[preferenceStates.lang]}</Typography>
-                        </Button>
+                        </Button>}
 
                         {/* the 'all' button */}
                         <Button variant={'all' === postLayoutStates.selectedChannelId ? 'contained' : 'text'} size='small' onClick={handleChannelSelect('all')} >
@@ -2680,6 +2726,22 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                         )}
                     </Stack>
 
+                    {0 === masonryPostInfoArr.length &&
+                        <Box minHeight={200} mt={10}>
+                            {/* ('authenticated' === status && authorId === viewerId) */}
+                            {/* "mycreations" | "savedposts" | "browsinghistory" */}
+                            {'mycreations' === postLayoutStates.selectedCategory && <Typography color={'text.secondary'} align={'center'}>
+                                {viewerId === authorId ? langConfigs.noCreationsRecord[preferenceStates.lang] : langConfigs.authorNoCreationsRecord[preferenceStates.lang]}
+                            </Typography>}
+                            {'savedposts' === postLayoutStates.selectedCategory && <Typography color={'text.secondary'} align={'center'}>
+                                {viewerId === authorId ? langConfigs.noSavedPostsRecord[preferenceStates.lang] : langConfigs.authorNoSavedPostsRecord[preferenceStates.lang]}
+                            </Typography>}
+                            {'browsinghistory' === postLayoutStates.selectedCategory && <Typography color={'text.secondary'} align={'center'}>
+                                {langConfigs.noBrowsingHistoryRecord[preferenceStates.lang]}
+                            </Typography>}
+                        </Box>
+                    }
+
                     {/* mansoy */}
                     <Box ml={1} ref={masonryWrapper}>
                         <Masonry columns={{ xs: 2, sm: 3, md: 2, lg: 3, xl: 4 }}>
@@ -2691,7 +2753,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                                         {/* image */}
                                         <Box
                                             component={'img'}
-                                            src={info.imageUrlsArr[0]}
+                                            src={info?.imageUrlsArr[0]}
                                             sx={{
                                                 maxWidth: { xs: width / 2, sm: 300 },
                                                 maxHeight: 'max-content',
@@ -2729,10 +2791,10 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
                                                 {/* member behaviour / placeholder */}
                                                 {('authenticated' === status && viewerId === authorId) && <Grid item>
-                                                    <IconButton onClick={handleMultiProposeButtonClick(postLayoutStates.selectedCategoryId, info.postId)}>
-                                                        {'mycreations' === postLayoutStates.selectedCategoryId && <CreateIcon color={'inherit'} />}
-                                                        {'savedposts' === postLayoutStates.selectedCategoryId && <StarIcon color={'inherit'} />}
-                                                        {'browsinghistory' === postLayoutStates.selectedCategoryId && <DeleteIcon color={'inherit'} />}
+                                                    <IconButton sx={{ mt: 1 }} onClick={async () => { await handleMultiProposeButtonClick(postLayoutStates.selectedCategory, info.postId) }}>
+                                                        {'mycreations' === postLayoutStates.selectedCategory && <CreateIcon color={'inherit'} sx={{ fontSize: { xs: 20, sm: 24 } }} />}
+                                                        {'savedposts' === postLayoutStates.selectedCategory && <StarIcon color={undoSavedPostArr.includes(info.postId) ? 'inherit' : 'warning'} sx={{ fontSize: { xs: 20, sm: 24 } }} />}
+                                                        {'browsinghistory' === postLayoutStates.selectedCategory && <DeleteIcon color={'inherit'} sx={{ fontSize: { xs: 20, sm: 24 } }} />}
                                                     </IconButton>
                                                 </Grid>}
                                             </Grid>

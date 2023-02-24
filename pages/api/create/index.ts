@@ -3,24 +3,27 @@ import { RestError } from '@azure/data-tables';
 import { MongoError } from 'mongodb';
 import { getToken } from 'next-auth/jwt';
 
-import AzureTableClient from '../../../../modules/AzureTableClient';
-import AtlasDatabaseClient from '../../../../modules/AtlasDatabaseClient';
-import { logWithDate, response405, response500 } from '../../../../lib/utils/general';
-import { createId, createNoticeId, getRandomIdStr } from '../../../../lib/utils/create';
-import { IMemberComprehensive, IMemberStatistics } from '../../../../lib/interfaces/member';
-import { getTopicBase64StringsArrayFromRequestBody, provideTopicComprehensive } from '../../../../lib/utils/for/topic';
-import { getCuedMemberInfoArrayFromRequestBody, getImageUrlsArrayFromRequestBody, getParagraphsArrayFromRequestBody } from '../../../../lib/utils/for/post';
-import { IPostComprehensive } from '../../../../lib/interfaces/post';
-import { IChannelStatistics } from '../../../../lib/interfaces/channel';
-import { ITopicComprehensive, ITopicPostMapping } from '../../../../lib/interfaces/topic';
-import { INoticeInfo, INotificationStatistics } from '../../../../lib/interfaces/notification';
-import { getNicknameFromToken } from '../../../../lib/utils/for/member';
-
-const fname = CreatePost.name;
+import AzureTableClient from '../../../modules/AzureTableClient';
+import AtlasDatabaseClient from '../../../modules/AtlasDatabaseClient';
+import { logWithDate, response405, response500 } from '../../../lib/utils/general';
+import { createId, createNoticeId, getRandomIdStr } from '../../../lib/utils/create';
+import { IMemberComprehensive, IMemberStatistics } from '../../../lib/interfaces/member';
+import { getTopicBase64StringsArrayFromRequestBody, provideTopicComprehensive } from '../../../lib/utils/for/topic';
+import { getCuedMemberInfoArrayFromRequestBody, getImageUrlsArrayFromRequestBody, getParagraphsArrayFromRequestBody } from '../../../lib/utils/for/post';
+import { IPostComprehensive } from '../../../lib/interfaces/post';
+import { IChannelStatistics } from '../../../lib/interfaces/channel';
+import { ITopicComprehensive, ITopicPostMapping } from '../../../lib/interfaces/topic';
+import { INoticeInfo, INotificationStatistics } from '../../../lib/interfaces/notification';
+import { getNicknameFromToken } from '../../../lib/utils/for/member';
 
 const domain = process.env.NEXT_PUBLIC_APP_DOMAIN;
+const fname = CreatePost.name;
 
-/** This interface ONLY accepts POST method
+/** CreatePost v0.1.1 FIXME:
+ * 
+ * Last update: 
+ * 
+ * This interface ONLY accepts POST method
  * 
  * Post info required
  * - token: JWT
@@ -35,8 +38,8 @@ export default async function CreatePost(req: NextApiRequest, res: NextApiRespon
         return;
     }
 
-    // setTimeout(() => { res.send(createId('post')) }, 1000)
-    // return;
+    setTimeout(() => { res.send(createId('post')) }, 1000)
+    return;
 
 
     //// Verify identity ////

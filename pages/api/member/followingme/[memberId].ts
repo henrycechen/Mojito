@@ -8,7 +8,7 @@ import { logWithDate, response405, response500 } from '../../../../lib/utils/gen
 import { verifyId } from '../../../../lib/utils/verify';
 import AzureTableClient from '../../../../modules/AzureTableClient';
 import { IMemberMemberMapping } from '../../../../lib/interfaces/mapping';
-import { IConciseMemberInfoWithBriefIntroAndCreatedTimeBySecond, IMemberComprehensive } from '../../../../lib/interfaces/member';
+import { IConciseMemberInfo, IMemberComprehensive } from '../../../../lib/interfaces/member';
 
 const fname = GetMembersFollowingMe.name;
 
@@ -21,18 +21,20 @@ const fname = GetMembersFollowingMe.name;
  * Info required for GET requests
  * - memberId: string
  * 
+ * Info will be returned
+ * - arr: IConciseMemberInfo[]
 */
 
 export default async function GetMembersFollowingMe(req: NextApiRequest, res: NextApiResponse) {
+
+    res.send([]);
+    return;
 
     const { method } = req;
     if ('GET' !== method) {
         response405(req, res);
         return;
     }
-
-    res.send([]);
-    return;
 
     //// Verify identity ////
     const token = await getToken({ req });
@@ -44,7 +46,6 @@ export default async function GetMembersFollowingMe(req: NextApiRequest, res: Ne
 
     //// Verify id ////
     const { isValid, category, id: memberId } = verifyId(req.query?.memberId);
-
     if (!(isValid && 'member' === category)) {
         res.status(400).send('Invalid member id');
         return;
@@ -81,7 +82,7 @@ export default async function GetMembersFollowingMe(req: NextApiRequest, res: Ne
         const followingMemberMappingQuery = followingMemberMappingTableClient.listEntities<IMemberMemberMapping>({ queryOptions: { filter: `PartitionKey eq '${memberId}' and IsActive eq true` } });
         //// [!] attemp to reterieve entity makes the probability of causing RestError ////
         let followingMemberMappingQueryResult = await followingMemberMappingQuery.next();
-        const arr: IConciseMemberInfoWithBriefIntroAndCreatedTimeBySecond[] = [];
+        const arr: IConciseMemberInfo[] = [];
         while (!followingMemberMappingQueryResult.done) {
             arr.push({
                 memberId: followingMemberMappingQueryResult.value.rowKey,

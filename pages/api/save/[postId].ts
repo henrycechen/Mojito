@@ -3,35 +3,40 @@ import { RestError } from '@azure/data-tables';
 import { getToken } from "next-auth/jwt"
 import { MongoError } from 'mongodb';
 
-import AzureTableClient from '../../../../modules/AzureTableClient';
-import AtlasDatabaseClient from "../../../../modules/AtlasDatabaseClient";
+import AzureTableClient from '../../../modules/AzureTableClient';
+import AtlasDatabaseClient from "../../../modules/AtlasDatabaseClient";
 
-import { IMemberMemberMapping, IMemberPostMapping } from '../../../../lib/interfaces/mapping';
-import { logWithDate, response405, response500 } from '../../../../lib/utils/general';
-import { verifyId } from '../../../../lib/utils/verify';
-import { IMemberComprehensive, IMemberStatistics } from '../../../../lib/interfaces/member';
-import { IPostComprehensive } from '../../../../lib/interfaces/post';
-import { IChannelStatistics } from '../../../../lib/interfaces/channel';
-import { ITopicComprehensive } from '../../../../lib/interfaces/topic';
-import { INoticeInfo, INotificationStatistics } from '../../../../lib/interfaces/notification';
-import { createNoticeId } from '../../../../lib/utils/create';
-import { getNicknameFromToken } from '../../../../lib/utils/for/member';
+import { IMemberMemberMapping, IMemberPostMapping } from '../../../lib/interfaces/mapping';
+import { logWithDate, response405, response500 } from '../../../lib/utils/general';
+import { verifyId } from '../../../lib/utils/verify';
+import { IMemberComprehensive, IMemberStatistics } from '../../../lib/interfaces/member';
+import { IPostComprehensive } from '../../../lib/interfaces/post';
+import { IChannelStatistics } from '../../../lib/interfaces/channel';
+import { ITopicComprehensive } from '../../../lib/interfaces/topic';
+import { INoticeInfo, INotificationStatistics } from '../../../lib/interfaces/notification';
+import { createNoticeId } from '../../../lib/utils/create';
+import { getNicknameFromToken } from '../../../lib/utils/for/member';
 
 const fname = SaveOrUndoSavePostById.name;
 
-/** This interface accepts GET and POST method
+/** SaveOrUndoSavePostById v0.1.1
+ * 
+ * Last update: 24/02/2023
+ * 
+ * This interface ONLY accepts POST method
+ * 
  * Info required for POST request
  * - token: JWT
- * - postId: string
+ * - postId: string (query, member id)
  */
 
 export default async function SaveOrUndoSavePostById(req: NextApiRequest, res: NextApiResponse) {
+
     const { method } = req;
-    if (!['GET', 'POST'].includes(method ?? '')) {
+    if ('POST' !== method) {
         response405(req, res);
         return;
     }
-
 
     //// Verify identity ////
     const token = await getToken({ req });
@@ -39,17 +44,18 @@ export default async function SaveOrUndoSavePostById(req: NextApiRequest, res: N
         res.status(400).send('Invalid identity');
         return;
     }
+    const { sub: memberId } = token;
+
     //// Verify post id ////
     const { isValid, category, id: postId } = verifyId(req.query?.postId);
-    //// Verify post id ////
     if (!(isValid && 'post' === category)) {
         res.status(400).send('Invalid post id');
         return;
     }
+
     //// Declare DB client ////
     const atlasDbClient = AtlasDatabaseClient();
     try {
-        const { sub: memberId } = token;
         await atlasDbClient.connect()
         //// Verify member status ////
         const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');

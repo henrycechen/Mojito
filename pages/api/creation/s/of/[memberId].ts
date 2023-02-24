@@ -33,8 +33,11 @@ export default async function GetCreationsByMemberId(req: NextApiRequest, res: N
         {
             postId: 'P12345ABCD1',
             memberId: 'M1234ABCD',
+            nickname: 'WebMaster',
             createdTimeBySecond: 1674203401,
             title: '世界上只有一个周杰伦',
+            coverImageFullname: '',
+            imageFullnameArr: [],
             imageUrlsArr: ['https://media.uweekly.sg/wp-content/uploads/2022/12/20221217-cs-rotator.jpg'],
             totalHitCount: 1024,
             totalLikedCount: 24,
@@ -42,8 +45,11 @@ export default async function GetCreationsByMemberId(req: NextApiRequest, res: N
         {
             postId: 'P12345ABCD2',
             memberId: 'M1234ABCD',
+            nickname: 'WebMaster',
             createdTimeBySecond: 1674203508,
             title: '第一次看到头文字D的海报',
+            coverImageFullname: '',
+            imageFullnameArr: [],
             imageUrlsArr: ['https://upload.wikimedia.org/wikipedia/zh/f/f7/Initial_D_poster.jpg?20170330200904'],
             totalHitCount: 299,
             totalLikedCount: 2,
@@ -51,8 +57,11 @@ export default async function GetCreationsByMemberId(req: NextApiRequest, res: N
         {
             postId: 'P12345ABCD0',
             memberId: 'M1234ABCD',
+            nickname: 'WebMaster',
             createdTimeBySecond: 1674203260,
             title: '最喜欢的专辑是十一月的萧邦',
+            coverImageFullname: '',
+            imageFullnameArr: [],
             imageUrlsArr: ['https://upload.wikimedia.org/wikipedia/zh/9/93/Jay_chopin_cover270.jpg'],
             totalHitCount: 23,
             totalLikedCount: 0

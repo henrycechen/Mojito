@@ -67,6 +67,8 @@ export function fakeConciseMemberInfo(): IConciseMemberInfo {
     return {
         memberId: '',
         nickname: '',
+        briefIntro: '',
+        createdTimeBySecond: 1671484182
     }
 }
 
