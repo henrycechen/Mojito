@@ -26,25 +26,27 @@ const fname = GetMembersBlockedByMe.name;
  * 
 */
 
+const bb1 = [
+    {
+        memberId: 'M3380ACMB',
+        nickname: '測試一下名字',
+        createdTimeBySecond: 1675795871,
+    },
+    {
+        memberId: 'M3380ACMM',
+        nickname: '測試一下名字最長可以有多長',
+        createdTimeBySecond: 1675645871,
+    },
+    {
+        memberId: 'M3380ACMD',
+        nickname: '測試一下名字nggg可以有多長',
+        createdTimeBySecond: 1675145871,
+    }
+]
+
 export default async function GetMembersBlockedByMe(req: NextApiRequest, res: NextApiResponse) {
 
-    res.send([
-        {
-            memberId: 'M3380ACMB',
-            nickname: '測試一下名字',
-            createdTimeBySecond: 1675795871,
-        },
-        {
-            memberId: 'M3380ACMM',
-            nickname: '測試一下名字最長可以有多長',
-            createdTimeBySecond: 1675645871,
-        },
-        {
-            memberId: 'M3380ACMD',
-            nickname: '測試一下名字nggg可以有多長',
-            createdTimeBySecond: 1675145871,
-        }
-    ]);
+    res.send(bb1);
     return;
 
     const { method } = req;
@@ -105,7 +107,7 @@ export default async function GetMembersBlockedByMe(req: NextApiRequest, res: Ne
             arr.push({
                 memberId: blockingMemberMappingQueryResult.value.rowKey,
                 nickname: blockingMemberMappingQueryResult.value.Nickname,
-                briefIntro: '', // [!] this info is not supplied
+                briefIntro: '', // [!] brief intro is not supplied in this case
                 createdTimeBySecond: blockingMemberMappingQueryResult.value.CreatedTimeBySecond,
             })
             blockingMemberMappingQueryResult = await blockingMemberMappingQuery.next();

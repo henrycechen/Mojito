@@ -175,7 +175,7 @@ export default async function GetOrDeleteSavedPosts(req: NextApiRequest, res: Ne
                     nickname: savedMappingQueryResult.value.Nickname,
                     createdTimeBySecond: savedMappingQueryResult.value.CreatedTimeBySecond,
                     title: savedMappingQueryResult.value.Title,
-                    totalHitCount: 0, // [!] statistics is not supplied for saved posts
+                    totalHitCount: 0, // [!] statistics is not supplied in this case
                     totalLikedCount: 0,
                 });
                 savedMappingQueryResult = await savedMappingQuery.next();

@@ -9,7 +9,7 @@ export interface IPostComprehensive {
     title: string;
 
     // imageUrlsArr: string[]; // [!] depreacted
-    imageFullnameArr: string[];
+    imageFullnamesArr: string[];
 
     paragraphsArr: string[];
     cuedMemberInfoArr: IConciseMemberInfo[];
@@ -48,7 +48,7 @@ export interface IEditedPostComprehensive {
     editedTimeBySecond: number;
     titleBeforeEdit: string;
     // imageUrlsArrBeforeEdit: string[]; // [!] depreacted
-    imageFullnameArrBeforeEdit: string[];
+    imageFullnamesArrBeforeEdit: string[];
     paragraphsArrBeforeEdit: string[];
     cuedMemberInfoArrBeforeEdit: IConciseMemberInfo[];
     channelIdBeforeEdit: string;
@@ -66,7 +66,7 @@ export interface IRestrictedPostComprehensive {
     title: string;
 
     // imageUrlsArr: string[]; // [!] depreacted
-    imageFullnameArr: string[];
+    imageFullnamesArr: string[];
 
     paragraphsArr: string[];
     cuedMemberInfoArr: IConciseMemberInfo[];

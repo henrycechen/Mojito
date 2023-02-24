@@ -19,14 +19,14 @@ export function provideCoverImageUrl(postId: string, domain: string, forceBrowse
     }
 }
 
-export function getImageUrlsArrayFromRequestBody(requestBody: any): string[] {
+export function getImageFullnamesArrayFromRequestBody(requestBody: any): string[] {
     if ('object' !== typeof requestBody) {
         return [];
     }
-    if (!(undefined !== requestBody['imageUrlsArr'] && Array.isArray(requestBody['imageUrlsArr']))) {
+    if (!(undefined !== requestBody['imageFullNamesArr'] && Array.isArray(requestBody['imageFullNamesArr']))) {
         return [];
     }
-    return Array.prototype.filter.call([...requestBody['imageUrlsArr']], (imageUrl) => verifyUrl(imageUrl))
+    return Array.prototype.filter.call([...requestBody['imageFullNamesArr']], (imageUrl) => verifyUrl(imageUrl))
 }
 
 export function getParagraphsArrayFromRequestBody(requestBody: any): string[] {
@@ -50,26 +50,25 @@ export function getCuedMemberInfoArrayFromRequestBody(requestBody: any): IConcis
 }
 
 type PostComprehensiveUpdate = {
-    //// info ////
     title: string;
-    imageUrlsArr: string[];
+    imageFullNamesArr: string[];
     paragraphsArr: string[];
     cuedMemberInfoArr: IConciseMemberInfo[];
     channelId: string;
     topicIdsArr: string[];
-    //// management ////
+
     status: 201;
-    //// statistics ////
+    
     totalLikedCount: 0; // reset liked and disliked count
     totalUndoLikedCount: 0; // reset undo liked and undo disliked count
     totalDislikedCount: 0;
     totalUndoDislikedCount: 0;
 }
 
-export function providePostComprehensiveUpdate(title: string, imageUrlsArr: string[], paragraphsArr: string[], cuedMemberInfoArr: IConciseMemberInfo[], channelId: string, topicIdsArr: string[]): PostComprehensiveUpdate {
+export function providePostComprehensiveUpdate(title: string, imageFullNamesArr: string[], paragraphsArr: string[], cuedMemberInfoArr: IConciseMemberInfo[], channelId: string, topicIdsArr: string[]): PostComprehensiveUpdate {
     const updated: PostComprehensiveUpdate = {
         title,
-        imageUrlsArr,
+        imageFullNamesArr,
         paragraphsArr,
         cuedMemberInfoArr,
         channelId,
@@ -85,9 +84,9 @@ export function providePostComprehensiveUpdate(title: string, imageUrlsArr: stri
 
 export function provideEditedPostInfo(postComprehensive: IPostComprehensive): IEditedPostComprehensive {
     return {
-        editedTime: new Date().getTime(),
+        editedTimeBySecond: new Date().getTime(),
         titleBeforeEdit: postComprehensive.title,
-        imageFullnameArrBeforeEdit: [...postComprehensive.imageFullnameArr],
+        imageFullnamesArrBeforeEdit: [...postComprehensive.imageFullnamesArr],
         paragraphsArrBeforeEdit: [...postComprehensive.paragraphsArr],
         cuedMemberInfoArrBeforeEdit: [...postComprehensive.cuedMemberInfoArr],
         channelIdBeforeEdit: postComprehensive.channelId,
@@ -106,7 +105,7 @@ export function getRestrictedFromPostComprehensive(postComprehensive: IPostCompr
         memberId: postComprehensive.memberId,
         createdTimeBySecond: postComprehensive.createdTimeBySecond,
         title: '',
-        imageFullnameArr: [],
+        imageFullnamesArr: [],
         paragraphsArr: [],
         cuedMemberInfoArr: [],
         channelId: postComprehensive.channelId,
@@ -131,7 +130,7 @@ export function getRestrictedFromPostComprehensive(postComprehensive: IPostCompr
     }
 
     restricted.title = postComprehensive.title;
-    restricted.imageFullnameArr.push(...postComprehensive.imageFullnameArr);
+    restricted.imageFullnamesArr.push(...postComprehensive.imageFullnamesArr);
     restricted.paragraphsArr.push(...postComprehensive.paragraphsArr);
     restricted.cuedMemberInfoArr.push(...postComprehensive.cuedMemberInfoArr);
     restricted.topicIdsArr.push(...postComprehensive.topicIdsArr);
@@ -153,7 +152,7 @@ export function fakeRestrictedPostComprehensive(): IRestrictedPostComprehensive 
         memberId: '',
         createdTimeBySecond: 0,
         title: '',
-        imageFullnameArr: [],
+        imageFullnamesArr: [],
         paragraphsArr: [],
         cuedMemberInfoArr: [],
         channelId: '',

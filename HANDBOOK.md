@@ -496,7 +496,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
     _id: string; // mongodb obejct id
     
     memberId: string;    
- 	createdTime: number; // created time of this document (member statistics snapshot)
+ 	createdTimeBySecond: number; // created time of this document (member statistics snapshot)
     memberStatisticsObj: { [key: timeStr]: MemberStatistics }
 }
 ```
@@ -587,7 +587,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
     parentId: string; // post or comment id
     postId: string;
     memberId: string;
-    createdTime: number; // created time of this document (comment est.)
+    createdTimeBySecond: number; // created time of this document (comment est.)
     content: string;
     cuedMemberComprehensivesArr: ICuedMemberComprehensive[];
     
@@ -640,7 +640,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
     commentId: string; //12 ~ 13 characters, UPPERCASE, comment id begin with 'C', subcomment id begin with 'D'
     postId: string;
     memberId: string;
-    createdTime: number; // created time of this document (comment est.)
+    createdTimeBySecond: number; // created time of this document (comment est.)
     content: string | null;
 
     //// management ////
@@ -677,7 +677,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
     
     //// info ////
     channelId: string; // pre-defined channel id
-    createdTime: number;
+    createdTimeBySecond: number;
     
     //// total statistics ////
     totalHitCount: number;
@@ -703,7 +703,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
     
     //// info ////
     channelId: string;
-    createdTime: number; // created time of this document (channel statistics snapshot)
+    createdTimeBySecond: number; // created time of this document (channel statistics snapshot)
     channelStatisticsObj: { [key: timeStr]: ChannelStatistics }
 }
 ```
@@ -732,7 +732,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
     //// info ////
     topicId: string; // base64 string from topic content string，content string length no longer than 10
     channelId: string;
-    createdTime: number; // create time of this document (topic est.)
+    createdTimeBySecond: number; // create time of this document (topic est.)
     
     //// management ////
     status: number;
@@ -790,7 +790,7 @@ const { topicIdsArr } = postComprehensiveQueryResult;
  	_id: string; // mongodb obejct id
     
     topicId: string;    
- 	createdTime: number; // created time of this document (topic statistics snapshot)
+ 	createdTimeBySecond: number; // created time of this document (topic statistics snapshot)
     topicStatisticsObj: { [key: timeStr]: TopicStatistics }
 }
 ```
@@ -816,7 +816,7 @@ const { topicIdsArr } = postComprehensiveQueryResult;
     topicId: string;
     postId: string;
     channelId: string;
-    createdTime: number; // created time of this document (post est. time)
+    createdTimeBySecond: number; // created time of this document (post est. time)
     
     //// management ////
     status: number;
@@ -882,7 +882,7 @@ const { topicIdsArr } = postComprehensiveQueryResult;
     //// info ////
     postId: string; // 10 ~ 11 characters, UPPERCASE, begin with 'P'
     memberId: string;
-    createdTime: number; // created time of this document (post est.)
+    createdTimeBySecond: number; // created time of this document (post est.)
     title: string;
     imageNamesArr: string[];
 	paragraphsArr: string[];
@@ -935,7 +935,7 @@ const { topicIdsArr } = postComprehensiveQueryResult;
     //// info ////
     postId: string; // 10 characters, UPPERCASE
     memberId: string;
-    createdTime: number; // created time of this document (post est.)
+    createdTimeBySecond: number; // created time of this document (post est.)
     title: string | null;
     imageUrlsArr: string[];
     paragraphsArr: string[];
@@ -979,7 +979,7 @@ const { topicIdsArr } = postComprehensiveQueryResult;
      _id: string; // mongodb obejct id
     
     postId: string;    
- 	createdTime: number; // created time of this document (post statistics snapshot)
+ 	createdTimeBySecond: number; // created time of this document (post statistics snapshot)
     postStatisticsObj: { [key: timeStr]: PostStatistics }
 }
 ```
@@ -1064,7 +1064,7 @@ const { topicIdsArr } = postComprehensiveQueryResult;
     initiateId: string;
     referenceId: string; // post or comment id
     memberId: string;
-    createdTime: number; // created time of this document (post est.)
+    createdTimeBySecond: number; // created time of this document (post est.)
     
     category: number; // 1 ~ 6
 

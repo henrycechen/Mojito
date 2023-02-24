@@ -9,7 +9,7 @@ import { logWithDate, response405, response500 } from '../../../lib/utils/genera
 import { createId, createNoticeId, getRandomIdStr } from '../../../lib/utils/create';
 import { IMemberComprehensive, IMemberStatistics } from '../../../lib/interfaces/member';
 import { getTopicBase64StringsArrayFromRequestBody, provideTopicComprehensive } from '../../../lib/utils/for/topic';
-import { getCuedMemberInfoArrayFromRequestBody, getImageUrlsArrayFromRequestBody, getParagraphsArrayFromRequestBody } from '../../../lib/utils/for/post';
+import { getCuedMemberInfoArrayFromRequestBody, getImageFullnamesArrayFromRequestBody, getParagraphsArrayFromRequestBody } from '../../../lib/utils/for/post';
 import { IPostComprehensive } from '../../../lib/interfaces/post';
 import { IChannelStatistics } from '../../../lib/interfaces/channel';
 import { ITopicComprehensive, ITopicPostMapping } from '../../../lib/interfaces/topic';
@@ -104,7 +104,7 @@ export default async function CreatePost(req: NextApiRequest, res: NextApiRespon
             memberId,
             createdTimeBySecond: Math.floor(new Date().getTime() / 1000),
             title, // required
-            imageUrlsArr: getImageUrlsArrayFromRequestBody(req.body),
+            imageUrlsArr: getImageFullnamesArrayFromRequestBody(req.body),
             paragraphsArr: getParagraphsArrayFromRequestBody(req.body),
             cuedMemberInfoArr: cuedMemberInfoArr,
             channelId, // required

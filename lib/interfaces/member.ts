@@ -61,6 +61,13 @@ export interface IRestrictedMemberComprehensive {
     hidePostsAndCommentsOfBlockedMember: boolean;
 }
 
+/**
+ * @property memberId: string;
+ * @property nickname: string;
+ * @property briefIntro: string;
+ * @property createdTimeBySecond: number;
+ */
+
 export interface IConciseMemberInfo {
     memberId: string;
     nickname: string;
