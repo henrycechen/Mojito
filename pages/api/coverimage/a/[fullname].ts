@@ -3,17 +3,19 @@ import { response405 } from '../../../../lib/utils/general';
 import AzureBlobClient from '../../../../modules/AzureBlobClient';
 
 
-/** GetAvatarImageByFullName v0.1.2 (FIXME: Test mode)
+/** GetAvatarImageByFullame v0.1.2 (FIXME: Test mode)
  *  
  * Last update 15/02/2023
  * 
  * This interface ONLY accepts GET requests
  * 
- * No info required for this API
+ * Info required for GET requests
+ * - fullname: string (query)
  */
-const fname = GetAvatarImageByFullName.name;
 
-export default async function GetAvatarImageByFullName(req: NextApiRequest, res: NextApiResponse) {
+const fname = GetAvatarImageByFullame.name;
+
+export default async function GetAvatarImageByFullame(req: NextApiRequest, res: NextApiResponse) {
     const { method } = req;
     if ('GET' !== method) {
         response405(req, res);

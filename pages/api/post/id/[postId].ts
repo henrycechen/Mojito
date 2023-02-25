@@ -29,12 +29,16 @@ const fname = GetRestrictedPostComprehensiveById.name;
 
 const ifo = {
     postId: 'P1234ABCD',
-    memberId: 'M1234ABCD',
+    memberId: 'M1234XXXX',
     createdTimeBySecond: 1673389239,
     title: '《周杰倫的床邊故事》',
-    imageUrlsArr: [
-        'https://img3.chinadaily.com.cn/images/202008/24/5f431dc9a310a85979164989.jpeg',
-        'https://upload.wikimedia.org/wikipedia/zh/b/b2/JayChouBedtimeStories-2016_Cover.jpg'
+    // imageUrlsArr: [
+    //     'https://img3.chinadaily.com.cn/images/202008/24/5f431dc9a310a85979164989.jpeg',
+    //     'https://upload.wikimedia.org/wikipedia/zh/b/b2/JayChouBedtimeStories-2016_Cover.jpg'
+    // ],
+    imageFullnamesArr: [
+        '1234.jpg',
+        '2345.jpg',
     ],
     paragraphsArr: [
         `《周杰倫的床邊故事》(英語：Jay Chou's Bedtime Stories)是臺灣男歌手周杰倫的第14張錄音室專輯，2016年6月8日开始预购，6月24日正式發行[2][3]。`,

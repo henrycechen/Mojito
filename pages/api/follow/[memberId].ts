@@ -162,16 +162,20 @@ export default async function FollowOrUndoFollowMemberById(req: NextApiRequest, 
             const blockingMemberMappingQuery = blockingMemberMappingTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${objectId}' and RowKey eq '${memberId}'` } });
             if ((await blockingMemberMappingQuery.next()).done) {
                 //// [!] member expressed attitude has not been blocked by object member ////
-                // Step #2.4 upsert record (of INoticeInfo.Follow) in [PRL] Notice
+                // Step #2B.4 upsert record (of INoticeInfo.Follow) in [PRL] Notice
                 const noticeTableClient = AzureTableClient('Notice');
                 await noticeTableClient.upsertEntity<INoticeInfo>({
                     partitionKey: objectId, // notified member id, in this case, member having been followed by
                     rowKey: createNoticeId('follow', memberId), // combined id
                     Category: 'follow',
                     InitiateId: memberId,
-                    Nickname: getNicknameFromToken(token)
+                    Nickname: getNicknameFromToken(token),
+                    PostTitle: '', // [!] post title is not supplied in this case
+                    CommentBrief: '', // [!] comment brief is not supplied in this case
+                    CreatedTimeBySecond: Math.floor(new Date().getTime() / 1000),
+                    IsActive: true
                 }, 'Replace');
-                // Step #2.5 update follow (of INotificationStatistics, of the member having been followed by) in [C] notificationStatistics
+                // Step #2B.5 update follow (of INotificationStatistics, of the member having been followed by) in [C] notificationStatistics
                 const notificationStatisticsCollectionClient = atlasDbClient.db('statistics').collection<INotificationStatistics>('notification');
                 const notificationStatisticsUpdateResult = await notificationStatisticsCollectionClient.updateOne({ memberId: objectId }, { $inc: { follow: 1 } });
                 if (!notificationStatisticsUpdateResult.acknowledged) {

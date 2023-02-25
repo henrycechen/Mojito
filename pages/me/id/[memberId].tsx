@@ -59,7 +59,6 @@ import ListItemText from '@mui/material/ListItemText';
 import ListItemIcon from '@mui/material/ListItemIcon';
 
 
-import { useTheme } from '@emotion/react';
 import { useRouter } from 'next/router';
 
 import Navbar from '../../../ui/Navbar';
@@ -71,7 +70,7 @@ import { IChannelInfoStates, IChannelInfoDictionary } from '../../../lib/interfa
 
 import { TBrowsingHelper, LangConfigs, TPreferenceStates } from '../../../lib/types';
 
-import { timeToString, getContentBrief, updateLocalStorage, provideLocalStorage, restoreFromLocalStorage } from '../../../lib/utils/general';
+import { timeToString, getContentBrief, updateLocalStorage, provideLocalStorage, restoreFromLocalStorage, logWithDate } from '../../../lib/utils/general';
 import { verifyId, verifyNoticeId, verifyPassword } from '../../../lib/utils/verify';
 import { provideAvatarImageUrl, getNicknameBrief, fakeConciseMemberInfo, fakeConciseMemberStatistics, fakeRestrictedMemberInfo } from '../../../lib/utils/for/member';
 import { noticeIdToUrl, noticeInfoToString } from '../../../lib/utils/for/notification';
@@ -94,6 +93,7 @@ import TableRow from '@mui/material/TableRow';
 import TableCell from '@mui/material/TableCell';
 
 import { createTheme, responsiveFontSizes, styled, ThemeProvider } from '@mui/material/styles';
+import { provideCoverImageUrl } from '../../../lib/utils/for/post';
 
 const storageName0 = 'PreferenceStates';
 const updatePreferenceStatesCache = updateLocalStorage(storageName0);
@@ -112,6 +112,7 @@ type TMemberPageProps = {
     memberInfo_ss: IRestrictedMemberComprehensive;
     memberStatistics_ss: IConciseMemberStatistics;
     redirect404: boolean;
+    redirect500: boolean;
 }
 
 type TMemberPageProcessStates = {
@@ -568,8 +569,8 @@ const langConfigs: LangConfigs = {
         en: 'Blacklist'
     },
     noRecordOfBlacklist: {
-        tw: '您還沒有屏蔽其他任何用戶',
-        cn: '您还没有拉黑任何用户',
+        tw: '您還沒有屏蔽任何用戶',
+        cn: '您还没有屏蔽任何用户',
         en: 'You have not blocked any members'
     },
     undoBlock: {
@@ -672,6 +673,7 @@ theme = responsiveFontSizes(theme);
 export async function getServerSideProps(context: NextPageContext): Promise<{ props: TMemberPageProps }> {
     const { memberId } = context.query;
     const { isValid, category } = verifyId(memberId);
+
     // Verify member id
     if (!(isValid && 'member' === category)) {
         return {
@@ -679,50 +681,72 @@ export async function getServerSideProps(context: NextPageContext): Promise<{ pr
                 channelInfoDict_ss: {},
                 memberInfo_ss: fakeRestrictedMemberInfo(),
                 memberStatistics_ss: fakeConciseMemberStatistics(),
-                redirect404: true
+                redirect404: true,
+                redirect500: false,
             }
         }
     }
-    // GET channel info by id
-    const dictionary_resp = await fetch(`${domain}/api/channel/info/dictionary`);
-    if (200 !== dictionary_resp.status) {
-        throw new Error('Attempt to GET channel info dictionary');
-    }
-    const channelInfoDict_ss = await dictionary_resp.json();
-    // GET member info by id
-    const info_resp = await fetch(`${domain}/api/member/info/${memberId}`);
-    if (200 !== info_resp.status) {
-        throw new Error('Attempt to GET member info');
-    }
-    const memberInfo_ss = await info_resp.json();
-    // GET member statistics by id
-    const statistics_resp = await fetch(`${domain}/api/member/statistics/${memberId}`);
-    if (200 !== statistics_resp.status) {
-        throw new Error('Attempt to GET member statistics');
-    }
-    const memberStatistics_ss = await statistics_resp.json();
-    return {
-        props: {
-            channelInfoDict_ss,
-            memberInfo_ss,
-            memberStatistics_ss,
-            redirect404: false
+
+    try {
+        // GET channel info by id
+        const dictionary_resp = await fetch(`${domain}/api/channel/info/dictionary`);
+        if (200 !== dictionary_resp.status) {
+            throw new Error('Attempt to GET channel info dictionary');
+        }
+        const channelInfoDict_ss = await dictionary_resp.json();
+
+        // GET member info by id
+        const info_resp = await fetch(`${domain}/api/member/info/${memberId}`);
+        if (200 !== info_resp.status) {
+            throw new Error('Attempt to GET member info');
+        }
+        const memberInfo_ss = await info_resp.json();
+
+        // GET member statistics by id
+        const statistics_resp = await fetch(`${domain}/api/member/statistics/${memberId}`);
+        if (200 !== statistics_resp.status) {
+            throw new Error('Attempt to GET member statistics');
+        }
+        const memberStatistics_ss = await statistics_resp.json();
+
+        return {
+            props: {
+                channelInfoDict_ss,
+                memberInfo_ss,
+                memberStatistics_ss,
+                redirect404: false,
+                redirect500: false
+            }
+        }
+    } catch (e: any) {
+        logWithDate(e?.msg, '/pages/me/[memberId].getServerSideProps', e);
+        return {
+            props: {
+                channelInfoDict_ss: {},
+                memberInfo_ss: fakeRestrictedMemberInfo(),
+                memberStatistics_ss: fakeConciseMemberStatistics(),
+                redirect404: false,
+                redirect500: true,
+            }
         }
     }
 }
 
-const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, memberStatistics_ss, redirect404 }: TMemberPageProps) => {
+const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, memberStatistics_ss, redirect404, redirect500 }: TMemberPageProps) => {
 
     const router = useRouter();
     React.useEffect(() => {
         if (redirect404) {
             router.push('/404');
         }
+        if (redirect500) {
+            router.push('/500');
+        }
     }, [])
 
     const { data: session, status } = useSession();
 
-    //////// INFO - viewer //////// (conditional.)
+    //////// INFO - viewer //////// (Cond.)
     let viewerId = '';
     if ('authenticated' === status) {
         const viewerSession: any = { ...session };
@@ -1230,7 +1254,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
             url = `/api/creation/s/of/${authorId}`;
         }
         if ('savedposts' === postLayoutStates.selectedCategory) {
-            url = `/api/member/saved/${authorId}`;
+            url = `/api/member/savedposts/${authorId}`;
         }
         if ('browsinghistory' === postLayoutStates.selectedCategory) {
             url = `/api/member/browsinghistory/${authorId}`;
@@ -2753,7 +2777,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                                         {/* image */}
                                         <Box
                                             component={'img'}
-                                            src={info?.imageUrlsArr[0]}
+                                            src={provideCoverImageUrl(info.postId, domain)}
                                             sx={{
                                                 maxWidth: { xs: width / 2, sm: 300 },
                                                 maxHeight: 'max-content',

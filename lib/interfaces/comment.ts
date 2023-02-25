@@ -11,7 +11,9 @@ export interface ICommentComprehensive {
     parentId: string; //  post id (comment entities) or comment id (subcomment entities)
     postId: string;
     memberId: string;
-    createdTime: number; // created time of this document
+    nickname: string;
+
+    createdTimeBySecond: number; // created time of this document
     content: string;
     cuedMemberInfoArr: IConciseMemberInfo[];
 
@@ -32,10 +34,9 @@ export interface ICommentComprehensive {
 }
 
 export interface IEditedCommentComprehensive {
-    editedTime: number;
+    editedTimeBySecond: number;
     contentBeforeEdit: string;
     cuedMemberInfoArrBeforeEdit: IConciseMemberInfo[];
-    //// Statistics ////
     totalLikedCountBeforeEdit: number;
     totalDislikedCountBeforeEdit: number;
     totalSubcommentCountBeforeEdit?: number;
@@ -46,30 +47,9 @@ export interface IRestrictedCommentComprehensive {
     commentId: string; //12 ~ 13 characters, UPPERCASE, comment id begin with 'C', subcomment id begin with 'D'
     postId: string;
     memberId: string;
-    createdTime: number; // created time of this document
-    content: string;
-    cuedMemberInfoArr: IConciseMemberInfo[];
-
-    //// management ////
-    status: number;
-
-    //// statistics ////
-    totalLikedCount: number;
-    totalDislikedCount: number;
-    totalSubcommentCount: number; // -1 for parent comments
-
-    //// edit info ////
-    editedTime?: number;
-}
-
-export interface IRestrictedCommentComprehensiveWithMemberInfo {
-    //// info ////
-    commentId: string; //12 ~ 13 characters, UPPERCASE, comment id begin with 'C', subcomment id begin with 'D'
-    postId: string;
-    memberId: string;
     nickname: string;
-    avatarImageFullName: string;
-    createdTime: number; // created time of this document
+
+    createdTimeBySecond: number; // created time of this document
     content: string;
     cuedMemberInfoArr: IConciseMemberInfo[];
 
@@ -82,5 +62,5 @@ export interface IRestrictedCommentComprehensiveWithMemberInfo {
     totalSubcommentCount: number; // -1 for parent comments
 
     //// edit info ////
-    editedTime?: number;
+    editedTimeBySecond: number;
 }

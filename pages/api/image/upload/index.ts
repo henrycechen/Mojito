@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { getToken } from 'next-auth/jwt';
 import busboy from 'busboy';
 
-import AzureBlobClient from '../../../modules/AzureBlobClient';
+import AzureBlobClient from '../../../../modules/AzureBlobClient';
 
 import { response405, response500 } from '../../../lib/utils';
 import { getRandomIdStr } from '../../../lib/utils';

@@ -18,6 +18,13 @@ export function provideCoverImageUrl(postId: string, domain: string, forceBrowse
         return `${domain}/api/coverimage/a/${postId}.png`;
     }
 }
+export function provideImageUrl(fullname: string, domain: string, forceBrowserUpdate = false): string {
+    if (forceBrowserUpdate) {
+        return `${domain}/api/image/a/${fullname}?variant=${getRandomHexStr()}`;
+    } else {
+        return `${domain}/api/image/a/${fullname}`;
+    }
+}
 
 export function getImageFullnamesArrayFromRequestBody(requestBody: any): string[] {
     if ('object' !== typeof requestBody) {

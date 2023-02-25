@@ -19,10 +19,11 @@ import { INoticeInfo, INotificationStatistics } from '../../../../../lib/interfa
 import { createNoticeId } from '../../../../../lib/utils/create';
 import { getNicknameFromToken } from '../../../../../lib/utils/for/member';
 
-
 const fname = GetOrPostAttitudeOnPostOrCommentById.name;
 
 /** GetOrPostAttitudeOnPostOrCommentById v0.1.1 FIXME: test mode
+ * 
+ * Last update: 26/02/2023
  * 
  * This interface accepts GET and POST requests
  * 
@@ -37,6 +38,13 @@ const fname = GetOrPostAttitudeOnPostOrCommentById.name;
  * - id: string (query, post or comment id)
  * - attitude: number (body)
  * 
+ * 
+ * Concern about performance: 26/02/2023
+ * - There're 4 big 'if' blocks to fulfill the do/undo requests
+ * - Always want to abstract the 4 blocks into a smaller 'if/else' block
+ * - But there're only 2 (in 6) situations that will go through 2 'if' blocks
+ * - Other 4 situations will only go through 1 'if' block, which is not affecting the performance much
+ * - Hence the current solution
  */
 
 export default async function GetOrPostAttitudeOnPostOrCommentById(req: NextApiRequest, res: NextApiResponse) {
@@ -46,23 +54,21 @@ export default async function GetOrPostAttitudeOnPostOrCommentById(req: NextApiR
         return;
     }
 
+    // FIXME:FIXME:FIXME:FIXME:FIXME:FIXME:FIXME:
+    if ('GET' === method) {
+        res.send({
+            attitude: 1,
+            commentAttitudeMapping: {
+                C12345ABCDE: -1,
+                D12345ABCDF: 1
+            },
+        })
 
-
-
-    // FIXME: test
-    res.send({
-        attitude: 1,
-        commentAttitudeMapping: {
-            C12345ABCDE: -1,
-            D12345ABCDF: 1
-        },
-    })
+    }
+    if ('POST' === method) {
+        res.send('ok')
+    }
     return;
-
-
-
-
-
 
     //// Verify identity ////
     const token = await getToken({ req });
@@ -70,17 +76,20 @@ export default async function GetOrPostAttitudeOnPostOrCommentById(req: NextApiR
         res.status(400).send('Invalid identity');
         return;
     }
-    const { isValid, category, id } = verifyId(req.query?.id);
+    const { sub: memberId } = token;
+
     //// Verify id ////
+    const { isValid, category, id } = verifyId(req.query?.id);
     if (!isValid) {
         res.status(400).send('Invalid post or comment id');
         return;
     }
+
     //// Declare DB client ////
     const atlasDbClient = AtlasDatabaseClient();
     try {
-        const { sub: memberId } = token;
         await atlasDbClient.connect();
+
         //// Verify member status ////
         const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
         const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne({ memberId });
@@ -93,6 +102,7 @@ export default async function GetOrPostAttitudeOnPostOrCommentById(req: NextApiR
             await atlasDbClient.close();
             return;
         }
+
         //// GET | attitude mapping ////
         if ('GET' === method) {
             if ('post' !== category) {
@@ -102,45 +112,55 @@ export default async function GetOrPostAttitudeOnPostOrCommentById(req: NextApiR
             await atlasDbClient.connect();
             const attitudeComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IAttitudeComprehensive>('attitude');
             const attitudeComprehensiveQueryResult = await attitudeComprehensiveCollectionClient.findOne({ memberId, postId: id });
+
+            //// Response 200 ////
             res.status(200).send(getMappingFromAttitudeComprehensive(attitudeComprehensiveQueryResult));
             await atlasDbClient.close();
             return;
         }
+
         //// Verify attitude ////
         const { attitude } = req.body;
         if (!('number' === typeof attitude && [-1, 0, 1].includes(attitude))) {
             res.status(400).send('Improper or null attitude value');
             return;
         }
+
         //// POST | express attitude ////
         if ('POST' === method) {
-            // Step #1.1 declare post id
+
             let postId = id;
-            // Step #1.2 declare notified member id
+            let postTitle = '';
             let notifiedMemberId = '';
-            // Step #2 verify status
+            let commentBrief = '';
+
             const commentComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<ICommentComprehensive>('comment');
+
+            // Step #1 verify entity id
             if (['comment', 'subcomment'].includes(category)) {
-                // Step #2.3 (cond.) look up document (of ICommentComprehensive) in [C] commentComprehensive
+                // Step #1.1 (cond.) look up document (of ICommentComprehensive) in [C] commentComprehensive
                 const commentComprehensiveQueryResult = await commentComprehensiveCollectionClient.findOne({ commentId: id });
                 if (null === commentComprehensiveQueryResult) {
                     res.status(404).send('Comment not found');
                     await atlasDbClient.close();
                     return;
                 }
-                // Step #2.4 (cond.) verify comment status (of ICommentComprehensive)
+                // Step #1.2 (cond.) verify comment status (of ICommentComprehensive)
                 const { status: commentStatus } = commentComprehensiveQueryResult;
                 if (0 > commentStatus) {
                     res.status(403).send('Method not allowed due to comment deleted');
                     await atlasDbClient.close();
                     return;
                 }
-                // Step #2.5 (cond.) assign post id
+                // Step #1.3 (cond.) assign post id
                 postId = commentComprehensiveQueryResult.postId;
-                // Step #2.6 (cond.) asign notified member id (with comment author id)
+                // Step #1.4 (cond.) asign notified member id (comment author id)
                 notifiedMemberId = commentComprehensiveQueryResult.memberId;
+                // Step #1.5 (cond.) prepare comment content brief
+                commentBrief = getContentBrief(commentComprehensiveQueryResult.content);
             }
-            // Step #2.1 look up document (of IPostComprehensive) in [C] postComprehensive
+
+            // Step #2 verify post status
             const postComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IPostComprehensive>('post');
             const postComprehensiveQueryResult = await postComprehensiveCollectionClient.findOne({ postId });
             if (null === postComprehensiveQueryResult) {
@@ -148,175 +168,173 @@ export default async function GetOrPostAttitudeOnPostOrCommentById(req: NextApiR
                 await atlasDbClient.close();
                 return;
             }
-            // Step #2.2 verify post status (of IPostComprehensive)
             const { status: postStatus } = postComprehensiveQueryResult;
             if (0 > postStatus) {
                 res.status(403).send('Method not allowed due to post deleted');
                 await atlasDbClient.close();
                 return;
             }
-            // Step #2.7 (cond.) asign notified member id (with post author id)
+            //// Post status good, re-assign notified member if entity is post
             if ('post' === category) {
+                postTitle = postComprehensiveQueryResult.title;
                 notifiedMemberId = postComprehensiveQueryResult.memberId;
             }
-            //// Status all good ////
-            // const { memberId: memberId_post } = postComprehensiveQueryResult;
-            // Step #3.1 look up document (of IAttitudeComprehensive) in [C] attitudeComprehensive
+
+            let prevAttitude = 0;
+
+            // Step #3 insert/update attitude
             const attitudeComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IAttitudeComprehensive>('attitude');
             const attitudeComprehensiveQueryResult = await attitudeComprehensiveCollectionClient.findOne({ memberId, postId });
             if (null === attitudeComprehensiveQueryResult) {
-                // Case [Express attitude]
-                // Step #3.2 insert a new document (of IAttitudeComprehensive) in [C] attitudeComprehensive
+                // Case [Do like/dislike]
+                // Step #3A insert a new document (of IAttitudeComprehensive) in [C] attitudeComprehensive
                 const attitudeComprehensiveInsertResult = await attitudeComprehensiveCollectionClient.insertOne(createAttitudeComprehensive(memberId, postId, id, attitude));
                 if (!attitudeComprehensiveInsertResult.acknowledged) {
-                    throw new Error(`Failed to insert document (of IAttitudeComprehensive, target id: ${id}, member id: ${memberId}, post id: ${postId}) in [C] attitudeComprehensive`);
+                    throw new Error(`Failed to insert document (of IAttitudeComprehensive, entity id: ${id}, member id: ${memberId}, post id: ${postId}) in [C] attitudeComprehensive`);
                 }
-                res.status(200).send('Express attitude success');
             } else {
-                // Case [Change attitude]
-                const attitude_prev = attitudeComprehensiveQueryResult.attitude;
-                if ('number' === typeof attitude_prev && attitude_prev !== attitude) {
-                    // Step #3.2 update attitude (of IAttitudeComprehensive) in [C] attitudeComprehensive
+                prevAttitude = attitudeComprehensiveQueryResult.attitude;
+                if ('number' === typeof prevAttitude && attitude !== prevAttitude) {
+                    // Case [Undo like/dislike]
+                    // Step #3B update attitude (of IAttitudeComprehensive) in [C] attitudeComprehensive
                     const attitudeComprehensiveUpdateResult = await attitudeComprehensiveCollectionClient.updateOne({ memberId, postId }, { $set: provideAttitudeComprehensiveUpdate(id, attitude) });
                     if (!attitudeComprehensiveUpdateResult.acknowledged) {
                         throw new Error(`Failed to update attitude (of IAttitudeComprehensive, member id: ${memberId}, post id: ${postId}) in [C] attitudeComprehensive`);
                     }
-                    res.status(200).send('Change attitude success');
-                    //// Update statistics ////
-                    //// Case [Undo like]
-                    if (1 === attitude_prev) {
-                        // Step #1 Update totalUndoLikedCount (of IMemberStatistics) in [C] memberStatistics
-                        const memberStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IMemberStatistics>('member');
-                        const memberStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId }, {
-                            $inc: {
-                                totalUndoLikedCount: 1
-                            }
-                        });
-                        if (!memberStatisticsUpdateResult.acknowledged) {
-                            logWithDate(`Failed to update totalUndoLikedCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`, fname);
-                        }
-                        if (['comment', 'subcomment'].includes(category)) {
-                            // [comment] Step #2 totalCommentUndoLikedCount (of IMemberStatistics) in [C] memberStatistics (of the comment author, a.k.a., notified member)
-                            const commentAuthorStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId: notifiedMemberId }, { $inc: { totalCommentUndoLikedCount: 1 } });
-                            if (!commentAuthorStatisticsUpdateResult.acknowledged) {
-                                logWithDate(`Failed to update totalCommentUndoLikedCount (of IMemberStatistics, member id: ${notifiedMemberId}) in [C] memberStatistics`, fname);
-                            }
-                            // [comment] Step #3 totalUndoLikedCount (of ICommentComprehensive) in [C] commentComprehensive
-                            const commentComprehensiveUpdateResult = await commentComprehensiveCollectionClient.updateOne({ commentId: id }, { $inc: { totalUndoLikedCount: 1 } });
-                            if (!commentComprehensiveUpdateResult.acknowledged) {
-                                logWithDate(`Failed to update totalUndoLikedCount (of ICommetComprehensive, comment id: ${id}) in [C] commentComprehensive`, fname);
-                            }
-                        }
-                        if ('post' === category) {
-                            // [post] Step #2 totalCreationUndoLikedCount (of IMemberStatistics) in [C] memberStatistics (of the post author, a.k.a., notified member)
-                            const postAuthorStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId: notifiedMemberId }, { $inc: { totalCreationUndoLikedCount: 1 } });
-                            if (!postAuthorStatisticsUpdateResult.acknowledged) {
-                                logWithDate(`Failed to update totalCreationUndoLikedCount (of IMemberStatistics, member id: ${notifiedMemberId}) in [C] memberStatistics`, fname);
-                            }
-                            // [post] Step #3 totalUndoLikedCount (of IPostComprehensive) in [C] postComprehensive
-                            const postComprehensiveUpdateResult = await postComprehensiveCollectionClient.updateOne({ postId }, { $inc: { totalUndoLikedCount: 1 } });
-                            if (!postComprehensiveUpdateResult.acknowledged) {
-                                logWithDate(`Failed to update totalUndoLikedCount (of IPostComprehensive, post id: ${postId}) in [C] postComprehensive`, fname);
-                            }
-                            // [post] Step #4 totalUndoLikedCount (of IChannelStatistics) in [C] channelStatistics
-                            const { channelId } = postComprehensiveQueryResult;
-                            const channelStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IChannelStatistics>('channel');
-                            const channelStatisticsUpdateResult = await channelStatisticsCollectionClient.updateOne({ channelId }, { $inc: { totalUndoLikedCount: 1 } });
-                            if (!channelStatisticsUpdateResult.acknowledged) {
-                                logWithDate(`Failed to update totalUndoLikedCount (of IChannelStatistics, channel id: ${channelId}) in [C] channelStatistics`, fname);
-                            }
-                            // [post] Step #5 (cond.) totalUndoLikedCount (of ITopicComprehensive) in [C] topicComprehensive 
-                            const { topicIdsArr } = postComprehensiveQueryResult;
-                            if (Array.isArray(topicIdsArr) && topicIdsArr.length !== 0) {
-                                const topicComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<ITopicComprehensive>('topic');
-                                for await (const topicId of topicIdsArr) {
-                                    const topicComprehensiveUpdateResult = await topicComprehensiveCollectionClient.updateOne({ topicId }, { $inc: { totalUndoLikedCount: 1 } });
-                                    if (!topicComprehensiveUpdateResult.acknowledged) {
-                                        logWithDate(`Failed to update totalUndoLikedCount (of ITopicComprehensive, topic id: ${topicId}) in [C] topicComprehensive`, fname);
-                                    }
-                                }
-                            }
-                        }
+                }
+            }
+
+            //// Response 200 ////
+            res.status(200).send('Express attitude success');
+
+            //// Update statistics ////
+
+            //// Case [Undo like] ////
+            if (attitude !== prevAttitude && 1 === prevAttitude) {
+                // Update totalUndoLikedCount (of IMemberStatistics) in [C] memberStatistics
+                const memberStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IMemberStatistics>('member');
+                const memberStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId }, { $inc: { totalUndoLikedCount: 1 } });
+                if (!memberStatisticsUpdateResult.acknowledged) {
+                    logWithDate(`Failed to update totalUndoLikedCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`, fname);
+                }
+                if (['comment', 'subcomment'].includes(category)) {
+                    // Update totalCommentUndoLikedCount (of IMemberStatistics) in [C] memberStatistics (of the comment author, a.k.a., notified member)
+                    const commentAuthorStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId: notifiedMemberId }, { $inc: { totalCommentUndoLikedCount: 1 } });
+                    if (!commentAuthorStatisticsUpdateResult.acknowledged) {
+                        logWithDate(`Failed to update totalCommentUndoLikedCount (of IMemberStatistics, member id: ${notifiedMemberId}) in [C] memberStatistics`, fname);
                     }
-                    //// Case [Undo dislike]
-                    if (-1 === attitude_prev) {
-                        // Step #1 totalUndoDislikedCount (of IMemberStatistics) in [C] memberStatistics
-                        const memberStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IMemberStatistics>('member');
-                        const memberStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId }, { $inc: { totalUndoDislikedCount: 1 } });
-                        if (!memberStatisticsUpdateResult.acknowledged) {
-                            logWithDate(`Failed to update total totalUndoDislikedCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`, fname);
-                        }
-                        if (['comment', 'subcomment'].includes(category)) {
-                            // [post] Step #2 totalCommentUndoDislikedCount (of IMemberStatistics) in [C] memberStatistics (of the comment author, a.k.a., notified member)
-                            const commentAuthorStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId: notifiedMemberId }, { $inc: { totalCommentUndoDislikedCount: 1 } });
-                            if (!commentAuthorStatisticsUpdateResult.acknowledged) {
-                                logWithDate(`Failed to update totalCommentUndoDislikedCount (of IMemberStatistics, member id: ${notifiedMemberId}) in [C] memberStatistics`, fname);
-                            }
-                            // [post] Step #3 update totalUndoDislikedCount (of ICommentComprehensive) in [C] commentComprehensive
-                            const commentComprehensiveUpdateResult = await commentComprehensiveCollectionClient.updateOne({ commentId: id }, { $inc: { totalUndoDislikedCount: 1 } });
-                            if (!commentComprehensiveUpdateResult.acknowledged) {
-                                logWithDate(`Failed to update totalUndoDislikedCount (of ICommetComprehensive, comment id: ${id}) in [C] commentComprehensive`, fname);
-                            }
-                        }
-                        if ('post' === category) {
-                            // [post] Step #2 totalCreationUndoDislikedCount (of IMemberStatistics) in [C] memberStatistics (of the post author, a.k.a., notified member)
-                            const postAuthorStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId: notifiedMemberId }, { $inc: { totalCreationUndoDislikedCount: 1 } });
-                            if (!postAuthorStatisticsUpdateResult.acknowledged) {
-                                logWithDate(`Failed to update totalCreationUndoDislikedCount (of IMemberStatistics, member id: ${notifiedMemberId}) in [C] memberStatistics`, fname);
-                            }
-                            // [post] Step #3 update totalUndoDislikedCount (of IPostComprehensive) in [C] postComprehensive
-                            const commentComprehensiveUpdateResult = await postComprehensiveCollectionClient.updateOne({ postId }, { $inc: { totalUndoDislikedCount: 1 } });
-                            if (!commentComprehensiveUpdateResult.acknowledged) {
-                                logWithDate(`Failed to update totalUndoDislikedCount (of IPostComprehensive, post id: ${postId}) in [C] postComprehensive`, fname);
+                    // Update totalUndoLikedCount (of ICommentComprehensive) in [C] commentComprehensive
+                    const commentComprehensiveUpdateResult = await commentComprehensiveCollectionClient.updateOne({ commentId: id }, { $inc: { totalUndoLikedCount: 1 } });
+                    if (!commentComprehensiveUpdateResult.acknowledged) {
+                        logWithDate(`Failed to update totalUndoLikedCount (of ICommetComprehensive, comment id: ${id}) in [C] commentComprehensive`, fname);
+                    }
+                }
+                if ('post' === category) {
+                    // Update totalCreationUndoLikedCount (of IMemberStatistics) in [C] memberStatistics (of the post author, a.k.a., notified member)
+                    const postAuthorStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId: notifiedMemberId }, { $inc: { totalCreationUndoLikedCount: 1 } });
+                    if (!postAuthorStatisticsUpdateResult.acknowledged) {
+                        logWithDate(`Failed to update totalCreationUndoLikedCount (of IMemberStatistics, member id: ${notifiedMemberId}) in [C] memberStatistics`, fname);
+                    }
+                    // Update totalUndoLikedCount (of IPostComprehensive) in [C] postComprehensive
+                    const postComprehensiveUpdateResult = await postComprehensiveCollectionClient.updateOne({ postId }, { $inc: { totalUndoLikedCount: 1 } });
+                    if (!postComprehensiveUpdateResult.acknowledged) {
+                        logWithDate(`Failed to update totalUndoLikedCount (of IPostComprehensive, post id: ${postId}) in [C] postComprehensive`, fname);
+                    }
+                    // Update totalUndoLikedCount (of IChannelStatistics) in [C] channelStatistics
+                    const { channelId } = postComprehensiveQueryResult;
+                    const channelStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IChannelStatistics>('channel');
+                    const channelStatisticsUpdateResult = await channelStatisticsCollectionClient.updateOne({ channelId }, { $inc: { totalUndoLikedCount: 1 } });
+                    if (!channelStatisticsUpdateResult.acknowledged) {
+                        logWithDate(`Failed to update totalUndoLikedCount (of IChannelStatistics, channel id: ${channelId}) in [C] channelStatistics`, fname);
+                    }
+                    // (Cond.) Update totalUndoLikedCount (of ITopicComprehensive) in [C] topicComprehensive 
+                    const { topicIdsArr } = postComprehensiveQueryResult;
+                    if (Array.isArray(topicIdsArr) && topicIdsArr.length !== 0) {
+                        const topicComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<ITopicComprehensive>('topic');
+                        for await (const topicId of topicIdsArr) {
+                            const topicComprehensiveUpdateResult = await topicComprehensiveCollectionClient.updateOne({ topicId }, { $inc: { totalUndoLikedCount: 1 } });
+                            if (!topicComprehensiveUpdateResult.acknowledged) {
+                                logWithDate(`Failed to update totalUndoLikedCount (of ITopicComprehensive, topic id: ${topicId}) in [C] topicComprehensive`, fname);
                             }
                         }
                     }
                 }
             }
-            //// Update statistics ////
-            // Case [Like]
-            if (1 === attitude) {
-                // Step #1 update totalLikedCount (of IMemberStatistics) in [C] memberStatistics
+
+
+            //// Case [Undo dislike]
+            if (attitude !== prevAttitude && -1 === prevAttitude) {
+                // Update totalUndoDislikedCount (of IMemberStatistics) in [C] memberStatistics
                 const memberStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IMemberStatistics>('member');
-                const memberStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId }, {
-                    $inc: {
-                        totalLikedCount: 1
+                const memberStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId }, { $inc: { totalUndoDislikedCount: 1 } });
+                if (!memberStatisticsUpdateResult.acknowledged) {
+                    logWithDate(`Failed to update total totalUndoDislikedCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`, fname);
+                }
+                if (['comment', 'subcomment'].includes(category)) {
+                    // Update totalCommentUndoDislikedCount (of IMemberStatistics) in [C] memberStatistics (of the comment author, a.k.a., notified member)
+                    const commentAuthorStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId: notifiedMemberId }, { $inc: { totalCommentUndoDislikedCount: 1 } });
+                    if (!commentAuthorStatisticsUpdateResult.acknowledged) {
+                        logWithDate(`Failed to update totalCommentUndoDislikedCount (of IMemberStatistics, member id: ${notifiedMemberId}) in [C] memberStatistics`, fname);
                     }
-                });
+                    // Update totalUndoDislikedCount (of ICommentComprehensive) in [C] commentComprehensive
+                    const commentComprehensiveUpdateResult = await commentComprehensiveCollectionClient.updateOne({ commentId: id }, { $inc: { totalUndoDislikedCount: 1 } });
+                    if (!commentComprehensiveUpdateResult.acknowledged) {
+                        logWithDate(`Failed to update totalUndoDislikedCount (of ICommetComprehensive, comment id: ${id}) in [C] commentComprehensive`, fname);
+                    }
+                }
+                if ('post' === category) {
+                    // Update totalCreationUndoDislikedCount (of IMemberStatistics) in [C] memberStatistics (of the post author, a.k.a., notified member)
+                    const postAuthorStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId: notifiedMemberId }, { $inc: { totalCreationUndoDislikedCount: 1 } });
+                    if (!postAuthorStatisticsUpdateResult.acknowledged) {
+                        logWithDate(`Failed to update totalCreationUndoDislikedCount (of IMemberStatistics, member id: ${notifiedMemberId}) in [C] memberStatistics`, fname);
+                    }
+                    // Update update totalUndoDislikedCount (of IPostComprehensive) in [C] postComprehensive
+                    const commentComprehensiveUpdateResult = await postComprehensiveCollectionClient.updateOne({ postId }, { $inc: { totalUndoDislikedCount: 1 } });
+                    if (!commentComprehensiveUpdateResult.acknowledged) {
+                        logWithDate(`Failed to update totalUndoDislikedCount (of IPostComprehensive, post id: ${postId}) in [C] postComprehensive`, fname);
+                    }
+                }
+            }
+
+            // Case [Do like]
+            if (attitude !== prevAttitude && 1 === attitude) {
+                // Update totalLikedCount (of IMemberStatistics) in [C] memberStatistics
+                const memberStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IMemberStatistics>('member');
+                const memberStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId }, { $inc: { totalLikedCount: 1 } });
                 if (!memberStatisticsUpdateResult.acknowledged) {
                     logWithDate(`Failed to update total totalLikedCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`, fname);
                 }
                 if (['comment', 'subcomment'].includes(category)) {
-                    // [comment] Step #2 update totalCommentLikedCount (of IMemberStatistics) in [C] memberStatistics (of the comment author, a.k.a, notified member)
+                    // Update totalCommentLikedCount (of IMemberStatistics) in [C] memberStatistics (of the comment author, a.k.a, notified member)
                     const commentAuthorStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId: notifiedMemberId }, { $inc: { totalCommentLikedCount: 1 } });
                     if (!commentAuthorStatisticsUpdateResult.acknowledged) {
                         logWithDate(`Failed to update total totalCommentLikedCount (of IMemberStatistics, member id: ${notifiedMemberId}) in [C] memberStatistics`, fname);
                     }
-                    // [comment] Step #3 update totalLikedCount (of ICommetComprehensive) in [C] commentComprehensive
+                    // Update totalLikedCount (of ICommetComprehensive) in [C] commentComprehensive
                     const commentComprehensiveUpdateResult = await commentComprehensiveCollectionClient.updateOne({ commentId: id }, { $inc: { totalLikedCount: 1 } });
                     if (!commentComprehensiveUpdateResult.acknowledged) {
                         logWithDate(`Failed to update totalLikedCount (of ICommetComprehensive in [C] commentComprehensive`, fname);
                     }
                 }
                 if ('post' === category) {
-                    // [post] Step #2 update totalCreationLikedCount (of IMemberStatistics) in [C] memberStatistics (of the post author, a.k.a, notified member)
+                    // Update totalCreationLikedCount (of IMemberStatistics) in [C] memberStatistics (of the post author, a.k.a, notified member)
                     const commentAuthorStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId: notifiedMemberId }, { $inc: { totalCreationLikedCount: 1 } });
                     if (!commentAuthorStatisticsUpdateResult.acknowledged) {
                         logWithDate(`Failed to update total totalCreationLikedCount (of IMemberStatistics, member id: ${notifiedMemberId}) in [C] memberStatistics`, fname);
                     }
-                    // [post] Step #3 update totalLikedCount (of IPostComprehensive) in [C] postComprehensive
+                    // Update totalLikedCount (of IPostComprehensive) in [C] postComprehensive
                     const postComprehensiveUpdateResult = await postComprehensiveCollectionClient.updateOne({ postId }, { $inc: { totalLikedCount: 1 } });
                     if (!postComprehensiveUpdateResult.acknowledged) {
                         logWithDate(`Failed to update totalLikedCount (of IPostComprehensive, post id: ${postId}) in [C] postComprehensive`, fname);
                     }
-                    // [post] Step #4 update totalLikedCount (of IChannelStatistics) in [C] channelStatistics
+                    // Update totalLikedCount (of IChannelStatistics) in [C] channelStatistics
                     const { channelId } = postComprehensiveQueryResult;
                     const channelStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IChannelStatistics>('channel');
                     const channelStatisticsUpdateResult = await channelStatisticsCollectionClient.updateOne({ channelId }, { $inc: { totalLikedCount: 1 } });
                     if (!channelStatisticsUpdateResult.acknowledged) {
                         logWithDate(`Failed to update totalLikedCount (of IChannelStatistics, channel id: ${channelId}) in [C] channelStatistics`, fname);
                     }
-                    // [post] Step #5 (cond.) totalLikedCount (of ITopicComprehensive) in [C] topicComprehensive
+                    // (Cond.) Update totalLikedCount (of ITopicComprehensive) in [C] topicComprehensive
                     const { topicIdsArr } = postComprehensiveQueryResult;
                     if (Array.isArray(topicIdsArr) && topicIdsArr.length !== 0) {
                         const topicComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<ITopicComprehensive>('topic');
@@ -330,12 +348,6 @@ export default async function GetOrPostAttitudeOnPostOrCommentById(req: NextApiR
                 }
                 if (memberId !== notifiedMemberId) {
                     // Handle notice.like ////
-                    const { title } = postComprehensiveQueryResult;
-                    let content: string | undefined;
-                    if (['comment', 'subcomment'].includes(category)) {
-                        const commentComprehensiveQueryResult = await commentComprehensiveCollectionClient.findOne({ commentId: id });
-                        content = commentComprehensiveQueryResult?.content;
-                    }
                     const blockingMemberMappingTableClient = AzureTableClient('BlockingMemberMapping');
                     const blockingMemberMappingQuery = blockingMemberMappingTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${notifiedMemberId}' and RowKey eq '${memberId}'` } });
                     //// [!] attemp to reterieve entity makes the probability of causing RestError ////
@@ -350,8 +362,10 @@ export default async function GetOrPostAttitudeOnPostOrCommentById(req: NextApiR
                             Category: 'like',
                             InitiateId: memberId,
                             Nickname: getNicknameFromToken(token),
-                            PostTitle: title,
-                            CommentBrief: getContentBrief(content)
+                            PostTitle: postTitle,
+                            CommentBrief: commentBrief,
+                            CreatedTimeBySecond: Math.floor(new Date().getTime() / 1000),
+                            IsActive: true
                         }, 'Replace');
                         // Step #5 update like (of INotificationStatistics, of post or comment author) in [C] notificationStatistics
                         const notificationStatisticsCollectionClient = atlasDbClient.db('statistics').collection<INotificationStatistics>('notification');
@@ -362,8 +376,9 @@ export default async function GetOrPostAttitudeOnPostOrCommentById(req: NextApiR
                     }
                 }
             }
-            // Case [Disike]
-            if (-1 === attitude) {
+
+            // Case [Do disike]
+            if (attitude !== prevAttitude && -1 === attitude) {
                 // Step #1 update totalDislikedCount (of IMemberStatistics) in [C] memberStatistics
                 const memberStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IMemberStatistics>('member');
                 const memberStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId }, { $inc: { totalDislikedCount: 1 } });
@@ -371,7 +386,7 @@ export default async function GetOrPostAttitudeOnPostOrCommentById(req: NextApiR
                     logWithDate(`Failed to update totalDislikedCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`, fname);
                 }
                 if (['comment', 'subcomment'].includes(category)) {
-                    // [comment] Step #2 update totalCommentDislikedCount (of IMemberStatistics) [C] memberStatistics (of the comment author, a.k.a, notified member)
+                    // [comment] Step #1 update totalCommentDislikedCount (of IMemberStatistics) [C] memberStatistics (of the comment author, a.k.a, notified member)
                     const commentAuthorStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId: notifiedMemberId }, { $inc: { totalCommentDislikedCount: 1 } });
                     if (!commentAuthorStatisticsUpdateResult.acknowledged) {
                         logWithDate(`Failed to update totalCommentDislikedCount (of IMemberStatistics, member id: ${notifiedMemberId}) in [C] memberStatistics`, fname);
@@ -383,7 +398,7 @@ export default async function GetOrPostAttitudeOnPostOrCommentById(req: NextApiR
                     }
                 }
                 if ('post' === category) {
-                    // [post] Step #2 update totalCreationDislikedCount (of IMemberStatistics) [C] memberStatistics (of the comment author, a.k.a, notified member)
+                    // [post] Step #1 update totalCreationDislikedCount (of IMemberStatistics) [C] memberStatistics (of the comment author, a.k.a, notified member)
                     const postAuthorStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId: notifiedMemberId }, { $inc: { totalCreationDislikedCount: 1 } });
                     if (!postAuthorStatisticsUpdateResult.acknowledged) {
                         logWithDate(`Failed to update totalCreationDislikedCount (of IMemberStatistics, member id: ${notifiedMemberId}) in [C] memberStatistics`, fname);

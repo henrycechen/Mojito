@@ -70,7 +70,7 @@ export default function NavBar(props: TNavBarProps) {
     const router = useRouter();
 
     let viewerId = '';
-    let avatarImageUrl = ''
+    let avatarImageUrl = '';
 
     const { data: session, status } = useSession();
     if ('authenticated' === status) {
@@ -124,7 +124,7 @@ export default function NavBar(props: TNavBarProps) {
                         <Box sx={{ flexGrow: 0 }}>
                             <Tooltip title="Open settings">
                                 <IconButton onClick={handleOpenMemberMenu} sx={{ p: 0 }}>
-                                    <Avatar src={props.avatarImageUrl} />
+                                    <Avatar src={avatarImageUrl} />
                                 </IconButton>
                             </Tooltip>
                             <Menu
