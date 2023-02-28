@@ -28,7 +28,7 @@ const fname = GetRestrictedPostComprehensiveById.name;
  */
 
 const ifo = {
-    postId: 'P1234ABCD',
+    postId: 'P1234ABCDX',
     memberId: 'M1234XXXX',
     createdTimeBySecond: 1673389239,
     title: '《周杰倫的床邊故事》',

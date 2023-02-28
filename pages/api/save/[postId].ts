@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { RestError } from '@azure/data-tables';
-import { getToken } from "next-auth/jwt"
+import { getToken } from "next-auth/jwt";
 import { MongoError } from 'mongodb';
 
 import AzureTableClient from '../../../modules/AzureTableClient';
@@ -38,6 +38,11 @@ export default async function SaveOrUndoSavePostById(req: NextApiRequest, res: N
         return;
     }
 
+    if ('GET' === method) {
+        res.send(true);
+        return;
+    }
+
     //// Verify identity ////
     const token = await getToken({ req });
     if (!(token && token?.sub)) {
@@ -56,7 +61,7 @@ export default async function SaveOrUndoSavePostById(req: NextApiRequest, res: N
     //// Declare DB client ////
     const atlasDbClient = AtlasDatabaseClient();
     try {
-        await atlasDbClient.connect()
+        await atlasDbClient.connect();
 
         //// Verify member status ////
         const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
@@ -115,7 +120,7 @@ export default async function SaveOrUndoSavePostById(req: NextApiRequest, res: N
 
         //// GET | verify if saved ////
         if ('GET' === method) {
-            
+
             //// Response 200 ////
             res.status(200).send(isSaved);
             await atlasDbClient.close();

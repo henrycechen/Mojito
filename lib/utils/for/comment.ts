@@ -14,9 +14,9 @@ type CommentComprehensiveUpdate = {
     totalUndoLikedCount: 0; // reset undo liked and undo disliked count
     totalDislikedCount: 0;
     totalUndoDislikedCount: 0;
-}
+};
 
-export function createCommentComprehensive(commentId: string, parentId: string, postId: string, memberId: string, content: string, cuedMemberInfoArr: any): ICommentComprehensive {
+export function createCommentComprehensive(commentId: string, parentId: string, postId: string, memberId: string, nickname: string, content: string, cuedMemberInfoArr: any): ICommentComprehensive {
     const arr = [];
     if (Array.isArray(cuedMemberInfoArr) && cuedMemberInfoArr.length !== 0) {
         arr.push(...cuedMemberInfoArr);
@@ -26,7 +26,8 @@ export function createCommentComprehensive(commentId: string, parentId: string, 
         parentId,
         postId,
         memberId,
-        createdTime: new Date().getTime(),
+        nickname,
+        createdTimeBySecond: new Date().getTime(),
         content, // required
         cuedMemberInfoArr: arr,
         status: 200,
@@ -34,12 +35,13 @@ export function createCommentComprehensive(commentId: string, parentId: string, 
         totalUndoLikedCount: 0,
         totalDislikedCount: 0,
         totalUndoDislikedCount: 0,
+        totalAffairCount: 0,
         totalEditCount: 0,
         edited: []
-    }
+    };
     if ('C' === commentId.slice(0, 1)) {
-        comment.totalSubcommentCount = 0
-        comment.totalSubcommentDeleteCount = 0
+        comment.totalSubcommentCount = 0;
+        comment.totalSubcommentDeleteCount = 0;
 
     }
     return comment;
@@ -64,18 +66,20 @@ export function getRestrictedFromCommentComprehensive(commentComprehensive: ICom
         commentId: commentComprehensive.commentId, // 12 ~ 13 characters, UPPERCASE, begin with 'C'
         postId: commentComprehensive.postId,
         memberId: commentComprehensive.memberId,
-        createdTime: commentComprehensive.createdTime, // created time of this document (comment est.)
+        nickname: commentComprehensive.nickname,
+        createdTimeBySecond: commentComprehensive.createdTimeBySecond, // created time of this document (comment est.)
         content: '',
         cuedMemberInfoArr: [],
         status: status,
         totalLikedCount: totalLikedCount - totalUndoLikedCount,
         totalDislikedCount: totalDislikedCount - totalUndoDislikedCount,
-        totalSubcommentCount: -1
-    }
+        totalSubcommentCount: -1,
+        editedTimeBySecond: 0
+    };
     const { totalSubcommentCount, totalSubcommentDeleteCount } = commentComprehensive;
     if (('number' === typeof totalSubcommentCount) && ('number' === typeof totalSubcommentDeleteCount)) {
         if (0 > totalSubcommentCount - totalSubcommentDeleteCount) {
-            restricted.totalSubcommentCount = 0
+            restricted.totalSubcommentCount = 0;
         } else {
             restricted.totalSubcommentCount = totalSubcommentCount - totalSubcommentDeleteCount;
         }
@@ -88,7 +92,7 @@ export function getRestrictedFromCommentComprehensive(commentComprehensive: ICom
     if ('number' === typeof status && 1 === status % 100) {
         const { edited } = commentComprehensive;
         if (Array.isArray(edited) && edited.length !== 0) {
-            restricted.editedTime = edited[edited.length - 1].editedTime;
+            restricted.editedTimeBySecond = edited[edited.length - 1].editedTimeBySecond;
         }
     }
     return restricted;

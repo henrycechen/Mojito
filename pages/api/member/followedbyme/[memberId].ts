@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { getToken } from 'next-auth/jwt'
+import { getToken } from 'next-auth/jwt';
 import { RestError } from '@azure/data-tables';
 import { MongoError } from 'mongodb';
 
@@ -28,9 +28,26 @@ const fname = GetMembersFollowedByMe.name;
  * - arr: IConciseMemberInfo[]
 */
 
+const bb5 = [
+    {
+        memberId: 'M1234ABCD',
+        nickname: '县长马邦德',
+        briefIntro: '我来鹅城。。。',
+        createdTimeBySecond: 1673485211
+
+    },
+    {
+        memberId: 'M1234ABCE',
+        nickname: '林北',
+        briefIntro: '我刚里供。',
+        createdTimeBySecond: 1673485211
+
+    },
+];
+
 export default async function GetMembersFollowedByMe(req: NextApiRequest, res: NextApiResponse) {
-    
-    res.send([]);
+
+    res.send(bb5);
     return;
 
     const { method } = req;
@@ -86,7 +103,7 @@ export default async function GetMembersFollowedByMe(req: NextApiRequest, res: N
                     nickname: followingMemberMappingQueryResult.value.Nickname,
                     briefIntro: followingMemberMappingQueryResult.value.BriefIntro,
                     createdTimeBySecond: followingMemberMappingQueryResult.value.CreatedTimeBySecond,
-                })
+                });
                 followingMemberMappingQueryResult = await followingMemberMappingQuery.next();
             }
         }

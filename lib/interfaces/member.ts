@@ -55,6 +55,8 @@ export interface IRestrictedMemberComprehensive {
     birthdayBySecond: number;
 
     status: number,
+    allowPosting: boolean;
+    allowCommenting: boolean;
     allowKeepingBrowsingHistory: boolean;
     allowVisitingFollowedMembers: boolean;
     allowVisitingSavedPosts: boolean;

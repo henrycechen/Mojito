@@ -53,7 +53,7 @@ export default async function ReportMisbehaviour(req: NextApiRequest, res: NextA
         return;
     }
 
-    res.status(500).send('ok')
+    res.status(200).send('ok')
     return
 
     //// Verify environment variables ////

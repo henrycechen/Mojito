@@ -13,11 +13,11 @@ import CircularProgress from '@mui/material/CircularProgress';
 
 import ReCAPTCHA from 'react-google-recaptcha';
 
-import { LangConfigs } from '../../lib/types';
-import { verifyEmailAddress, verifyId } from '../../lib/utils/verify';
+import { LangConfigs } from '../lib/types';
+import { verifyEmailAddress, verifyId } from '../lib/utils/verify';
 
-import Copyright from '../../ui/Copyright';
-import BackToHomeButtonGroup from '../../ui/BackToHomeButtonGroup';
+import Copyright from '../ui/Copyright';
+import BackToHomeButtonGroup from '../ui/BackToHomeButtonGroup';
 import FormControl from '@mui/material/FormControl';
 import AddIcon from '@mui/icons-material/Add';
 import IconButton from '@mui/material/IconButton';
@@ -27,9 +27,9 @@ import Select, { SelectChangeEvent } from '@mui/material/Select';
 import ListItemText from '@mui/material/ListItemText';
 
 import { useRouter } from 'next/router';
-import { CentralizedBox } from '../../ui/Styled';
+import { CentralizedBox } from '../ui/Styled';
 import { Divider } from '@mui/material';
-import Terms from '../../ui/Terms';
+import Terms from '../ui/Terms';
 
 const domain = process.env.NEXT_PUBLIC_APP_DOMAIN;
 const recaptchaClientKey = process.env.NEXT_PUBLIC_INVISIABLE_RECAPTCHA_SITE_KEY ?? '';
@@ -161,7 +161,7 @@ const Affair = () => {
 
     let recaptcha: any;
 
-    React.useEffect(() => { recaptcha?.execute() }, []);
+    React.useEffect(() => { recaptcha?.execute(); }, []);
 
     const router = useRouter();
 
@@ -232,12 +232,12 @@ const Affair = () => {
 
     const initializeAffairInfo = async () => {
         try {
-            const { isValid, category: c0, id: memberId } = verifyId(router.query.memberId);
-            if (!(isValid && 'member' === c0)) {
+            const { isValid: isValidMemberId, category: c0, id: memberId } = verifyId(router.query.memberId);
+            if (!(isValidMemberId && 'member' === c0)) {
                 throw new Error(`Invalid member id`);
             }
-            const { category: c1, id: referenceId } = verifyId(router.query.referenceId);
-            if (!['post', 'comment', 'subcomment'].includes(c1)) {
+            const { isValid: isValidReferenceId, category: c1, id: referenceId } = verifyId(router.query.referenceId);
+            if (!(isValidReferenceId && ['post', 'comment', 'subcomment'].includes(c1))) {
                 throw new Error(`Invalid reference id`);
             }
             const affairInfoResp = await fetch(`/api/affair/info?memberId=${memberId}&referenceId=${referenceId}&recaptchaResponse=${processStates.recaptchaResponse}`);
@@ -266,17 +266,17 @@ const Affair = () => {
 
     // Handle reset password request form submit
     const handleSubmit = async () => {
-        // if ('' === processStates.recaptchaResponse) {
-        //     setProcessStates({
-        //         ...processStates,
-        //         errorContent: langConfigs.recaptchaNotVerifiedError[processStates.lang],
-        //         displayError: true,
-        //     });
-        //     setTimeout(() => {
-        //         recaptcha?.execute();
-        //     }, 1000);
-        //     return;
-        // }
+        if ('' === processStates.recaptchaResponse) {
+            setProcessStates({
+                ...processStates,
+                errorContent: langConfigs.recaptchaNotVerifiedError[processStates.lang],
+                displayError: true,
+            });
+            setTimeout(() => {
+                recaptcha?.execute();
+            }, 1000);
+            return;
+        }
 
         const resp = await fetch(`/api/affair/report?recaptchaResponse=${processStates.recaptchaResponse}`, {
             method: 'POST',

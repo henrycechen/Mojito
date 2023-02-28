@@ -31,6 +31,10 @@ export function getNicknameFromToken(token: any): string {
     return 'MojitoMember ' + getRandomHexStr(true);
 }
 
+export function provideMemberInfoPageUrl(memberId: string, domain: string): string {
+    return `${domain}/me/id/${memberId}`;
+}
+
 export function provideCuedMemberInfoArray(cuedMemberInfoDictionary: { [memberId: string]: IConciseMemberInfo }): IConciseMemberInfo[] {
     const memberIdArr = Object.keys(cuedMemberInfoDictionary);
     if (0 === memberIdArr.length) {
