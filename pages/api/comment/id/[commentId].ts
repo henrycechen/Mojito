@@ -3,22 +3,23 @@ import { getToken } from 'next-auth/jwt'
 import { RestError } from '@azure/data-tables';
 import { MongoError } from 'mongodb';
 
-import AzureTableClient from '../../../../../modules/AzureTableClient';
-import AtlasDatabaseClient from "../../../../../modules/AtlasDatabaseClient";
+import AzureTableClient from '../../../../modules/AzureTableClient';
+import AtlasDatabaseClient from "../../../../modules/AtlasDatabaseClient";
 
-import { response405, response500, logWithDate, getContentBrief } from '../../../../../lib/utils/general';
-import { verifyId } from '../../../../../lib/utils/verify';
-import { ICommentComprehensive } from '../../../../../lib/interfaces/comment';
-import { getRestrictedFromCommentComprehensive, provideCommentComprehensiveUpdate } from '../../../../../lib/utils/for/comment';
-import { IMemberComprehensive, IMemberStatistics } from '../../../../../lib/interfaces/member';
-import { IPostComprehensive } from '../../../../../lib/interfaces/post';
-import { getCuedMemberInfoArrayFromRequestBody } from '../../../../../lib/utils/for/post';
-import { INoticeInfo, INotificationStatistics } from '../../../../../lib/interfaces/notification';
-import { createNoticeId } from '../../../../../lib/utils/create';
-import { getNicknameFromToken } from '../../../../../lib/utils/for/member';
-import { IChannelStatistics } from '../../../../../lib/interfaces/channel';
-import { ITopicComprehensive } from '../../../../../lib/interfaces/topic';
+import { response405, response500, logWithDate, getContentBrief } from '../../../../lib/utils/general';
+import { verifyId, verifyRecaptchaResponse } from '../../../../lib/utils/verify';
+import { ICommentComprehensive } from '../../../../lib/interfaces/comment';
+import { getRestrictedFromCommentComprehensive, provideCommentComprehensiveUpdate } from '../../../../lib/utils/for/comment';
+import { IMemberComprehensive, IMemberStatistics } from '../../../../lib/interfaces/member';
+import { IPostComprehensive } from '../../../../lib/interfaces/post';
+import { getCuedMemberInfoArrayFromRequestBody } from '../../../../lib/utils/for/post';
+import { INoticeInfo, INotificationStatistics } from '../../../../lib/interfaces/notification';
+import { createNoticeId } from '../../../../lib/utils/create';
+import { getNicknameFromToken } from '../../../../lib/utils/for/member';
+import { IChannelStatistics } from '../../../../lib/interfaces/channel';
+import { ITopicComprehensive } from '../../../../lib/interfaces/topic';
 
+const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
 const fname = GetRestrictedCommentComprehensiveById.name;
 
 /** GetRestrictedCommentComprehensiveById v0.1.1
@@ -29,6 +30,7 @@ const fname = GetRestrictedCommentComprehensiveById.name;
  * 
  * Info required for GET method
  * - id: string (comment id)
+ * - recaptchaResponse: string
  * 
  * Info will be required for GET method
  * - commentComprehensive: ICommentComprehensive
@@ -50,6 +52,27 @@ export default async function GetRestrictedCommentComprehensiveById(req: NextApi
     const { method } = req;
     if (!['GET', 'PUT', 'DELETE'].includes(method ?? '')) {
         response405(req, res);
+        return;
+    }
+
+    if ('GET' === method) {
+        const { recaptchaResponse } = req.query;
+        const { status: recaptchStatus, message } = await verifyRecaptchaResponse(recaptchaServerSecret, recaptchaResponse);
+        if (200 !== recaptchStatus) {
+            if (403 === recaptchStatus) {
+                res.status(403).send(message);
+                return;
+            }
+            if (500 === recaptchStatus) {
+                response500(res, message);
+                return;
+            }
+        }
+
+        res.send({
+            commentId: 'C12345ABXSDF',
+            content: '您认为不当或违反了社区规范的内容'
+        })
         return;
     }
 
@@ -180,7 +203,8 @@ export default async function GetRestrictedCommentComprehensiveById(req: NextApi
                             InitiateId: authorId,
                             Nickname: getNicknameFromToken(token),
                             PostTitle: title,
-                            CommentBrief: getContentBrief(content)
+                            CommentBrief: getContentBrief(content),
+                            CreatedTimeBySecond: Math.floor(new Date().getTime() / 1000)
                         }, 'Replace');
                         // Step #5.5 update cue (INotificationStatistics) (of cued member) in [C] notificationStatistics
                         const notificationStatisticsUpdateResult = await notificationStatisticsCollectionClient.updateOne({ memberId: memberId_cued }, { $inc: { cue: 1 } });

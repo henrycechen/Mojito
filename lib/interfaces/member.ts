@@ -121,6 +121,10 @@ export interface IMemberStatistics {
     totalUndoFollowedByCount: number;
     totalBlockedByCount: number;
     totalUndoBlockedByCount: number;
+
+    // affair
+    totalAffairOfCreationCount: number;
+    totalAffairOfCommentCount: number;
 }
 
 export interface IConciseMemberStatistics {

@@ -196,6 +196,8 @@ export default async function CreatePost(req: NextApiRequest, res: NextApiRespon
                         Nickname: getNicknameFromToken(token),
                         // PostId: postId,
                         PostTitle: title,
+                        CommentBrief: '', // [!] comment brief is not supplied in this case
+                        CreatedTimeBySecond: Math.floor(new Date().getTime() / 1000) 
                     }, 'Replace');
                     // Step #4.5 update cue (of INotificationStatistics) (of cued member) in [C] notificationStatistics
                     const notificationStatisticsUpdateResult = await notificationStatisticsCollectionClient.updateOne({ memberId: memberId_cued }, {

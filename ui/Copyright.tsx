@@ -4,20 +4,20 @@ import { LangConfigs } from '../lib/types';
 
 type TComponentProps = {
     lang?: string,
-    sx: any
+    sx?: any
 }
 
 const appName = process.env['NEXT_PUBLIC_APP_NAME'] ?? 'Mojito';
 const langConfigs: LangConfigs = {
     guidelines: {
-        tw: '社區準則',
-        cn: '社区准则',
-        en: 'Community guidelines,'
+        tw: '社區規範',
+        cn: '社区规范',
+        en: 'Guidelines,'
     },
     privacy: {
         tw: '隱私政策',
         cn: '隐私政策',
-        en: 'Privacy policy,'
+        en: 'Privacy'
     },
 }
 

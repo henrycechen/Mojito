@@ -587,7 +587,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
     parentId: string; // post or comment id
     postId: string;
     memberId: string;
-    createdTimeBySecond: number; // created time of this document (comment est.)
+    createdTimeBySecond: number; // Math.floor(new Date().getTime() / 1000) 
     content: string;
     cuedMemberComprehensivesArr: ICuedMemberComprehensive[];
     
@@ -602,6 +602,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
     totalSubcommentCount: number; // for comment entities only
     totalSubcommentDeleteCount: number; // for comment entities only
     totalEditCount: number;
+    totalAffairCount: number;
     
     //// edit info ////
     edited: IEditedCommentComprehensive[];
@@ -882,7 +883,7 @@ const { topicIdsArr } = postComprehensiveQueryResult;
     //// info ////
     postId: string; // 10 ~ 11 characters, UPPERCASE, begin with 'P'
     memberId: string;
-    createdTimeBySecond: number; // created time of this document (post est.)
+    createdTimeBySecond: number; // Math.floor(new Date().getTime() / 1000) 
     title: string;
     imageNamesArr: string[];
 	paragraphsArr: string[];
@@ -906,6 +907,7 @@ const { topicIdsArr } = postComprehensiveQueryResult;
     totalSavedCount: number;
 	totalUndoSavedCount: number;
 	totalEditCount: number;
+    totalAffairCount: number;
     
     //// edit info ////
     edited: IEditedPostComprehensive[];
@@ -925,6 +927,7 @@ const { topicIdsArr } = postComprehensiveQueryResult;
     topicIdsArrBeforeEdit: string[];
     totalLikedCountBeforeEdit: number;
     totalDislikedCountBeforeEdit: number;
+    totalAffairCountBeforeEdit: number;
 }
 ```
 
@@ -1059,37 +1062,30 @@ const { topicIdsArr } = postComprehensiveQueryResult;
 {
     _id: ObjectId; // mongodb obejct id
     
-    //// info ////
     affairId: string;
-    initiateId: string;
+    defendantId: string; // member id
     referenceId: string; // post or comment id
-    memberId: string;
-    createdTimeBySecond: number; // created time of this document (post est.)
+    referenceContent: string;
+	category: number; // 1 ~ 7
+    comment: string;
     
-    category: number; // 1 ~ 6
-
-    //// management ////
+    createdTimeBySecond: number; // Math.floor(new Date().getTime() / 1000) 
     status: number;
-
-  	logs: [
-        {
-            timeStamp: string; //
-            status: number;
-            log: string;
-        }
-    ]
+    
 }
 ```
 
 ### 💡Affair category
 
-| Category | Desc                        |
-| -------- | --------------------------- |
-| 1        | Ads                         |
-| 2        | Abuse                       |
-| 3        | Illegal drugs and substance |
-| 4        | Violence and terrorism      |
-| 5        | Pornography                 |
+| Category | Desc                |
+| -------- | ------------------- |
+| 1        | hatespeech          |
+| 2        | harassment+bullying |
+| 3        | pornography         |
+| 4        | illegalactivities   |
+| 5        | spam+advertising    |
+| 6        | violence            |
+| 7        | misinformation      |
 
 
 

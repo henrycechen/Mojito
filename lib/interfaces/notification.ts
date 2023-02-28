@@ -12,7 +12,7 @@ export interface INoticeInfo {
     PostTitle: string;
     CommentBrief: string;
     CreatedTimeBySecond: number;
-    IsActive: boolean;
+    // IsActive: boolean;
 }
 
 export interface INoticeInfoWithMemberInfo {

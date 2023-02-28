@@ -27,6 +27,9 @@ export interface ICommentComprehensive {
     totalUndoDislikedCount: number;
     totalSubcommentCount?: number; // for comment entities only
     totalSubcommentDeleteCount?: number; // for comment entities only
+
+    totalAffairCount: number;
+
     totalEditCount: number;
 
     //// edit info ////
@@ -40,6 +43,7 @@ export interface IEditedCommentComprehensive {
     totalLikedCountBeforeEdit: number;
     totalDislikedCountBeforeEdit: number;
     totalSubcommentCountBeforeEdit?: number;
+    totalAffairCountBeforeEdit: number;
 }
 
 export interface IRestrictedCommentComprehensive {

@@ -16,21 +16,26 @@ import { getRandomHexStr } from '../lib/utils/create';
 const defaultLang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
     title0: {
-        tw: '網絡社區準則',
-        cn: '网络社区准则',
+        tw: '網絡社區規範',
+        cn: '网络社区规范',
         en: 'Community Guidelines'
     },
     title1: {
+        tw: '發布內容指南',
+        cn: '发布内容指南',
+        en: 'Guidelines for publishing content'
+    },
+    title2: {
         tw: '頭像相片設定規則',
         cn: '头像图片设置规则',
         en: 'Guidelines for avatar images'
     },
-    title2: {
+    title3: {
         tw: '暱稱設定規則',
         cn: '昵称设置规则',
         en: 'Guidelines for nicknames'
     },
-    title3: {
+    title4: {
         tw: '簡介設定規則',
         cn: '简介设置规则',
         en: 'Guidelines for brief intros'
@@ -41,9 +46,9 @@ const langConfigs: LangConfigs = {
         en: `Updated: February 13, 2023`
     },
     publishedDate1: {
-        tw: `更新日期：2023年2月16日`,
-        cn: `更新日期：2023年2月16日`,
-        en: `Updated: February 16, 2023`
+        tw: `更新日期：2023年2月27日`,
+        cn: `更新日期：2023年2月27日`,
+        en: `Updated: February 27, 2023`
     },
     publishedDate2: {
         tw: `更新日期：2023年2月16日`,
@@ -51,6 +56,11 @@ const langConfigs: LangConfigs = {
         en: `Updated: February 13, 2023`
     },
     publishedDate3: {
+        tw: `更新日期：2023年2月16日`,
+        cn: `更新日期：2023年2月16日`,
+        en: `Updated: February 13, 2023`
+    },
+    publishedDate4: {
         tw: `更新日期：2023年2月16日`,
         cn: `更新日期：2023年2月16日`,
         en: `Updated: February 13, 2023`
@@ -92,6 +102,44 @@ const langConfigs: LangConfigs = {
     },
     terms1: {
         tw: [
+            '作為一個在線社區，我們有責任確保我們的平台為所有成員提供安全和積極的體驗，所以我們限製或禁止可能對我們的用戶有害或不合適的某些類型的內容。 一些例子包括： ',
+            '1. 仇恨言論：禁止任何宣揚或鼓勵基於種族、性別、性取向、宗教或其他因素對個人或群體的仇恨或歧視的言論。',
+            '2. 騷擾和欺凌：禁止任何旨在傷害、恐嚇或欺凌其他成員的行為，包括網絡欺凌、人肉搜索或跟踪。',
+            '3. 色情內容：限製或禁止共享露骨的色情內容，包括色情或性暗示圖片或視頻。',
+            '4. 非法活動：禁止與非法活動有關的討論或內容，例如吸毒、黑客攻擊或盜版。',
+            '5. 垃圾郵件和廣告：禁止任何形式的垃圾郵件或未獲得許可的廣告，包括自我推銷或營銷。',
+            '6. 暴力和血腥內容：禁止任何過度暴力或血腥的內容，包括對現實生活中暴力、血腥或死亡的描述。',
+            '7. 錯誤信息和假新聞：禁止共享或傳播虛假或誤導性信息，包括陰謀論或假新聞。',
+            '我們認真對待這些準則，並將採取適當的行動刪除任何違反這些準則的內容。',
+            // '我們認真對待這些準則，並將採取適當的行動刪除任何違反這些準則的內容，並首先採取措施防止此類內容被發布。', // FIXME: Update: 27/02/2023: we're unable to do it at the moment...
+        ],
+        cn: [
+            '作为一个在线社区，我们有责任确保我们的平台为所有成员提供安全和积极的体验，所以我们限制或禁止可能对我们的用户有害或不合适的某些类型的内容。 一些例子包括： ',
+            '1. 仇恨言论：禁止任何宣扬或鼓励基于种族、性别、性取向、宗教或其他因素对个人或群体的仇恨或歧视的言论。',
+            '2. 骚扰和欺凌：禁止任何旨在伤害、恐吓或欺凌其他成员的行为，包括网络欺凌、人肉搜索或跟踪。',
+            '3. 色情内容：限制或禁止共享露骨的色情内容，包括色情或性暗示图片或视频。',
+            '4. 非法活动：禁止与非法活动有关的讨论或内容，例如吸毒、黑客攻击或盗版。',
+            '5. 垃圾邮件和广告：禁止任何形式的垃圾邮件或未获得许可的广告，包括自我推销或营销。',
+            '6. 暴力和血腥内容：禁止任何过度暴力或血腥的内容，包括对现实生活中暴力、血腥或死亡的描述。',
+            '7. 错误信息和假新闻：禁止共享或传播虚假或误导性信息，包括阴谋论或假新闻。',
+            '我们认真对待这些准则，并将采取适当的行动删除任何违反这些准则的内容。',
+            // '我们认真对待这些准则，并将采取适当的行动删除任何违反这些准则的内容，并首先采取措施防止此类内容被发布。',
+        ],
+        en: [
+            'As a responsible online community, we strive to provide a safe and positive experience for all our members. In order to achieve this, we have certain guidelines in place to limit or forbid certain types of content that could be harmful or inappropriate for our members. Some examples include:',
+            '1. Hate speech: We do not tolerate any content that promotes or encourages hatred or discrimination against individuals or groups based on their race, gender, sexuality, religion, or other factors.',
+            '2. Harassment and bullying: We prohibit any content that intends to harm, intimidate, or bully other members, including cyberbullying, doxxing, or stalking.',
+            '3. Pornography and sexually explicit content: We restrict any sexually explicit or pornographic material, including pornography or sexually suggestive images or videos.',
+            '4. Illegal activities: We forbid discussions or content related to illegal activities, such as drug use, hacking, or piracy.',
+            '5. Spam and advertising: We do not allow any form of spamming or advertising without permission, including self-promotion or marketing.',
+            '6. Violence and graphic content: We prohibit any content that is excessively violent or graphic, including depictions of real-life violence, gore, or death.',
+            '7. Misinformation and fake news: We do not allow sharing or spreading false or misleading information, including conspiracy theories or fake news.',
+            'We take these guidelines seriously and will take appropriate action to remove any content that violates them.',
+            // 'We take these guidelines seriously and will take appropriate action to remove any content that violates them, as well as take measures to prevent such content from being posted in the first place.',
+        ],
+    },
+    terms2: {
+        tw: [
             '1. 尊重：頭像圖像不應包含任何可能被視為有害、歧視或歧視個人或團體的冒犯性或不當內容。',
             '2. 非欺騙性：頭像圖像不應用於冒充或歪曲個人或團體。',
             '3. 適當的尺寸：頭像圖像應具有適當的尺寸和分辨率，以避免像素化或失真。',
@@ -116,7 +164,7 @@ const langConfigs: LangConfigs = {
             '6. No Personal Information: Avatar images should not contain any personal information such as contact details, phone numbers, or addresses.',
         ],
     },
-    terms2: {
+    terms3: {
         en: [
             '1. Respectful: Nicknames should not contain offensive or derogatory language, including racial slurs, gender-based slurs, or hate speech. Nicknames also should not contain profanity or vulgar language.',
             '2. Non-Deceptive: Nicknames should not impersonate or misrepresent the identity of other members, individuals, or organizations.',
@@ -145,7 +193,7 @@ const langConfigs: LangConfigs = {
             '7. 减少混淆：昵称不应包含过多的标点符号或可能导致混淆或干扰交流的符号。',
         ],
     },
-    terms3: {
+    terms4: {
         en: [
             '1. Brief intros should be brief and to the point, containing only relevant information about the member, such as their name, interests, and why they joined the community.',
             '2. Brief intros should not contain any personal information that could compromise the member\'s privacy or security, such as their full address, phone number, or email address.',
@@ -236,11 +284,24 @@ export default function CommunityGidelines() {
                     <Grid item md={1}></Grid>
                     <Grid item md={3} sx={{ p: 1, paddingTop: 16 }}>
                         <Typography variant={'h5'}>{langConfigs.title3[processStates.lang]}</Typography>
-                        <Typography variant={'body2'}>{langConfigs.publishedDate2[processStates.lang]}</Typography>
+                        <Typography variant={'body2'}>{langConfigs.publishedDate3[processStates.lang]}</Typography>
                     </Grid>
                     <Grid item md={7} sx={{ p: 1, paddingTop: { xs: 4, sm: 8, md: 16 } }}>
                         <Stack direction={'column'} spacing={2}>
                             {langConfigs.terms3[processStates.lang].map((term: string) => <Typography key={getRandomHexStr()} variant={'body1'}>{term}</Typography>)}
+                        </Stack>
+                    </Grid>
+                    <Grid item md={1}></Grid>
+                </Grid>
+                <Grid container>
+                    <Grid item md={1}></Grid>
+                    <Grid item md={3} sx={{ p: 1, paddingTop: 16 }}>
+                        <Typography variant={'h5'}>{langConfigs.title4[processStates.lang]}</Typography>
+                        <Typography variant={'body2'}>{langConfigs.publishedDate4[processStates.lang]}</Typography>
+                    </Grid>
+                    <Grid item md={7} sx={{ p: 1, paddingTop: { xs: 4, sm: 8, md: 16 } }}>
+                        <Stack direction={'column'} spacing={2}>
+                            {langConfigs.terms4[processStates.lang].map((term: string) => <Typography key={getRandomHexStr()} variant={'body1'}>{term}</Typography>)}
                         </Stack>
                     </Grid>
                     <Grid item md={1}></Grid>

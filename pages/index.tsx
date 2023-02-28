@@ -40,7 +40,7 @@ import { useRouter } from 'next/router';
 import { TBrowsingHelper, LangConfigs } from '../lib/types';
 import { updateLocalStorage, restoreFromLocalStorage } from '../lib/utils/general';
 import { getNicknameBrief } from '../lib/utils/for/member';
-import { CenterlizedBox, ResponsiveCard, StyledSwitch, TextButton } from '../ui/Styled';
+import { CentralizedBox, ResponsiveCard, StyledSwitch, TextButton } from '../ui/Styled';
 import Navbar from '../ui/Navbar';
 import { IConcisePostComprehensive, IConcisePostComprehensive } from '../lib/interfaces/post';
 import { IChannelInfoStates, IChannelInfoDictionary } from '../lib/interfaces/channel';
@@ -568,9 +568,9 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
                         </Masonry>
                     </Box>
 
-                    <CenterlizedBox>
+                    <CentralizedBox>
                         <Button variant='contained'>{'Load more'}</Button>
-                    </CenterlizedBox>
+                    </CentralizedBox>
 
                     {/* copyright */}
                     <Copyright sx={{ marginY: 8 }} />
@@ -587,41 +587,41 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
                             <Stack>
 
                                 {/* nickname */}
-                                <CenterlizedBox mt={{ md: 2, lg: 2, xl: 3 }} onClick={handleClickOnNickname} >
+                                <CentralizedBox mt={{ md: 2, lg: 2, xl: 3 }} onClick={handleClickOnNickname} >
                                     <Button variant='text' color='inherit' sx={{ textTransform: 'none' }}>
                                         <Box sx={{ fontSize: 20, fontWeight: 100 }}>{session?.user?.name}</Box>
                                     </Button>
-                                </CenterlizedBox>
+                                </CentralizedBox>
                                 <Box mt={{ md: 2, lg: 2, xl: 3 }}><Divider /></Box>
 
                                 {/* info */}
-                                <CenterlizedBox mt={3} mb={1} >
+                                <CentralizedBox mt={3} mb={1} >
                                     <Button variant='text' color='inherit' onClick={handleClickOnStatistics}>
                                         <Box>
-                                            <CenterlizedBox><Typography variant='body1' >{langConfigs.totalFollowedByCount[processStates.lang]}</Typography></CenterlizedBox>
-                                            <CenterlizedBox><Typography variant='body1'>{viewerComprehensive.totalFollowedByCount}</Typography></CenterlizedBox>
+                                            <CentralizedBox><Typography variant='body1' >{langConfigs.totalFollowedByCount[processStates.lang]}</Typography></CentralizedBox>
+                                            <CentralizedBox><Typography variant='body1'>{viewerComprehensive.totalFollowedByCount}</Typography></CentralizedBox>
                                         </Box>
                                         <Box marginX={4}>
-                                            <CenterlizedBox><Typography variant='body1'>{langConfigs.totalCreationSavedCount[processStates.lang]}</Typography></CenterlizedBox>
-                                            <CenterlizedBox><Typography variant='body1'>{viewerComprehensive.totalCreationSavedCount}</Typography></CenterlizedBox>
+                                            <CentralizedBox><Typography variant='body1'>{langConfigs.totalCreationSavedCount[processStates.lang]}</Typography></CentralizedBox>
+                                            <CentralizedBox><Typography variant='body1'>{viewerComprehensive.totalCreationSavedCount}</Typography></CentralizedBox>
                                         </Box>
                                         <Box>
-                                            <CenterlizedBox><Typography variant='body1'>{langConfigs.totalCreationLikedCount[processStates.lang]}</Typography></CenterlizedBox>
-                                            <CenterlizedBox><Typography variant='body1'>{viewerComprehensive.totalCreationLikedCount}</Typography></CenterlizedBox>
+                                            <CentralizedBox><Typography variant='body1'>{langConfigs.totalCreationLikedCount[processStates.lang]}</Typography></CentralizedBox>
+                                            <CentralizedBox><Typography variant='body1'>{viewerComprehensive.totalCreationLikedCount}</Typography></CentralizedBox>
                                         </Box>
                                     </Button>
-                                </CenterlizedBox>
+                                </CentralizedBox>
                             </Stack>
                         </ResponsiveCard>
 
                         {/* unread message card */}
                         <ResponsiveCard sx={{ paddingY: 2 }}>
-                            <CenterlizedBox>
+                            <CentralizedBox>
                                 <Button variant='text' color='inherit' onClick={handleClickOnUnreadMessage}>
                                     <EmailIcon sx={{ color: 'grey' }} />
                                     <Typography variant='body1' sx={{ marginTop: 0.1, marginLeft: 1 }}>{viewerComprehensive.reply}{langConfigs.unreadReplyNotice[processStates.lang]}</Typography>
                                 </Button>
-                            </CenterlizedBox>
+                            </CentralizedBox>
                         </ResponsiveCard>
                     </ Stack>}
 

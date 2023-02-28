@@ -19,7 +19,7 @@ import StarIcon from '@mui/icons-material/Star';
 import ReplyIcon from '@mui/icons-material/Reply';
 import EditIcon from '@mui/icons-material/Edit';
 
-import { ResponsiveCard, CenterlizedBox, TextButton } from '../../ui/Styled';
+import { ResponsiveCard, CentralizedBox, TextButton } from '../../ui/Styled';
 
 import Popover from '@mui/material/Popover';
 import Backdrop from '@mui/material/Backdrop';
@@ -1223,43 +1223,43 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
                                 <Stack>
 
                                     {/* avatar */}
-                                    <CenterlizedBox mt={1}>
+                                    <CentralizedBox mt={1}>
                                         <Avatar src={provideAvatarImageUrl(authorId, domain)} sx={{ width: 56, height: 56, bgcolor: 'grey' }}>{authorInfo_ss.nickname?.charAt(0).toUpperCase()}</Avatar>
-                                    </CenterlizedBox>
+                                    </CentralizedBox>
 
                                     {/* nickname */}
-                                    <CenterlizedBox mt={1}><Typography variant='body1'>{authorInfo_ss.nickname}</Typography></CenterlizedBox>
+                                    <CentralizedBox mt={1}><Typography variant='body1'>{authorInfo_ss.nickname}</Typography></CentralizedBox>
 
 
-                                    <CenterlizedBox >
+                                    <CentralizedBox >
                                         <Tooltip title={behaviourStates.followed ? langConfigs.undoFollow[preferenceStates.lang] : langConfigs.follow[preferenceStates.lang]}>
                                             <Button variant='text' color={behaviourStates.followed ? 'inherit' : 'info'} sx={{ paddingY: 0.1, borderRadius: 4, fontSize: 13 }} onClick={async () => { await handleFollowOrUndoFollow() }}>{behaviourStates.followed ? langConfigs.followed[preferenceStates.lang] : langConfigs.follow[preferenceStates.lang]}</Button>
                                         </Tooltip>
-                                    </CenterlizedBox>
+                                    </CentralizedBox>
 
                                     <Box mt={1}><Divider /></Box>
 
                                     {/* info */}
-                                    <CenterlizedBox mt={2} >
+                                    <CentralizedBox mt={2} >
 
                                         {/* info left column */}
                                         <Box>
-                                            <CenterlizedBox><Typography variant='body1'>{langConfigs.creations[preferenceStates.lang]}</Typography></CenterlizedBox>
-                                            <CenterlizedBox><Typography variant='body1'>{authorStatisticsState.totalCreationCount}</Typography></CenterlizedBox>
+                                            <CentralizedBox><Typography variant='body1'>{langConfigs.creations[preferenceStates.lang]}</Typography></CentralizedBox>
+                                            <CentralizedBox><Typography variant='body1'>{authorStatisticsState.totalCreationCount}</Typography></CentralizedBox>
                                         </Box>
 
                                         {/* info middle column */}
                                         <Box marginX={4}>
-                                            <CenterlizedBox><Typography variant='body1' >{langConfigs.followedBy[preferenceStates.lang]}</Typography></CenterlizedBox>
-                                            <CenterlizedBox><Typography variant='body1'>{authorStatisticsState.totalFollowedByCount}</Typography></CenterlizedBox>
+                                            <CentralizedBox><Typography variant='body1' >{langConfigs.followedBy[preferenceStates.lang]}</Typography></CentralizedBox>
+                                            <CentralizedBox><Typography variant='body1'>{authorStatisticsState.totalFollowedByCount}</Typography></CentralizedBox>
                                         </Box>
 
                                         {/* info right column */}
                                         <Box>
-                                            <CenterlizedBox><Typography variant='body1'>{langConfigs.liked[preferenceStates.lang]}</Typography></CenterlizedBox>
-                                            <CenterlizedBox><Typography variant='body1'>{authorStatisticsState.totalCreationLikedCount}</Typography></CenterlizedBox>
+                                            <CentralizedBox><Typography variant='body1'>{langConfigs.liked[preferenceStates.lang]}</Typography></CentralizedBox>
+                                            <CentralizedBox><Typography variant='body1'>{authorStatisticsState.totalCreationLikedCount}</Typography></CentralizedBox>
                                         </Box>
-                                    </CenterlizedBox>
+                                    </CentralizedBox>
                                 </Stack>
                             </ResponsiveCard>
 

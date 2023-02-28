@@ -4,7 +4,7 @@ import { LangConfigs } from '../lib/types';
 
 type TComponentProps = {
     lang?: string,
-    sx: any
+    sx?: any
 }
 
 const langConfigs: LangConfigs = {

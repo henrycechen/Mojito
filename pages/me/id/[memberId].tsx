@@ -75,7 +75,7 @@ import { verifyId, verifyNoticeId, verifyPassword } from '../../../lib/utils/ver
 import { provideAvatarImageUrl, getNicknameBrief, fakeConciseMemberInfo, fakeConciseMemberStatistics, fakeRestrictedMemberInfo } from '../../../lib/utils/for/member';
 import { noticeIdToUrl, noticeInfoToString } from '../../../lib/utils/for/notification';
 
-import { CenterlizedBox, ResponsiveCard, StyledSwitch, TextButton } from '../../../ui/Styled';
+import { CentralizedBox, ResponsiveCard, StyledSwitch, TextButton } from '../../../ui/Styled';
 
 import FormGroup from '@mui/material/FormGroup';
 import Switch from '@mui/material/Switch';
@@ -371,7 +371,7 @@ const langConfigs: LangConfigs = {
     },
     referToCommunityGuidelines: {
         tw: '詳情請參見我們的社区準則',
-        cn: '详情请参见我们的社区准则',
+        cn: '详情请参见我们的社区规范',
         en: 'Please refer to our Community Guidelines'
     },
     invalidNicknameOrConflict: {
@@ -929,7 +929,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                                 {/* like */}
                                 <Button sx={{ color: 'like' === messagelayoutStates.selectedCategory ? 'primary' : 'grey.600' }} onClick={handleSelectNoticeCategory('like')}>
                                     <Box>
-                                        <CenterlizedBox sx={{ p: 1 }}><ThumbUpIcon /></CenterlizedBox>
+                                        <CentralizedBox sx={{ p: 1 }}><ThumbUpIcon /></CentralizedBox>
                                         <Typography variant={'body2'} textAlign={'center'}>{langConfigs.liked[preferenceStates.lang]}{0 === noticeStatistics.like ? '' : `+${noticeStatistics.like}`}</Typography>
                                     </Box>
                                 </Button>
@@ -937,7 +937,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                                 {/* save */}
                                 <Button sx={{ color: 'save' === messagelayoutStates.selectedCategory ? 'primary' : 'grey.600' }} onClick={handleSelectNoticeCategory('save')}>
                                     <Box>
-                                        <CenterlizedBox sx={{ p: 1 }}><StarIcon /></CenterlizedBox>
+                                        <CentralizedBox sx={{ p: 1 }}><StarIcon /></CentralizedBox>
                                         <Typography variant={'body2'} textAlign={'center'}>{langConfigs.saved[preferenceStates.lang]}{0 === noticeStatistics.save ? '' : `+${noticeStatistics.save}`}</Typography>
                                     </Box>
                                 </Button>
@@ -945,7 +945,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                                 {/* reply */}
                                 <Button sx={{ color: 'reply' === messagelayoutStates.selectedCategory ? 'primary' : 'grey.600' }} onClick={handleSelectNoticeCategory('reply')}>
                                     <Box>
-                                        <CenterlizedBox sx={{ p: 1 }}><ChatBubbleIcon /></CenterlizedBox>
+                                        <CentralizedBox sx={{ p: 1 }}><ChatBubbleIcon /></CentralizedBox>
                                         <Typography variant={'body2'} textAlign={'center'}>{langConfigs.replied[preferenceStates.lang]}{0 === noticeStatistics.reply ? '' : `+${noticeStatistics.reply}`}</Typography>
                                     </Box>
                                 </Button>
@@ -953,7 +953,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                                 {/* cue */}
                                 <Button sx={{ color: 'cue' === messagelayoutStates.selectedCategory ? 'primary' : 'grey.600' }} onClick={handleSelectNoticeCategory('cue')}>
                                     <Box>
-                                        <CenterlizedBox sx={{ p: 1 }}><AlternateEmailIcon /></CenterlizedBox>
+                                        <CentralizedBox sx={{ p: 1 }}><AlternateEmailIcon /></CentralizedBox>
                                         <Typography variant={'body2'} textAlign={'center'}>{langConfigs.cued[preferenceStates.lang]}{0 === noticeStatistics.cue ? '' : `+${noticeStatistics.cue}`}</Typography>
                                     </Box>
                                 </Button>
@@ -1455,22 +1455,22 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                 <Box sx={{ paddingTop: 6 }}>
 
                     {/* image */}
-                    <CenterlizedBox>
+                    <CentralizedBox>
                         <Avatar src={avatarImageSettingStates.alternativeImageUrl} sx={{ width: { xs: 96, md: 128 }, height: { xs: 96, md: 128 }, }}></Avatar>
-                    </CenterlizedBox>
+                    </CentralizedBox>
 
                     {/* 'open file' button */}
-                    <CenterlizedBox mt={1}>
+                    <CentralizedBox mt={1}>
                         <Box>
                             <IconButton color={'primary'} aria-label={'upload picture'} component={'label'} >
                                 <input hidden accept={'image/*'} type={'file'} onChange={handleOpenFile} />
                                 <PhotoCamera />
                             </IconButton>
                         </Box>
-                    </CenterlizedBox>
+                    </CentralizedBox>
 
                     {/* 'upload' button */}
-                    <CenterlizedBox mt={1}>
+                    <CentralizedBox mt={1}>
                         <Button variant='contained' color={400 !== avatarImageSettingStates.progressStatus ? 'primary' : 'error'} size={'small'} onClick={async () => { await handleUploadAvatarImage() }} disabled={avatarImageSettingStates.disableButton}>
                             {/* button: disabled, result: 0 (no-file) */}
                             {0 === avatarImageSettingStates.progressStatus && <Typography variant={'body2'}>{langConfigs.chooseImageToUpload[preferenceStates.lang]}</Typography>}
@@ -1481,12 +1481,12 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                             {/* button: enabled, result: 400 (failed) */}
                             {400 === avatarImageSettingStates.progressStatus && <Typography variant={'body2'}>{langConfigs.uploadFailed[preferenceStates.lang]}</Typography>}
                         </Button>
-                    </CenterlizedBox>
+                    </CentralizedBox>
 
                     {/* requirenment */}
-                    <CenterlizedBox mt={2}>
+                    <CentralizedBox mt={2}>
                         <Typography color={'grey'} variant={'body2'} align={'center'}>{langConfigs.avatarImageRequirement[preferenceStates.lang]}</Typography>
-                    </CenterlizedBox>
+                    </CentralizedBox>
                 </Box>
             )
         }
@@ -1550,7 +1550,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                 <Box sx={{ pt: { xs: 6, sm: 16 }, px: 2 }}>
 
                     {/* nickname input */}
-                    <CenterlizedBox>
+                    <CentralizedBox>
                         <TextField
                             error={nicknameSettingStates.displayError}
                             label={langConfigs.newNickname[preferenceStates.lang]}
@@ -1558,10 +1558,10 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                             onChange={handleChange}
                             size={'small'}
                         />
-                    </CenterlizedBox>
+                    </CentralizedBox>
 
                     {/* 'update' button */}
-                    <CenterlizedBox sx={{ mt: 2 }}>
+                    <CentralizedBox sx={{ mt: 2 }}>
                         <Button variant='contained' color={![422, 500].includes(nicknameSettingStates.progressStatus) ? 'primary' : 'error'} size='small' onClick={async () => { await handleSubmit() }} disabled={nicknameSettingStates.disableButton || '' === nicknameSettingStates.alternativeName}>
                             {/* button: enabled, result: 100 (ready) */}
                             {100 === nicknameSettingStates.progressStatus && <Typography variant={'body2'}>{langConfigs.update[preferenceStates.lang]}</Typography>}
@@ -1574,17 +1574,17 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                             {/* button: enabled, result: 500 (failed) */}
                             {500 === nicknameSettingStates.progressStatus && <Typography variant={'body2'}>{langConfigs.updateFailed[preferenceStates.lang]}</Typography>}
                         </Button>
-                    </CenterlizedBox>
+                    </CentralizedBox>
 
                     {/* requirenment */}
-                    <CenterlizedBox mt={2}>
+                    <CentralizedBox mt={2}>
                         <Typography color={'grey'} variant={'body2'} align={'center'}>{langConfigs.nicknameRequirement[preferenceStates.lang]}</Typography>
-                    </CenterlizedBox>
+                    </CentralizedBox>
 
                     {/* requirenment */}
-                    <CenterlizedBox>
+                    <CentralizedBox>
                         <Typography color={'grey'} variant={'body2'} align={'center'}>{langConfigs.referToCommunityGuidelines[preferenceStates.lang]}</Typography>
-                    </CenterlizedBox>
+                    </CentralizedBox>
                 </Box>
             )
         }
@@ -1672,7 +1672,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                 <Box sx={{ pt: 6, px: 2 }}>
 
                     {/* current password */}
-                    <CenterlizedBox>
+                    <CentralizedBox>
                         <FormControl variant={'outlined'} size={'small'}>
                             <InputLabel htmlFor={'setting-password-current'}>{langConfigs.currentPassword[preferenceStates.lang]}</InputLabel>
                             <OutlinedInput
@@ -1691,10 +1691,10 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                                 error={passwordSettingStates.displayError0}
                             />
                         </FormControl>
-                    </CenterlizedBox>
+                    </CentralizedBox>
 
                     {/* new password */}
-                    <CenterlizedBox sx={{ mt: 2 }}>
+                    <CentralizedBox sx={{ mt: 2 }}>
                         <FormControl variant='outlined' size='small'>
                             <InputLabel htmlFor='setting-password-new'>{langConfigs.newPassword[preferenceStates.lang]}</InputLabel>
                             <OutlinedInput
@@ -1713,10 +1713,10 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                                 error={passwordSettingStates.displayError1}
                             />
                         </FormControl>
-                    </CenterlizedBox>
+                    </CentralizedBox>
 
                     {/* repear new password */}
-                    <CenterlizedBox sx={{ mt: 2 }}>
+                    <CentralizedBox sx={{ mt: 2 }}>
                         <FormControl variant='outlined' size='small'>
                             <InputLabel htmlFor='setting-password-repeat'>{langConfigs.repeatPassword[preferenceStates.lang]}</InputLabel>
                             <OutlinedInput
@@ -1735,10 +1735,10 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                                 error={passwordSettingStates.displayError1}
                             />
                         </FormControl>
-                    </CenterlizedBox>
+                    </CentralizedBox>
 
                     {/* 'update' button */}
-                    <CenterlizedBox sx={{ mt: 2 }}>
+                    <CentralizedBox sx={{ mt: 2 }}>
                         <Button variant='contained' color={![0, 400, 422, 500].includes(passwordSettingStates.progressStatus) ? 'primary' : 'error'} size='small' onClick={async () => { await handleSubmit() }}
                             disabled={passwordSettingStates.disableButton || !('' !== passwordSettingStates.currentPassword && '' !== passwordSettingStates.newPassword && '' !== passwordSettingStates.repeatPassword)}
                         >
@@ -1757,15 +1757,15 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                             {/* button: enabled, result: 500 (failed) */}
                             {500 === passwordSettingStates.progressStatus && <Typography variant={'body2'}>{langConfigs.updateFailed[preferenceStates.lang]}</Typography>}
                         </Button>
-                    </CenterlizedBox>
+                    </CentralizedBox>
 
                     {/* requirenment */}
-                    <CenterlizedBox mt={2}>
+                    <CentralizedBox mt={2}>
                         <Typography color={'grey'} variant={'body2'} align={'center'}>{langConfigs.passwordLengthRequirement[preferenceStates.lang]}</Typography>
-                    </CenterlizedBox>
-                    <CenterlizedBox>
+                    </CentralizedBox>
+                    <CentralizedBox>
                         <Typography color={'grey'} variant={'body2'} align={'center'}>{langConfigs.passwordComplexityRequirement[preferenceStates.lang]}</Typography>
-                    </CenterlizedBox>
+                    </CentralizedBox>
 
                     {/* forgot password link */}
                     <Box sx={{ mt: 6, paddingX: 2, textAlign: 'right' }} >
@@ -1836,7 +1836,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                 <Box sx={{ pt: { xs: 6, sm: 12 }, px: 2 }}>
 
                     {/* brief intro input */}
-                    <CenterlizedBox>
+                    <CentralizedBox>
                         <TextField
                             error={briefIntroSettingStates.displayError}
                             label={langConfigs.briefIntro[preferenceStates.lang]}
@@ -1848,9 +1848,9 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                             size={'small'}
                             fullWidth
                         />
-                    </CenterlizedBox>
+                    </CentralizedBox>
 
-                    <CenterlizedBox sx={{ mt: 2 }}>
+                    <CentralizedBox sx={{ mt: 2 }}>
                         <Button variant='contained' color={![422, 500].includes(briefIntroSettingStates.progressStatus) ? 'primary' : 'error'} size='small' onClick={async () => { await handleSubmit() }} disabled={briefIntroSettingStates.disableButton}>
                             {/* button: enabled, result: 100 (ready) */}
                             {100 === briefIntroSettingStates.progressStatus && <Typography variant={'body2'}>{langConfigs.update[preferenceStates.lang]}</Typography>}
@@ -1863,17 +1863,17 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                             {/* button: enabled, result: 500 (failed) */}
                             {500 === briefIntroSettingStates.progressStatus && <Typography variant={'body2'}>{langConfigs.updateFailed[preferenceStates.lang]}</Typography>}
                         </Button>
-                    </CenterlizedBox>
+                    </CentralizedBox>
 
                     {/* requirenment */}
-                    <CenterlizedBox mt={2}>
+                    <CentralizedBox mt={2}>
                         <Typography color={'grey'} variant={'body2'} align={'center'}>{langConfigs.briefIntroRequirement[preferenceStates.lang]}</Typography>
-                    </CenterlizedBox>
+                    </CentralizedBox>
 
                     {/* requirenment */}
-                    <CenterlizedBox>
+                    <CentralizedBox>
                         <Typography color={'grey'} variant={'body2'} align={'center'}>{langConfigs.referToCommunityGuidelines[preferenceStates.lang]}</Typography>
-                    </CenterlizedBox>
+                    </CentralizedBox>
                 </Box>
             )
         }
@@ -1924,7 +1924,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                 <Box sx={{ pt: { xs: 6, sm: 18 }, px: 2 }}>
 
                     {/* gender select */}
-                    <CenterlizedBox>
+                    <CentralizedBox>
                         <FormControl sx={{ minWidth: 100 }}>
                             <InputLabel id={'setting-gender-select-label'}>{langConfigs.gender[preferenceStates.lang]}</InputLabel>
                             <Select
@@ -1940,10 +1940,10 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                                 <MenuItem value={-1}>{langConfigs.keepAsSecret[preferenceStates.lang]}</MenuItem>
                             </Select>
                         </FormControl>
-                    </CenterlizedBox>
+                    </CentralizedBox>
 
                     {/* 'update' button */}
-                    <CenterlizedBox sx={{ mt: 2 }}>
+                    <CentralizedBox sx={{ mt: 2 }}>
                         <Button variant={'contained'} color={400 !== genderSettingStates.progressStatus ? 'primary' : 'error'} size={'small'} onClick={async () => { await handleSubmit() }} disabled={genderSettingStates.disableButton}>
                             {/* button: enabled, result: 100 (ready) */}
                             {100 === genderSettingStates.progressStatus && <Typography variant={'body2'}>{langConfigs.update[preferenceStates.lang]}</Typography>}
@@ -1954,7 +1954,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                             {/* button: enabled, result: 400 (failed) */}
                             {400 === genderSettingStates.progressStatus && <Typography variant={'body2'}>{langConfigs.updateFailed[preferenceStates.lang]}</Typography>}
                         </Button>
-                    </CenterlizedBox>
+                    </CentralizedBox>
                 </Box>
             )
         }
@@ -2015,7 +2015,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                 <Box sx={{ pt: { xs: 6, sm: 16 }, px: 2 }}>
 
                     {/* birthday select */}
-                    <CenterlizedBox>
+                    <CentralizedBox>
                         <LocalizationProvider dateAdapter={AdapterDayjs}>
                             <MobileDatePicker
                                 label={langConfigs.chooseYourBirthday[preferenceStates.lang]}
@@ -2026,10 +2026,10 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
                             />
                         </LocalizationProvider>
-                    </CenterlizedBox>
+                    </CentralizedBox>
 
                     {/* 'update' button */}
-                    <CenterlizedBox sx={{ mt: 2 }}>
+                    <CentralizedBox sx={{ mt: 2 }}>
                         <Button variant={'contained'} color={400 !== birthdaySettingStates.progressStatus ? 'primary' : 'error'} size={'small'} onClick={async () => { await handleSubmit() }} disabled={birthdaySettingStates.disableButton}>
                             {/* button: enabled, result: 100 (ready) */}
                             {100 === birthdaySettingStates.progressStatus && <Typography variant={'body2'}>{langConfigs.update[preferenceStates.lang]}</Typography>}
@@ -2040,7 +2040,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                             {/* button: enabled, result: 400 (failed) */}
                             {400 === birthdaySettingStates.progressStatus && <Typography variant={'body2'}>{langConfigs.updateFailed[preferenceStates.lang]}</Typography>}
                         </Button>
-                    </CenterlizedBox>
+                    </CentralizedBox>
                 </Box>
             )
         }
@@ -2500,26 +2500,26 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                 <Box>
 
                     {/* avatar */}
-                    <CenterlizedBox sx={{ mt: { xs: 4, sm: 5 } }}>
+                    <CentralizedBox sx={{ mt: { xs: 4, sm: 5 } }}>
                         <Avatar src={memberInfoStates.avatarImageUrl} sx={{ height: { xs: 90, sm: 72 }, width: { xs: 90, sm: 72 } }}>{memberInfoStates.nickname?.charAt(0).toUpperCase()}</Avatar>
-                    </CenterlizedBox>
+                    </CentralizedBox>
 
                     {/* nickname */}
-                    <CenterlizedBox sx={{ mt: { xs: 1, sm: 1 } }}>
+                    <CentralizedBox sx={{ mt: { xs: 1, sm: 1 } }}>
                         <Typography variant='body1' textAlign={'center'} fontSize={{ xs: 22, sm: 26 }}>{memberInfoStates.nickname}</Typography>
-                    </CenterlizedBox>
+                    </CentralizedBox>
 
                     {/* brief intro */}
-                    <CenterlizedBox sx={{ mt: { xs: 0 } }}>
+                    <CentralizedBox sx={{ mt: { xs: 0 } }}>
                         <Typography variant={'body2'} textAlign={'center'} fontSize={{ xs: 14, sm: 15 }}>{memberInfoStates.briefIntro}</Typography>
-                    </CenterlizedBox>
+                    </CentralizedBox>
 
                     {/* divider */}
-                    <CenterlizedBox sx={{ mt: { xs: 1, sm: 2 } }}>
+                    <CentralizedBox sx={{ mt: { xs: 1, sm: 2 } }}>
                         <Box></Box>
                         <Box sx={{ width: { xs: 220, sm: 280 } }}><Divider></Divider></Box>
                         <Box></Box>
-                    </CenterlizedBox>
+                    </CentralizedBox>
 
                     {/* info */}
                     <Grid container columnSpacing={{ xs: 3, sm: 5 }} sx={{ mt: { xs: 1, sm: 2 } }}>
@@ -2529,42 +2529,42 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
                         {/* creation count */}
                         <Grid item>
-                            <CenterlizedBox>
+                            <CentralizedBox>
                                 <Typography variant={'body2'}>{langConfigs.creations[preferenceStates.lang]}</Typography>
-                            </CenterlizedBox>
-                            <CenterlizedBox>
+                            </CentralizedBox>
+                            <CentralizedBox>
                                 <Typography variant={'body2'}>{memberStatistics_ss.totalCreationCount}</Typography>
-                            </CenterlizedBox>
+                            </CentralizedBox>
                         </Grid>
 
                         {/* followed by count */}
                         <Grid item>
-                            <CenterlizedBox>
+                            <CentralizedBox>
                                 <Typography variant={'body2'}>{langConfigs.followedBy[preferenceStates.lang]}</Typography>
-                            </CenterlizedBox>
-                            <CenterlizedBox>
+                            </CentralizedBox>
+                            <CentralizedBox>
                                 <Typography variant={'body2'}>{memberStatistics_ss.totalFollowedByCount}</Typography>
-                            </CenterlizedBox>
+                            </CentralizedBox>
                         </Grid>
 
                         {/* creation saved count */}
                         <Grid item>
-                            <CenterlizedBox>
+                            <CentralizedBox>
                                 <Typography variant={'body2'}>{langConfigs.saved[preferenceStates.lang]}</Typography>
-                            </CenterlizedBox>
-                            <CenterlizedBox>
+                            </CentralizedBox>
+                            <CentralizedBox>
                                 <Typography variant={'body2'}>{memberStatistics_ss.totalCreationSavedCount}</Typography>
-                            </CenterlizedBox>
+                            </CentralizedBox>
                         </Grid>
 
                         {/* creation liked count */}
                         <Grid item>
-                            <CenterlizedBox>
+                            <CentralizedBox>
                                 <Typography variant={'body2'}>{langConfigs.like[preferenceStates.lang]}</Typography>
-                            </CenterlizedBox>
-                            <CenterlizedBox>
+                            </CentralizedBox>
+                            <CentralizedBox>
                                 <Typography variant={'body2'}>{memberStatistics_ss.totalCreationLikedCount}</Typography>
-                            </CenterlizedBox>
+                            </CentralizedBox>
                         </Grid>
 
                         {/* blank space */}

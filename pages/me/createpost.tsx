@@ -33,17 +33,19 @@ import Navbar from '../../ui/Navbar';
 import Copyright from '../../ui/Copyright';
 
 import { useRouter } from 'next/router';
-import { IConciseTopicComprehensive } from '../../lib/interfaces';
+import { IConciseTopicComprehensive } from '../../lib/interfaces/topic';
 import { LangConfigs } from '../../lib/types';
-import { IConciseMemberInfo, IPostComprehensive } from '../../lib/interfaces';
+import { IConciseMemberInfo } from '../../lib/interfaces/member';
+import { IPostComprehensive } from '../../lib/interfaces/post';
 import { IChannelInfoStates, IChannelInfoDictionary } from '../../lib/interfaces/channel';
-import { getNicknameBrief, getRandomHexStr } from '../../lib/utils';
+import { getNicknameBrief, } from '../../lib/utils/for/member';
+import { getRandomHexStr } from '../../lib/utils/create';
 
 import Input from '@mui/material/Input';
 import ListItemText from '@mui/material/ListItemText';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import MenuList from '@mui/material/MenuList/MenuList';
-import { CenterlizedBox } from '../../ui/Styled';
+import { CentralizedBox } from '../../ui/Styled';
 import { NextPageContext } from 'next';
 import Avatar from '@mui/material/Avatar';
 
@@ -813,9 +815,9 @@ const CreatePost = ({ channelInfoDict_ss }: TCreatePostPageProps) => {
 
                         {/* existed topic list */}
                         <Box mt={2}>
-                            <CenterlizedBox sx={{ display: topicHelperState.display && topicHelperState.displayAlert ? 'flex' : 'none' }}>
+                            <CentralizedBox sx={{ display: topicHelperState.display && topicHelperState.displayAlert ? 'flex' : 'none' }}>
                                 <Typography color={'text.disabled'}>{langConfigs.relatedTopicNotFound[lang]}</Typography>
-                            </CenterlizedBox>
+                            </CentralizedBox>
                             <MenuList sx={{ display: 'block' }}>
                                 {0 !== topicHelperState.conciseTopicComprehensiveArr.length && topicHelperState.conciseTopicComprehensiveArr.map(topic => {
                                     return (

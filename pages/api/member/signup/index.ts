@@ -80,7 +80,7 @@ export default async function SignUp(req: NextApiRequest, res: NextApiResponse) 
             return;
         }
 
-        //// [!] attemp to parse JSON string to object makes the probability of causing SyntaxError ////
+        //// [!] attemp to parse JSON string makes the probability of causing SyntaxError ////
         const { emailAddress, password } = JSON.parse(requestInfo);
 
         //// Verify email address ////

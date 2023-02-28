@@ -13,7 +13,7 @@ export const ResponsiveCard = styled(Box)<BoxProps>(({ theme }) => ({
     }
 }))
 
-export const CenterlizedBox = styled(Box)<BoxProps>(({ theme }) => ({
+export const CentralizedBox = styled(Box)<BoxProps>(({ theme }) => ({
     display: 'flex',
     justifyContent: 'center'
 }))

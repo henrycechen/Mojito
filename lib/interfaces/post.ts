@@ -38,6 +38,8 @@ export interface IPostComprehensive {
     totalSavedCount: number;
     totalUndoSavedCount: number;
 
+    totalAffairCount: number;
+
     totalEditCount: number;
 
     //// edit info ////
@@ -56,6 +58,7 @@ export interface IEditedPostComprehensive {
     
     totalLikedCountBeforeEdit: number;
     totalDislikedCountBeforeEdit: number;
+    totalAffairCountBeforeEdit: number;
 }
 
 export interface IRestrictedPostComprehensive {

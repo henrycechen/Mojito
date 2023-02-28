@@ -10,7 +10,7 @@ import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 
-import { signIn, getProviders, getSession, getCsrfToken, useSession } from 'next-auth/react'
+import { signIn, getProviders, getSession, getCsrfToken, useSession } from 'next-auth/react';
 
 import IconButton from '@mui/material/IconButton';
 import InputLabel from '@mui/material/InputLabel';
@@ -32,11 +32,12 @@ import { NextPageContext } from 'next/types';
 import { LangConfigs, TSignInCredentialStates } from '../lib/types';
 import About from '../ui/About';
 import Terms from '../ui/Terms';
+import { CentralizedBox } from '../ui/Styled';
 
 type SigninPageProps = {
     providers: Awaited<ReturnType<typeof getProviders>> | null;
     csrfToken: Awaited<ReturnType<typeof getCsrfToken>> | null;
-}
+};
 
 export async function getServerSideProps(context: NextPageContext) {
     return {
@@ -44,11 +45,11 @@ export async function getServerSideProps(context: NextPageContext) {
             providers: await getProviders(),
             csrfToken: await getCsrfToken(context),
         }
-    }
+    };
 }
 
 const recaptchaClientKey = process.env.NEXT_PUBLIC_INVISIABLE_RECAPTCHA_SITE_KEY ?? '';
-const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
+const defaultLang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
     signIn: {
         tw: '登入',
@@ -138,7 +139,7 @@ const langConfigs: LangConfigs = {
             en: ['Third-party Account sign in unsuccessful', ', please try again later or contact our Webmaster']
         }
     }
-}
+};
 
 const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
     // Handle session
@@ -151,6 +152,7 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
 
     // Decalre process states
     const [processStates, setProcessStates] = React.useState({
+        lang: defaultLang,
         /**
          * progress list:
          * - signin
@@ -165,7 +167,16 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
         displayThirdPartyProviderSignAlert: false,
         displayResendEmailButton: false,
         displayCircularProgress: false
-    })
+    });
+
+
+    const setLang = () => {
+        if ('tw' === processStates.lang) { setProcessStates({ ...processStates, lang: 'cn' }); }
+        if ('cn' === processStates.lang) { setProcessStates({ ...processStates, lang: 'en' }); }
+        if ('en' === processStates.lang) { setProcessStates({ ...processStates, lang: 'tw' }); }
+    };
+
+
     // Handle error hint
     React.useEffect(() => {
         const { error, providerId } = router.query;
@@ -173,7 +184,7 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
             if ('CredentialsSignin' === error) {
                 setProcessStates({
                     ...processStates,
-                    mojitoMemberSystemSigninAlertContent: langConfigs.errors.CredentialsSignin[lang],
+                    mojitoMemberSystemSigninAlertContent: langConfigs.errors.CredentialsSignin[processStates.lang],
                     displayMojitoMemberSystemSigninAlert: true,
                     displayThirdPartyProviderSignAlert: false,
                     displayResendEmailButton: false
@@ -184,7 +195,7 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
                 if ('string' === typeof providerId && 'MojitoMemberSystem' === providerId) {
                     setProcessStates({
                         ...processStates,
-                        mojitoMemberSystemSigninAlertContent: langConfigs.errors.EmailAddressVerificationRequired[lang],
+                        mojitoMemberSystemSigninAlertContent: langConfigs.errors.EmailAddressVerificationRequired[processStates.lang],
                         displayMojitoMemberSystemSigninAlert: true,
                         displayThirdPartyProviderSignAlert: false,
                         displayResendEmailButton: true
@@ -193,7 +204,7 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
                 }
                 setProcessStates({
                     ...processStates,
-                    thirdPartyProviderSigninAlertContent: langConfigs.errors.EmailAddressVerificationRequired[lang],
+                    thirdPartyProviderSigninAlertContent: langConfigs.errors.EmailAddressVerificationRequired[processStates.lang],
                     displayMojitoMemberSystemSigninAlert: false,
                     displayThirdPartyProviderSignAlert: true,
                     displayResendEmailButton: true
@@ -203,7 +214,7 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
             if ('InappropriateEmailAddress' === error) {
                 setProcessStates({
                     ...processStates,
-                    thirdPartyProviderSigninAlertContent: langConfigs.errors.InappropriateEmailAddress[lang],
+                    thirdPartyProviderSigninAlertContent: langConfigs.errors.InappropriateEmailAddress[processStates.lang],
                     displayMojitoMemberSystemSigninAlert: false,
                     displayThirdPartyProviderSignAlert: true,
                     displayResendEmailButton: false
@@ -214,7 +225,7 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
                 if ('string' === typeof providerId && 'MojitoMemberSystem' === providerId) {
                     setProcessStates({
                         ...processStates,
-                        mojitoMemberSystemSigninAlertContent: langConfigs.errors.DefectiveMember[lang],
+                        mojitoMemberSystemSigninAlertContent: langConfigs.errors.DefectiveMember[processStates.lang],
                         displayMojitoMemberSystemSigninAlert: true,
                         displayThirdPartyProviderSignAlert: false,
                         displayResendEmailButton: false
@@ -223,7 +234,7 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
                 }
                 setProcessStates({
                     ...processStates,
-                    thirdPartyProviderSigninAlertContent: langConfigs.errors.DefectiveMember[lang],
+                    thirdPartyProviderSigninAlertContent: langConfigs.errors.DefectiveMember[processStates.lang],
                     displayMojitoMemberSystemSigninAlert: false,
                     displayThirdPartyProviderSignAlert: true,
                     displayResendEmailButton: false
@@ -234,7 +245,7 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
                 if ('string' === typeof providerId && 'MojitoMemberSystem' === providerId) {
                     setProcessStates({
                         ...processStates,
-                        mojitoMemberSystemSigninAlertContent: langConfigs.errors.MemberSuspendedOrDeactivated[lang],
+                        mojitoMemberSystemSigninAlertContent: langConfigs.errors.MemberSuspendedOrDeactivated[processStates.lang],
                         displayMojitoMemberSystemSigninAlert: true,
                         displayThirdPartyProviderSignAlert: false,
                         displayResendEmailButton: false
@@ -243,7 +254,7 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
                 }
                 setProcessStates({
                     ...processStates,
-                    thirdPartyProviderSigninAlertContent: langConfigs.errors.MemberSuspendedOrDeactivated[lang],
+                    thirdPartyProviderSigninAlertContent: langConfigs.errors.MemberSuspendedOrDeactivated[processStates.lang],
                     displayMojitoMemberSystemSigninAlert: false,
                     displayThirdPartyProviderSignAlert: true,
                     displayResendEmailButton: false
@@ -253,7 +264,7 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
             if ('UnrecognizedProvider' === error) {
                 setProcessStates({
                     ...processStates,
-                    thirdPartyProviderSigninAlertContent: langConfigs.errors.UnrecognizedProvider[lang],
+                    thirdPartyProviderSigninAlertContent: langConfigs.errors.UnrecognizedProvider[processStates.lang],
                     displayMojitoMemberSystemSigninAlert: false,
                     displayThirdPartyProviderSignAlert: true,
                     displayResendEmailButton: false
@@ -263,7 +274,7 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
             if ('ThirdPartyProviderSignin' === error) {
                 setProcessStates({
                     ...processStates,
-                    thirdPartyProviderSigninAlertContent: langConfigs.errors.ThirdPartyProviderSignin[lang],
+                    thirdPartyProviderSigninAlertContent: langConfigs.errors.ThirdPartyProviderSignin[processStates.lang],
                     displayMojitoMemberSystemSigninAlert: false,
                     displayThirdPartyProviderSignAlert: true,
                     displayResendEmailButton: false
@@ -274,7 +285,7 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
     }, [router]);
 
     // Handle signin form submit on recaptcha response update
-    React.useEffect(() => { postRequest() }, [processStates.recaptchaResponse]);
+    React.useEffect(() => { postRequest(); }, [processStates.recaptchaResponse]);
     const postRequest = async () => {
         if ('' === processStates.recaptchaResponse) {
             // ReCAPTCHA challenge not ready
@@ -288,7 +299,7 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
                     emailAddress: signInCredentialStates.emailAddress,
                     password: signInCredentialStates.password,
                     redirectUrl: router.query?.redirectUrl
-                })
+                });
             }
         }
         if ('resendemail' === processStates.processInProgress) {
@@ -308,7 +319,7 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
                 router.push('/signup?info=ResendVerificationEmailError');
             }
         }
-    }
+    };
 
     // Decalre signIn credential states
     const [signInCredentialStates, setSignInCredentialStates] = React.useState({
@@ -317,15 +328,15 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
         // password: '',
         password: '123@abcD', //////// TODO: test ////////
         showpassword: false
-    })
+    });
 
     // Handle signIn credential states change
     const handleChange = (prop: keyof TSignInCredentialStates) => (event: React.ChangeEvent<HTMLInputElement>) => {
         setSignInCredentialStates({ ...signInCredentialStates, [prop]: event.target.value });
     };
     const handleShowPassword = () => {
-        setSignInCredentialStates({ ...signInCredentialStates, showpassword: !signInCredentialStates.showpassword })
-    }
+        setSignInCredentialStates({ ...signInCredentialStates, showpassword: !signInCredentialStates.showpassword });
+    };
     const handleMouseDownPassword = (event: React.MouseEvent<HTMLButtonElement>) => {
         event.preventDefault();
     };
@@ -341,7 +352,7 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
     const handleResendEmail = () => {
         setProcessStates({ ...processStates, processInProgress: 'resendemail', displayCircularProgress: false });
         recaptcha?.execute();
-    }
+    };
 
     // Handle ReCAPTCHA challenge
     const handleRecaptchaChange = (value: any) => {
@@ -355,18 +366,18 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
         } else {
             setProcessStates({ ...processStates });
         }
-    }
+    };
     const handleRecaptchaLoseFocus = () => {
         setTimeout(() => {
             setProcessStates({
                 ...processStates,
-                mojitoMemberSystemSigninAlertContent: langConfigs.errors.RecaptchaNotVerifiedError[lang],
+                mojitoMemberSystemSigninAlertContent: langConfigs.errors.RecaptchaNotVerifiedError[processStates.lang],
                 displayMojitoMemberSystemSigninAlert: 'login' !== processStates.processInProgress,
                 displayResendEmailButton: false,
                 displayCircularProgress: false
-            })
+            });
         }, 2000);
-    }
+    };
 
     return (
         <>
@@ -378,7 +389,7 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
                         </Link>
                     </Box>
                     <Typography component="h1" variant="h5" sx={{ textAlign: 'center', mt: 2 }}>
-                        {langConfigs.appSignin[lang]}
+                        {langConfigs.appSignin[processStates.lang]}
                     </Typography>
                     <Stack component={'form'} spacing={2} sx={{ mt: 4 }} onSubmit={handleSubmit}>
                         <input name='csrfToken' type={'hidden'} defaultValue={csrfToken ?? ''} />
@@ -388,23 +399,23 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
                                 <strong>{processStates.mojitoMemberSystemSigninAlertContent[0]}</strong>
                                 {processStates.mojitoMemberSystemSigninAlertContent[1]}
                                 <Link color={'inherit'} sx={{ display: processStates.displayResendEmailButton ? 'inline' : 'none', cursor: 'default', '&:hover': { cursor: 'pointer' }, }} onClick={handleResendEmail}>
-                                    {langConfigs.resendVerificationEmail[lang]}
+                                    {langConfigs.resendVerificationEmail[processStates.lang]}
                                 </Link>
                             </Alert>
                         </Box>
                         <TextField
                             required
                             id='emailAddress'
-                            label={langConfigs.emailAddress[lang]}
+                            label={langConfigs.emailAddress[processStates.lang]}
                             value={signInCredentialStates.emailAddress}
                             onChange={handleChange('emailAddress')}
                             autoComplete='email'
                         />
                         <FormControl variant='outlined' required>
-                            <InputLabel htmlFor='outlined-adornment-password'>{langConfigs.password[lang]}</InputLabel>
+                            <InputLabel htmlFor='outlined-adornment-password'>{langConfigs.password[processStates.lang]}</InputLabel>
                             <OutlinedInput
                                 id={'outlined-adornment-password'}
-                                label={langConfigs.password[lang]}
+                                label={langConfigs.password[processStates.lang]}
                                 type={signInCredentialStates.showpassword ? 'text' : 'password'}
                                 value={signInCredentialStates.password}
                                 onChange={handleChange('password')}
@@ -425,7 +436,7 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
                         <Box>
                             <Button type='submit' fullWidth variant='contained'>
                                 <Typography sx={{ display: !processStates.displayCircularProgress ? 'block' : 'none' }}>
-                                    {langConfigs.signIn[lang]}
+                                    {langConfigs.signIn[processStates.lang]}
                                 </Typography>
                                 <CircularProgress sx={{ color: 'white', display: processStates.displayCircularProgress ? 'block' : 'none' }} />
                             </Button>
@@ -439,7 +450,7 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
                                 <strong>{processStates.thirdPartyProviderSigninAlertContent[0]}</strong>
                                 {processStates.thirdPartyProviderSigninAlertContent[1]}
                                 <Link color={'inherit'} sx={{ display: processStates.displayResendEmailButton ? 'inline' : 'none', cursor: 'default', '&:hover': { cursor: 'pointer' }, }} onClick={handleResendEmail}>
-                                    {langConfigs.resendVerificationEmail[lang]}
+                                    {langConfigs.resendVerificationEmail[processStates.lang]}
                                 </Link>
                             </Alert>
                         </Box>
@@ -449,32 +460,38 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
                                     variant='contained'
                                     fullWidth
                                     color={'secondary'}
-                                    onClick={() => { signIn(providers[p].id) }}
+                                    onClick={() => { signIn(providers[p].id); }}
                                     key={providers[p].id}
                                 >
-                                    {langConfigs.thirdPartySignin[lang](providers[p].name)}
+                                    {langConfigs.thirdPartySignin[processStates.lang](providers[p].name)}
                                 </Button>
-                            )
+                            );
                         })}
                     </Stack>
                     <Grid container sx={{ mt: 3 }} >
                         <Grid item xs>
                             <Link href="/forgot" variant="body2">
-                                {langConfigs.forgotPassword[lang]}
+                                {langConfigs.forgotPassword[processStates.lang]}
                             </Link>
                         </Grid>
                         <Grid item>
                             <Link href="/signup" variant="body2">
-                                {langConfigs.appSignup[lang]}
+                                {langConfigs.appSignup[processStates.lang]}
                             </Link>
                         </Grid>
                     </Grid>
                 </Stack>
-                <Copyright sx={{ mt: 8 }} />
-                <Terms sx={{ mb: 8 }} />
+                <Copyright sx={{ mt: 8 }} lang={processStates.lang} />
+                <Terms lang={processStates.lang} />
+
+                <CentralizedBox sx={{ mb: 8 }} >
+                    <Button variant='text' sx={{ textTransform: 'none' }} onClick={setLang}>
+                        <Typography variant={'body2'}>{'繁|简|English'}</Typography>
+                    </Button>
+                </CentralizedBox>
             </Container>
             <ReCAPTCHA
-                hl={langConfigs.recaptchaLang[lang]}
+                hl={langConfigs.recaptchaLang[processStates.lang]}
                 size={'invisible'}
                 ref={(ref: any) => ref && (recaptcha = ref)}
                 sitekey={recaptchaClientKey}
@@ -482,7 +499,7 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
                 onFocusCapture={handleRecaptchaLoseFocus}
             />
         </>
-    )
-}
+    );
+};
 
 export default SignIn;

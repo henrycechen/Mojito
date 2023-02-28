@@ -16,8 +16,8 @@ const langConfigs: LangConfigs = {
         en: ' and '
     },
     guidelines: {
-        tw: '社区准则',
-        cn: '社區準則',
+        tw: '社区规范',
+        cn: '社區規範',
         en: 'community guidelines'
     },
     agreement: {
