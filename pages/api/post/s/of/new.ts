@@ -2,13 +2,12 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 
 export default async function PostRankingOf24HoursNewest(req: NextApiRequest, res: NextApiResponse) {
 
-    console.log('new');
-    console.log(req.query?.channelId, req.query?.withMemberInfo, req.query?.quantity);
+    console.log(`GET new posts of: ${req.query?.channelId}`);
 
     res.send([
         {
-            postId: 'post-id-0',
-            memberId: 'M1234XXXX',
+            postId: 'P1234ABCDR0',
+            memberId: 'M1234XXMM',
 
             nickname: '猴賽雷啊',
             avatarImageUrl: 'https://cdn1.iconfinder.com/data/icons/animal-avatars-1/60/Sloth-animals-nature-wildlife-animal-avatars-1024.png',
@@ -21,7 +20,7 @@ export default async function PostRankingOf24HoursNewest(req: NextApiRequest, re
             totalLikedCount: 3
         },
         {
-            postId: 'post-id-1',
+            postId: 'P1234ABCDR1',
             memberId: 'M1234XXXX',
 
             nickname: 'WebMaster',
@@ -35,7 +34,7 @@ export default async function PostRankingOf24HoursNewest(req: NextApiRequest, re
             totalLikedCount: 3
         },
         {
-            postId: 'post-id-2',
+            postId: 'P1234ABCDR2',
             memberId: 'M1234XXXX',
 
             nickname: 'WebMaster',
@@ -49,7 +48,7 @@ export default async function PostRankingOf24HoursNewest(req: NextApiRequest, re
             totalLikedCount: 3
         },
         {
-            postId: 'post-id-3',
+            postId: 'P1234ABCDR3',
             memberId: 'M1234XXXX',
 
             nickname: 'WebMaster',
@@ -63,7 +62,7 @@ export default async function PostRankingOf24HoursNewest(req: NextApiRequest, re
             totalLikedCount: 3
         },
         {
-            postId: 'post-id-4',
+            postId: 'P1234ABCDR4',
             memberId: 'M1234XXXX',
 
             nickname: 'WebMaster',
@@ -77,7 +76,7 @@ export default async function PostRankingOf24HoursNewest(req: NextApiRequest, re
             totalLikedCount: 3
         },
         {
-            postId: 'post-id-5',
+            postId: 'P1234ABCDR5',
             memberId: 'M1234XXXX',
 
             nickname: 'WebMaster',
@@ -91,7 +90,7 @@ export default async function PostRankingOf24HoursNewest(req: NextApiRequest, re
             totalLikedCount: 3
         },
         {
-            postId: 'post-id-6',
+            postId: 'P1234ABCDR6',
             memberId: 'M1234XXXX',
 
             nickname: 'WebMaster',
@@ -105,7 +104,7 @@ export default async function PostRankingOf24HoursNewest(req: NextApiRequest, re
             totalLikedCount: 3
         },
         {
-            postId: 'post-id-7',
+            postId: 'P1234ABCDR7',
             memberId: 'M1234XXXX',
 
             nickname: 'Pikabu Monster',
@@ -119,7 +118,7 @@ export default async function PostRankingOf24HoursNewest(req: NextApiRequest, re
             totalLikedCount: 3
         },
         {
-            postId: 'post-id-8',
+            postId: 'P1234ABCDR8',
             memberId: 'M1234XXXX',
 
             nickname: 'WebMaster',
@@ -133,7 +132,7 @@ export default async function PostRankingOf24HoursNewest(req: NextApiRequest, re
             totalLikedCount: 3
         },
         {
-            postId: 'post-id-9',
+            postId: 'P1234ABCDR9',
             memberId: 'M1234XXXX',
 
             nickname: 'WebMaster',
@@ -147,7 +146,7 @@ export default async function PostRankingOf24HoursNewest(req: NextApiRequest, re
             totalLikedCount: 3
         },
         {
-            postId: 'post-id-10',
+            postId: 'P1234ABCDR10',
             memberId: 'M1234XXXX',
 
             nickname: 'WebMaster',
@@ -161,7 +160,7 @@ export default async function PostRankingOf24HoursNewest(req: NextApiRequest, re
             totalLikedCount: 3
         },
         {
-            postId: 'post-id-11',
+            postId: 'P1234ABCDR11',
             memberId: 'M1234XXXX',
 
             nickname: 'WebMaster',
@@ -175,7 +174,7 @@ export default async function PostRankingOf24HoursNewest(req: NextApiRequest, re
             totalLikedCount: 3
         },
         {
-            postId: 'post-id-12',
+            postId: 'P1234ABCDR12',
             memberId: 'M1234XXXX',
 
             nickname: 'WebMaster',
@@ -189,7 +188,7 @@ export default async function PostRankingOf24HoursNewest(req: NextApiRequest, re
             totalLikedCount: 3
         },
         {
-            postId: 'post-id-13',
+            postId: 'P1234ABCDR13',
             memberId: 'M1234XXXX',
 
             nickname: 'WebMaster',
@@ -203,7 +202,7 @@ export default async function PostRankingOf24HoursNewest(req: NextApiRequest, re
             totalLikedCount: 3
         },
         {
-            postId: 'post-id-14',
+            postId: 'P1234ABCDR14',
             memberId: 'M1234XXXX',
 
             nickname: 'WebMaster',
@@ -217,7 +216,7 @@ export default async function PostRankingOf24HoursNewest(req: NextApiRequest, re
             totalLikedCount: 3
         },
         {
-            postId: 'post-id-15',
+            postId: 'P1234ABCDR15',
             memberId: 'M1234XXXX',
 
             nickname: 'WebMaster',
@@ -231,7 +230,7 @@ export default async function PostRankingOf24HoursNewest(req: NextApiRequest, re
             totalLikedCount: 3
         },
         {
-            postId: 'post-id-16',
+            postId: 'P1234ABCDR16',
             memberId: 'M1234XXXX',
 
             nickname: 'WebMaster',
@@ -245,7 +244,7 @@ export default async function PostRankingOf24HoursNewest(req: NextApiRequest, re
             totalLikedCount: 3
         },
         {
-            postId: 'post-id-17',
+            postId: 'P1234ABCDR17',
             memberId: 'M1234XXXX',
 
             nickname: 'WebMaster',
@@ -259,7 +258,7 @@ export default async function PostRankingOf24HoursNewest(req: NextApiRequest, re
             totalLikedCount: 3
         },
         {
-            postId: 'post-id-18',
+            postId: 'P1234ABCDR18',
             memberId: 'M1234XXXX',
 
             nickname: 'WebMaster',
@@ -273,7 +272,7 @@ export default async function PostRankingOf24HoursNewest(req: NextApiRequest, re
             totalLikedCount: 3
         },
         {
-            postId: 'post-id-19',
+            postId: 'P1234ABCDR19',
             memberId: 'M1234XXXX',
 
             nickname: 'WebMaster',
@@ -287,7 +286,7 @@ export default async function PostRankingOf24HoursNewest(req: NextApiRequest, re
             totalLikedCount: 3
         },
         {
-            postId: 'post-id-20',
+            postId: 'P1234ABCDR20',
             memberId: 'M1234XXXX',
 
             nickname: 'WebMaster',
@@ -301,7 +300,7 @@ export default async function PostRankingOf24HoursNewest(req: NextApiRequest, re
             totalLikedCount: 3
         },
         {
-            postId: 'post-id-21',
+            postId: 'P1234ABCDR21',
             memberId: 'M1234XXXX',
 
             nickname: 'WebMaster',
@@ -315,7 +314,7 @@ export default async function PostRankingOf24HoursNewest(req: NextApiRequest, re
             totalLikedCount: 3
         },
         {
-            postId: 'post-id-22',
+            postId: 'P1234ABCDR22',
             memberId: 'M1234XXXX',
 
             nickname: 'WebMaster',
@@ -329,7 +328,7 @@ export default async function PostRankingOf24HoursNewest(req: NextApiRequest, re
             totalLikedCount: 3
         },
         {
-            postId: 'post-id-23',
+            postId: 'P1234ABCDR23',
             memberId: 'M1234XXXX',
 
             nickname: 'WebMaster',
@@ -343,7 +342,7 @@ export default async function PostRankingOf24HoursNewest(req: NextApiRequest, re
             totalLikedCount: 3
         },
         {
-            postId: 'post-id-24',
+            postId: 'P1234ABCDR24',
             memberId: 'M1234XXXX',
 
             nickname: 'WebMaster',
@@ -357,7 +356,7 @@ export default async function PostRankingOf24HoursNewest(req: NextApiRequest, re
             totalLikedCount: 3
         },
         {
-            postId: 'post-id-25',
+            postId: 'P1234ABCDR25',
             memberId: 'M1234XXXX',
 
             nickname: 'WebMaster',
@@ -371,7 +370,7 @@ export default async function PostRankingOf24HoursNewest(req: NextApiRequest, re
             totalLikedCount: 3
         },
         {
-            postId: 'post-id-26',
+            postId: 'P1234ABCDR26',
             memberId: 'M1234XXXX',
 
             nickname: 'WebMaster',
@@ -385,7 +384,7 @@ export default async function PostRankingOf24HoursNewest(req: NextApiRequest, re
             totalLikedCount: 3
         },
         {
-            postId: 'post-id-27',
+            postId: 'P1234ABCDR27',
             memberId: 'M1234XXXX',
 
             nickname: 'WebMaster',
@@ -399,7 +398,7 @@ export default async function PostRankingOf24HoursNewest(req: NextApiRequest, re
             totalLikedCount: 3
         },
         {
-            postId: 'post-id-28',
+            postId: 'P1234ABCDR28',
             memberId: 'M1234XXXX',
 
             nickname: 'WebMaster',
@@ -413,7 +412,7 @@ export default async function PostRankingOf24HoursNewest(req: NextApiRequest, re
             totalLikedCount: 3
         },
         {
-            postId: 'post-id-29',
+            postId: 'P1234ABCDR29',
             memberId: 'M1234XXXX',
 
             nickname: 'WebMaster',

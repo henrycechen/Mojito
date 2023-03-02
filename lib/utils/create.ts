@@ -8,7 +8,7 @@
 //  IDs
 //  - Member id : 8 ~ 9 characters, UPPERCASE, begin with 'M'
 //  - Notice id : UPPERCASE, begin with 'N'
-//  - Topic id : base64 string from topic content string, begin with 'T'
+//  - Topic id : Base64 string of topic name, begin with 'T'
 //  - Comment id : 12 ~ 13 characters, UPPERCASE, comment begin with 'C', subcomment begin with 'D'
 //  - Post id : 10 ~ 11 characters, UPPERCASE, begin with 'P'
 //
@@ -27,6 +27,10 @@ export function createId(catergory: 'member' | 'notice' | 'comment' | 'subcommen
         case 'subcomment': return 'D' + Math.floor(Math.random() * Math.pow(10, 8)).toString(35).toUpperCase() + Math.floor(Math.random() * Math.pow(10, 9)).toString(35).toUpperCase();
         case 'post': return 'P' + Math.floor(Math.random() * Math.pow(10, 14)).toString(35).toUpperCase();
     }
+}
+
+export function createTopicId(name: string): string {
+    return `T${Buffer.from(name).toString('base64')}`;
 }
 
 export function createNoticeId(category: 'cue' | 'reply' | 'like' | 'pin' | 'save' | 'follow', initiateId: string, postId = '', commentId = ''): string {

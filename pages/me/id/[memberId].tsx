@@ -9,7 +9,7 @@ import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 
-import { signIn, signOut, useSession, } from 'next-auth/react'
+import { signIn, signOut, useSession, } from 'next-auth/react';
 
 import SvgIcon from '@mui/material/SvgIcon';
 
@@ -92,6 +92,9 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import TableCell from '@mui/material/TableCell';
 
+import Tooltip from '@mui/material/Tooltip';
+
+
 import { createTheme, responsiveFontSizes, styled, ThemeProvider } from '@mui/material/styles';
 import { provideCoverImageUrl } from '../../../lib/utils/for/post';
 
@@ -113,11 +116,11 @@ type TMemberPageProps = {
     memberStatistics_ss: IConciseMemberStatistics;
     redirect404: boolean;
     redirect500: boolean;
-}
+};
 
 type TMemberPageProcessStates = {
     selectedLayout: 'messagelayout' | 'listlayout' | 'postlayout' | 'settinglayout';
-}
+};
 
 const domain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? '';
 const defaultLang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
@@ -654,7 +657,7 @@ const langConfigs: LangConfigs = {
         cn: '粉丝',
         en: 'Followers'
     },
-}
+};
 
 let theme = createTheme({
     typography: {
@@ -670,7 +673,7 @@ let theme = createTheme({
 theme = responsiveFontSizes(theme);
 
 //// Get multiple member info server-side ////
-export async function getServerSideProps(context: NextPageContext): Promise<{ props: TMemberPageProps }> {
+export async function getServerSideProps(context: NextPageContext): Promise<{ props: TMemberPageProps; }> {
     const { memberId } = context.query;
     const { isValid, category } = verifyId(memberId);
 
@@ -684,7 +687,7 @@ export async function getServerSideProps(context: NextPageContext): Promise<{ pr
                 redirect404: true,
                 redirect500: false,
             }
-        }
+        };
     }
 
     try {
@@ -717,7 +720,7 @@ export async function getServerSideProps(context: NextPageContext): Promise<{ pr
                 redirect404: false,
                 redirect500: false
             }
-        }
+        };
     } catch (e: any) {
         logWithDate(e?.msg, '/pages/me/[memberId].getServerSideProps', e);
         return {
@@ -728,7 +731,7 @@ export async function getServerSideProps(context: NextPageContext): Promise<{ pr
                 redirect404: false,
                 redirect500: true,
             }
-        }
+        };
     }
 }
 
@@ -742,16 +745,19 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
         if (redirect500) {
             router.push('/500');
         }
-    }, [])
+    }, [router]);
 
     const { data: session, status } = useSession();
 
     //////// INFO - viewer //////// (Cond.)
     let viewerId = '';
-    if ('authenticated' === status) {
-        const viewerSession: any = { ...session };
-        viewerId = viewerSession?.user?.id;
-    }
+    React.useEffect(() => { 
+        if ('authenticated' === status) {
+            const viewerSession: any = { ...session };
+            viewerId = viewerSession?.user?.id;
+            restorePreferenceStatesFromCache(setPreferenceStates); 
+        }
+    }, [session]);
 
     //////// REF - masonry ////////
     const masonryWrapper = React.useRef<any>();
@@ -766,7 +772,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
         briefIntro: string;
         gender: number;
         birthdayBySecond: number;
-    }
+    };
 
     //////// STATES - memberInfo ////////
     const [memberInfoStates, setMemberInfoStates] = React.useState<TMemberInfoStates>({
@@ -775,22 +781,21 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
         briefIntro: memberComprehensive_ss.briefIntro,
         gender: memberComprehensive_ss.gender,
         birthdayBySecond: memberComprehensive_ss.birthdayBySecond,
-    })
+    });
 
     //////// STATES - preference ////////
     const [preferenceStates, setPreferenceStates] = React.useState<TPreferenceStates>({
         lang: defaultLang,
         mode: 'light'
-    })
+    });
 
-    React.useEffect(() => { restorePreferenceStatesFromCache(setPreferenceStates) }, [])
 
     //////// STATES - process ////////
     const [processStates, setProcessStates] = React.useState<TMemberPageProcessStates>({
         selectedLayout: 'postlayout', // default
-    })
+    });
 
-    React.useEffect(() => { selectLayoutByQuery() }, [router])
+    React.useEffect(() => { selectLayoutByQuery(); }, [router]);
 
     const selectLayoutByQuery = () => {
         const { layout } = router.query;
@@ -800,356 +805,29 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
         if ('post' === layout) {
             setProcessStates({ ...processStates, selectedLayout: 'postlayout' });
         }
-    }
+    };
 
     React.useEffect(() => {
         restoreProcessStatesFromCache(setProcessStates);
         restorePostsLayoutStatesFromCache(setPostLayoutStates);
     }, []);
 
-    React.useEffect(() => { setWidth(masonryWrapper?.current?.offsetWidth) }, [processStates.selectedLayout])
+    React.useEffect(() => { setWidth(masonryWrapper?.current?.offsetWidth); }, [processStates.selectedLayout]);
 
     const handleSelectLayout = (layout: 'messagelayout' | 'listlayout' | 'postlayout' | 'settinglayout') => (event: React.MouseEvent<HTMLButtonElement>) => {
         let _processStates: TMemberPageProcessStates = { ...processStates, selectedLayout: layout };
-        let postlayoutStates: TPostsLayoutStates = { ...postLayoutStates, }
+        let postlayoutStates: TPostsLayoutStates = { ...postLayoutStates, };
         postlayoutStates.memorizeViewPortPositionY = window.scrollY;
         setProcessStates(_processStates);
         updateProcessStatesCache(_processStates);
         return;
-    }
+    };
 
 
 
-    ////////////////////////  Message Layout ////////////////////////
-    type TMessageLayoutStates = {
-        selectedCategory: string;
-    }
+    const handleFollowOrUndoFollow = async () => {
 
-    //////// STATES - message layout ////////
-    const [messagelayoutStates, setMessageLayoutStates] = React.useState<TMessageLayoutStates>({
-        selectedCategory: 'like', // default
-    });
-
-    const [noticeStatistics, setNoticeStatistics] = React.useState<{ [category: string]: number }>({ cue: 0, reply: 0, like: 0, pin: 0, save: 0, follow: 0 });
-    const [noticeInfoArr, setNoticeInfoArr] = React.useState<INoticeInfoWithMemberInfo[]>([]);
-
-    React.useEffect(() => {
-        if ('authenticated' === status && authorId === viewerId) {
-            updateNoticeArrayAndStatistics();
-        }
-    }, [])
-
-    React.useEffect(() => {
-        if ('authenticated' === status && authorId === viewerId) {
-            updateNoticeArray();
-        }
-    }, [messagelayoutStates.selectedCategory])
-
-    const updateNoticeArrayAndStatistics = async () => {
-        let update_arr = [];
-        let update_stat = { cue: 0, reply: 0, like: 0, pin: 0, save: 0, follow: 0 };
-        const resp_arr = await fetch(`/api/notice/of/${messagelayoutStates.selectedCategory}`);
-        if (200 !== resp_arr.status) {
-            console.log(`Attempt to GET notice of ${messagelayoutStates.selectedCategory}`);
-            return;
-        }
-        try {
-            const arr = await resp_arr.json();
-            update_arr.push(...arr);
-        } catch (e) {
-            console.log(`Attempt to get notice array from resp. ${e}`)
-        }
-        const resp_stat = await fetch(`/api/notice/statistics`);
-        if (200 !== resp_stat.status) {
-            console.log(`Attempt to GET notice statistics`);
-            return;
-        }
-        try {
-            const obj = await resp_stat.json();
-            update_stat = { ...obj };
-        } catch (e) {
-            console.log(`Attempt to get notice statistics (obj) from resp. ${e}`)
-        }
-        setMessageLayoutStates({ ...messagelayoutStates });
-        setNoticeStatistics({ ...update_stat });
-        await resetNoticeStatistics();
-    }
-
-    const resetNoticeStatistics = async () => {
-        const resp = await fetch(`/api/notice/statistics`, { method: 'PUT' });
-        if (200 !== resp.status) {
-            console.log(`Attempt to PUT (reset) notice statistics`);
-            return;
-        }
-    }
-
-    const updateNoticeArray = async () => {
-        const resp = await fetch(`/api/notice/of/${messagelayoutStates.selectedCategory}`);
-        if (200 !== resp.status) {
-            console.log(`Attempt to GET notice of ${messagelayoutStates.selectedCategory}`);
-            return;
-        }
-        try {
-            const arr = await resp.json();
-            setNoticeInfoArr([...arr]);
-        } catch (e) {
-            console.log(`Attempt to get notice array from resp. ${e}`)
-        }
-    }
-
-    const handleSelectNoticeCategory = (categoryId: string) => (event: React.MouseEvent<HTMLButtonElement>) => {
-        setMessageLayoutStates({ selectedCategory: categoryId });
-        setNoticeStatistics({ ...noticeStatistics, [categoryId]: 0 });
-    }
-
-    const handleClickOnInitiateInfo = (initiateId: string) => (event: React.MouseEvent<HTMLButtonElement>) => {
-        router.push(`/me/id/${initiateId}`);
-    }
-
-    const handleClickOnNoticeInfo = (noticeId: string) => (event: React.MouseEvent<HTMLButtonElement>) => {
-        router.push(noticeIdToUrl(noticeId));
-    }
-
-    //////// COMPONENT - message layout ////////
-    const MessageLayout = () => {
-        return (
-            <Grid container>
-
-                {/* left column (placeholder) */}
-                <Grid item xs={0} sm={2} md={3} lg={3}></Grid>
-
-                {/* middle column */}
-                <Grid item xs={12} sm={8} md={6} lg={6}>
-                    <ResponsiveCard sx={{ pt: { xs: 0, sm: 2 } }}>
-                        <Stack>
-
-                            {/* section select */}
-                            <Box sx={{ display: 'flex', justifyContent: 'space-evenly' }}>
-
-                                {/* like */}
-                                <Button sx={{ color: 'like' === messagelayoutStates.selectedCategory ? 'primary' : 'grey.600' }} onClick={handleSelectNoticeCategory('like')}>
-                                    <Box>
-                                        <CentralizedBox sx={{ p: 1 }}><ThumbUpIcon /></CentralizedBox>
-                                        <Typography variant={'body2'} textAlign={'center'}>{langConfigs.liked[preferenceStates.lang]}{0 === noticeStatistics.like ? '' : `+${noticeStatistics.like}`}</Typography>
-                                    </Box>
-                                </Button>
-
-                                {/* save */}
-                                <Button sx={{ color: 'save' === messagelayoutStates.selectedCategory ? 'primary' : 'grey.600' }} onClick={handleSelectNoticeCategory('save')}>
-                                    <Box>
-                                        <CentralizedBox sx={{ p: 1 }}><StarIcon /></CentralizedBox>
-                                        <Typography variant={'body2'} textAlign={'center'}>{langConfigs.saved[preferenceStates.lang]}{0 === noticeStatistics.save ? '' : `+${noticeStatistics.save}`}</Typography>
-                                    </Box>
-                                </Button>
-
-                                {/* reply */}
-                                <Button sx={{ color: 'reply' === messagelayoutStates.selectedCategory ? 'primary' : 'grey.600' }} onClick={handleSelectNoticeCategory('reply')}>
-                                    <Box>
-                                        <CentralizedBox sx={{ p: 1 }}><ChatBubbleIcon /></CentralizedBox>
-                                        <Typography variant={'body2'} textAlign={'center'}>{langConfigs.replied[preferenceStates.lang]}{0 === noticeStatistics.reply ? '' : `+${noticeStatistics.reply}`}</Typography>
-                                    </Box>
-                                </Button>
-
-                                {/* cue */}
-                                <Button sx={{ color: 'cue' === messagelayoutStates.selectedCategory ? 'primary' : 'grey.600' }} onClick={handleSelectNoticeCategory('cue')}>
-                                    <Box>
-                                        <CentralizedBox sx={{ p: 1 }}><AlternateEmailIcon /></CentralizedBox>
-                                        <Typography variant={'body2'} textAlign={'center'}>{langConfigs.cued[preferenceStates.lang]}{0 === noticeStatistics.cue ? '' : `+${noticeStatistics.cue}`}</Typography>
-                                    </Box>
-                                </Button>
-                            </Box>
-                            <Box mt={{ xs: 1, sm: 2 }} mb={{ xs: 2, sm: 1 }}><Divider /></Box>
-
-                            {/* message list */}
-                            <Stack padding={{ xs: 0, sm: 2 }} spacing={{ xs: 3, sm: 4 }}>
-                                {0 !== noticeInfoArr.length && noticeInfoArr.map(info =>
-                                    <Box key={info.noticeId} sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between' }} >
-
-                                        {/* member info */}
-                                        <Button variant={'text'} color={'inherit'} sx={{ pl: { xs: 0, sm: 1 }, textTransform: 'none' }} onClick={handleClickOnInitiateInfo(info.initiateId)}>
-                                            <Box sx={{ display: 'flex', flexDirection: 'row' }}>
-
-                                                {/* avatar */}
-                                                <Avatar src={provideAvatarImageUrl(info.initiateId, domain)} sx={{ width: 40, height: 40, bgcolor: 'grey' }}>{info.nickname?.charAt(0).toUpperCase()}</Avatar>
-                                                <Box ml={1}>
-
-                                                    {/* nickname */}
-                                                    <Typography align={'left'} variant={'body2'}>{getNicknameBrief(info.nickname)}</Typography>
-
-                                                    {/* created time */}
-                                                    <Typography fontSize={{ xs: 12 }} align={'left'}>{timeToString(info.createdTimeBySecond, preferenceStates.lang)}</Typography>
-                                                </Box>
-                                            </Box>
-                                        </Button>
-
-                                        {/* notice info */}
-                                        <TextButton color={'inherit'} sx={{ p: 1 }} onClick={handleClickOnNoticeInfo(info.noticeId)}>
-                                            <Box sx={{ maxWidth: { xs: 170, sm: 190, md: 240 } }}>
-                                                <Typography variant={'body2'} align={'right'}>{noticeInfoToString(info, preferenceStates.lang)}</Typography>
-                                            </Box>
-                                        </TextButton>
-                                    </Box>
-                                )}
-                                {0 === noticeInfoArr.length &&
-                                    <Box minHeight={200} mt={10}>
-                                        <Typography color={'text.secondary'} align={'center'}>{langConfigs.noNotificationRecord[preferenceStates.lang]}</Typography>
-                                    </Box>
-                                }
-                            </Stack>
-
-                        </Stack>
-                    </ResponsiveCard>
-                </Grid>
-
-                {/* right column (placeholder) */}
-                <Grid item xs={0} sm={2} md={3} lg={3}></Grid>
-            </Grid >
-        )
-    }
-
-
-
-    ////////////////////////   List Layout   ////////////////////////
-    type TListLayoutStates = {
-        selectedCategory: 'followedbyme' | 'followingme';
-    }
-
-    //////// STATES - list layout ////////
-    const [listLayoutStates, setListLayoutStates] = React.useState<TListLayoutStates>({
-        selectedCategory: 'followedbyme', // 'followedbyme' | 'followingme'
-    })
-
-    const [memberInfoArr, setMemberInfoArr] = React.useState<IConciseMemberInfo[]>([]);
-
-    React.useEffect(() => { updateMemberInfoArr() }, [])
-    React.useEffect(() => { updateMemberInfoArr() }, [listLayoutStates.selectedCategory])
-
-    const updateMemberInfoArr = async () => {
-        const resp = await fetch(`/api/member/${listLayoutStates.selectedCategory}/${authorId}`);
-        if (200 !== resp.status) {
-            console.log(`Attempt to GET member info array of ${listLayoutStates.selectedCategory}`);
-            return;
-        }
-        try {
-            const arr = await resp.json();
-            setMemberInfoArr([...arr]);
-        } catch (e) {
-            console.log(`Attempt to get member info array  of ${listLayoutStates.selectedCategory} from resp. ${e}`)
-        }
-    }
-
-    const handleSelectListCategory = (categoryId: 'followedbyme' | 'followingme') => (event: React.MouseEvent<HTMLButtonElement>) => {
-        setListLayoutStates({ ...listLayoutStates, selectedCategory: categoryId });
-        setNoticeStatistics({ ...noticeStatistics, follow: 0 });
-    }
-
-    const handleUndoFollow = async (followedId: string) => {
-        // delete element (member info) from the array
-        const arr: IConciseMemberInfo[] = [...memberInfoArr];
-        for (let i = 0; i < arr.length; i++) {
-            if (followedId === arr[i].memberId) {
-                arr.splice(i, 1);
-                setMemberInfoArr([...arr]);
-                break;
-            }
-        }
-        const resp = await fetch(`/api/follow/${followedId}`, { method: 'POST' });
-        if (200 !== resp.status) {
-            console.log(`Attempt to undo follow for ${followedId}`);
-        }
-    }
-
-    //////// COMPONENT - list layout ////////
-    const ListLayout = () => {
-        return (
-            <Grid container>
-
-                {/* left column (placeholder) */}
-                <Grid item xs={0} sm={2} md={3} lg={3}></Grid>
-
-                {/* middle column */}
-                <Grid item xs={12} sm={8} md={6} lg={6}>
-                    <ResponsiveCard>
-                        <Stack>
-
-                            {/* section select */}
-                            <Box sx={{ display: 'flex', justifyContent: 'space-evenly' }}>
-
-                                {/* followed by me */}
-                                <Button sx={{ color: 'followedbyme' === listLayoutStates.selectedCategory ? 'primary' : 'grey.600' }} onClick={handleSelectListCategory('followedbyme')}>
-                                    <Typography variant={'body2'} textAlign={'center'}>
-                                        {viewerId === authorId ? langConfigs.myFollowing[preferenceStates.lang] : langConfigs.authorsFollowing[preferenceStates.lang]}
-                                    </Typography>
-                                </Button>
-
-                                {/* following me */}
-                                <Button sx={{ color: 'followingme' === listLayoutStates.selectedCategory ? 'primary' : 'grey.600' }} onClick={handleSelectListCategory('followingme')}>
-                                    <Typography variant={'body2'} textAlign={'center'}>
-                                        {viewerId === authorId ? langConfigs.myFollowedBy[preferenceStates.lang] : langConfigs.authorsFollowedBy[preferenceStates.lang]}
-                                        {0 === noticeStatistics.follow ? '' : `+${noticeStatistics.follow}`}
-                                    </Typography>
-                                </Button>
-                            </Box>
-                            <Box mt={{ xs: 1, sm: 2 }}><Divider /></Box>
-
-                            {/* member info list */}
-                            <Stack padding={{ xs: 0, sm: 2 }} spacing={{ xs: 4, sm: 4, md: 5 }}>
-                                {0 !== memberInfoArr.length && memberInfoArr.map(info =>
-
-                                    <Box key={info.memberId} mt={{ xs: 3, sm: 2 }} sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between' }} >
-
-                                        {/* initiate info */}
-                                        <Stack direction={'row'} sx={{ maxHeight: 40 }}>
-                                            <IconButton sx={{ padding: 0 }} onClick={handleClickOnInitiateInfo(info.memberId)}>
-                                                <Avatar src={provideAvatarImageUrl(info.memberId, domain)} sx={{ width: 38, height: 38, bgcolor: 'grey' }}>{info.nickname?.charAt(0).toUpperCase()}</Avatar>
-                                            </IconButton>
-                                            <Box ml={1}>
-                                                <TextButton color={'inherit'} onClick={handleClickOnInitiateInfo(info.memberId)}>
-
-                                                    {/* nickname */}
-                                                    <Typography variant={'body2'} align={'left'}>{getContentBrief(info.nickname, 13)}</Typography>
-
-                                                    {/* brief intro */}
-                                                    <Typography variant={'body2'} fontSize={{ xs: 12, align: 'left' }} >{getContentBrief(info.briefIntro, 13)}</Typography>
-                                                </TextButton>
-                                            </Box>
-                                        </Stack>
-
-                                        {/* undo follow button */}
-                                        {'followedbyme' === listLayoutStates.selectedCategory && <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }} >
-                                            <Button variant='text' color={'inherit'} onClick={async () => { await handleUndoFollow(info.memberId) }}>
-                                                <Typography variant={'body2'} align={'right'}>{langConfigs.undoFollow[preferenceStates.lang]}</Typography>
-                                            </Button>
-                                        </Box>}
-
-                                        {/* created time */}
-                                        {'followingme' === listLayoutStates.selectedCategory && <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }} >
-                                            <Typography variant={'body2'} align={'right'} sx={{ paddingRight: 1 }}>{timeToString(info.createdTimeBySecond, preferenceStates.lang)}</Typography>
-                                        </Box>}
-                                    </Box>
-                                )}
-                                {0 === memberInfoArr.length &&
-                                    <Box minHeight={200} mt={10}>
-                                        {'followedbyme' === listLayoutStates.selectedCategory && <Typography color={'text.secondary'} align={'center'}>
-                                            {viewerId === authorId ? langConfigs.noFollowingMemberInfoRecord[preferenceStates.lang] : langConfigs.authorNoFollowingMemberInfoRecord[preferenceStates.lang]}
-                                        </Typography>}
-                                        {'followingme' === listLayoutStates.selectedCategory && <Typography color={'text.secondary'} align={'center'}>
-                                            {viewerId === authorId ? langConfigs.noFollowedByMemberInfoRecord[preferenceStates.lang] : langConfigs.authorNoFollowedByMemberInfoRecord[preferenceStates.lang]}
-                                        </Typography>}
-                                    </Box>
-                                }
-                            </Stack>
-
-                        </Stack>
-                    </ResponsiveCard>
-                </Grid>
-
-                {/* right column (placeholder) */}
-                <Grid item xs={0} sm={2} md={3} lg={3}></Grid>
-            </Grid >
-        )
-    }
-
+    };
 
 
     ////////////////////////   Post Layout   ////////////////////////
@@ -1161,7 +839,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
         memorizeViewPortPositionY: number | undefined;
         memorizeLastViewedPostId: string | undefined;
         wasRedirected: boolean;
-    }
+    };
 
     //////// STATES - post layout ////////
     const [postLayoutStates, setPostLayoutStates] = React.useState<TPostsLayoutStates>({
@@ -1172,7 +850,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
         memorizeViewPortPositionY: undefined,
         memorizeLastViewedPostId: undefined,
         wasRedirected: false,
-    })
+    });
 
     const handleSelectPostCategory = (categoryId: 'mycreations' | 'savedposts' | 'browsinghistory') => (event: React.MouseEvent<HTMLButtonElement> | React.SyntheticEvent) => {
         let states: TPostsLayoutStates = { ...postLayoutStates, selectedCategory: categoryId };
@@ -1182,19 +860,19 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
         updatePostsLayoutStatesCache(states);
         // Step #3 reset helper
         setBrowsingHelper({ ...browsingHelper, memorizeViewPortPositionY: undefined });
-    }
+    };
 
     //////// STATES - browsing helper ////////
     const [browsingHelper, setBrowsingHelper] = React.useState<TBrowsingHelper>({
         memorizeViewPortPositionY: undefined, // reset scroll-help on handleChannelSelect, handleSwitchChange, ~~handlePostCardClick~~
-    })
+    });
 
     ///////// STATES - channel /////////
     const [channelInfoStates, setChannelInfoStates] = React.useState<IChannelInfoStates>({
         channelIdSequence: [],
     });
 
-    React.useEffect(() => { updateChannelIdSequence() }, []);
+    React.useEffect(() => { updateChannelIdSequence(); }, []);
 
     const updateChannelIdSequence = async () => {
         const resp = await fetch(`/api/channel/id/sequence`);
@@ -1211,7 +889,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
         } finally {
             setChannelInfoStates({ ...channelInfoStates, channelIdSequence: Object.keys(channelInfoDict_ss) });
         }
-    }
+    };
 
     // Handle channel bar restore on refresh
     React.useEffect(() => {
@@ -1230,22 +908,22 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
         updatePostsLayoutStatesCache(states);
         // Step #3 reset helper
         setBrowsingHelper({ ...browsingHelper, memorizeViewPortPositionY: undefined });
-    }
+    };
 
     const handleSwitchChange = () => {
-        let states: TPostsLayoutStates = { ...postLayoutStates, selectedHotPosts: !postLayoutStates.selectedHotPosts }
+        let states: TPostsLayoutStates = { ...postLayoutStates, selectedHotPosts: !postLayoutStates.selectedHotPosts };
         // Step #1 update post layout states
         setPostLayoutStates(states);
         // Step #2 update post layout states cache
         updatePostsLayoutStatesCache(states);
         // Step #3 reset helper
         setBrowsingHelper({ ...browsingHelper, memorizeViewPortPositionY: undefined });
-    }
+    };
 
     //////// STATES - (masonry) post info array ////////
     const [masonryPostInfoArr, setMasonryPostInfoArr] = React.useState<IConcisePostComprehensive[]>([]);
 
-    React.useEffect(() => { updatePostsArr() }, [postLayoutStates.selectedHotPosts, postLayoutStates.selectedChannelId, postLayoutStates.selectedCategory]);
+    React.useEffect(() => { updatePostsArr(); }, [postLayoutStates.selectedHotPosts, postLayoutStates.selectedChannelId, postLayoutStates.selectedCategory]);
 
     const updatePostsArr = async () => {
         let url = '';
@@ -1268,7 +946,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                 console.log(`Attempt to GET posts of ${postLayoutStates.selectedHotPosts ? '24 hours hot' : 'new'}. ${e}`);
             }
         }
-    }
+    };
 
     // Handle restore browsing position after reload
     React.useEffect(() => {
@@ -1288,7 +966,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
             updateProcessStatesCache(states1);
             let states2: TPostsLayoutStates = { ...postLayoutStates, memorizeLastViewedPostId: undefined, memorizeViewPortPositionY: undefined, wasRedirected: false };
             // Step #3 update post layout states and cache
-            setPostLayoutStates({ ...states2 })
+            setPostLayoutStates({ ...states2 });
             updatePostsLayoutStatesCache(states2);
         }
     }, [masonryPostInfoArr]);
@@ -1303,7 +981,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
         updatePostsLayoutStatesCache({ ...postLayoutStates, memorizeLastViewedPostId: postId, memorizeViewPortPositionY: window.scrollY });
         // Step #2 jump
         router.push(`/post/${postId}`);
-    }
+    };
 
     const handleClickOnMemberInfo = (memberId: string, postId: string) => (event: React.MouseEvent) => {
         // Step #1 update process states and post layout cache
@@ -1311,7 +989,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
         updatePostsLayoutStatesCache({ ...postLayoutStates, memorizeLastViewedPostId: postId, memorizeViewPortPositionY: window.scrollY });
         // Step #2 jump
         router.push(`/me/id/${memberId}`);
-    }
+    };
 
     ///////// STATES - behaviour /////////
     const [undoSavedPostArr, setUndoSavedPostArr] = React.useState<string[]>([]);
@@ -1355,1267 +1033,91 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                 console.log('Attempt to delete browsing history record');
             }
         }
-    }
+    };
 
-    //////////////////////// Setting Layout ////////////////////////
-
-    type TSettingLayoutStates = {
-        selectedSettingId: number;
-        blacklist: IConciseMemberInfo[];
-    }
-
-    //////// STATES - setting layout ////////
-    const [settinglayoutStates, setSettingLayoutStates] = React.useState<TSettingLayoutStates>({
-        selectedSettingId: 0,
-        blacklist: [],
-    });
-
-    React.useEffect(() => { updateSettingslayoutStates() }, [settinglayoutStates.selectedSettingId])
-
-    const updateSettingslayoutStates = async () => {
-        // TODO: 1 ~ 6 have not satistied
-        if (7 === settinglayoutStates.selectedSettingId) {
-            const resp = await fetch(`/api/member/blockedbyme/${authorId}`);
-            if (200 !== resp.status) {
-                console.log(`Attempt to GET blocked member info array`);
-                return;
-            }
-            try {
-                const arr = await resp.json();
-                setSettingLayoutStates({ ...settinglayoutStates, blacklist: [...arr] });
-            } catch (e) {
-                console.log(`Attempt to get blocked member info array of from resp. ${e}`)
-            }
-        }
-    }
-
-    const handleSettingSelect = (settingId: number) => (event: React.SyntheticEvent) => {
-        setSettingLayoutStates({ ...settinglayoutStates, selectedSettingId: settingId });
-    }
-
-    //////// COMPONENT - setting layout ////////
-    const SettingLayout = () => {
-
-        //// Avatar Image ////
-        const AvatarImageSetting = () => {
-            type TAvatarImageSettingStates = {
-                alternativeImageUrl: string | undefined;
-                disableButton: boolean;
-                progressStatus: 0 | 100 | 300 | 400;
-            }
-
-            const [avatarImageSettingStates, setAvatarImageSettingStates] = React.useState<TAvatarImageSettingStates>({
-                alternativeImageUrl: provideAvatarImageUrl(authorId, domain),
-                disableButton: true,
-                progressStatus: 0
-            })
-
-            const handleOpenFile = (event: React.ChangeEvent<HTMLInputElement>) => {
-                if (event.target.files?.length !== 0 && event.target.files !== null) {
-                    const url = URL.createObjectURL(event.target.files[0]);
-                    setAvatarImageSettingStates({ ...avatarImageSettingStates, alternativeImageUrl: url, disableButton: false, progressStatus: 100 });
-                }
-            }
-
-            const handleUploadAvatarImage = async () => {
-                if (!(undefined !== avatarImageSettingStates.alternativeImageUrl && '' !== avatarImageSettingStates.alternativeImageUrl)) {
-                    return;
-                }
-
-                // Prepare to upload avatar image
-                setAvatarImageSettingStates({ ...avatarImageSettingStates, disableButton: true, progressStatus: 300 });
-                let formData = new FormData();
-                const config = {
-                    headers: { 'Content-Type': 'multipart/form-data' },
-                    onUploadProgress: (event: any) => {
-                        console.log(`Upload progress:`, Math.round((event.loaded * 100) / event.total));
-                    }
-                }
-
-                // Retrieve file and measure the size
-                const bb = await fetch(avatarImageSettingStates.alternativeImageUrl).then(r => r.blob());
-                if ((await bb.arrayBuffer()).byteLength > 2097152) { // new image file no larger than 2 MB
-                    setAvatarImageSettingStates({ ...avatarImageSettingStates, disableButton: false, progressStatus: 400 });
-                    return;
-                }
-
-                // Post avatar image file
-                formData.append('image', bb);
-                await axios.post(`/api/avatar/upload/${authorId}`, formData, config)
-                    .then((response: AxiosResponse) => {
-                        setMemberInfoStates({ ...memberInfoStates, avatarImageUrl: provideAvatarImageUrl(authorId, domain, true) });
-                    })
-                    .catch((error: AxiosError) => {
-                        setAvatarImageSettingStates({ ...avatarImageSettingStates, disableButton: true, progressStatus: 400 });
-                        console.log(`Attempt to upload avatar image. ${error}`);
-                    })
-            }
-
-            return (
-                <Box sx={{ paddingTop: 6 }}>
-
-                    {/* image */}
-                    <CentralizedBox>
-                        <Avatar src={avatarImageSettingStates.alternativeImageUrl} sx={{ width: { xs: 96, md: 128 }, height: { xs: 96, md: 128 }, }}></Avatar>
-                    </CentralizedBox>
-
-                    {/* 'open file' button */}
-                    <CentralizedBox mt={1}>
-                        <Box>
-                            <IconButton color={'primary'} aria-label={'upload picture'} component={'label'} >
-                                <input hidden accept={'image/*'} type={'file'} onChange={handleOpenFile} />
-                                <PhotoCamera />
-                            </IconButton>
-                        </Box>
-                    </CentralizedBox>
-
-                    {/* 'upload' button */}
-                    <CentralizedBox mt={1}>
-                        <Button variant='contained' color={400 !== avatarImageSettingStates.progressStatus ? 'primary' : 'error'} size={'small'} onClick={async () => { await handleUploadAvatarImage() }} disabled={avatarImageSettingStates.disableButton}>
-                            {/* button: disabled, result: 0 (no-file) */}
-                            {0 === avatarImageSettingStates.progressStatus && <Typography variant={'body2'}>{langConfigs.chooseImageToUpload[preferenceStates.lang]}</Typography>}
-                            {/* button: enabled, result: 100 (ready) */}
-                            {100 === avatarImageSettingStates.progressStatus && <Typography variant={'body2'}>{langConfigs.upload[preferenceStates.lang]}</Typography>}
-                            {/* button: disabled, result: 300 (ongoing) */}
-                            {300 === avatarImageSettingStates.progressStatus && <Typography variant={'body2'}>{langConfigs.uploading[preferenceStates.lang]}</Typography>}
-                            {/* button: enabled, result: 400 (failed) */}
-                            {400 === avatarImageSettingStates.progressStatus && <Typography variant={'body2'}>{langConfigs.uploadFailed[preferenceStates.lang]}</Typography>}
-                        </Button>
-                    </CentralizedBox>
-
-                    {/* requirenment */}
-                    <CentralizedBox mt={2}>
-                        <Typography color={'grey'} variant={'body2'} align={'center'}>{langConfigs.avatarImageRequirement[preferenceStates.lang]}</Typography>
-                    </CentralizedBox>
-                </Box>
-            )
-        }
-
-        //// Nickname ////
-        const NicknameSetting = () => {
-            type TNicknameSetting = {
-                alternativeName: string;
-                displayError: boolean;
-                disableButton: boolean;
-                progressStatus: 100 | 200 | 300 | 422 | 500;
-            }
-
-            const [nicknameSettingStates, setNicknameSettingStates] = React.useState<TNicknameSetting>({
-                alternativeName: memberComprehensive_ss.nickname,
-                displayError: false,
-                disableButton: true,
-                progressStatus: 100
-            });
-
-            const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-                if (13 < `${event.target.value}`.length) {
-                    setNicknameSettingStates({ ...nicknameSettingStates, displayError: true });
-                } else {
-                    if (memberInfoStates.nickname === event.target.value) {
-                        setNicknameSettingStates({ ...nicknameSettingStates, disableButton: true, alternativeName: event.target.value });
-                    } else {
-                        setNicknameSettingStates({ ...nicknameSettingStates, disableButton: false, alternativeName: event.target.value });
-                    }
-                }
-            }
-
-            const handleSubmit = async () => {
-                if ('' === nicknameSettingStates.alternativeName) {
-                    return;
-                }
-
-                // Prepare to update nickname
-                setNicknameSettingStates({ ...nicknameSettingStates, disableButton: true, progressStatus: 300 });
-                const resp = await fetch(`/api/member/info/${authorId}/nickname`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ alternativeName: nicknameSettingStates.alternativeName })
-                });
-
-                if (200 === resp.status) {
-                    setMemberInfoStates({ ...memberInfoStates, nickname: nicknameSettingStates.alternativeName });
-                    setNicknameSettingStates({ ...nicknameSettingStates, disableButton: true, progressStatus: 200 });
-                    setTimeout(() => {
-                        setNicknameSettingStates({ ...nicknameSettingStates, progressStatus: 100 })
-                    }, 2000)
-                } else if (422 === resp.status) {
-                    setNicknameSettingStates({ ...nicknameSettingStates, disableButton: false, progressStatus: 422 });
-                } else {
-                    setNicknameSettingStates({ ...nicknameSettingStates, disableButton: false, progressStatus: 500 });
-                }
-
-            }
-
-            return (
-                <Box sx={{ pt: { xs: 6, sm: 16 }, px: 2 }}>
-
-                    {/* nickname input */}
-                    <CentralizedBox>
-                        <TextField
-                            error={nicknameSettingStates.displayError}
-                            label={langConfigs.newNickname[preferenceStates.lang]}
-                            value={nicknameSettingStates.alternativeName}
-                            onChange={handleChange}
-                            size={'small'}
-                        />
-                    </CentralizedBox>
-
-                    {/* 'update' button */}
-                    <CentralizedBox sx={{ mt: 2 }}>
-                        <Button variant='contained' color={![422, 500].includes(nicknameSettingStates.progressStatus) ? 'primary' : 'error'} size='small' onClick={async () => { await handleSubmit() }} disabled={nicknameSettingStates.disableButton || '' === nicknameSettingStates.alternativeName}>
-                            {/* button: enabled, result: 100 (ready) */}
-                            {100 === nicknameSettingStates.progressStatus && <Typography variant={'body2'}>{langConfigs.update[preferenceStates.lang]}</Typography>}
-                            {/* button: disabled/enabled, result: 200 (succeeded) */}
-                            {200 === nicknameSettingStates.progressStatus && <Typography variant={'body2'}>{langConfigs.updateSucceeded[preferenceStates.lang]}</Typography>}
-                            {/* button: disabled, result: 300 (ongoing) */}
-                            {300 === nicknameSettingStates.progressStatus && <Typography variant={'body2'}>{langConfigs.updatinging[preferenceStates.lang]}</Typography>}
-                            {/* button: enabled, result: 422 (confliect) */}
-                            {422 === nicknameSettingStates.progressStatus && <Typography variant={'body2'}>{langConfigs.invalidNicknameOrConflict[preferenceStates.lang]}</Typography>}
-                            {/* button: enabled, result: 500 (failed) */}
-                            {500 === nicknameSettingStates.progressStatus && <Typography variant={'body2'}>{langConfigs.updateFailed[preferenceStates.lang]}</Typography>}
-                        </Button>
-                    </CentralizedBox>
-
-                    {/* requirenment */}
-                    <CentralizedBox mt={2}>
-                        <Typography color={'grey'} variant={'body2'} align={'center'}>{langConfigs.nicknameRequirement[preferenceStates.lang]}</Typography>
-                    </CentralizedBox>
-
-                    {/* requirenment */}
-                    <CentralizedBox>
-                        <Typography color={'grey'} variant={'body2'} align={'center'}>{langConfigs.referToCommunityGuidelines[preferenceStates.lang]}</Typography>
-                    </CentralizedBox>
-                </Box>
-            )
-        }
-
-        //// Password ////
-        const PasswordeSetting = () => {
-
-            type TPasswordSetting = {
-                currentPassword: string;
-                newPassword: string;
-                repeatPassword: string;
-                showPassword: boolean;
-                disableButton: boolean;
-                displayError0: boolean;
-                displayError1: boolean;
-                progressStatus: 0 | 100 | 200 | 300 | 400 | 422 | 500;
-            }
-
-            const [passwordSettingStates, setPasswordSettingStates] = React.useState<TPasswordSetting>({
-                currentPassword: '',
-                newPassword: '',
-                repeatPassword: '',
-                showPassword: false,
-                disableButton: false,
-                displayError0: false,
-                displayError1: false,
-                progressStatus: 100
-            });
-
-            const handleShowPassword = () => {
-                setPasswordSettingStates({ ...passwordSettingStates, showPassword: !passwordSettingStates.showPassword });
-            }
-
-            const handleChange = (prop: keyof TPasswordSetting) => (event: React.ChangeEvent<HTMLInputElement>) => {
-                if ('newPassword' === `${prop}` && passwordSettingStates.repeatPassword === event.target.value) {
-                    setPasswordSettingStates({ ...passwordSettingStates, [prop]: event.target.value, displayError1: false });
-                    return;
-                }
-                if ('repeatPassword' === `${prop}` && passwordSettingStates.newPassword === event.target.value) {
-                    setPasswordSettingStates({ ...passwordSettingStates, [prop]: event.target.value, displayError1: false });
-                    return;
-                }
-                setPasswordSettingStates({ ...passwordSettingStates, [prop]: event.target.value });
-            }
-
-            const handleSubmit = async () => {
-                if (!('' !== passwordSettingStates.currentPassword && '' !== passwordSettingStates.newPassword && '' !== passwordSettingStates.repeatPassword)) {
-                    return;
-                }
-
-                if (passwordSettingStates.newPassword !== passwordSettingStates.repeatPassword) {
-                    setPasswordSettingStates({ ...passwordSettingStates, displayError1: true, progressStatus: 0 });
-                    return;
-                }
-
-                if (!verifyPassword(passwordSettingStates.newPassword)) {
-                    setPasswordSettingStates({ ...passwordSettingStates, displayError1: true, progressStatus: 422 });
-                    return;
-                }
-
-                // Prepare to update password
-                setPasswordSettingStates({ ...passwordSettingStates, displayError0: false, displayError1: false, disableButton: true, progressStatus: 300 });
-
-                const resp = await fetch(`/api/member/info/${authorId}/password`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ currentPassword: passwordSettingStates.currentPassword, newPassword: passwordSettingStates.newPassword })
-                })
-
-                if (200 === resp.status) {
-                    setPasswordSettingStates({ ...passwordSettingStates, displayError0: false, displayError1: false, disableButton: true, progressStatus: 200 });
-                    setTimeout(() => {
-                        setPasswordSettingStates({ ...passwordSettingStates, currentPassword: '', newPassword: '', repeatPassword: '', displayError0: false, displayError1: false, disableButton: false, progressStatus: 100 });
-                    }, 2000);
-                } else if (400 === resp.status) {
-                    setPasswordSettingStates({ ...passwordSettingStates, displayError0: true, displayError1: false, disableButton: false, progressStatus: 400 });
-                } else if (422 === resp.status) {
-                    setPasswordSettingStates({ ...passwordSettingStates, displayError0: false, displayError1: true, disableButton: false, progressStatus: 422 });
-                } else {
-                    setPasswordSettingStates({ ...passwordSettingStates, displayError0: false, displayError1: false, disableButton: false, progressStatus: 500 });
-                }
-            }
-
-            return (
-                <Box sx={{ pt: 6, px: 2 }}>
-
-                    {/* current password */}
-                    <CentralizedBox>
-                        <FormControl variant={'outlined'} size={'small'}>
-                            <InputLabel htmlFor={'setting-password-current'}>{langConfigs.currentPassword[preferenceStates.lang]}</InputLabel>
-                            <OutlinedInput
-                                id={'setting-password-current'}
-                                label={langConfigs.currentPassword[preferenceStates.lang]}
-                                type={passwordSettingStates.showPassword ? 'text' : 'password'}
-                                value={passwordSettingStates.currentPassword}
-                                onChange={handleChange('currentPassword')}
-                                endAdornment={
-                                    <InputAdornment position={'end'}>
-                                        <IconButton aria-label={'toggle password visibility'} onClick={handleShowPassword} edge={'end'}>
-                                            {passwordSettingStates.showPassword ? <VisibilityIcon /> : <VisibilityOffIcon />}
-                                        </IconButton>
-                                    </InputAdornment>
-                                }
-                                error={passwordSettingStates.displayError0}
-                            />
-                        </FormControl>
-                    </CentralizedBox>
-
-                    {/* new password */}
-                    <CentralizedBox sx={{ mt: 2 }}>
-                        <FormControl variant='outlined' size='small'>
-                            <InputLabel htmlFor='setting-password-new'>{langConfigs.newPassword[preferenceStates.lang]}</InputLabel>
-                            <OutlinedInput
-                                id={'setting-password-new'}
-                                label={langConfigs.newPassword[preferenceStates.lang]}
-                                type={passwordSettingStates.showPassword ? 'text' : 'password'}
-                                value={passwordSettingStates.newPassword}
-                                onChange={handleChange('newPassword')}
-                                endAdornment={
-                                    <InputAdornment position={'end'}>
-                                        <IconButton aria-label={'toggle password visibility'} onClick={handleShowPassword} edge={'end'}>
-                                            {passwordSettingStates.showPassword ? <VisibilityIcon /> : <VisibilityOffIcon />}
-                                        </IconButton>
-                                    </InputAdornment>
-                                }
-                                error={passwordSettingStates.displayError1}
-                            />
-                        </FormControl>
-                    </CentralizedBox>
-
-                    {/* repear new password */}
-                    <CentralizedBox sx={{ mt: 2 }}>
-                        <FormControl variant='outlined' size='small'>
-                            <InputLabel htmlFor='setting-password-repeat'>{langConfigs.repeatPassword[preferenceStates.lang]}</InputLabel>
-                            <OutlinedInput
-                                id={'setting-password-repeat'}
-                                label={langConfigs.repeatPassword[preferenceStates.lang]}
-                                type={passwordSettingStates.showPassword ? 'text' : 'password'}
-                                value={passwordSettingStates.repeatPassword}
-                                onChange={handleChange('repeatPassword')}
-                                endAdornment={
-                                    <InputAdornment position={'end'}>
-                                        <IconButton aria-label={'toggle password visibility'} onClick={handleShowPassword} edge={'end'}>
-                                            {passwordSettingStates.showPassword ? <VisibilityIcon /> : <VisibilityOffIcon />}
-                                        </IconButton>
-                                    </InputAdornment>
-                                }
-                                error={passwordSettingStates.displayError1}
-                            />
-                        </FormControl>
-                    </CentralizedBox>
-
-                    {/* 'update' button */}
-                    <CentralizedBox sx={{ mt: 2 }}>
-                        <Button variant='contained' color={![0, 400, 422, 500].includes(passwordSettingStates.progressStatus) ? 'primary' : 'error'} size='small' onClick={async () => { await handleSubmit() }}
-                            disabled={passwordSettingStates.disableButton || !('' !== passwordSettingStates.currentPassword && '' !== passwordSettingStates.newPassword && '' !== passwordSettingStates.repeatPassword)}
-                        >
-                            {/* button: enabled, result: 0 (mismatch) */}
-                            {0 === passwordSettingStates.progressStatus && <Typography variant={'body2'}>{langConfigs.mismatchedPassword[preferenceStates.lang]}</Typography>}
-                            {/* button: enabled, result: 100 (ready) */}
-                            {100 === passwordSettingStates.progressStatus && <Typography variant={'body2'}>{langConfigs.update[preferenceStates.lang]}</Typography>}
-                            {/* button: disabled/enabled, result: 200 (succeeded) */}
-                            {200 === passwordSettingStates.progressStatus && <Typography variant={'body2'}>{langConfigs.updateSucceeded[preferenceStates.lang]}</Typography>}
-                            {/* button: disabled, result: 300 (ongoing) */}
-                            {300 === passwordSettingStates.progressStatus && <Typography variant={'body2'}>{langConfigs.updatinging[preferenceStates.lang]}</Typography>}
-                            {/* button: enabled, result: 400 (unsatisfied) */}
-                            {400 === passwordSettingStates.progressStatus && <Typography variant={'body2'}>{langConfigs.currentPasswordMismatched[preferenceStates.lang]}</Typography>}
-                            {/* button: enabled, result: 422 (unsatisfied) */}
-                            {422 === passwordSettingStates.progressStatus && <Typography variant={'body2'}>{langConfigs.unsatisfiedPassword[preferenceStates.lang]}</Typography>}
-                            {/* button: enabled, result: 500 (failed) */}
-                            {500 === passwordSettingStates.progressStatus && <Typography variant={'body2'}>{langConfigs.updateFailed[preferenceStates.lang]}</Typography>}
-                        </Button>
-                    </CentralizedBox>
-
-                    {/* requirenment */}
-                    <CentralizedBox mt={2}>
-                        <Typography color={'grey'} variant={'body2'} align={'center'}>{langConfigs.passwordLengthRequirement[preferenceStates.lang]}</Typography>
-                    </CentralizedBox>
-                    <CentralizedBox>
-                        <Typography color={'grey'} variant={'body2'} align={'center'}>{langConfigs.passwordComplexityRequirement[preferenceStates.lang]}</Typography>
-                    </CentralizedBox>
-
-                    {/* forgot password link */}
-                    <Box sx={{ mt: 6, paddingX: 2, textAlign: 'right' }} >
-                        <Link href='/forgot' variant={'body2'}>
-                            {langConfigs.forgotPassword[preferenceStates.lang]}
-                        </Link>
-                    </Box>
-                </Box>
-            )
-        }
-
-        //// Brief Intro ////
-        const BriefIntroSetting = () => {
-            type TBriefIntroSetting = {
-                alternativeIntro: string;
-                displayError: boolean;
-                disableButton: boolean;
-                progressStatus: 100 | 200 | 300 | 422 | 500;
-            }
-
-            const [briefIntroSettingStates, setBriefIntroSettingStates] = React.useState<TBriefIntroSetting>({
-                alternativeIntro: memberInfoStates.briefIntro,
-                displayError: false,
-                disableButton: true,
-                progressStatus: 100
-            });
-
-            const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-                if (21 < `${event.target.value}`.length) {
-                    setBriefIntroSettingStates({ ...briefIntroSettingStates, displayError: true, disableButton: true, alternativeIntro: event.target.value });
-                } else {
-                    if (memberInfoStates.briefIntro === event.target.value) {
-                        setBriefIntroSettingStates({ ...briefIntroSettingStates, displayError: false, disableButton: true, alternativeIntro: event.target.value });
-                    } else {
-                        setBriefIntroSettingStates({ ...briefIntroSettingStates, displayError: false, disableButton: false, alternativeIntro: event.target.value });
-                    }
-
-                }
-            }
-
-            const handleSubmit = async () => {
-                if ('' === briefIntroSettingStates.alternativeIntro) {
-                    return;
-                }
-
-                // Prepare to update nickname
-                setBriefIntroSettingStates({ ...briefIntroSettingStates, disableButton: true, progressStatus: 300 });
-                const resp = await fetch(`/api/member/info/${authorId}/briefintro`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ alternativeIntro: briefIntroSettingStates.alternativeIntro })
-                });
-
-                if (200 === resp.status) {
-                    setMemberInfoStates({ ...memberInfoStates, briefIntro: briefIntroSettingStates.alternativeIntro });
-                    setBriefIntroSettingStates({ ...briefIntroSettingStates, disableButton: true, progressStatus: 200 });
-                    setTimeout(() => {
-                        setBriefIntroSettingStates({ ...briefIntroSettingStates, progressStatus: 100 })
-                    }, 2000)
-                } else if (422 === resp.status) {
-                    setBriefIntroSettingStates({ ...briefIntroSettingStates, disableButton: false, progressStatus: 422 });
-                } else {
-                    setBriefIntroSettingStates({ ...briefIntroSettingStates, disableButton: false, progressStatus: 500 });
-                }
-            }
-
-            return (
-                <Box sx={{ pt: { xs: 6, sm: 12 }, px: 2 }}>
-
-                    {/* brief intro input */}
-                    <CentralizedBox>
-                        <TextField
-                            error={briefIntroSettingStates.displayError}
-                            label={langConfigs.briefIntro[preferenceStates.lang]}
-                            multiline
-                            rows={3}
-                            value={briefIntroSettingStates.alternativeIntro}
-                            placeholder={langConfigs.brieflyIntrodueYourself[preferenceStates.lang]}
-                            onChange={handleChange}
-                            size={'small'}
-                            fullWidth
-                        />
-                    </CentralizedBox>
-
-                    <CentralizedBox sx={{ mt: 2 }}>
-                        <Button variant='contained' color={![422, 500].includes(briefIntroSettingStates.progressStatus) ? 'primary' : 'error'} size='small' onClick={async () => { await handleSubmit() }} disabled={briefIntroSettingStates.disableButton}>
-                            {/* button: enabled, result: 100 (ready) */}
-                            {100 === briefIntroSettingStates.progressStatus && <Typography variant={'body2'}>{langConfigs.update[preferenceStates.lang]}</Typography>}
-                            {/* button: disabled/enabled, result: 200 (succeeded) */}
-                            {200 === briefIntroSettingStates.progressStatus && <Typography variant={'body2'}>{langConfigs.updateSucceeded[preferenceStates.lang]}</Typography>}
-                            {/* button: disabled, result: 300 (ongoing) */}
-                            {300 === briefIntroSettingStates.progressStatus && <Typography variant={'body2'}>{langConfigs.updatinging[preferenceStates.lang]}</Typography>}
-                            {/* button: disabled, result: 422 (ongoing) */}
-                            {422 === briefIntroSettingStates.progressStatus && <Typography variant={'body2'}>{langConfigs.invalidBriefIntro[preferenceStates.lang]}</Typography>}
-                            {/* button: enabled, result: 500 (failed) */}
-                            {500 === briefIntroSettingStates.progressStatus && <Typography variant={'body2'}>{langConfigs.updateFailed[preferenceStates.lang]}</Typography>}
-                        </Button>
-                    </CentralizedBox>
-
-                    {/* requirenment */}
-                    <CentralizedBox mt={2}>
-                        <Typography color={'grey'} variant={'body2'} align={'center'}>{langConfigs.briefIntroRequirement[preferenceStates.lang]}</Typography>
-                    </CentralizedBox>
-
-                    {/* requirenment */}
-                    <CentralizedBox>
-                        <Typography color={'grey'} variant={'body2'} align={'center'}>{langConfigs.referToCommunityGuidelines[preferenceStates.lang]}</Typography>
-                    </CentralizedBox>
-                </Box>
-            )
-        }
-
-        //// Gender ////
-        const GenderSetting = () => {
-            type TGenderSettingStates = {
-                gender: number;
-                disableButton: boolean;
-                progressStatus: 100 | 200 | 300 | 400;
-            }
-
-            const [genderSettingStates, setGenderSettingStates] = React.useState<TGenderSettingStates>({
-                gender: memberInfoStates.gender,
-                disableButton: true,
-                progressStatus: 100,
-            });
-
-            const handleChange = (event: SelectChangeEvent) => {
-                setGenderSettingStates({ ...genderSettingStates, gender: parseInt(event.target.value), disableButton: memberInfoStates.gender === parseInt(event.target.value) });
-            };
-
-            const handleSubmit = async () => {
-                if (memberInfoStates.gender === genderSettingStates.gender) {
-                    return;
-                }
-
-                // Prepare to update gender
-                setGenderSettingStates({ ...genderSettingStates, disableButton: true, progressStatus: 300 });
-                const resp = await fetch(`/api/member/info/${authorId}/gender`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ gender: genderSettingStates.gender })
-                });
-
-                if (200 === resp.status) {
-                    setGenderSettingStates({ ...genderSettingStates, disableButton: true, progressStatus: 200 });
-                    setMemberInfoStates({ ...memberInfoStates, gender: genderSettingStates.gender });
-                    setTimeout(() => {
-                        setGenderSettingStates({ ...genderSettingStates, progressStatus: 100 });
-                    }, 2000)
-                } else {
-                    setGenderSettingStates({ ...genderSettingStates, disableButton: false, progressStatus: 400 });
-                }
-            };
-
-            return (
-                <Box sx={{ pt: { xs: 6, sm: 18 }, px: 2 }}>
-
-                    {/* gender select */}
-                    <CentralizedBox>
-                        <FormControl sx={{ minWidth: 100 }}>
-                            <InputLabel id={'setting-gender-select-label'}>{langConfigs.gender[preferenceStates.lang]}</InputLabel>
-                            <Select
-                                labelId={'setting-gender-select-label'}
-                                value={`${genderSettingStates.gender}`}
-                                label={langConfigs.gender[preferenceStates.lang]}
-                                onChange={handleChange}
-                                size={'small'}
-                                sx={{ width: 144 }}
-                            >
-                                <MenuItem value={0}>{langConfigs.female[preferenceStates.lang]}</MenuItem>
-                                <MenuItem value={1}>{langConfigs.male[preferenceStates.lang]}</MenuItem>
-                                <MenuItem value={-1}>{langConfigs.keepAsSecret[preferenceStates.lang]}</MenuItem>
-                            </Select>
-                        </FormControl>
-                    </CentralizedBox>
-
-                    {/* 'update' button */}
-                    <CentralizedBox sx={{ mt: 2 }}>
-                        <Button variant={'contained'} color={400 !== genderSettingStates.progressStatus ? 'primary' : 'error'} size={'small'} onClick={async () => { await handleSubmit() }} disabled={genderSettingStates.disableButton}>
-                            {/* button: enabled, result: 100 (ready) */}
-                            {100 === genderSettingStates.progressStatus && <Typography variant={'body2'}>{langConfigs.update[preferenceStates.lang]}</Typography>}
-                            {/* button: disabled/enabled, result: 200 (succeeded) */}
-                            {200 === genderSettingStates.progressStatus && <Typography variant={'body2'}>{langConfigs.updateSucceeded[preferenceStates.lang]}</Typography>}
-                            {/* button: disabled, result: 300 (ongoing) */}
-                            {300 === genderSettingStates.progressStatus && <Typography variant={'body2'}>{langConfigs.updatinging[preferenceStates.lang]}</Typography>}
-                            {/* button: enabled, result: 400 (failed) */}
-                            {400 === genderSettingStates.progressStatus && <Typography variant={'body2'}>{langConfigs.updateFailed[preferenceStates.lang]}</Typography>}
-                        </Button>
-                    </CentralizedBox>
-                </Box>
-            )
-        }
-
-        //// Birthday ////
-        const BirthdaySetting = () => {
-            type TBirthdaySettingStates = {
-                date: Dayjs | null;
-                disableButton: boolean;
-                progressStatus: 100 | 200 | 300 | 400;
-            }
-
-            const [birthdaySettingStates, setBirthdaySettingStates] = React.useState<TBirthdaySettingStates>({
-                date: dayjs(memberInfoStates.birthdayBySecond * 1000),
-                disableButton: true,
-                progressStatus: 100,
-            });
-
-            const handleChange = (value: Dayjs | null) => {
-                if (null == value) {
-                    return;
-                }
-                if (0 !== memberInfoStates.birthdayBySecond - Math.floor((birthdaySettingStates.date?.toDate().getTime() ?? 1000) / 1000)) {
-                    setBirthdaySettingStates({ ...birthdaySettingStates, date: value, disableButton: true });
-                } else {
-                    setBirthdaySettingStates({ ...birthdaySettingStates, date: value, disableButton: false });
-                }
-            };
-
-            const handleSubmit = async () => {
-                console.log(birthdaySettingStates.date?.toDate().getTime());
-                console.log(memberInfoStates.birthdayBySecond - Math.floor((birthdaySettingStates.date?.toDate().getTime() ?? 1000) / 1000));
-
-                if (!(null !== birthdaySettingStates.date && 0 !== memberInfoStates.birthdayBySecond - Math.floor((birthdaySettingStates.date?.toDate().getTime() ?? 1000) / 1000))) {
-                    return;
-                }
-
-                // Prepare to update birthday
-                setBirthdaySettingStates({ ...birthdaySettingStates, disableButton: true, progressStatus: 300 });
-                const date = Math.floor(birthdaySettingStates.date?.toDate().getTime() / 1000);
-                const resp = await fetch(`/api/member/info/${authorId}/birthday`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ date })
-                });
-
-                if (200 === resp.status) {
-                    setBirthdaySettingStates({ ...birthdaySettingStates, disableButton: true, progressStatus: 200 });
-                    setTimeout(() => {
-                        setBirthdaySettingStates({ ...birthdaySettingStates, progressStatus: 100 });
-                    }, 2000)
-                } else {
-                    setBirthdaySettingStates({ ...birthdaySettingStates, disableButton: false, progressStatus: 400 });
-                }
-            };
-
-            return (
-                <Box sx={{ pt: { xs: 6, sm: 16 }, px: 2 }}>
-
-                    {/* birthday select */}
-                    <CentralizedBox>
-                        <LocalizationProvider dateAdapter={AdapterDayjs}>
-                            <MobileDatePicker
-                                label={langConfigs.chooseYourBirthday[preferenceStates.lang]}
-                                inputFormat='DD/MM/YYYY'
-                                value={birthdaySettingStates.date}
-                                onChange={handleChange}
-                                renderInput={(params) => <TextField {...params} />}
-
-                            />
-                        </LocalizationProvider>
-                    </CentralizedBox>
-
-                    {/* 'update' button */}
-                    <CentralizedBox sx={{ mt: 2 }}>
-                        <Button variant={'contained'} color={400 !== birthdaySettingStates.progressStatus ? 'primary' : 'error'} size={'small'} onClick={async () => { await handleSubmit() }} disabled={birthdaySettingStates.disableButton}>
-                            {/* button: enabled, result: 100 (ready) */}
-                            {100 === birthdaySettingStates.progressStatus && <Typography variant={'body2'}>{langConfigs.update[preferenceStates.lang]}</Typography>}
-                            {/* button: disabled/enabled, result: 200 (succeeded) */}
-                            {200 === birthdaySettingStates.progressStatus && <Typography variant={'body2'}>{langConfigs.updateSucceeded[preferenceStates.lang]}</Typography>}
-                            {/* button: disabled, result: 300 (ongoing) */}
-                            {300 === birthdaySettingStates.progressStatus && <Typography variant={'body2'}>{langConfigs.updatinging[preferenceStates.lang]}</Typography>}
-                            {/* button: enabled, result: 400 (failed) */}
-                            {400 === birthdaySettingStates.progressStatus && <Typography variant={'body2'}>{langConfigs.updateFailed[preferenceStates.lang]}</Typography>}
-                        </Button>
-                    </CentralizedBox>
-                </Box>
-            )
-        }
-
-        //// Privacy ////
-        const PrivacySettings = () => {
-
-            type TPrivacySettingsStates = {
-                allowKeepingBrowsingHistory: boolean;
-                allowVisitingFollowedMembers: boolean;
-                allowVisitingSavedPosts: boolean;
-                hidePostsAndCommentsOfBlockedMember: boolean;
-            }
-
-            const [previousSettingsStates, setPreviousSettingsStates] = React.useState<TPrivacySettingsStates>({
-                allowKeepingBrowsingHistory: memberComprehensive_ss.allowKeepingBrowsingHistory,
-                allowVisitingFollowedMembers: memberComprehensive_ss.allowVisitingFollowedMembers,
-                allowVisitingSavedPosts: memberComprehensive_ss.allowVisitingSavedPosts,
-                hidePostsAndCommentsOfBlockedMember: memberComprehensive_ss.hidePostsAndCommentsOfBlockedMember
-            });
-
-            const [privacySettingsStates, setPrivacySettingsStates] = React.useState<TPrivacySettingsStates>({ ...previousSettingsStates });
-
-            type TPrivacySettingProcessStates = {
-                countdown: number;
-                displayUpdateButton: boolean;
-                displayCancelButton: boolean;
-                displayCountdown: boolean;
-                disableButton: boolean;
-                progressStatus: 100 | 200 | 300 | 400;
-            }
-
-            const [privacySettingsProcessStates, setPrivacySettingsProcessStates] = React.useState<TPrivacySettingProcessStates>({
-                countdown: 5,
-                displayUpdateButton: false,
-                displayCancelButton: false,
-                displayCountdown: false,
-                disableButton: false,
-                progressStatus: 100,
-            });
-
-            const handleSelectLang = (event: SelectChangeEvent<string>) => {
-                setPreferenceStates({ ...preferenceStates, lang: event.target.value });
-                updatePreferenceStatesCache({ ...preferenceStates, lang: event.target.value })
-            }
-
-            const handleToggle = (prop: keyof TPrivacySettingsStates) => (event: React.ChangeEvent<HTMLInputElement>) => {
-                setPrivacySettingsStates({ ...privacySettingsStates, [prop]: !privacySettingsStates[prop] });
-            }
-
-            React.useEffect(() => {
-                if (
-                    !(
-                        previousSettingsStates.allowKeepingBrowsingHistory === privacySettingsStates.allowKeepingBrowsingHistory
-                        && previousSettingsStates.allowVisitingFollowedMembers === privacySettingsStates.allowVisitingFollowedMembers
-                        && previousSettingsStates.allowVisitingSavedPosts === privacySettingsStates.allowVisitingSavedPosts
-                        && previousSettingsStates.hidePostsAndCommentsOfBlockedMember === privacySettingsStates.hidePostsAndCommentsOfBlockedMember
-                    )
-                ) {
-                    setPrivacySettingsProcessStates({ ...privacySettingsProcessStates, displayUpdateButton: true });
-                } else {
-                    setPrivacySettingsProcessStates({ ...privacySettingsProcessStates, displayUpdateButton: false });
-                }
-            }, [privacySettingsStates])
-
-            const handleCheck = () => {
-                setPrivacySettingsProcessStates({
-                    ...privacySettingsProcessStates,
-                    displayCancelButton: !privacySettingsProcessStates.displayCancelButton,
-                    countdown: 5,
-                    displayCountdown: false,
-                    progressStatus: 100
-                });
-            }
-
-            const handleUpdate = async () => {
-                if (
-                    previousSettingsStates.allowKeepingBrowsingHistory === privacySettingsStates.allowKeepingBrowsingHistory
-                    && previousSettingsStates.allowVisitingFollowedMembers === privacySettingsStates.allowVisitingFollowedMembers
-                    && previousSettingsStates.allowVisitingSavedPosts === privacySettingsStates.allowVisitingSavedPosts
-                    && previousSettingsStates.hidePostsAndCommentsOfBlockedMember === privacySettingsStates.hidePostsAndCommentsOfBlockedMember
-                ) {
-                    return;
-                }
-
-                // Prepare to update privacy setting
-                setPrivacySettingsProcessStates({ ...privacySettingsProcessStates, displayCancelButton: false, disableButton: true, progressStatus: 300 });
-                const resp = await fetch(`/api/member/info/${authorId}/privacysetting`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ settings: { ...privacySettingsStates } })
-                });
-
-                if (200 === resp.status) {
-                    setPreviousSettingsStates({ ...privacySettingsStates });
-                    setPrivacySettingsProcessStates({ ...privacySettingsProcessStates, displayCancelButton: false, disableButton: true, progressStatus: 200 });
-                    setTimeout(() => {
-                        setPrivacySettingsProcessStates({ ...privacySettingsProcessStates, displayUpdateButton: false, progressStatus: 100 });
-                    }, 2000)
-                } else {
-                    setPrivacySettingsProcessStates({ ...privacySettingsProcessStates, disableButton: false, progressStatus: 400 });
-                }
-            }
-
-            const handleCancel = async () => {
-                if (privacySettingsProcessStates.countdown > 0) {
-                    setPrivacySettingsProcessStates({ ...privacySettingsProcessStates, countdown: privacySettingsProcessStates.countdown - 1, displayCountdown: true });
-                } else {
-                    const resp = await fetch(`/api/member/info/${authorId}/cancel`, { method: 'DELETE' });
-                    if (200 === resp.status) {
-                        setPrivacySettingsProcessStates({ ...privacySettingsProcessStates, displayCountdown: false, progressStatus: 200 });
-                        signOut();
-                    } else {
-                        setPrivacySettingsProcessStates({ ...privacySettingsProcessStates, displayCountdown: false, progressStatus: 400 });
-                    }
-                }
-            }
-
-            return (
-                <Box sx={{ pt: 3, px: 2 }}>
-                    <FormGroup>
-
-                        {/* language */}
-                        <Typography variant={'body2'} >{langConfigs.language[preferenceStates.lang]}</Typography>
-                        <Box pl={{ xs: 0, sm: 2, md: 4 }} pt={1}>
-                            <Select
-                                value={preferenceStates.lang}
-                                onChange={handleSelectLang}
-                                size={'small'}
-                                sx={{ width: 144 }}
-                            >
-                                <MenuItem value={'tw'}>{'繁体中文'}</MenuItem>
-                                <MenuItem value={'cn'}>{'简体中文'}</MenuItem>
-                                <MenuItem value={'en'}>{'English'}</MenuItem>
-                            </Select>
-                        </Box>
-
-                        {/* privacy */}
-                        <Typography variant={'body2'} mt={4}>{langConfigs.privacy[preferenceStates.lang]}</Typography>
-                        <Stack pl={{ xs: 0, sm: 2, md: 4 }}>
-                            <FormControlLabel control={<Switch checked={privacySettingsStates.allowKeepingBrowsingHistory} onChange={handleToggle('allowKeepingBrowsingHistory')} />} label={<Typography variant={'body2'} align={'left'}>{langConfigs.allowKeepingBrowsingHistory[preferenceStates.lang]}</Typography>} sx={{ fontSize: 14 }} />
-                            <FormControlLabel control={<Switch checked={privacySettingsStates.allowVisitingFollowedMembers} onChange={handleToggle('allowVisitingFollowedMembers')} />} label={<Typography variant={'body2'} align={'left'}>{langConfigs.allowVisitingFollowedMembers[preferenceStates.lang]}</Typography>} sx={{ fontSize: 14 }} />
-                            <FormControlLabel control={<Switch checked={privacySettingsStates.allowVisitingSavedPosts} onChange={handleToggle('allowVisitingSavedPosts')} />} label={<Typography variant={'body2'} align={'left'}>{langConfigs.allowVisitingSavedPosts[preferenceStates.lang]}</Typography>} sx={{ fontSize: 14 }} />
-                            <FormControlLabel control={<Switch checked={privacySettingsStates.hidePostsAndCommentsOfBlockedMember} onChange={handleToggle('hidePostsAndCommentsOfBlockedMember')} />} label={<Typography variant={'body2'} align={'left'}>{langConfigs.hidePostsAndCommentsOfBlockedMember[preferenceStates.lang]}</Typography>} sx={{ fontSize: 14 }} />
-
-                            {/* 'update' button */}
-                            {privacySettingsProcessStates.displayUpdateButton && <Box mt={1} pl={{ xs: 0, sm: 3, md: 2 }}>
-                                <Button variant={'contained'} color={400 !== privacySettingsProcessStates.progressStatus ? 'primary' : 'error'} size={'small'} onClick={async () => { await handleUpdate() }} disabled={privacySettingsProcessStates.disableButton} fullWidth>
-                                    {/* button: enabled, result: 100 (ready) */}
-                                    {100 === privacySettingsProcessStates.progressStatus && <Typography variant={'body2'}>{langConfigs.update[preferenceStates.lang]}</Typography>}
-                                    {/* button: disabled, result: 200 (succeeded) */}
-                                    {200 === privacySettingsProcessStates.progressStatus && <Typography variant={'body2'}>{langConfigs.updateSucceeded[preferenceStates.lang]}</Typography>}
-                                    {/* button: disabled, result: 300 (ongoing) */}
-                                    {300 === privacySettingsProcessStates.progressStatus && <Typography variant={'body2'}>{langConfigs.updatinging[preferenceStates.lang]}</Typography>}
-                                    {/* button: enabled, result: 400 (failed) */}
-                                    {400 === privacySettingsProcessStates.progressStatus && <Typography variant={'body2'}>{langConfigs.updateFailed[preferenceStates.lang]}</Typography>}
-                                </Button>
-                            </Box>}
-                        </Stack>
-
-                        {/* cancel membership */}
-                        <Typography variant={'body2'} sx={{ mt: 4 }}>{langConfigs.cancel[preferenceStates.lang]}</Typography>
-                        <Box pl={{ xs: 0, sm: 2, md: 4 }}>
-                            <FormControlLabel control={<Checkbox onChange={handleCheck} checked={privacySettingsProcessStates.displayCancelButton} />} label={langConfigs.wishToCancelMembership[preferenceStates.lang]} />
-                        </Box>
-
-                        {/* 'cancel' button */}
-                        {privacySettingsProcessStates.displayCancelButton && <Box mb={4} pl={{ xs: 0, sm: 3, md: 6 }}>
-                            <Button variant={'contained'} color={'error'} size={'small'} onClick={async () => { await handleCancel() }} fullWidth>
-                                {(!privacySettingsProcessStates.displayCountdown && 100 === privacySettingsProcessStates.progressStatus) && <Typography variant={'body2'}>{langConfigs.cancel[preferenceStates.lang]}</Typography>}
-                                {(!privacySettingsProcessStates.displayCountdown && 200 === privacySettingsProcessStates.progressStatus) && <Typography variant={'body2'}>{langConfigs.cancelSucceeded[preferenceStates.lang]}</Typography>}
-                                {(!privacySettingsProcessStates.displayCountdown && 400 === privacySettingsProcessStates.progressStatus) && <Typography variant={'body2'}>{langConfigs.cancelFailed[preferenceStates.lang]}</Typography>}
-                                {privacySettingsProcessStates.displayCountdown && <Typography variant={'body2'}>{langConfigs.clickXTimesToCancelMemberShip[preferenceStates.lang](privacySettingsProcessStates.countdown)}</Typography>}
-                            </Button>
-                        </Box>}
-                    </FormGroup>
-
-                </Box >
-            )
-        }
-
-        //// Blocked member list ////
-        const BlacklistSettings = () => {
-
-            const handleUndoBlock = async (blockedId: string) => {
-                // delete element (member info) from the array
-                const arr: IConciseMemberInfo[] = [...settinglayoutStates.blacklist];
-                for (let i = 0; i < arr.length; i++) {
-                    if (blockedId === arr[i].memberId) {
-                        arr.splice(i, 1);
-                        setSettingLayoutStates({ ...settinglayoutStates, blacklist: [...arr] });
-                        break;
-                    }
-                }
-                const resp = await fetch(`/api/block/${blockedId}`, { method: 'POST' });
-                if (200 !== resp.status) {
-                    console.log(`Attempt to undo block for ${blockedId}`);
-                }
-            }
-
-            return (
-                <Stack spacing={3} sx={{ px: 1 }}>
-                    <Box mt={{ xs: 0, sm: 0 }}></Box>
-                    {0 !== settinglayoutStates.blacklist.length && settinglayoutStates.blacklist.map(info =>
-
-                        <Box key={info.memberId} sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between' }} >
-
-                            {/* member info */}
-                            <Stack direction={'row'} sx={{ maxHeight: 40 }}>
-                                <IconButton sx={{ px: 0 }} onClick={handleClickOnInitiateInfo(info.memberId)}>
-                                    <Avatar src={provideAvatarImageUrl(authorId, domain)} sx={{ width: 40, height: 40, bgcolor: 'grey' }}>{info.nickname?.charAt(0).toUpperCase()}</Avatar>
-                                </IconButton>
-                                <Box ml={1}>
-                                    <TextButton color={'inherit'} onClick={handleClickOnInitiateInfo(info.memberId)}>
-
-                                        {/* nickname */}
-                                        <Typography variant={'body2'} align={'left'} fontSize={{ xs: 14, sm: 14 }}>{getNicknameBrief(info.nickname)}</Typography>
-
-                                        {/* created time */}
-                                        <Typography variant={'body2'} fontSize={{ xs: 12, align: 'right' }}>{timeToString(info.createdTimeBySecond, preferenceStates.lang)}</Typography>
-                                    </TextButton>
-                                </Box>
-                            </Stack>
-
-                            {/* undo follow button */}
-                            <Button variant={'text'} color={'inherit'} onClick={async () => { await handleUndoBlock(info.memberId) }}>
-                                <Typography variant={'body2'} align={'right'}>{langConfigs.undoBlock[preferenceStates.lang]}</Typography>
-                            </Button>
-
-                        </Box>
-                    )}
-                    {0 === settinglayoutStates.blacklist.length && <Box minHeight={200} mt={10}>
-                        <Typography color={'text.secondary'} align={'center'}>{langConfigs.noRecordOfBlacklist[preferenceStates.lang]}</Typography>
-                    </Box>}
-                </Stack>
-            )
-        }
-
-        //// Register Info ////
-        const RegisterInfo = () => {
-
-            let emailAddress = '';
-            if ('authenticated' === status) {
-                const viewerSession: any = { ...session };
-                emailAddress = viewerSession?.user?.email;
-            }
-
-
-            return (
-                // <Box sx={{ pt: 3, px: { xs: 1, sm: 1, md: 4 } }}>
-                <Box sx={{ pt: 3, px: { xs: 2, sm: 2, md: 4 } }}>
-
-                    <Table aria-label='simple table'>
-                        {/* info */}
-                        <TableRow>
-                            <TableCell sx={{ px: 0, pt: 0, pb: 1 }}><Typography variant={'body2'} color={'text.secondary'}>{langConfigs.memberInfo[preferenceStates.lang]}</Typography></TableCell>
-                            <TableCell sx={{ px: 0, pt: 0, pb: 1 }}></TableCell>
-                        </TableRow>
-                        {/* memberId */}
-                        <TableRow>
-                            <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }}>{langConfigs.memberId[preferenceStates.lang]}</TableCell>
-                            <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }} align='right'>{authorId}</TableCell>
-                        </TableRow>
-                        {/* email address */}
-                        <TableRow>
-                            <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }}>{langConfigs.emailAddress[preferenceStates.lang]}</TableCell>
-                            <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none', maxWidth: { xs: 120, sm: 160 } }} align='right'>
-                                <Typography variant={'body2'} sx={{ overflowWrap: 'anywhere' }}>{emailAddress}</Typography>
-                            </TableCell>
-                        </TableRow>
-                        {/* registeredDate */}
-                        <TableRow>
-                            <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }}>{langConfigs.registeredDate[preferenceStates.lang]}</TableCell>
-                            <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }} align='right'>{new Date(memberComprehensive_ss.registeredTimeBySecond * 1000).toLocaleDateString()}</TableCell>
-                        </TableRow>
-                        {/* verifiedDate */}
-                        <TableRow>
-                            <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }}>{langConfigs.verifiedDate[preferenceStates.lang]}</TableCell>
-                            <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }} align='right'>{new Date(memberComprehensive_ss.verifiedTimeBySecond * 1000).toLocaleDateString()}</TableCell>
-                        </TableRow>
-                        {/* memberStatus */}
-                        <TableRow>
-                            <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }}>{langConfigs.memberStatus[preferenceStates.lang]}</TableCell>
-                            <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }} align='right'>{200 === memberComprehensive_ss.status ? langConfigs.normalStatus[preferenceStates.lang] : langConfigs.restrictedStatus[preferenceStates.lang]}</TableCell>
-                        </TableRow>
-
-                        <Box pt={4}></Box>
-
-                        {/* statistics */}
-                        <TableRow>
-                            <TableCell sx={{ px: 0, pt: 0, pb: 1 }}><Typography variant={'body2'} color={'text.secondary'}>{langConfigs.memberStatistics[preferenceStates.lang]}</Typography></TableCell>
-                            <TableCell sx={{ px: 0, pt: 0, pb: 1 }}></TableCell>
-                        </TableRow>
-                        <TableRow>
-                            {/* totalCreationCount */}
-                            <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }}>{langConfigs.totalCreationCount[preferenceStates.lang]}</TableCell>
-                            <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }} align='right'>{memberStatistics_ss.totalCreationCount}</TableCell>
-                        </TableRow>
-                        <TableRow>
-                            <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }}>{langConfigs.totalCreationHitCount[preferenceStates.lang]}</TableCell>
-                            <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }} align='right'>{memberStatistics_ss.totalCreationHitCount}</TableCell>
-                        </TableRow>
-                        <TableRow>
-                            <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }}>{langConfigs.totalCreationLikedCount[preferenceStates.lang]}</TableCell>
-                            <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }} align='right'>{memberStatistics_ss.totalCreationLikedCount}</TableCell>
-                        </TableRow>
-                        <TableRow>
-                            <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }}>{langConfigs.totalCreationSavedCount[preferenceStates.lang]}</TableCell>
-                            <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }} align='right'>{memberStatistics_ss.totalCreationSavedCount}</TableCell>
-                        </TableRow>
-                        <TableRow>
-                            <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }}>{langConfigs.totalFollowedByCount[preferenceStates.lang]}</TableCell>
-                            <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }} align='right'>{memberStatistics_ss.totalFollowedByCount}</TableCell >
-                        </TableRow >
-                    </Table >
-                </Box >
-            )
-        }
-
-        //////// COMPONENT - setting layout frame //////// 
-        return (
-            <Grid container mt={2}>
-
-                {/* //// placeholder - left //// */}
-                <Grid item xs={0} sm={1} md={2} lg={3} xl={3} />
-
-                {/* //// middle column */}
-                <Grid item xs={12} sm={10} md={8} lg={6} xl={6}>
-                    <Box sx={{ display: 'flex', flexDirection: 'row', borderRadius: 1, boxShadow: { xs: 0, sm: 2 }, minHeight: 480 }}>
-
-                        {/* //// left column //// */}
-                        <Box sx={{ minWidth: { xs: 100, sm: 140, md: 160 }, padding: { xs: 0, sm: 1, md: 2 } }}>
-                            <MenuList>
-
-                                {/* avatar */}
-                                <MenuItem onClick={handleSettingSelect(0)} selected={0 === settinglayoutStates.selectedSettingId} >
-                                    <ListItemIcon>
-                                        <AccountCircleIcon />
-                                    </ListItemIcon>
-                                    <ListItemText>
-                                        <Typography variant={'body2'}>{langConfigs.avatar[preferenceStates.lang]}</Typography>
-                                    </ListItemText>
-                                </MenuItem>
-
-                                {/* nickname */}
-                                <MenuItem onClick={handleSettingSelect(1)} selected={1 === settinglayoutStates.selectedSettingId}>
-                                    <ListItemIcon>
-                                        <LabelIcon />
-                                    </ListItemIcon>
-                                    <ListItemText>
-                                        <Typography variant={'body2'}>{langConfigs.nickname[preferenceStates.lang]}</Typography>
-                                    </ListItemText>
-                                </MenuItem>
-
-                                {/* password */}
-                                {'MojitoMemberSystem' === memberComprehensive_ss.providerId && <MenuItem onClick={handleSettingSelect(2)} selected={2 === settinglayoutStates.selectedSettingId}>
-                                    <ListItemIcon>
-                                        <LockIcon />
-                                    </ListItemIcon>
-                                    <ListItemText>
-                                        <Typography variant={'body2'}>{langConfigs.password[preferenceStates.lang]}</Typography>
-                                    </ListItemText>
-                                </MenuItem>}
-
-                                {/* brief intro */}
-                                <MenuItem onClick={handleSettingSelect(3)} selected={3 === settinglayoutStates.selectedSettingId}>
-                                    <ListItemIcon>
-                                        <InterestsIcon />
-                                    </ListItemIcon>
-                                    <ListItemText>
-                                        <Typography variant={'body2'}>{langConfigs.briefIntro[preferenceStates.lang]}</Typography>
-                                    </ListItemText>
-                                </MenuItem>
-
-                                {/* gender */}
-                                <MenuItem onClick={handleSettingSelect(4)} selected={4 === settinglayoutStates.selectedSettingId}>
-                                    <ListItemIcon>
-                                        <OpacityIcon />
-                                    </ListItemIcon>
-                                    <ListItemText>
-                                        <Typography variant={'body2'}>{langConfigs.gender[preferenceStates.lang]}</Typography>
-                                    </ListItemText>
-                                </MenuItem>
-
-                                {/* birthday */}
-                                <MenuItem onClick={handleSettingSelect(5)} selected={5 === settinglayoutStates.selectedSettingId}>
-                                    <ListItemIcon>
-                                        <CakeIcon />
-                                    </ListItemIcon>
-                                    <ListItemText>
-                                        <Typography variant={'body2'}>{langConfigs.birthday[preferenceStates.lang]}</Typography>
-                                    </ListItemText>
-                                </MenuItem>
-
-                                {/* privacy */}
-                                <MenuItem onClick={handleSettingSelect(6)} selected={6 === settinglayoutStates.selectedSettingId}>
-                                    <ListItemIcon>
-                                        <CheckBoxIcon />
-                                    </ListItemIcon>
-                                    <ListItemText>
-                                        <Typography variant={'body2'}>{langConfigs.privacySettings[preferenceStates.lang]}</Typography>
-                                    </ListItemText>
-                                </MenuItem>
-
-                                {/* blacklist */}
-                                <MenuItem onClick={handleSettingSelect(7)} selected={7 === settinglayoutStates.selectedSettingId}>
-                                    <ListItemIcon>
-                                        <BlockIcon />
-                                    </ListItemIcon>
-                                    <ListItemText>
-                                        <Typography variant={'body2'}>{langConfigs.blacklist[preferenceStates.lang]}</Typography>
-                                    </ListItemText>
-                                </MenuItem>
-
-                                {/* register info */}
-                                <MenuItem onClick={handleSettingSelect(10)} selected={10 === settinglayoutStates.selectedSettingId}>
-                                    <ListItemIcon>
-                                        <InfoIcon />
-                                    </ListItemIcon>
-                                    <ListItemText>
-                                        <Typography variant={'body2'}>{langConfigs.info[preferenceStates.lang]}</Typography>
-                                    </ListItemText>
-                                </MenuItem>
-                            </MenuList>
-                        </Box>
-
-                        {/* //// right column //// */}
-                        <Container sx={{ px: { xs: 0, sm: 2, md: 4 } }}>
-                            {/* multi-display */}
-                            {0 === settinglayoutStates.selectedSettingId && <AvatarImageSetting />}
-                            {1 === settinglayoutStates.selectedSettingId && <NicknameSetting />}
-                            {2 === settinglayoutStates.selectedSettingId && <PasswordeSetting />}
-                            {3 === settinglayoutStates.selectedSettingId && <BriefIntroSetting />}
-                            {4 === settinglayoutStates.selectedSettingId && <GenderSetting />}
-                            {5 === settinglayoutStates.selectedSettingId && <BirthdaySetting />}
-                            {6 === settinglayoutStates.selectedSettingId && <PrivacySettings />}
-                            {7 === settinglayoutStates.selectedSettingId && <BlacklistSettings />}
-                            {10 === settinglayoutStates.selectedSettingId && <RegisterInfo />}
-                        </Container>
-
-                    </Box>
-                </Grid>
-
-                {/* //// placeholder - right //// */}
-                <Grid item xs={0} sm={1} md={2} lg={3} xl={3} />
-            </Grid >
-        )
-    }
 
     ///////// COMPONENT - member page /////////
     return (
         <ThemeProvider theme={theme}>
             <Navbar avatarImageUrl={memberInfoStates.avatarImageUrl} />
 
-            {/* //// first layer - member info //// */}
-            <Box sx={{ minHeight: { xs: 160, md: 200 } }}>
-                <Box>
 
-                    {/* avatar */}
-                    <CentralizedBox sx={{ mt: { xs: 4, sm: 5 } }}>
-                        <Avatar src={memberInfoStates.avatarImageUrl} sx={{ height: { xs: 90, sm: 72 }, width: { xs: 90, sm: 72 } }}>{memberInfoStates.nickname?.charAt(0).toUpperCase()}</Avatar>
-                    </CentralizedBox>
+            <Grid container >
 
-                    {/* nickname */}
-                    <CentralizedBox sx={{ mt: { xs: 1, sm: 1 } }}>
-                        <Typography variant='body1' textAlign={'center'} fontSize={{ xs: 22, sm: 26 }}>{memberInfoStates.nickname}</Typography>
-                    </CentralizedBox>
+                <Grid item xs={0} sm={1} md={2} lg={3} xl={3}></Grid>
 
-                    {/* brief intro */}
-                    <CentralizedBox sx={{ mt: { xs: 0 } }}>
-                        <Typography variant={'body2'} textAlign={'center'} fontSize={{ xs: 14, sm: 15 }}>{memberInfoStates.briefIntro}</Typography>
-                    </CentralizedBox>
+                {/* //// middle column //// */}
+                <Grid item xs={12} sm={10} md={8} lg={6} xl={6}>
 
-                    {/* divider */}
-                    <CentralizedBox sx={{ mt: { xs: 1, sm: 2 } }}>
-                        <Box></Box>
-                        <Box sx={{ width: { xs: 220, sm: 280 } }}><Divider></Divider></Box>
-                        <Box></Box>
-                    </CentralizedBox>
 
-                    {/* info */}
-                    <Grid container columnSpacing={{ xs: 3, sm: 5 }} sx={{ mt: { xs: 1, sm: 2 } }}>
 
-                        {/* blank space */}
-                        <Grid item flexGrow={1}></Grid>
+                    {/* //// first layer - member info //// */}
+                    <Box sx={{ minHeight: { xs: 160, md: 200 }, px: 2 }}>
+                        <Stack>
 
-                        {/* creation count */}
-                        <Grid item>
-                            <CentralizedBox>
-                                <Typography variant={'body2'}>{langConfigs.creations[preferenceStates.lang]}</Typography>
-                            </CentralizedBox>
-                            <CentralizedBox>
-                                <Typography variant={'body2'}>{memberStatistics_ss.totalCreationCount}</Typography>
-                            </CentralizedBox>
-                        </Grid>
+                            {/* avatar */}
+                            <Grid container sx={{ mt: { xs: 4, sm: 5 } }}>
+                                <Grid item flexGrow={1}>
+                                    <Avatar src={memberInfoStates.avatarImageUrl} sx={{ height: { xs: 64, sm: 72 }, width: { xs: 64, sm: 72 } }}>{memberInfoStates.nickname?.charAt(0).toUpperCase()}</Avatar>
 
-                        {/* followed by count */}
-                        <Grid item>
-                            <CentralizedBox>
-                                <Typography variant={'body2'}>{langConfigs.followedBy[preferenceStates.lang]}</Typography>
-                            </CentralizedBox>
-                            <CentralizedBox>
-                                <Typography variant={'body2'}>{memberStatistics_ss.totalFollowedByCount}</Typography>
-                            </CentralizedBox>
-                        </Grid>
+                                </Grid>
+                                <Grid item sx={{ mt: 2 }}>
+                                    {/* <Tooltip title={behaviourStates.followed ? langConfigs.undoFollow[preferenceStates.lang] : langConfigs.follow[preferenceStates.lang]}> */}
+                                    <Tooltip title={'Follow'}>
+                                        <Button variant={'contained'} color={'info'} sx={{ paddingY: 0.1, borderRadius: 4 }} onClick={async () => { await handleFollowOrUndoFollow(); }}>{'訂閲'}</Button>
+                                    </Tooltip>
+                                </Grid>
+                            </Grid>
 
-                        {/* creation saved count */}
-                        <Grid item>
-                            <CentralizedBox>
-                                <Typography variant={'body2'}>{langConfigs.saved[preferenceStates.lang]}</Typography>
-                            </CentralizedBox>
-                            <CentralizedBox>
-                                <Typography variant={'body2'}>{memberStatistics_ss.totalCreationSavedCount}</Typography>
-                            </CentralizedBox>
-                        </Grid>
+                            {/* nickname */}
+                            <Box sx={{ mt: { xs: 1, sm: 1 } }}>
+                                <Typography variant='body1' fontSize={{ xs: 22, sm: 26 }}>{memberInfoStates.nickname}</Typography>
+                            </Box>
 
-                        {/* creation liked count */}
-                        <Grid item>
-                            <CentralizedBox>
-                                <Typography variant={'body2'}>{langConfigs.like[preferenceStates.lang]}</Typography>
-                            </CentralizedBox>
-                            <CentralizedBox>
-                                <Typography variant={'body2'}>{memberStatistics_ss.totalCreationLikedCount}</Typography>
-                            </CentralizedBox>
-                        </Grid>
+                            {/* brief intro */}
+                            <Box sx={{ mt: { xs: 0 } }}>
+                                <Typography variant={'body2'} fontSize={{ xs: 14, sm: 15 }}>{memberInfoStates.briefIntro}</Typography>
+                            </Box>
 
-                        {/* blank space */}
-                        <Grid item flexGrow={1}></Grid>
-                    </Grid>
+                            <Stack direction={'row'} spacing={1} sx={{ mt: { xs: 1 } }}>
 
-                    {/* layout select */}
-                    <Stack spacing={1} direction='row' mt={2} sx={{ pb: 1, justifyContent: 'center', overflow: 'auto' }}>
+                                <Typography variant={'body2'}>{memberStatistics_ss.totalCreationCount}{langConfigs.creations[preferenceStates.lang]}</Typography>
+                                <Typography variant={'body2'}>{memberStatistics_ss.totalFollowedByCount}{langConfigs.followedBy[preferenceStates.lang]}</Typography>
+                                <Typography variant={'body2'}>{memberStatistics_ss.totalCreationSavedCount}{langConfigs.saved[preferenceStates.lang]}</Typography>
+                                <Typography variant={'body2'}>{memberStatistics_ss.totalCreationLikedCount}{langConfigs.like[preferenceStates.lang]}</Typography>
 
-                        {/* s0 - message layout */}
-                        {('authenticated' === status && viewerId === authorId) && <Button variant={'contained'} size='small' color={'messagelayout' === processStates.selectedLayout ? 'primary' : 'inherit'} onClick={handleSelectLayout('messagelayout')}>
-                            <Typography variant={'body2'} color={'dark' === theme.palette.mode ? 'black' : 'inherit'}  >
-                                {langConfigs.message[preferenceStates.lang]}
-                            </Typography>
-                        </Button>}
 
-                        {/* s1 - list layout - my/author's following */}
-                        <Button variant={'contained'} size='small' color={'listlayout' === processStates.selectedLayout ? 'primary' : 'inherit'} onClick={handleSelectLayout('listlayout')}>
-                            <Typography variant={'body2'} color={'dark' === theme.palette.mode ? 'black' : 'inherit'}  >
-                                {viewerId === authorId ? langConfigs.following[preferenceStates.lang] : langConfigs.hisFollowing[preferenceStates.lang]}
-                            </Typography>
-                        </Button>
 
-                        {/* s2 - post layout - my/author's posts */}
-                        <Button variant={'contained'} size='small' color={'postlayout' === processStates.selectedLayout ? 'primary' : 'inherit'} onClick={handleSelectLayout('postlayout')}>
-                            <Typography variant={'body2'} color={'dark' === theme.palette.mode ? 'black' : 'inherit'}  >
-                                {viewerId === authorId ? langConfigs.posts[preferenceStates.lang] : langConfigs.authorsPosts[preferenceStates.lang]}
-                            </Typography>
-                        </Button>
 
-                        {/* s3 - setting layout */}
-                        {('authenticated' === status && viewerId === authorId) && <Button variant={'contained'} size='small' color={'settinglayout' === processStates.selectedLayout ? 'primary' : 'inherit'} onClick={handleSelectLayout('settinglayout')}>
-                            <Typography variant={'body2'} color={'dark' === theme.palette.mode ? 'black' : 'inherit'}  >
-                                {langConfigs.settings[preferenceStates.lang]}
-                            </Typography>
-                        </Button>}
+                            </Stack>
 
-                    </Stack>
-                </Box>
-            </Box>
+                            <Box sx={{ py: 2 }}>
+                                <Divider />
+
+                            </Box>
+
+
+                        </Stack>
+                    </Box>
+
+
+
+                </Grid>
+
+
+
+                <Grid item xs={0} sm={1} md={2} lg={3} xl={3}></Grid>
+
+            </Grid>
+
 
             {/* blank space (gap) */}
             <Box mt={{ xs: 0, sm: 0, md: 2 }}></Box>
 
             {/* //// second layer - multi-display */}
 
-            {/* message layout */}
-            {'messagelayout' === processStates.selectedLayout && <MessageLayout />}
-
             {/* posts layout */}
-            <Grid container display={'postlayout' === processStates.selectedLayout ? 'flex' : 'none'}>
+            <Grid container >
 
                 {/* //// placeholder left //// */}
                 <Grid item xs={0} sm={1} md={2} lg={2} xl={1}></Grid>
@@ -2684,7 +1186,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                                                 <Typography>{name[preferenceStates.lang]}</Typography>
                                             </ListItemText>
                                         </MenuItem>
-                                    )
+                                    );
                                 })}
                             </MenuList>
                         </ResponsiveCard>
@@ -2800,11 +1302,11 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                                                 <Grid item flexGrow={1}>
                                                     <Box display={'flex'} flexDirection={'row'}>
                                                         <Button variant={'text'} color={'inherit'} sx={{ textTransform: 'none' }} onClick={handleClickOnMemberInfo(info.memberId, info.postId)}>
-                                                            <Avatar src={provideAvatarImageUrl(authorId, domain)} sx={{ width: 34, height: 34, bgcolor: 'grey' }}>{info.nickname?.charAt(0).toUpperCase()}</Avatar>
+                                                            <Avatar src={provideAvatarImageUrl(authorId, domain)} sx={{ width: { xs: 24, sm: 32 }, height: { xs: 24, sm: 32 }, bgcolor: 'grey' }}>{info.nickname?.charAt(0).toUpperCase()}</Avatar>
                                                             <Box ml={1}>
 
                                                                 {/* nickname */}
-                                                                <Typography variant={'body2'}>{getNicknameBrief(info.nickname)}</Typography>
+                                                                <Typography fontSize={14}>{getNicknameBrief(info.nickname)}</Typography>
 
                                                                 {/* created time */}
                                                                 <Typography fontSize={12} align={'left'}>{timeToString(info.createdTimeBySecond, preferenceStates.lang)}</Typography>
@@ -2815,7 +1317,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
                                                 {/* member behaviour / placeholder */}
                                                 {('authenticated' === status && viewerId === authorId) && <Grid item>
-                                                    <IconButton sx={{ mt: 1 }} onClick={async () => { await handleMultiProposeButtonClick(postLayoutStates.selectedCategory, info.postId) }}>
+                                                    <IconButton sx={{ mt: 1 }} onClick={async () => { await handleMultiProposeButtonClick(postLayoutStates.selectedCategory, info.postId); }}>
                                                         {'mycreations' === postLayoutStates.selectedCategory && <CreateIcon color={'inherit'} sx={{ fontSize: { xs: 20, sm: 24 } }} />}
                                                         {'savedposts' === postLayoutStates.selectedCategory && <StarIcon color={undoSavedPostArr.includes(info.postId) ? 'inherit' : 'warning'} sx={{ fontSize: { xs: 20, sm: 24 } }} />}
                                                         {'browsinghistory' === postLayoutStates.selectedCategory && <DeleteIcon color={'inherit'} sx={{ fontSize: { xs: 20, sm: 24 } }} />}
@@ -2835,17 +1337,15 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                 <Grid item xs={0} sm={1} md={2} lg={2} xl={1}></Grid>
             </Grid>
 
-            {/* list layout */}
-            {'listlayout' === processStates.selectedLayout && <ListLayout />}
 
-            {/* setting layout */}
-            {'settinglayout' === processStates.selectedLayout && <SettingLayout />}
+
+
 
             <Copyright sx={{ mt: 16 }} lang={preferenceStates.lang} />
             <Terms sx={{ mb: 8 }} lang={preferenceStates.lang} />
 
         </ThemeProvider>
-    )
-}
+    );
+};
 
 export default Member;

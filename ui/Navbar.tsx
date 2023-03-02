@@ -18,6 +18,7 @@ import ListItemText from '@mui/material/ListItemText';
 import CreateIcon from '@mui/icons-material/Create';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import EmailIcon from '@mui/icons-material/Email';
+import SettingsIcon from '@mui/icons-material/Settings';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
@@ -39,10 +40,10 @@ const langConfigs: LangConfigs = {
         cn: '登入',
         en: 'Sign in'
     },
-    createPost: {
-        tw: '發帖',
-        cn: '发帖',
-        en: 'Create post'
+    create: {
+        tw: '創作',
+        cn: '创作',
+        en: 'Create'
     },
     message: {
         tw: '消息',
@@ -50,9 +51,14 @@ const langConfigs: LangConfigs = {
         en: 'Message'
     },
     member: {
-        tw: '賬戶',
-        cn: '账户',
+        tw: '主页',
+        cn: '主页',
         en: 'Member'
+    },
+    settings: {
+        tw: '設定',
+        cn: '设置',
+        en: 'Settings'
     },
     signOut: {
         tw: '登出',
@@ -93,9 +99,10 @@ export default function NavBar(props: TNavBarProps) {
     const handleClick = (actionIndex: number) => {
         setAnchorEl(null);
         if (actionIndex === 0) { router.push('/me/createpost') };
-        if (actionIndex === 1) { router.push(`/me/id/${viewerId}?layout=message`) };
-        if (actionIndex === 2) { router.push(`/me/id/${viewerId}?layout=post`) };
-        if (actionIndex === 3) { signOut() };
+        if (actionIndex === 1) { router.push(`/me/message`) };
+        if (actionIndex === 2) { router.push(`/me/id/${viewerId}`) };
+        if (actionIndex === 3) { router.push(`/me/settings`) };
+        if (actionIndex === 4) { signOut() };
     }
 
     const handleSignIn = (event: React.MouseEvent<HTMLElement>) => {
@@ -139,7 +146,7 @@ export default function NavBar(props: TNavBarProps) {
                             >
                                 <MenuItem onClick={() => handleClick(0)} >
                                     <ListItemIcon><CreateIcon /></ListItemIcon>
-                                    <ListItemText>{langConfigs.createPost[lang]}</ListItemText>
+                                    <ListItemText>{langConfigs.create[lang]}</ListItemText>
                                 </MenuItem>
                                 <MenuItem onClick={() => handleClick(1)} >
                                     <ListItemIcon><EmailIcon /></ListItemIcon>
@@ -148,6 +155,10 @@ export default function NavBar(props: TNavBarProps) {
                                 <MenuItem onClick={() => handleClick(2)} >
                                     <ListItemIcon><AccountCircleIcon /></ListItemIcon>
                                     <ListItemText>{langConfigs.member[lang]}</ListItemText>
+                                </MenuItem>
+                                <MenuItem onClick={() => handleClick(3)} >
+                                    <ListItemIcon><SettingsIcon /></ListItemIcon>
+                                    <ListItemText>{langConfigs.settings[lang]}</ListItemText>
                                 </MenuItem>
                                 <MenuItem onClick={() => handleClick(3)} >
                                     <ListItemIcon><ExitToAppIcon /></ListItemIcon>

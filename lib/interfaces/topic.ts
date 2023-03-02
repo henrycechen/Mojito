@@ -32,7 +32,9 @@ export interface ITopicComprehensive {
 
 export interface IConciseTopicComprehensive {
     topicId: string; // base64 string from topic content string
+    name: string;
     channelId: string;
+    totalHitCount: number;
     totalPostCount: number;
 }
 

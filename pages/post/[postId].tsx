@@ -16,6 +16,7 @@ import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import ThumbDownIcon from '@mui/icons-material/ThumbDown';
 import ChatBubbleIcon from '@mui/icons-material/ChatBubble';
 import StarIcon from '@mui/icons-material/Star';
+import BookmarkIcon from '@mui/icons-material/Bookmark';
 import ReplyIcon from '@mui/icons-material/Reply';
 import EditIcon from '@mui/icons-material/Edit';
 
@@ -293,10 +294,13 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
 
     //////////////////////////////////////// INFO & STATISTICS ////////////////////////////////////////
     let viewerId = '';
-    if ('authenticated' === status) {
-        const viewerSession: any = { ...session };
-        viewerId = viewerSession?.user?.id;
-    }
+    React.useEffect(() => {
+        if ('authenticated' === status) {
+            const viewerSession: any = { ...session };
+            viewerId = viewerSession?.user?.id;
+            restorePreferenceStatesFromCache(setPreferenceStates);
+        }
+    }, []);
 
     const { postId, memberId: authorId, } = postComprehensive_ss;
 
@@ -306,7 +310,6 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
         mode: 'light'
     });
 
-    React.useEffect(() => { restorePreferenceStatesFromCache(setPreferenceStates); }, []);
 
     //////// STATES - swipper (dimensions) ////////
     // Logic:
@@ -420,12 +423,18 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
             const followResp = await fetch(`/api/member/followedbyme/${viewerId}`);
             let arr0: IConciseMemberInfo[] = [];
             if (200 === followResp.status) {
-                arr0 = [...(await followResp.json())];
+                const _arr = await followResp.json();
+                if (Array.isArray(_arr)) {
+                    arr0.push(..._arr);
+                }
             }
             const blockResp = await fetch(`/api/member/blockedbyme/${viewerId}`);
             let arr1: IConciseMemberInfo[] = [];
             if (200 === blockResp.status) {
-                arr1 = [...(await blockResp.json())];
+                const _arr = await followResp.json();
+                if (Array.isArray(_arr)) {
+                    arr1.push(..._arr);
+                }
             }
             setViewerInfoStates({
                 nickname,
@@ -554,7 +563,6 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
             router.push(`/signin`);
             return;
         }
-        // [?] update dom? after blocked member successfully?
         const resp = await fetch(`/api/block/${memberId}`, { method: 'POST' });
         if (200 !== resp.status) {
             console.log(`Attemp to block member (member id: ${memberId})`);
@@ -562,9 +570,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
     };
 
     const handleReport = () => {
-        console.log(popUpMenuStates.memberId, popUpMenuStates.referenceId);
-
-        // router.push(`/report?memberId=${popUpMenuStates.memberId}&referenceId=${popUpMenuStates.referenceId}`);
+        router.push(`/report?memberId=${popUpMenuStates.memberId}&referenceId=${popUpMenuStates.referenceId}`);
     };
 
     //////////////////////////////////////// COMPONENTS ////////////////////////////////////////
@@ -886,6 +892,8 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
         }
     };
 
+    //////////////////////////////////////// POP-UP MENU ////////////////////////////////////////
+
     type TPopUpMenuStates = {
         anchorEl: null | HTMLElement;
         memberId: string;
@@ -893,6 +901,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
         referenceId: string;
     };
 
+    //////// STATES - pop up menu ////////
     const [popUpMenuStates, setPopUpMenuStates] = React.useState<TPopUpMenuStates>({
         anchorEl: null,
         memberId: '',
@@ -900,12 +909,11 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
         referenceId: '',
     });
 
-    //////// STATES - pop up menu ////////
-    const handleOpenMemberMenu = (memberId: string, nickname: string, referenceId: string) => (event: React.MouseEvent<HTMLElement>) => {
+    const handleOpenPopUpMenu = (memberId: string, nickname: string, referenceId: string) => (event: React.MouseEvent<HTMLElement>) => {
         setPopUpMenuStates({ anchorEl: event.currentTarget, memberId, nickname, referenceId, });
     };
 
-    const handleCloseMemberMenu = () => {
+    const handleClosePopUpMenu = () => {
         setPopUpMenuStates({ ...popUpMenuStates, anchorEl: null });
     };
 
@@ -1093,7 +1101,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
                                     {/* save */}
                                     <Grid item sx={{ display: 'flex', flexDirection: 'row' }}>
                                         <IconButton aria-label='save' onClick={async () => { handleSaveOrUndoSave(); }}>
-                                            <StarIcon color={behaviourStates.saved ? 'warning' : 'inherit'} fontSize='small' />
+                                            <BookmarkIcon color={behaviourStates.saved ? 'warning' : 'inherit'} fontSize='small' />
                                         </IconButton>
                                         <Typography variant='body2' sx={{ marginTop: 1 }}>{postComprehensive_ss.totalSavedCount + (behaviourStates.saved ? 1 : 0)}</Typography>
                                     </Grid>
@@ -1111,7 +1119,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
                                     {/* blank space */}
                                     <Grid item flexGrow={1} />
                                     <Grid item>
-                                        <IconButton onClick={handleOpenMemberMenu(authorId, authorInfo_ss.nickname, postId)} ><MoreVertIcon fontSize='small' /></IconButton>
+                                        <IconButton onClick={handleOpenPopUpMenu(authorId, authorInfo_ss.nickname, postId)} ><MoreVertIcon fontSize='small' /></IconButton>
                                     </Grid>
                                 </Grid>
                             </ResponsiveCard>
@@ -1176,7 +1184,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
                                                     {/* blank space */}
                                                     <Grid item flexGrow={1} />
                                                     {viewerId !== commentAuthorId && <Grid item>
-                                                        <IconButton onClick={handleOpenMemberMenu(commentAuthorId, commentAuthorNickname, commentId)} ><MoreVertIcon fontSize='small' /></IconButton>
+                                                        <IconButton onClick={handleOpenPopUpMenu(commentAuthorId, commentAuthorNickname, commentId)} ><MoreVertIcon fontSize='small' /></IconButton>
                                                     </Grid>}
                                                 </Grid>
 
@@ -1246,7 +1254,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
                                                                         {/* blank space */}
                                                                         <Grid item flexGrow={1} />
                                                                         {viewerId !== subcommentAuthorId && <Grid item>
-                                                                            <IconButton onClick={handleOpenMemberMenu(subcommentAuthorId, subcommentAuthorNickname, commentId)}><MoreVertIcon fontSize='small' /></IconButton>
+                                                                            <IconButton onClick={handleOpenPopUpMenu(subcommentAuthorId, subcommentAuthorNickname, commentId)}><MoreVertIcon fontSize='small' /></IconButton>
                                                                         </Grid>}
                                                                     </Grid>
                                                                 </Box>
@@ -1442,7 +1450,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
                 keepMounted
                 transformOrigin={{ vertical: 'top', horizontal: 'right', }}
                 open={Boolean(popUpMenuStates.anchorEl)}
-                onClose={handleCloseMemberMenu}
+                onClose={handleClosePopUpMenu}
                 MenuListProps={{}}
             >
                 {/* block (identity required) */}
@@ -1468,7 +1476,6 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
 
                 {/* delete comment (identity required & comment author only) */}
             </Menu>
-
         </>
     );
 };

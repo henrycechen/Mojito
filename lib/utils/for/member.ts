@@ -57,6 +57,8 @@ export function fakeRestrictedMemberInfo(): IRestrictedMemberComprehensive {
         birthdayBySecond: 1580436000, // Date Fri Jan 31 2020 15:00:00 GMT+1300 (New Zealand Daylight Time)
 
         status: 0,
+        allowPosting: false,
+        allowCommenting: false,
         allowVisitingFollowedMembers: false,
         allowVisitingSavedPosts: false,
         allowKeepingBrowsingHistory: false,

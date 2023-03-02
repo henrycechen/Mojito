@@ -97,8 +97,12 @@ export interface IConcisePostComprehensive {
     postId: string; // 10 characters, UPPERCASE, also used as coverImageFullname (e.g., P12345ABCDE.png)
     memberId: string;
     nickname: string;
-    title: string;
+    
     createdTimeBySecond: number; // created time of this document (post est.)
+    title: string;
+    channelId: string;
+
+    totalCommentCount: number;
     totalHitCount: number; // viewed times accumulator
     totalLikedCount: number;
 }

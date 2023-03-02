@@ -13,7 +13,7 @@ import { verifyId } from '../../../lib/utils/verify';
 
 const fname = BlockOrUndoBlockMemberById.name;
 
-/** BlockOrUndoBlockMemberById v0.1.2
+/** BlockOrUndoBlockMemberById v0.1.2 FIXME: test mode
  * 
  * Last update: 21/02/2023
  * 
@@ -32,6 +32,9 @@ export default async function BlockOrUndoBlockMemberById(req: NextApiRequest, re
         response405(req, res);
         return;
     }
+
+    res.send('ok')
+    return;
 
     //// Verify identity ////
     const token = await getToken({ req });
