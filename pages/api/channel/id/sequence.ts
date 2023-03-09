@@ -23,7 +23,7 @@ export default async function GetChannelIdSequence(req: NextApiRequest, res: Nex
         return;
     }
     try {
-        // Step #1 look up channels from [T] ChannelInfo
+        // #1 look up channels from [T] ChannelInfo
         const channelInfoTableClient = AzureTableClient('ChannelInfo');
         const ChannelIdArrayQuery = channelInfoTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq 'IdArray' and RowKey eq 'default'` } });
         // [!] attemp to reterieve entity makes the probability of causing RestError
@@ -33,7 +33,7 @@ export default async function GetChannelIdSequence(req: NextApiRequest, res: Nex
             return;
         }
         const { IdArrayValue } = ChannelIdArrayQueryResult.value
-        // Step #2 response with channel id array (stringified string)
+        // #2 response with channel id array (stringified string)
         res.status(200).send(IdArrayValue);
     } catch (e: any) {
         let msg: string;

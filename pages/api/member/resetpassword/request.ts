@@ -10,7 +10,7 @@ import { LangConfigs, TEmailMessage, TResetPasswordRequestInfo } from '../../../
 import { composeResetPasswordEmailContent } from '../../../../lib/email';
 import { logWithDate, response405, response500 } from '../../../../lib/utils/general';
 import { verifyEnvironmentVariable, verifyRecaptchaResponse } from '../../../../lib/utils/verify';
-import { getRandomHexStr } from '../../../../lib/utils/create';
+import { getRandomHexStr, getTimeBySecond } from '../../../../lib/utils/create';
 
 const appSecret = process.env.APP_AES_SECRET ?? '';
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
@@ -53,7 +53,7 @@ export default async function RequestResetPassword(req: NextApiRequest, res: Nex
     }
     try {
         const { recaptchaResponse } = req.query;
-        // Step #1 verify if it is requested by a bot
+        // #1 verify if it is requested by a bot
         const { status, message } = await verifyRecaptchaResponse(recaptchaServerSecret, recaptchaResponse);
         if (200 !== status) {
             if (403 === status) {
@@ -65,7 +65,7 @@ export default async function RequestResetPassword(req: NextApiRequest, res: Nex
                 return;
             }
         }
-        // Step #2.1 prepare email address
+        // #2.1 prepare email address
         const { emailAddress } = req.query;
         if ('string' !== typeof emailAddress || '' === emailAddress) {
             res.status(403).send('Invalid email address');
@@ -88,11 +88,11 @@ export default async function RequestResetPassword(req: NextApiRequest, res: Nex
         const info: TResetPasswordRequestInfo = {
             emailAddress,
             resetPasswordToken: resetPasswordToken,
-            expireDateBySecond: Math.floor(new Date().getTime() / 1000) + 54000 // set valid time for 15 minutes // Updated v0.1.2
+            expireDateBySecond: getTimeBySecond() + 54000 // set valid time for 15 minutes // Updated v0.1.2
         }
 
         //// Upsert entity (IResetPasswordCredentials) in [RL] Credentials ////
-        credentialsTableClient.upsertEntity<IResetPasswordCredentials>({ partitionKey: emailAddressHash, rowKey: 'ResetPassword', ResetPasswordToken: resetPasswordToken, CreateTimeBySecond: Math.floor(new Date().getTime() / 1000) }, 'Replace');
+        credentialsTableClient.upsertEntity<IResetPasswordCredentials>({ partitionKey: emailAddressHash, rowKey: 'ResetPassword', ResetPasswordToken: resetPasswordToken, CreateTimeBySecond: getTimeBySecond() }, 'Replace');
 
         //// Send email ////
         const emailMessage: TEmailMessage = {

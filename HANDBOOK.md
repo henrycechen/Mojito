@@ -331,6 +331,7 @@ type ResetPasswordRequestInfo = {
 | politics                     | Politics       | 時政 | 时事   | NewspaperIcon      |
 | chat                         | Chat           | 閑聊 | 灌水   |                    |
 | all                          | All            |      | 全部   |                    |
+| music                        | Music          | 音樂 | 音乐   | MusicNoteIcon      |
 
 ```
 ["food","shopping","hobby","event","sports","travel","photography","work","life","pets","automobile","realestate","furnishing","invest","politics","chat"]
@@ -409,6 +410,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
     //// management ////
     status: number;
     allowPosting: boolean;
+    lastUploadImageRequestTimeBySecond: number;
     allowCommenting: boolean;
     
     allowKeepingBrowsingHistory: boolean;
@@ -757,7 +759,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 It could be better for the "count" filed to be counted by statistics scripts, e.g.,
 
 ```typescript
-// Step #5 (cond.) update totalHitCount (of ITopicComprehensive) in [C] topicComprehensive
+// #5 (cond.) update totalHitCount (of ITopicComprehensive) in [C] topicComprehensive
 const { topicIdsArr } = postComprehensiveQueryResult;
     if (Array.isArray(topicIdsArr) && topicIdsArr.length !== 0) {
         const topicComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<ITopicComprehensive>('topic');
@@ -885,7 +887,7 @@ const { topicIdsArr } = postComprehensiveQueryResult;
     memberId: string;
     createdTimeBySecond: number; // Math.floor(new Date().getTime() / 1000) 
     title: string;
-    imageNamesArr: string[];
+    imageFullamesArr: string[];
 	paragraphsArr: string[];
     cuedMemberComprehensivesArr: ICuedMemberComprehensive[];
 	channelId: string;
@@ -893,7 +895,7 @@ const { topicIdsArr } = postComprehensiveQueryResult;
 	pinnedCommentId: string;
 
     //// management ////
-    status: number;
+    status: number; 
 
     //// total statistics ////
 	totalHitCount: number; // viewed times accumulator
@@ -968,6 +970,7 @@ const { topicIdsArr } = postComprehensiveQueryResult;
 | -------- | -------------------------------------- |
 | **-3**   | **Deactivated (deleted) by WebMaster** |
 | -1       | Deactivated (deleted)                  |
+| 1        | Initiated (waiting on images upload)   |
 | **200**  | **Normal**                             |
 | 201      | Normal, edited                         |
 | **≥400** | **Restricted to certain behaviour**    |
@@ -2299,7 +2302,7 @@ export default async function Verify(req: NextApiRequest, res: NextApiResponse) 
 在每次与API交互时，Request中都必须包含`recaptchaResponse`，否则服务器会拒绝服务并返回403状态码。
 
 ```typescript
-// step #1 verify if requested by human
+// #1 verify if requested by human
 if ('string' !== typeof recaptchaResponse || '' === recaptchaResponse) {
     res.status(403).send('Invalid ReCAPTCHA response');
     return;
@@ -2475,12 +2478,12 @@ try {
 
 ```typescript
 let isBlocked: boolean;
-// Step #1 look up record (of IMemberMemberMapping) in [RL] BlockingMemberMapping
+// #1 look up record (of IMemberMemberMapping) in [RL] BlockingMemberMapping
 const blockingMemberMappingTableClient = AzureTableClient('BlockingMemberMapping');
 const blockingMemberMappingQuery = blockingMemberMappingTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${memberId}' and RowKey eq '${memberId_object}'` } });
 //// [!] attemp to reterieve entity makes the probability of causing RestError ////
 const blockingMemberMappingQueryResult = await blockingMemberMappingQuery.next();
-// Step #1.2 verify if member has been blocked
+// #1.2 verify if member has been blocked
 if (!blockingMemberMappingQueryResult.value) {
     // Case [Block]
     isBlocked = false;
@@ -2495,13 +2498,13 @@ if (isBlocked) {
         rowKey: memberId_object,
         IsActive: false
     }, 'Replace');
-    // Step #2.1 update totalUndoBlockingCount (of IMemberStatistics) in [C] memberStatistics
+    // #2.1 update totalUndoBlockingCount (of IMemberStatistics) in [C] memberStatistics
     const memberStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IMemberStatistics>('member');
     const memberStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId }, { $inc: { totalUndoBlockingCount: 1 } });
     if (!memberStatisticsUpdateResult.acknowledged) {
         logWithDate(`Failed to update totalUndoBlockingCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`);
     }
-    // Step #2.2 update totalUndoBlockedByCount (of IMemberStatistics) in [C] memberStatistics
+    // #2.2 update totalUndoBlockedByCount (of IMemberStatistics) in [C] memberStatistics
     const memberBlockedStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId: memberId_object }, { $inc: { totalUndoBlockedByCount: 1 } });
     if (!memberBlockedStatisticsUpdateResult.acknowledged) {
         logWithDate(`Failed to update totalUndoBlockedByCount (of IMemberStatistics, member id: ${memberId_object}) in [C] memberStatistics`);
@@ -2513,13 +2516,13 @@ if (isBlocked) {
         rowKey: memberId_object,
         IsActive: true
     }, 'Replace');
-    // Step #2.1 update totalBlockingCount (of IMemberStatistics) in [C] memberStatistics
+    // #2.1 update totalBlockingCount (of IMemberStatistics) in [C] memberStatistics
     const memberStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IMemberStatistics>('member');
     const memberStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId }, { $inc: { totalBlockingCount: 1 } });
     if (!memberStatisticsUpdateResult.acknowledged) {
         logWithDate(`Failed to update totalBlockingCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`);
     }
-    // Step #2.2 update totalBlockedByCount (of IMemberStatistics) in [C] memberStatistics
+    // #2.2 update totalBlockedByCount (of IMemberStatistics) in [C] memberStatistics
     const memberBlockedStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId: memberId_object }, { $inc: { totalBlockedByCount: 1 } });
     if (!memberBlockedStatisticsUpdateResult.acknowledged) {
         logWithDate(`Failed to update totalBlockedByCount (of IMemberStatistics, member id: ${memberId_object}) in [C] memberStatistics`);

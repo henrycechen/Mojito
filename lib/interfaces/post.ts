@@ -1,4 +1,5 @@
-import { IConciseMemberInfo } from './member';
+import { IMemberInfo } from './member';
+import { ITopicInfo } from './topic';
 
 // [C] postComprehensive
 export interface IPostComprehensive {
@@ -6,15 +7,14 @@ export interface IPostComprehensive {
     postId: string; // 10 characters, UPPERCASE, also used as coverImageFullname (e.g., P12345ABCDE.png)
     memberId: string;
     createdTimeBySecond: number; // created time of this document (post est.)
+    // content
     title: string;
-
-    // imageUrlsArr: string[]; // [!] depreacted
     imageFullnamesArr: string[];
-
     paragraphsArr: string[];
-    cuedMemberInfoArr: IConciseMemberInfo[];
+    // category & connections
+    cuedMemberInfoArr: IMemberInfo[];
     channelId: string;
-    topicIdsArr: string[];
+    topicInfoArr: ITopicInfo[];
     pinnedCommentId: string | null;
 
     //// management ////
@@ -23,23 +23,24 @@ export interface IPostComprehensive {
     allowCommenting: boolean;
 
     //// statistics ////
+    // hit
     totalHitCount: number; // viewed times accumulator
     totalMemberHitCount: number;
-
+    // like
     totalLikedCount: number;
     totalUndoLikedCount: number;
-
+    // dislike
     totalDislikedCount: number;
     totalUndoDislikedCount: number;
-
+    // comment
     totalCommentCount: number;
     totalCommentDeleteCount: number;
-
+    // save
     totalSavedCount: number;
     totalUndoSavedCount: number;
-
+    // affair
     totalAffairCount: number;
-
+    //edit
     totalEditCount: number;
 
     //// edit info ////
@@ -48,41 +49,38 @@ export interface IPostComprehensive {
 
 export interface IEditedPostComprehensive {
     editedTimeBySecond: number;
+
     titleBeforeEdit: string;
-    // imageUrlsArrBeforeEdit: string[]; // [!] depreacted
     imageFullnamesArrBeforeEdit: string[];
     paragraphsArrBeforeEdit: string[];
-    cuedMemberInfoArrBeforeEdit: IConciseMemberInfo[];
+
+    cuedMemberInfoArrBeforeEdit: IMemberInfo[];
     channelIdBeforeEdit: string;
-    topicIdsArrBeforeEdit: string[];
-    
+    topicInfoArrBeforeEdit: ITopicInfo[];
+
     totalLikedCountBeforeEdit: number;
     totalDislikedCountBeforeEdit: number;
     totalAffairCountBeforeEdit: number;
 }
 
 export interface IRestrictedPostComprehensive {
-    //// info ////
     postId: string; // 10 characters, UPPERCASE
     memberId: string;
     createdTimeBySecond: number; // created time of this document (post est.)
+
     title: string;
-
-    // imageUrlsArr: string[]; // [!] depreacted
     imageFullnamesArr: string[];
-
     paragraphsArr: string[];
-    cuedMemberInfoArr: IConciseMemberInfo[];
+
+    cuedMemberInfoArr: IMemberInfo[];
     channelId: string;
-    topicIdsArr: string[];
+    topicInfoArr: ITopicInfo[];
     pinnedCommentId: string | null;
 
-    //// management ////
     status: number;
     allowEditing: boolean;
     allowCommenting: boolean;
 
-    //// statistics ////
     totalHitCount: number; // viewed times accumulator
     totalLikedCount: number;
     totalDislikedCount: number;
@@ -97,10 +95,11 @@ export interface IConcisePostComprehensive {
     postId: string; // 10 characters, UPPERCASE, also used as coverImageFullname (e.g., P12345ABCDE.png)
     memberId: string;
     nickname: string;
-    
+
     createdTimeBySecond: number; // created time of this document (post est.)
     title: string;
     channelId: string;
+    hasImages: boolean; // [?] 0 === imageFullnamesArr.length
 
     totalCommentCount: number;
     totalHitCount: number; // viewed times accumulator

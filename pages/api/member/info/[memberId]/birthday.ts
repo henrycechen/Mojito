@@ -85,7 +85,7 @@ export default async function UpdateBirthday(req: NextApiRequest, res: NextApiRe
         const memberComprehensiveUpdateResult = await memberComprehensiveCollectionClient.updateOne({ memberId }, {
             $set: {
                 birthdayBySecond: date,
-                lastBirthdayUpdatedTimeBySecond: Math.floor(new Date().getTime() / 1000)
+                lastBirthdayUpdatedTimeBySecond: getTimeBySecond()
             }
         })
 

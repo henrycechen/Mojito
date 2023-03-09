@@ -121,14 +121,14 @@ export default async function UpdatePassword(req: NextApiRequest, res: NextApiRe
             rowKey: 'MojitoMemberSystem',
             PasswordHash: CryptoJS.SHA256(newPassword + salt).toString(),
             MemberId: memberId,
-            LastUpdatedTimeBySecond: Math.floor(new Date().getTime() / 1000)
+            LastUpdatedTimeBySecond: getTimeBySecond()
         }, 'Merge');
 
 
         //// Update lastPasswordUpdatedTimeBySecond (of IMemberComprehensive) in [C] memberComprehensive ////
         const memberComprehensiveUpdateResult = await memberComprehensiveCollectionClient.updateOne({ memberId }, {
             $set: {
-                lastPasswordUpdatedTimeBySecond: Math.floor(new Date().getTime() / 1000)
+                lastPasswordUpdatedTimeBySecond: getTimeBySecond()
             }
         })
 

@@ -157,7 +157,7 @@ export default async function GetCommentsByParentId(req: NextApiRequest, res: Ne
     //// Declare DB client ////
     const atlasDbClient = AtlasDatabaseClient();
     try {
-        // Step #1 look up document (of IPostComprehensive) in [C] postComprehensive
+        // #1 look up document (of IPostComprehensive) in [C] postComprehensive
         if ('post' === category) {
             await atlasDbClient.connect();
             const postComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IPostComprehensive>('post');
@@ -170,7 +170,7 @@ export default async function GetCommentsByParentId(req: NextApiRequest, res: Ne
         }
         if ('comment' === category) {
             await atlasDbClient.connect();
-            // Step #1 look up document (of ICommentComprehensive) in [C] commentComprehensive
+            // #1 look up document (of ICommentComprehensive) in [C] commentComprehensive
             const commentComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<ICommentComprehensive>('comment');
             const commentComprehensiveQueryResult = await commentComprehensiveCollectionClient.findOne({ commentId: parentId });
             if (null === commentComprehensiveQueryResult) {
@@ -179,7 +179,7 @@ export default async function GetCommentsByParentId(req: NextApiRequest, res: Ne
                 return;
             }
         }
-        // Step #2 look up documents (of ICommentComprehensive) in [C] commentComprehensive
+        // #2 look up documents (of ICommentComprehensive) in [C] commentComprehensive
         const commentsArray = [];
         const commentComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<ICommentComprehensive>('comment');
         const commentComprehensiveQuery = commentComprehensiveCollectionClient.find({ parentId });

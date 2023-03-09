@@ -7,6 +7,7 @@
 export interface ITopicComprehensive {
     //// info ////
     topicId: string; // base64 string from topic content string
+    content: string;
     channelId: string;
     createdTimeBySecond: number;
 
@@ -16,7 +17,7 @@ export interface ITopicComprehensive {
     //// total statistics ////
     totalHitCount: number; // total hit count of total posts of this topic
     totalSearchCount: number;
-    
+
     totalPostCount: number;
     totalPostDeleteCount: number;
 
@@ -25,17 +26,22 @@ export interface ITopicComprehensive {
 
     totalCommentCount: number;
     totalCommentDeleteCount: number;
-    
+
     totalSavedCount: number;
     totalUndoSavedCount: number;
 }
 
 export interface IConciseTopicComprehensive {
     topicId: string; // base64 string from topic content string
-    name: string;
+    content: string;
     channelId: string;
     totalHitCount: number;
     totalPostCount: number;
+}
+
+export interface ITopicInfo {
+    topicId: string; // base64 string from topic content string
+    content: string;
 }
 
 // [C] topicPostMapping

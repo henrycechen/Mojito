@@ -1,5 +1,5 @@
 import { ICommentComprehensive, IRestrictedCommentComprehensive } from '../../interfaces/comment';
-import { IConciseMemberInfo } from '../../interfaces/member';
+import { IMemberInfo } from '../../interfaces/member';
 
 /** Utils for Comment Class v0.1.1
  * 
@@ -8,7 +8,7 @@ import { IConciseMemberInfo } from '../../interfaces/member';
 
 type CommentComprehensiveUpdate = {
     content: string;
-    cuedMemberInfoArr: IConciseMemberInfo[];
+    cuedMemberInfoArr: IMemberInfo[];
     status: 201;
     totalLikedCount: 0; // reset liked and disliked count
     totalUndoLikedCount: 0; // reset undo liked and undo disliked count
@@ -47,7 +47,7 @@ export function createCommentComprehensive(commentId: string, parentId: string, 
     return comment;
 }
 
-export function provideCommentComprehensiveUpdate(content: string, cuedMemberInfoArr: IConciseMemberInfo[]): CommentComprehensiveUpdate {
+export function provideCommentComprehensiveUpdate(content: string, cuedMemberInfoArr: IMemberInfo[]): CommentComprehensiveUpdate {
     const updated: CommentComprehensiveUpdate = {
         content,
         cuedMemberInfoArr,

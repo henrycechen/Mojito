@@ -1,5 +1,6 @@
 
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { getTimeBySecond } from './create';
 
 /** Utils for general purpose v0.1.1
  * 
@@ -19,7 +20,7 @@ export function timeToString(timeBySecond: number, lang: string): string {
     if (!('number' === typeof timeBySecond || 'string' === typeof timeBySecond)) {
         return `0${langConfigs?.min}`;
     }
-    const diff = Math.floor(new Date().getTime() / 1000) - timeBySecond;
+    const diff = getTimeBySecond() - timeBySecond;
     if (86400 < diff) { // 24 * 60 * 60
         const d = Math.floor(diff / (86400));
         return `${d}${1 === d ? langConfigs?.day : langConfigs?.days}`;;
@@ -49,9 +50,9 @@ export function getContentBrief(content: any, length = 21): string {
 
 export function statiaticsToString(num: number): string {
     if (num > 1000000) {
-        `${num / 1000000}M`
+        `${num / 1000000}M`;
     } else if (num > 1000) {
-        `${num / 1000}K`
+        `${num / 1000}K`;
     } else {
         return `${num}`;
     }
@@ -59,15 +60,15 @@ export function statiaticsToString(num: number): string {
 }
 
 type TStates = {
-    [key: string]: any
-}
+    [key: string]: any;
+};
 
 // Utilize local storage
 export function updateLocalStorage(storageName: string) {
     const fn = (states: TStates) => {
         const _: TStates = { ...states };
-        window.localStorage.setItem(storageName, JSON.stringify(_))
-    }
+        window.localStorage.setItem(storageName, JSON.stringify(_));
+    };
     return fn;
 }
 
@@ -84,14 +85,14 @@ export function provideLocalStorage(storageName: string) {
 export function restoreFromLocalStorage(storageName: string) {
     const fn = (setStates: Function) => {
         try {
-            const prevStates: TStates = JSON.parse(window.localStorage.getItem(storageName) ?? '{}')
+            const prevStates: TStates = JSON.parse(window.localStorage.getItem(storageName) ?? '{}');
             if (prevStates !== null && Object.keys(prevStates).length !== 0) {
                 setStates(prevStates);
             }
         } catch (e) {
             console.log(`Attempt to restore from local storage ${storageName}. ${e}`);
         }
-    }
+    };
     return fn;
 }
 

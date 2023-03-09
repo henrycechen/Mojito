@@ -22,6 +22,7 @@ export interface IMemberComprehensive {
     //// management ////
     status: number;
     allowPosting: boolean;
+    lastUploadImageRequestTimeBySecond: number;
     allowCommenting: boolean;
 
     allowKeepingBrowsingHistory: boolean;
@@ -70,7 +71,7 @@ export interface IRestrictedMemberComprehensive {
  * @property createdTimeBySecond: number;
  */
 
-export interface IConciseMemberInfo {
+export interface IMemberInfo {
     memberId: string;
     nickname: string;
     briefIntro: string;

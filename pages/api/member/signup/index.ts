@@ -110,7 +110,7 @@ export default async function SignUp(req: NextApiRequest, res: NextApiResponse) 
             rowKey: providerId,
             MemberId: memberId,
             PasswordHash: CryptoJS.SHA256(password + salt).toString(),
-            LastUpdatedTimeBySecond: Math.floor(new Date().getTime() / 1000)
+            LastUpdatedTimeBySecond: getTimeBySecond()
         }, 'Replace');
 
         //// Create a new token and Upsert entity (of IVerifyEmailAddressCredentials) in [RL] Credentials ////
@@ -119,7 +119,7 @@ export default async function SignUp(req: NextApiRequest, res: NextApiResponse) 
             partitionKey: emailAddressHash,
             rowKey: 'VerifyEmailAddress',
             VerifyEmailAddressToken: verifyEmailAddressToken,
-            CreatedTimeBySecond: Math.floor(new Date().getTime() / 1000)
+            CreatedTimeBySecond: getTimeBySecond()
         }, 'Replace');
 
         //// Create document (IMemberComprehensive) in [C] memberComprehensive ////
@@ -128,7 +128,7 @@ export default async function SignUp(req: NextApiRequest, res: NextApiResponse) 
         const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.insertOne({
             memberId,
             providerId,
-            registeredTimeBySecond: Math.floor(new Date().getTime() / 1000),
+            registeredTimeBySecond: getTimeBySecond(),
             emailAddress,
             nickname: emailAddress.split('@')[0],
             status: 0, // email address not verified

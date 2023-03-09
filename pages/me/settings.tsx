@@ -63,7 +63,7 @@ import { useRouter } from 'next/router';
 
 import Navbar from '../../ui/Navbar';
 
-import { IConciseMemberInfo, IConciseMemberStatistics, IRestrictedMemberComprehensive } from '../../lib/interfaces/member';
+import { IMemberInfo, IConciseMemberStatistics, IRestrictedMemberComprehensive } from '../../lib/interfaces/member';
 import { IConcisePostComprehensive } from '../../lib/interfaces/post';
 import { INoticeInfoWithMemberInfo } from '../../lib/interfaces/notification';
 import { IChannelInfoStates, IChannelInfoDictionary } from '../../lib/interfaces/channel';
@@ -670,86 +670,21 @@ let theme = createTheme({
 theme = responsiveFontSizes(theme);
 
 //// Get multiple member info server-side ////
-export async function getServerSideProps(context: NextPageContext): Promise<{ props: TMemberPageProps; }> {
-    const { memberId } = context.query;
-    const { isValid, category } = verifyId(memberId);
 
-    // Verify member id
-    if (!(isValid && 'member' === category)) {
-        return {
-            props: {
-                channelInfoDict_ss: {},
-                memberInfo_ss: fakeRestrictedMemberInfo(),
-                memberStatistics_ss: fakeConciseMemberStatistics(),
-                redirect404: true,
-                redirect500: false,
-            }
-        };
-    }
-
-    try {
-        // GET channel info by id
-        const dictionary_resp = await fetch(`${domain}/api/channel/info/dictionary`);
-        if (200 !== dictionary_resp.status) {
-            throw new Error('Attempt to GET channel info dictionary');
-        }
-        const channelInfoDict_ss = await dictionary_resp.json();
-
-        // GET member info by id
-        const info_resp = await fetch(`${domain}/api/member/info/${memberId}`);
-        if (200 !== info_resp.status) {
-            throw new Error('Attempt to GET member info');
-        }
-        const memberInfo_ss = await info_resp.json();
-
-        // GET member statistics by id
-        const statistics_resp = await fetch(`${domain}/api/member/statistics/${memberId}`);
-        if (200 !== statistics_resp.status) {
-            throw new Error('Attempt to GET member statistics');
-        }
-        const memberStatistics_ss = await statistics_resp.json();
-
-        return {
-            props: {
-                channelInfoDict_ss,
-                memberInfo_ss,
-                memberStatistics_ss,
-                redirect404: false,
-                redirect500: false
-            }
-        };
-    } catch (e: any) {
-        logWithDate(e?.msg, '/pages/me/[memberId].getServerSideProps', e);
-        return {
-            props: {
-                channelInfoDict_ss: {},
-                memberInfo_ss: fakeRestrictedMemberInfo(),
-                memberStatistics_ss: fakeConciseMemberStatistics(),
-                redirect404: false,
-                redirect500: true,
-            }
-        };
-    }
-}
-
-const Member = () => {
+const Settings = () => {
 
     const router = useRouter();
-
-    const { data: session, status } = useSession();
+    const { data: session } = useSession({ required: true, onUnauthenticated() { signIn(); } });
 
     let memberId = '';
 
     React.useEffect(() => {
 
-        if ('unauthenticated' === status) {
-            signIn();
-        }
-        if ('authenticated' === status) {
-            const viewerSession: any = { ...session };
-            memberId = viewerSession?.user?.id;
-            restorePreferenceStatesFromCache(setPreferenceStates);
-        }
+
+        const viewerSession: any = { ...session };
+        memberId = viewerSession?.user?.id;
+        restorePreferenceStatesFromCache(setPreferenceStates);
+
     }, [session]);
 
 
@@ -784,7 +719,7 @@ const Member = () => {
 
 
 
-  
+
     ////////////////////////   Post Layout   ////////////////////////
     type TPostsLayoutStates = {
         selectedCategory: 'mycreations' | 'savedposts' | 'browsinghistory';
@@ -809,11 +744,11 @@ const Member = () => {
 
     const handleSelectPostCategory = (categoryId: 'mycreations' | 'savedposts' | 'browsinghistory') => (event: React.MouseEvent<HTMLButtonElement> | React.SyntheticEvent) => {
         let states: TPostsLayoutStates = { ...postLayoutStates, selectedCategory: categoryId };
-        // Step #1 update post layout states
+        // #1 update post layout states
         setPostLayoutStates(states);
-        // Step #2 update post layout states cache
+        // #2 update post layout states cache
         updatePostsLayoutStatesCache(states);
-        // Step #3 reset helper
+        // #3 reset helper
         setBrowsingHelper({ ...browsingHelper, memorizeViewPortPositionY: undefined });
     };
 
@@ -857,21 +792,21 @@ const Member = () => {
         let states: TPostsLayoutStates = { ...postLayoutStates };
         states.selectedChannelId = channelId;
         states.memorizeChannelBarPositionX = document.getElementById('channel-bar')?.scrollLeft;
-        // Step #1 update post layout states
+        // #1 update post layout states
         setPostLayoutStates(states);
-        // Step #2 update post layout states cache
+        // #2 update post layout states cache
         updatePostsLayoutStatesCache(states);
-        // Step #3 reset helper
+        // #3 reset helper
         setBrowsingHelper({ ...browsingHelper, memorizeViewPortPositionY: undefined });
     };
 
     const handleSwitchChange = () => {
         let states: TPostsLayoutStates = { ...postLayoutStates, selectedHotPosts: !postLayoutStates.selectedHotPosts };
-        // Step #1 update post layout states
+        // #1 update post layout states
         setPostLayoutStates(states);
-        // Step #2 update post layout states cache
+        // #2 update post layout states cache
         updatePostsLayoutStatesCache(states);
-        // Step #3 reset helper
+        // #3 reset helper
         setBrowsingHelper({ ...browsingHelper, memorizeViewPortPositionY: undefined });
     };
 
@@ -907,7 +842,7 @@ const Member = () => {
     React.useEffect(() => {
         if (processStates.selectedLayout === 'postlayout' && postLayoutStates.wasRedirected) {
             const postId = postLayoutStates.memorizeLastViewedPostId;
-            // Step #1 restore browsing position
+            // #1 restore browsing position
             if (!postId) {
                 return;
             } else if (600 > window.innerWidth) { // 0 ~ 599
@@ -915,12 +850,12 @@ const Member = () => {
             } else { // 600 ~ ∞
                 setBrowsingHelper({ ...browsingHelper, memorizeViewPortPositionY: postLayoutStates.memorizeViewPortPositionY });
             }
-            // Step #2 update process states and cache
+            // #2 update process states and cache
             let states1: TMemberPageProcessStates = { ...processStates };
             setProcessStates({ ...states1 });
             updateProcessStatesCache(states1);
             let states2: TPostsLayoutStates = { ...postLayoutStates, memorizeLastViewedPostId: undefined, memorizeViewPortPositionY: undefined, wasRedirected: false };
-            // Step #3 update post layout states and cache
+            // #3 update post layout states and cache
             setPostLayoutStates({ ...states2 });
             updatePostsLayoutStatesCache(states2);
         }
@@ -931,18 +866,18 @@ const Member = () => {
     }
 
     const handleClickOnPost = (postId: string) => (event: React.MouseEvent) => {
-        // Step #1 update process states and post layout cache
+        // #1 update process states and post layout cache
         updateProcessStatesCache({ ...processStates, wasRedirected: true });
         updatePostsLayoutStatesCache({ ...postLayoutStates, memorizeLastViewedPostId: postId, memorizeViewPortPositionY: window.scrollY });
-        // Step #2 jump
+        // #2 jump
         router.push(`/post/${postId}`);
     };
 
     const handleClickOnMemberInfo = (memberId: string, postId: string) => (event: React.MouseEvent) => {
-        // Step #1 update process states and post layout cache
+        // #1 update process states and post layout cache
         updateProcessStatesCache({ ...processStates, wasRedirected: true });
         updatePostsLayoutStatesCache({ ...postLayoutStates, memorizeLastViewedPostId: postId, memorizeViewPortPositionY: window.scrollY });
-        // Step #2 jump
+        // #2 jump
         router.push(`/me/id/${memberId}`);
     };
 
@@ -959,14 +894,14 @@ const Member = () => {
 
         // undo save post
         if ('savedposts' === categoryId) {
-            // Step #1 mark post of chice as 'undo-saved'
+            // #1 mark post of chice as 'undo-saved'
             if (undoSavedPostArr.includes(postId)) {
                 const update = undoSavedPostArr.filter(id => postId !== id);
                 setUndoSavedPostArr([...update]);
             } else {
                 setUndoSavedPostArr([...undoSavedPostArr, postId]);
             }
-            // Step #2 request to delete record
+            // #2 request to delete record
             const resp = await fetch(``);
             if (200 !== resp.status) {
                 console.log('Attempt to undo/do save post');
@@ -975,10 +910,10 @@ const Member = () => {
 
         // delete browsing history
         if ('browsinghistory' === categoryId) {
-            // Step #1 remove post card
+            // #1 remove post card
             const update = masonryPostInfoArr.filter(po => po.postId !== postId);
             setMasonryPostInfoArr([...update]);
-            // Step #2 request to delete record
+            // #2 request to delete record
             const resp = await fetch(`/api/member/browsinghistory/${authorId}`, {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' },
@@ -994,7 +929,7 @@ const Member = () => {
 
     type TSettingLayoutStates = {
         selectedSettingId: number;
-        blacklist: IConciseMemberInfo[];
+        blacklist: IMemberInfo[];
     };
 
     //////// STATES - setting layout ////////
@@ -1860,7 +1795,7 @@ const Member = () => {
 
             const handleUndoBlock = async (blockedId: string) => {
                 // delete element (member info) from the array
-                const arr: IConciseMemberInfo[] = [...settinglayoutStates.blacklist];
+                const arr: IMemberInfo[] = [...settinglayoutStates.blacklist];
                 for (let i = 0; i < arr.length; i++) {
                     if (blockedId === arr[i].memberId) {
                         arr.splice(i, 1);
@@ -2481,4 +2416,4 @@ const Member = () => {
     );
 };
 
-export default Member;
+export default Settings;

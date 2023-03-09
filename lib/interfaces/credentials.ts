@@ -30,5 +30,5 @@ export interface IResetPasswordCredentials {
     partitionKey: string; // email address sh1 hash
     rowKey: 'ResetPassword';
     ResetPasswordToken: string;
-    CreateTimeBySecond: number; // Math.floor(new Date().getTime() / 1000) 
+    CreateTimeBySecond: number; // Math.floor(new Date().getTime() / 1000)
 }

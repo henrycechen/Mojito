@@ -10,6 +10,7 @@ import { ILoginJournal } from '../../../../lib/interfaces/member';
 import { ILoginCredentials, IMojitoMemberSystemLoginCredentials, IResetPasswordCredentials } from '../../../../lib/interfaces/credentials';
 import { verifyRecaptchaResponse, verifyEnvironmentVariable, verifyEmailAddress, verifyPassword } from '../../../../lib/utils/verify';
 import { response405, response500, logWithDate } from '../../../../lib/utils/general';
+import { getTimeBySecond } from '../../../../lib/utils/create';
 
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
 const salt = process.env.APP_PASSWORD_SALT ?? '';
@@ -47,7 +48,7 @@ export default async function ResetPassword(req: NextApiRequest, res: NextApiRes
     const atlasDbClient = AtlasDatabaseClient();
     try {
         const { recaptchaResponse } = req.query;
-        // Step #1 verify if requested by human
+        // #1 verify if requested by human
         const { status, message } = await verifyRecaptchaResponse(recaptchaServerSecret, recaptchaResponse);
         if (200 !== status) {
             if (403 === status) {
@@ -59,23 +60,23 @@ export default async function ResetPassword(req: NextApiRequest, res: NextApiRes
                 return;
             }
         }
-        // Step #2.1 verify request info
+        // #2.1 verify request info
         const { emailAddress, resetPasswordToken, password } = req.body;
         if (!('string' === typeof emailAddress && 'string' === typeof resetPasswordToken)) {
             res.status(400).send('Invalid request info');
             return;
         }
-        // Step #2.2 verify password
+        // #2.2 verify password
         if (!('string' === typeof password && verifyPassword(password))) {
             res.status(400).send('Password unsatisfied');
         }
-        // Step #3.1 verify email address
+        // #3.1 verify email address
         if (!verifyEmailAddress(emailAddress)) {
             res.status(403).send('Invalid email address');
             return;
         }
         const emailAddressHash = CryptoJS.SHA1(emailAddress).toString();
-        // Step #3.2 look up login credentials record (by email address hash) in [RL] Credentials
+        // #3.2 look up login credentials record (by email address hash) in [RL] Credentials
         const credentialsTableClient = AzureTableClient('Credentials');
         const loginCredentialsQuery = credentialsTableClient.listEntities<ILoginCredentials>({ queryOptions: { filter: `PartitionKey eq '${emailAddressHash}' and RowKey eq 'MojitoMemberSystem'` } });
         //// [!] attemp to reterieve entity makes the probability of causing RestError ////
@@ -86,7 +87,7 @@ export default async function ResetPassword(req: NextApiRequest, res: NextApiRes
             return;
         }
         const { MemberId: memberId } = loginCredentialsQueryResult.value;
-        // Step #3.2 look up reset password credentials record (by email address hash) in [RL] Credentials
+        // #3.2 look up reset password credentials record (by email address hash) in [RL] Credentials
         const resetPasswordCredentialsQuery = credentialsTableClient.listEntities<IResetPasswordCredentials>({ queryOptions: { filter: `PartitionKey eq '${emailAddressHash}' and RowKey eq 'ResetPassword'` } });
         //// [!] attemp to reterieve entity makes the probability of causing RestError ////
         const resetPasswordCredentialsQueryResult = await resetPasswordCredentialsQuery.next();
@@ -95,27 +96,27 @@ export default async function ResetPassword(req: NextApiRequest, res: NextApiRes
             return;
         }
         const { ResetPasswordToken: resetPasswordTokenReference, CreateTimeBySecond: createTimeBySecond } = resetPasswordCredentialsQueryResult.value;
-        // Step #3.2 verify timestamp
-        if (15 * 60 < (Math.floor(new Date().getTime() / 1000) - createTimeBySecond)) {
+        // #3.2 verify timestamp
+        if (900 < (getTimeBySecond() - createTimeBySecond)) { // valid for 15 minutes
             res.status(408).send('Reset password token expired');
             return;
         }
-        // Step #3.3 match reset password tokens
+        // #3.3 match reset password tokens
         if (resetPasswordTokenReference !== resetPasswordToken) {
             res.status(403).send('Reset password tokens not match');
             return;
         }
-        // Step #4 update enitity (ILoginCredentials) in [RL] Credentials
+        // #4 update enitity (ILoginCredentials) in [RL] Credentials
         await credentialsTableClient.upsertEntity<IMojitoMemberSystemLoginCredentials>({
             partitionKey: emailAddressHash,
             rowKey: 'MojitoMemberSystem',
             PasswordHash: CryptoJS.SHA256(password + salt).toString(),
             MemberId: memberId,
-            LastUpdatedTimeBySecond: Math.floor(new Date().getTime() / 1000)
+            LastUpdatedTimeBySecond: getTimeBySecond()
         }, 'Merge');
         res.status(200).send('Password reset');
 
-        // Step #5 write journal (ILoginJournal) in [C] loginJournal
+        // #5 write journal (ILoginJournal) in [C] loginJournal
         await atlasDbClient.connect();
         const loginJournalCollectionClient = atlasDbClient.db('journal').collection<ILoginJournal>('login');
         await loginJournalCollectionClient.insertOne({

@@ -1,31 +1,24 @@
-import type { NextApiRequest, NextApiResponse } from 'next';
-import { IAttitudeComprehensive, IAttitudeMapping } from '../../interfaces/attitude';
-import { IChannelInfo } from '../../interfaces/channel';
-import { ICommentComprehensive, IRestrictedCommentComprehensive } from '../../interfaces/comment';
-import { IConciseMemberInfo, IConciseMemberStatistics } from '../../interfaces/member';
-import { INoticeInfoWithMemberInfo } from '../../interfaces/notification';
-import { IEditedPostComprehensive, IPostComprehensive, IRestrictedPostComprehensive } from '../../interfaces/post';
-import { ITopicComprehensive } from '../../interfaces/topic';
-import { getRandomHexStr } from '../create';
-import { verifyNoticeId, verifyUrl } from '../verify';
+import { ITopicComprehensive, ITopicInfo } from '../../interfaces/topic';
+import { getTimeBySecond } from '../create';
 
 
 // Topic
-export function getTopicBase64StringsArrayFromRequestBody(requestBody: any): string[] {
+export function getTopicInfoArrayFromRequestBody(requestBody: any): ITopicInfo[] {
     if ('object' !== typeof requestBody) {
         return [];
     }
-    if (!(undefined !== requestBody['topicsArr'] && Array.isArray(requestBody['topicsArr']))) {
+    if (!(undefined !== requestBody['topicInfoArr'] && Array.isArray(requestBody['topicInfoArr']))) {
         return [];
     }
-    return requestBody['topicsArr'].map(topicContent => 'T' + Buffer.from(topicContent).toString('base64'));
+    return requestBody['topicInfoArr'];
 }
 
-export function provideTopicComprehensive(topicId: string, channelId: string): ITopicComprehensive {
+export function createTopicComprehensive(topicId: string, content: string, channelId: string): ITopicComprehensive {
     return {
         topicId, // base64 string from topic content string
+        content,
         channelId,
-        createdTimeBySecond: Math.floor(new Date().getTime() / 1000), // create time of this document (topic est.)
+        createdTimeBySecond: getTimeBySecond(),
         status: 200,
         totalHitCount: 1, // total hit count of total posts of this topic
         totalSearchCount: 0,
@@ -37,5 +30,5 @@ export function provideTopicComprehensive(topicId: string, channelId: string): I
         totalCommentDeleteCount: 0,
         totalSavedCount: 0,
         totalUndoSavedCount: 0,
-    }
+    };
 }

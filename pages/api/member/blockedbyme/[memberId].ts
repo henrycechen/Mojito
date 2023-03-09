@@ -7,7 +7,7 @@ import AzureTableClient from '../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from "../../../../modules/AtlasDatabaseClient";
 
 import { IMemberMemberMapping } from '../../../../lib/interfaces/mapping';
-import { IMemberComprehensive, IConciseMemberInfo } from '../../../../lib/interfaces/member';
+import { IMemberComprehensive, IMemberInfo } from '../../../../lib/interfaces/member';
 import { logWithDate, response405, response500 } from '../../../../lib/utils/general';
 import { verifyId } from '../../../../lib/utils/verify';
 
@@ -102,7 +102,7 @@ export default async function GetMembersBlockedByMe(req: NextApiRequest, res: Ne
         const blockingMemberMappingQuery = blockingMemberMappingTableClient.listEntities<IMemberMemberMapping>({ queryOptions: { filter: `PartitionKey eq '${memberId}' and IsActive eq true` } });
         //// [!] attemp to reterieve entity makes the probability of causing RestError ////
         let blockingMemberMappingQueryResult = await blockingMemberMappingQuery.next();
-        const arr: IConciseMemberInfo[] = [];
+        const arr: IMemberInfo[] = [];
         while (!blockingMemberMappingQueryResult.done) {
             arr.push({
                 memberId: blockingMemberMappingQueryResult.value.rowKey,

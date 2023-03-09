@@ -86,7 +86,7 @@ export default async function UpdateGender(req: NextApiRequest, res: NextApiResp
         const memberComprehensiveUpdateResult = await memberComprehensiveCollectionClient.updateOne({ memberId }, {
             $set: {
                 gender,
-                lastGenderUpdatedTimeBySecond: Math.floor(new Date().getTime() / 1000)
+                lastGenderUpdatedTimeBySecond: getTimeBySecond()
             }
         })
 

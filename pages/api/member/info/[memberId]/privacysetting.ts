@@ -97,7 +97,7 @@ export default async function UpdatePrivacySettings(req: NextApiRequest, res: Ne
                 allowVisitingFollowedMembers: settings.allowVisitingFollowedMembers,
                 allowVisitingSavedPosts: settings.allowVisitingSavedPosts,
                 hidePostsAndCommentsOfBlockedMember: settings.hidePostsAndCommentsOfBlockedMember,
-                lastSettingsUpdatedTimeBySecond: Math.floor(new Date().getTime() / 1000)
+                lastSettingsUpdatedTimeBySecond: getTimeBySecond()
             }
         })
 

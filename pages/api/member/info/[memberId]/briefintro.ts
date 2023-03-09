@@ -85,7 +85,7 @@ export default async function UpdateBriefIntro(req: NextApiRequest, res: NextApi
         const memberComprehensiveUpdateResult = await memberComprehensiveCollectionClient.updateOne({ memberId }, {
             $set: {
                 briefIntro: alternativeIntro,
-                lastBriefIntroUpdatedTimeBySecond: Math.floor(new Date().getTime() / 1000)
+                lastBriefIntroUpdatedTimeBySecond: getTimeBySecond()
             }
         })
 

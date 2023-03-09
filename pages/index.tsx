@@ -297,22 +297,22 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
         let states: IHomePageProcessStates = { ...processStates };
         states.selectedChannelId = channelId;
         states.memorizeChannelBarPositionX = document.getElementById('channel-bar')?.scrollLeft;
-        // Step #1 update process states
+        // #1 update process states
         setProcessStates(states);
-        // Step #2 presist process states to cache
+        // #2 presist process states to cache
         updateProcessStatesCache(states);
-        // Step #3 reset browsing helper
+        // #3 reset browsing helper
         setBrowsingHelper({ ...browsingHelper, memorizeViewPortPositionY: undefined });
     };
 
     // Handle newest/hotest posts switch
     const handleSwitchChange = () => {
         let states: IHomePageProcessStates = { ...processStates, selectedHotPosts: !processStates.selectedHotPosts };
-        // Step #1 update process states
+        // #1 update process states
         setProcessStates(states);
-        // Step #2 presist process states to cache
+        // #2 presist process states to cache
         updateProcessStatesCache(states);
-        // Step #3 reset browsing helper
+        // #3 reset browsing helper
         setBrowsingHelper({ ...browsingHelper, memorizeViewPortPositionY: undefined });
     };
 
@@ -338,7 +338,7 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
     React.useEffect(() => {
         if (processStates.wasRedirected) {
             const postId = processStates.memorizeLastViewedPostId;
-            // Step #1 restore browsing position
+            // #1 restore browsing position
             if (!postId) {
                 return;
             } else if (600 > window.innerWidth) { // 0 ~ 599
@@ -347,9 +347,9 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
                 setBrowsingHelper({ ...browsingHelper, memorizeViewPortPositionY: processStates.memorizeViewPortPositionY });
             }
             let states: IHomePageProcessStates = { ...processStates, memorizeLastViewedPostId: undefined, memorizeViewPortPositionY: undefined, wasRedirected: false };
-            // Step #2 update process states
+            // #2 update process states
             setProcessStates(states);
-            // Step #3 update process state cache
+            // #3 update process state cache
             updateProcessStatesCache(states);
         }
     }, [masonryPostInfoArr]);
@@ -674,7 +674,7 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
                                     <TextButton key={getRandomHexStr()} color={'inherit'} sx={{ textTransform: 'none' }} >
 
                                         {/* topic name */}
-                                        <Typography variant='body1'>#{t.name}</Typography>
+                                        <Typography variant='body1'>#{t.content}</Typography>
 
                                         {/* topic info & statistics */}
                                         <Box sx={{ display: 'flex', flexDirection: 'row' }} alignItems={'center'}>

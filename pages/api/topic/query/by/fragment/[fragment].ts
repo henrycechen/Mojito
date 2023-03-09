@@ -1,9 +1,9 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { getToken } from 'next-auth/jwt'
+import { getToken } from 'next-auth/jwt';
 import { MongoError } from 'mongodb';
 
-import AtlasDatabaseClient from "../../../../../../../modules/AtlasDatabaseClient";
-import { logWithDate, response405, response500 } from '../../../../../../../lib/utils/general';
+import AtlasDatabaseClient from "../../../../../../modules/AtlasDatabaseClient";
+import { logWithDate, response405, response500 } from '../../../../../../lib/utils/general';
 
 const fname = QueryTopicByIdFragment.name;
 
@@ -24,30 +24,36 @@ export default async function QueryTopicByIdFragment(req: NextApiRequest, res: N
         response405(req, res);
         return;
     }
-
+    // res.send([])
+    // return;
     res.send([
         {
             topicId: '5ZGo5p2w5Lym',
+            content: '周杰伦',
             channelId: 'chat',
             totalPostCount: 126
         },
         {
             topicId: '6K+05aW95LiN5ZOt',
+            content: '说好不哭',
             channelId: 'chat',
             totalPostCount: 75
         },
         {
             topicId: '5ZGK55m95rCU55CD',
+            content: '告白气球',
             channelId: 'chat',
             totalPostCount: 64
         },
         {
             topicId: '6b6Z5Y236aOO',
+            content: '龙卷风',
             channelId: 'chat',
             totalPostCount: 12
         },
         {
             topicId: '5Y+N5pa55ZCR55qE6ZKf',
+            content: '反方向的钟',
             channelId: 'chat',
             totalPostCount: 3
         },

@@ -1,7 +1,7 @@
-/** Utils for creating ids and strings v0.1.1
- * 
- * Last update 16/02/2023
- */
+// Utils for creating ids and strings v0.1.1
+
+// Last update 16/02/2023
+
 
 //  Rules of creating random IDs / names
 //
@@ -60,3 +60,6 @@ export function getRandomHexStr(useUpperCase: boolean = false): string { // Leng
     }
 }
 
+export function getTimeBySecond(): number {
+    return Math.floor(new Date().getTime() / 1000);
+}

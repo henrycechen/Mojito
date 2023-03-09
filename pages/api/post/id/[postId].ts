@@ -14,6 +14,7 @@ import { getRestrictedFromPostComprehensive } from '../../../../lib/utils/for/po
 import { IMemberComprehensive, IMemberStatistics } from '../../../../lib/interfaces/member';
 import { IChannelStatistics } from '../../../../lib/interfaces/channel';
 import { ITopicComprehensive } from '../../../../lib/interfaces/topic';
+import { getTimeBySecond } from '../../../../lib/utils/create';
 
 const fname = GetRestrictedPostComprehensiveById.name;
 
@@ -63,11 +64,32 @@ const ifo = {
     totalDislikedCount: 1,
     totalCommentCount: 5,
     totalSavedCount: 12,
-}
+};
 
 export default async function GetRestrictedPostComprehensiveById(req: NextApiRequest, res: NextApiResponse) {
 
-    res.send(ifo)
+    // res.send(ifo);
+    const atlasDbClient = AtlasDatabaseClient();
+    await atlasDbClient.connect();
+    const postComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IPostComprehensive>('post');
+    const postComprehensiveQueryResult = await postComprehensiveCollectionClient.findOne({ postId: req.query.postId });
+    if (null === postComprehensiveQueryResult) {
+        res.status(404).send('Post not found');
+        await atlasDbClient.close();
+        return;
+    }
+
+    //// Verify post status ////
+    const { status: postStatus } = postComprehensiveQueryResult;
+    if (0 > postStatus) {
+        res.status(404).send('Method not allowed due to post deleted');
+        await atlasDbClient.close();
+        return;
+    }
+
+    //// Response 200 ////
+    res.status(200).send(getRestrictedFromPostComprehensive(postComprehensiveQueryResult));
+
     return;
 
     const { method } = req;
@@ -84,7 +106,7 @@ export default async function GetRestrictedPostComprehensiveById(req: NextApiReq
     }
 
     //// Declare DB client ////
-    const atlasDbClient = AtlasDatabaseClient();
+    // const atlasDbClient = AtlasDatabaseClient();
     try {
         await atlasDbClient.connect();
 
@@ -136,7 +158,7 @@ export default async function GetRestrictedPostComprehensiveById(req: NextApiReq
                     rowKey: postId,
                     Nickname: '',
                     Title: title,
-                    CreatedTimeBySecond: Math.floor(new Date().getTime() / 1000),
+                    CreatedTimeBySecond: getTimeBySecond(),
                     IsActive: true
                 }, 'Merge');
                 viewerIsMemberButNotAuthor = authorId !== viewerId;

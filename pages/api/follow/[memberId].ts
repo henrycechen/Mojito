@@ -80,12 +80,12 @@ export default async function FollowOrUndoFollowMemberById(req: NextApiRequest, 
         }
 
         let isFollowed: boolean;
-        // Step #1.1 look up record (of IMemberMemberMapping) in [RL] FollowingMemberMapping
+        // #1.1 look up record (of IMemberMemberMapping) in [RL] FollowingMemberMapping
         const followingMemberMappingTableClient = AzureTableClient('FollowingMemberMapping');
         const followingMemberMappingQuery = followingMemberMappingTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${memberId}' and RowKey eq '${objectId}'` } });
         //// [!] attemp to reterieve entity makes the probability of causing RestError ////
         const followingMemberMappingQueryResult = await followingMemberMappingQuery.next();
-        // Step #1.2 verify if member has been followed
+        // #1.2 verify if member has been followed
         if (!followingMemberMappingQueryResult.value) {
             // Case [Follow]
             isFollowed = false;
@@ -113,56 +113,56 @@ export default async function FollowOrUndoFollowMemberById(req: NextApiRequest, 
         //// POST | do follow or undo follow ////
         if (isFollowed) {
             // Case [Undo follow]
-            // Step #2A.1 update record (of IMemberMemberMapping) in [RL] FollowingMemberMapping
+            // #2A.1 update record (of IMemberMemberMapping) in [RL] FollowingMemberMapping
             await followingMemberMappingTableClient.upsertEntity({
                 partitionKey: memberId,
                 rowKey: objectId,
                 IsActive: false
             }, 'Merge');
 
-            // Step #2A.2 update totalUndoFollowingCount (of IMemberStatistics) in [C] memberStatistics
+            // #2A.2 update totalUndoFollowingCount (of IMemberStatistics) in [C] memberStatistics
             const memberStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IMemberStatistics>('member');
             const memberStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId }, { $inc: { totalUndoFollowingCount: 1 } });
             if (!memberStatisticsUpdateResult.acknowledged) {
                 logWithDate(`Failed to update totalUndoFollowingCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`, fname);
             }
 
-            // Step #2A.3 update totalUndoFollowedByCount (of IMemberStatistics) in [C] memberStatistics
+            // #2A.3 update totalUndoFollowedByCount (of IMemberStatistics) in [C] memberStatistics
             const memberFollowedStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId: objectId }, { $inc: { totalUndoFollowedByCount: 1 } });
             if (!memberFollowedStatisticsUpdateResult.acknowledged) {
                 logWithDate(`Failed to update totalUndoFollowedByCount (of IMemberStatistics, member id: ${objectId}) in [C] memberStatistics`, fname);
             }
         } else {
             // Case [Do follow]
-            // Step #2B.1 update record (of IMemberMemberMapping) in [RL] FollowingMemberMapping
+            // #2B.1 update record (of IMemberMemberMapping) in [RL] FollowingMemberMapping
             await followingMemberMappingTableClient.upsertEntity<IMemberMemberMapping>({
                 partitionKey: memberId,
                 rowKey: objectId,
                 Nickname: nickname ?? '',
                 BriefIntro: briefIntro ?? '',
-                CreatedTimeBySecond: Math.floor(new Date().getTime() / 1000),
+                CreatedTimeBySecond: getTimeBySecond(),
                 IsActive: true
             }, 'Replace');
 
-            // Step #2B.1 update totalFollowingCount (of IMemberStatistics) in [C] memberStatistics
+            // #2B.1 update totalFollowingCount (of IMemberStatistics) in [C] memberStatistics
             const memberStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IMemberStatistics>('member');
             const memberStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId }, { $inc: { totalFollowingCount: 1 } });
             if (!memberStatisticsUpdateResult.acknowledged) {
                 logWithDate(`Failed to update totalFollowingCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`, fname);
             }
-            // Step #2B.2 update totalFollowedByCount (of IMemberStatistics) in [C] memberStatistics
+            // #2B.2 update totalFollowedByCount (of IMemberStatistics) in [C] memberStatistics
             const memberFollowedStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId: objectId }, { $inc: { totalFollowedByCount: 1 } });
             if (!memberFollowedStatisticsUpdateResult.acknowledged) {
                 logWithDate(`Failed to update totalFollowedByCount (of IMemberStatistics, member id: ${objectId}) in [C] memberStatistics`, fname);
             }
 
             //// Handle notice.follow (cond.) ////
-            // Step #2B.3 (cond.) look up record (of IMemberMemberMapping) in [RL] BlockingMemberMapping
+            // #2B.3 (cond.) look up record (of IMemberMemberMapping) in [RL] BlockingMemberMapping
             const blockingMemberMappingTableClient = AzureTableClient('BlockingMemberMapping');
             const blockingMemberMappingQuery = blockingMemberMappingTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${objectId}' and RowKey eq '${memberId}'` } });
             if ((await blockingMemberMappingQuery.next()).done) {
                 //// [!] member expressed attitude has not been blocked by object member ////
-                // Step #2B.4 upsert record (of INoticeInfo.Follow) in [PRL] Notice
+                // #2B.4 upsert record (of INoticeInfo.Follow) in [PRL] Notice
                 const noticeTableClient = AzureTableClient('Notice');
                 await noticeTableClient.upsertEntity<INoticeInfo>({
                     partitionKey: objectId, // notified member id, in this case, member having been followed by
@@ -172,10 +172,10 @@ export default async function FollowOrUndoFollowMemberById(req: NextApiRequest, 
                     Nickname: getNicknameFromToken(token),
                     PostTitle: '', // [!] post title is not supplied in this case
                     CommentBrief: '', // [!] comment brief is not supplied in this case
-                    CreatedTimeBySecond: Math.floor(new Date().getTime() / 1000),
+                    CreatedTimeBySecond: getTimeBySecond(),
                     IsActive: true
                 }, 'Replace');
-                // Step #2B.5 update follow (of INotificationStatistics, of the member having been followed by) in [C] notificationStatistics
+                // #2B.5 update follow (of INotificationStatistics, of the member having been followed by) in [C] notificationStatistics
                 const notificationStatisticsCollectionClient = atlasDbClient.db('statistics').collection<INotificationStatistics>('notification');
                 const notificationStatisticsUpdateResult = await notificationStatisticsCollectionClient.updateOne({ memberId: objectId }, { $inc: { follow: 1 } });
                 if (!notificationStatisticsUpdateResult.acknowledged) {
@@ -185,14 +185,14 @@ export default async function FollowOrUndoFollowMemberById(req: NextApiRequest, 
         }
         await atlasDbClient.close();
 
-        // Step #4 upsert record (of IMemberMemberMapping) in [PRL] FollowedByMemberMapping
+        // #4 upsert record (of IMemberMemberMapping) in [PRL] FollowedByMemberMapping
         const followedByMemberMappingTableClient = AzureTableClient('FollowedByMemberMapping');
         await followedByMemberMappingTableClient.upsertEntity<IMemberMemberMapping>({
             partitionKey: objectId,
             rowKey: memberId,
             Nickname: nickname ?? '',
             BriefIntro: briefIntro ?? '',
-            CreatedTimeBySecond: Math.floor(new Date().getTime() / 1000),
+            CreatedTimeBySecond: getTimeBySecond(),
             IsActive: !isFollowed
         }, 'Replace');
         res.status(200).send(`${isFollowed ? 'Undo follow' : 'Follow'} success`);

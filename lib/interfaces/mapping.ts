@@ -5,7 +5,7 @@ export interface IMemberMemberMapping {
     rowKey: string; // object member id
     Nickname: string;
     BriefIntro: string;
-    CreatedTimeBySecond: number; // Math.floor(new Date().getTime() / 1000) 
+    CreatedTimeBySecond: number; // Math.floor(new Date().getTime() / 1000)
     IsActive: boolean;
 }
 
@@ -14,6 +14,7 @@ export interface IMemberPostMapping {
     rowKey: string; // post id, also used as cover image fullname (e.g., P12345ABCDE.png)
     Nickname: string;
     Title: string;
+    HasImages: boolean;
     CreatedTimeBySecond: number;
     IsActive: boolean;
 }

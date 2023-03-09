@@ -10,6 +10,7 @@ import { IMemberMemberMapping } from '../../../lib/interfaces/mapping';
 import { IMemberComprehensive, IMemberStatistics, } from '../../../lib/interfaces/member';
 import { response405, response500, logWithDate } from '../../../lib/utils/general';
 import { verifyId } from '../../../lib/utils/verify';
+import { getTimeBySecond } from '../../../lib/utils/create';
 
 const fname = BlockOrUndoBlockMemberById.name;
 
@@ -83,13 +84,13 @@ export default async function BlockOrUndoBlockMemberById(req: NextApiRequest, re
         const { nickname, briefIntro } = objectConciseQueryResult;
 
         let isBlocked: boolean;
-        // Step #1.1 look up record (of IMemberMemberMapping) in [RL] BlockingMemberMapping
+        // #1.1 look up record (of IMemberMemberMapping) in [RL] BlockingMemberMapping
         const blockingMemberMappingTableClient = AzureTableClient('BlockingMemberMapping');
         const blockingMemberMappingQuery = blockingMemberMappingTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${memberId}' and RowKey eq '${objectId}'` } });
         //// [!] attemp to reterieve entity makes the probability of causing RestError ////
         const blockingMemberMappingQueryResult = await blockingMemberMappingQuery.next();
 
-        // Step #1.2 verify if member has been blocked
+        // #1.2 verify if member has been blocked
         if (!blockingMemberMappingQueryResult.value) {
             // Case [Block]
             isBlocked = false;
@@ -100,41 +101,41 @@ export default async function BlockOrUndoBlockMemberById(req: NextApiRequest, re
 
         if (isBlocked) {
             // Case [Undo block]
-            // Step #2A.1 update record (of IMemberMemberMapping) in [RL] BlockingMemberMapping
+            // #2A.1 update record (of IMemberMemberMapping) in [RL] BlockingMemberMapping
             await blockingMemberMappingTableClient.upsertEntity({
                 partitionKey: memberId,
                 rowKey: objectId,
                 IsActive: false
             }, 'Merge');
-            // Step #2A.2 update totalUndoBlockingCount (of IMemberStatistics) in [C] memberStatistics
+            // #2A.2 update totalUndoBlockingCount (of IMemberStatistics) in [C] memberStatistics
             const memberStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IMemberStatistics>('member');
             const memberStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId }, { $inc: { totalUndoBlockingCount: 1 } });
             if (!memberStatisticsUpdateResult.acknowledged) {
                 logWithDate(`Failed to update totalUndoBlockingCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`, fname);
             }
-            // Step #2A.3 update totalUndoBlockedByCount (of IMemberStatistics) in [C] memberStatistics
+            // #2A.3 update totalUndoBlockedByCount (of IMemberStatistics) in [C] memberStatistics
             const memberBlockedStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId: objectId }, { $inc: { totalUndoBlockedByCount: 1 } });
             if (!memberBlockedStatisticsUpdateResult.acknowledged) {
                 logWithDate(`Failed to update totalUndoBlockedByCount (of IMemberStatistics, member id: ${objectId}) in [C] memberStatistics`, fname);
             }
         } else {
             // Case [Do block]
-            // Step #2B.1 upsert record (of IMemberMemberMapping) in [RL] BlockingMemberMapping
+            // #2B.1 upsert record (of IMemberMemberMapping) in [RL] BlockingMemberMapping
             await blockingMemberMappingTableClient.upsertEntity<IMemberMemberMapping>({
                 partitionKey: memberId,
                 rowKey: objectId,
                 Nickname: nickname ?? '',
                 BriefIntro: briefIntro ?? '',
-                CreatedTimeBySecond: Math.floor(new Date().getTime() / 1000),
+                CreatedTimeBySecond: getTimeBySecond(),
                 IsActive: true
             }, 'Replace');
-            // Step #2B.2 update totalBlockingCount (of IMemberStatistics) in [C] memberStatistics
+            // #2B.2 update totalBlockingCount (of IMemberStatistics) in [C] memberStatistics
             const memberStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IMemberStatistics>('member');
             const memberStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId }, { $inc: { totalBlockingCount: 1 } });
             if (!memberStatisticsUpdateResult.acknowledged) {
                 logWithDate(`Failed to update totalBlockingCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`, fname);
             }
-            // Step #B2.3 update totalBlockedByCount (of IMemberStatistics) in [C] memberStatistics
+            // #B2.3 update totalBlockedByCount (of IMemberStatistics) in [C] memberStatistics
             const memberBlockedStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId: objectId }, { $inc: { totalBlockedByCount: 1 } });
             if (!memberBlockedStatisticsUpdateResult.acknowledged) {
                 logWithDate(`Failed to update totalBlockedByCount (of IMemberStatistics, member id: ${objectId}) in [C] memberStatistics`, fname);
@@ -142,14 +143,14 @@ export default async function BlockOrUndoBlockMemberById(req: NextApiRequest, re
         }
         await atlasDbClient.close();
 
-        // Step #3 upsert record (of IMemberMemberMapping) in [PRL] BlockedByMemberMapping
+        // #3 upsert record (of IMemberMemberMapping) in [PRL] BlockedByMemberMapping
         const blockedByMemberMappingTableClient = AzureTableClient('BlockedByMemberMapping');
         await blockedByMemberMappingTableClient.upsertEntity<IMemberMemberMapping>({
             partitionKey: objectId,
             rowKey: memberId,
             Nickname: nickname ?? '',
             BriefIntro: briefIntro ?? '',
-            CreatedTimeBySecond: Math.floor(new Date().getTime() / 1000),
+            CreatedTimeBySecond: getTimeBySecond(),
             IsActive: !isBlocked
         }, 'Replace');
 

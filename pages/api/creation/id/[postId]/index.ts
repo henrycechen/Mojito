@@ -1,25 +1,25 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { getToken } from 'next-auth/jwt'
+import { getToken } from 'next-auth/jwt';
 import { RestError } from '@azure/data-tables';
 import { MongoError } from 'mongodb';
 
-import AzureTableClient from '../../../../modules/AzureTableClient';
-import AtlasDatabaseClient from "../../../../modules/AtlasDatabaseClient";
+import AzureTableClient from '../../../../../modules/AzureTableClient';
+import AtlasDatabaseClient from "../../../../../modules/AtlasDatabaseClient";
 
-import { verifyId } from '../../../../lib/utils/verify';
-import { response405, response500, logWithDate } from '../../../../lib/utils/general';
-import { IConciseMemberInfo, IMemberComprehensive, IMemberStatistics } from '../../../../lib/interfaces/member';
-import { IPostComprehensive } from '../../../../lib/interfaces/post';
-import { IMemberMemberMapping, IMemberPostMapping } from '../../../../lib/interfaces/mapping';
-import { IChannelStatistics } from '../../../../lib/interfaces/channel';
-import { ITopicComprehensive, ITopicPostMapping } from '../../../../lib/interfaces/topic';
-import { getTopicBase64StringsArrayFromRequestBody, provideTopicComprehensive } from '../../../../lib/utils/for/topic';
-import { getCuedMemberInfoArrayFromRequestBody, getImageFullnamesArrayFromRequestBody, getParagraphsArrayFromRequestBody, provideEditedPostInfo, providePostComprehensiveUpdate } from '../../../../lib/utils/for/post';
-import { INoticeInfo, INotificationStatistics } from '../../../../lib/interfaces/notification';
-import { createNoticeId } from '../../../../lib/utils/create';
-import { getNicknameFromToken } from '../../../../lib/utils/for/member';
+import { verifyId } from '../../../../../lib/utils/verify';
+import { response405, response500, logWithDate } from '../../../../../lib/utils/general';
+import { IMemberInfo, IMemberComprehensive, IMemberStatistics } from '../../../../../lib/interfaces/member';
+import { IPostComprehensive } from '../../../../../lib/interfaces/post';
+import { IMemberMemberMapping, IMemberPostMapping } from '../../../../../lib/interfaces/mapping';
+import { IChannelStatistics } from '../../../../../lib/interfaces/channel';
+import { ITopicComprehensive, ITopicPostMapping } from '../../../../../lib/interfaces/topic';
+import { getTopicInfoArrayFromRequestBody, createTopicComprehensive } from '../../../../../lib/utils/for/topic';
+import { getCuedMemberInfoArrayFromRequestBody, getImageFullnamesArrayFromRequestBody, getParagraphsArrayFromRequestBody, provideEditedPostInfo, providePostComprehensiveUpdate } from '../../../../../lib/utils/for/post';
+import { INoticeInfo, INotificationStatistics } from '../../../../../lib/interfaces/notification';
+import { createNoticeId, getTimeBySecond } from '../../../../../lib/utils/create';
+import { getNicknameFromToken } from '../../../../../lib/utils/for/member';
 
-const fname = UpdateOrDeleteCreationById.name
+const fname = UpdateOrDeleteCreationById.name;
 
 /** UpdateOrDeleteCreationById v0.1.1
  * 
@@ -66,14 +66,15 @@ export default async function UpdateOrDeleteCreationById(req: NextApiRequest, re
     //// Declare DB client ////
     const atlasDbClient = AtlasDatabaseClient();
     try {
+        await atlasDbClient.connect();
 
         //// Verify member status ////
         const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
-        const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne({ memberId }, { projection: { _id: 0, status: 1, allowPosting: 1 } });
+        const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne({ memberId }, { projection: { _id: 0, status: 1, allowPosting: 1, nickname: 1 } });
         if (null === memberComprehensiveQueryResult) {
             throw new Error(`Member attempt to delete creation but have no document (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
         }
-        const { status: memberStatus } = memberComprehensiveQueryResult;
+        const { status: memberStatus, nickname } = memberComprehensiveQueryResult;
         if (0 > memberStatus) {
             res.status(403).send('Method not allowed due to member suspended or deactivated');
             await atlasDbClient.close();
@@ -105,16 +106,17 @@ export default async function UpdateOrDeleteCreationById(req: NextApiRequest, re
         //////// DELETE | delete a creation ////////
         if ('DELETE' === method) {
 
-            const { title, channelId, topicIdsArr } = postComprehensiveQueryResult;
+            const { title, channelId, topicInfoArr: topicIdsArr } = postComprehensiveQueryResult;
 
             //// Update record (of IMemberPostMapping) in [RL] CreationsMapping
             const mappingTableClient = AzureTableClient('CreationsMapping');
             await mappingTableClient.upsertEntity<IMemberPostMapping>({
                 partitionKey: memberId,
                 rowKey: postId,
-                Nickname: '', // [!] nickname is not supplied in this case
+                Nickname: nickname, // [!] nickname is not supplied in this case
                 Title: title,
-                CreatedTimeBySecond: Math.floor(new Date().getTime() / 1000),
+                HasImages: false,
+                CreatedTimeBySecond: 0,
                 IsActive: false
             }, 'Merge');
 
@@ -128,7 +130,6 @@ export default async function UpdateOrDeleteCreationById(req: NextApiRequest, re
             res.status(200).send('Delete post success');
 
             //// Update statistics ////
-
             //// Update totalCreationDeleteCount (of IMemberStatistics) (of post author) in [C] memberStatistics ////
             const memberStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IMemberStatistics>('member');
             const memberStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId: authorId }, { $inc: { totalCreationDeleteCount: 1 } });
@@ -169,6 +170,9 @@ export default async function UpdateOrDeleteCreationById(req: NextApiRequest, re
 
         //////// PUT | edit a creation ////////
         if ('PUT' === method) {
+
+            // FIXME:FIXME:FIXME:
+            // when updating image fullnames, remove the removed images then waiting for the new ones updated
 
             const { allowPosting } = memberComprehensiveQueryResult;
             if (!allowPosting) {
@@ -211,7 +215,7 @@ export default async function UpdateOrDeleteCreationById(req: NextApiRequest, re
             }
 
             //// Explicitly get topic id array and cued member info array ////
-            const topicIdsArr = getTopicBase64StringsArrayFromRequestBody(req.body);
+            const topicIdsArr = getTopicInfoArrayFromRequestBody(req.body);
             const cuedMemberInfoArr = getCuedMemberInfoArrayFromRequestBody(req.body);
 
             //// Update document (of IPostComprehensive) in [C] postComprehensive ////
@@ -223,7 +227,7 @@ export default async function UpdateOrDeleteCreationById(req: NextApiRequest, re
                         getParagraphsArrayFromRequestBody(req.body),
                         cuedMemberInfoArr,
                         channelId,
-                        topicIdsArr
+                        topicIdsArr,
                     ),
                 $inc: {
                     totalEditCount: 1
@@ -272,7 +276,7 @@ export default async function UpdateOrDeleteCreationById(req: NextApiRequest, re
                         // Set mapping status to -1 (of ITopicPostMapping)
                         topicPostMappingCollectionClient.updateOne({ topicId, postId }, { $set: { status: -1 } });
                         // Accumulate post delete count (+1)
-                        topicComprehensiveCollectionClient.updateOne({ topicId }, { $inc: { totalPostDeleteCount: 1 } })
+                        topicComprehensiveCollectionClient.updateOne({ topicId }, { $inc: { totalPostDeleteCount: 1 } });
                     } else {
                         // collect the topic id that has connection (mapping) with this post
                         arr.push(topicId);
@@ -288,7 +292,7 @@ export default async function UpdateOrDeleteCreationById(req: NextApiRequest, re
                         const topicComprehensiveQueryResult = await topicComprehensiveCollectionClient.findOneAndUpdate({ topicId }, { $inc: { totalPostCount: 1 } });
                         if (!topicComprehensiveQueryResult.ok) {
                             // Topic dose not appear in the database
-                            const topicComprehensiveUpsertResult = await topicComprehensiveCollectionClient.updateOne({ topicId }, { $set: provideTopicComprehensive(topicId, channelId) }, { upsert: true });
+                            const topicComprehensiveUpsertResult = await topicComprehensiveCollectionClient.updateOne({ topicId }, { $set: createTopicComprehensive(topicId, channelId) }, { upsert: true });
                             if (!topicComprehensiveUpsertResult.acknowledged) {
                                 logWithDate(`Document (IPostComprehensive, post id: ${postId}) inserted in [C] postComprehensive successfully but failed to upsert a new topic (document of ITopicComprehensive, topic id: ${topicId}) in [C] topicComprehensive`, fname);
                             }
@@ -318,7 +322,7 @@ export default async function UpdateOrDeleteCreationById(req: NextApiRequest, re
                 const blockingMemberMappingTableClient = AzureTableClient('BlockingMemberMapping');
                 const notificationStatisticsCollectionClient = atlasDbClient.db('statistics').collection<INotificationStatistics>('notification');
 
-                let arr: IConciseMemberInfo[] = [...cuedMemberInfoArr];
+                let arr: IMemberInfo[] = [...cuedMemberInfoArr];
                 //// Maximum 13 members are allowed to cued at one time
                 if (13 < cuedMemberInfoArr.length) {
                     arr = arr.slice(0, 13);
@@ -344,8 +348,7 @@ export default async function UpdateOrDeleteCreationById(req: NextApiRequest, re
                                 Nickname: getNicknameFromToken(token),
                                 PostTitle: title,
                                 CommentBrief: '', // [!] comment brief is not supplied in this case
-                                CreatedTimeBySecond: Math.floor(new Date().getTime() / 1000),
-                                IsActive: true
+                                CreatedTimeBySecond: getTimeBySecond(),
                             }, 'Replace');
 
                             //// Update statistics.cue (INotificationStatistics) (of cued member) in [C] notificationStatistics ////

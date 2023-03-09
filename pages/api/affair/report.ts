@@ -13,7 +13,7 @@ import { loginProviderIdMapping } from '../auth/[...nextauth]';
 import { logWithDate, response405, response500 } from '../../../lib/utils/general';
 import { verifyEnvironmentVariable, verifyRecaptchaResponse } from '../../../lib/utils/verify';
 import { IMemberComprehensive } from '../../../lib/interfaces/member';
-import { getRandomHexStr } from '../../../lib/utils/create';
+import { getRandomHexStr, getTimeBySecond } from '../../../lib/utils/create';
 import { ILoginCredentials, IVerifyEmailAddressCredentials } from '../../../lib/interfaces/credentials';
 
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
@@ -147,7 +147,7 @@ export default async function ReportMisbehaviour(req: NextApiRequest, res: NextA
             partitionKey: emailAddressHash,
             rowKey: 'VerifyEmailAddress',
             VerifyEmailAddressToken: verifyEmailAddressToken,
-            CreatedTimeBySecond: Math.floor(new Date().getTime() / 1000)
+            CreatedTimeBySecond: getTimeBySecond()
         }, 'Replace');
         await atlasDbClient.close();
 

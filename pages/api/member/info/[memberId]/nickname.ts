@@ -106,7 +106,7 @@ export default async function UpdateNickname(req: NextApiRequest, res: NextApiRe
         const memberComprehensiveUpdateResult = await memberComprehensiveCollectionClient.updateOne({ memberId }, {
             $set: {
                 nickname: alternativeName,
-                lastNicknameUpdatedTimeBySecond: Math.floor(new Date().getTime() / 1000)
+                lastNicknameUpdatedTimeBySecond: getTimeBySecond()
             }
         })
 

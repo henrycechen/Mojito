@@ -20,14 +20,14 @@ const App = ({ Component, pageProps: { session, ...pageProps } }: AppProps<{ ses
   // Due to _app.tsx does not have the access to request.cookie
   // The flashing issue can not be fixed on dark mode (os/user-choice)
   const [mode, setMode] = React.useState<PaletteMode>('light');
-  // Step #1 get user choice on color mode
+  // #1 get user choice on color mode
   let preferredDarkMode: boolean = Cookie.get('PreferredColorMode') === 'dark';
   React.useEffect(() => {
     if (preferredDarkMode) {
       setMode('dark');
     }
   });
-  // Step #2 get OS color mode
+  // #2 get OS color mode
   const systemOnDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
   React.useEffect(() => {
     // Only turn light on user preferred light (or undefined) and OS is on light as well
@@ -35,7 +35,7 @@ const App = ({ Component, pageProps: { session, ...pageProps } }: AppProps<{ ses
       setMode('light');
     }
   }, [systemOnDarkMode]);
-  // Step #3 create theme
+  // #3 create theme
   const theme = React.useMemo(() => {
     return createTheme(getDesignTokens(mode))
   }, [mode]);

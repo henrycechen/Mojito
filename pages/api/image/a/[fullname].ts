@@ -22,13 +22,6 @@ export default async function GetImageByFullname(req: NextApiRequest, res: NextA
         return;
     }
 
-    // FIXME: test
-    const resp = await fetch(`https://parkers-images.bauersecure.com/wp-images/14418/cut-out/930x620/mazda-mx5-review-cutout-01.jpg`)
-    // res.setHeader('Content-Type', `image/png`);
-    res.setHeader('Content-Type', `image/jpg`);
-    res.setHeader('Content-Disposition', 'inline');
-    res.send(Buffer.from(await resp.arrayBuffer()))
-    return;
 
     const { fullname } = req.query;
     const contianerClient = AzureBlobClient('image');

@@ -9,6 +9,7 @@ export interface INoticeInfo {
     Category: string;
     InitiateId: string; // initiate member id
     Nickname: string; // initiate member nickname
+    // PostId: string; // [!] deprecated
     PostTitle: string;
     CommentBrief: string;
     CreatedTimeBySecond: number;

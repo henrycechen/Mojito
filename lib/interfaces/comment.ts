@@ -1,4 +1,4 @@
-import { IConciseMemberInfo } from './member';
+import { IMemberInfo } from './member';
 /** Interfaces for Comment Class v0.1.1
  * 
  * Last update 16/02/2023
@@ -15,7 +15,7 @@ export interface ICommentComprehensive {
 
     createdTimeBySecond: number; // created time of this document
     content: string;
-    cuedMemberInfoArr: IConciseMemberInfo[];
+    cuedMemberInfoArr: IMemberInfo[];
 
     //// management ////
     status: number;
@@ -39,7 +39,7 @@ export interface ICommentComprehensive {
 export interface IEditedCommentComprehensive {
     editedTimeBySecond: number;
     contentBeforeEdit: string;
-    cuedMemberInfoArrBeforeEdit: IConciseMemberInfo[];
+    cuedMemberInfoArrBeforeEdit: IMemberInfo[];
     totalLikedCountBeforeEdit: number;
     totalDislikedCountBeforeEdit: number;
     totalSubcommentCountBeforeEdit?: number;
@@ -55,7 +55,7 @@ export interface IRestrictedCommentComprehensive {
 
     createdTimeBySecond: number; // created time of this document
     content: string;
-    cuedMemberInfoArr: IConciseMemberInfo[];
+    cuedMemberInfoArr: IMemberInfo[];
 
     //// management ////
     status: number;

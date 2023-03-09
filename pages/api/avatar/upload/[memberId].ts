@@ -7,21 +7,22 @@ import busboy from 'busboy';
 import Jimp from 'jimp';
 
 import AzureBlobClient from '../../../../modules/AzureBlobClient';
+import AtlasDatabaseClient from '../../../../modules/AtlasDatabaseClient';
 
 import { logWithDate, response405, response500 } from '../../../../lib/utils/general';
 import { verifyId } from '../../../../lib/utils/verify';
-import AtlasDatabaseClient from '../../../../modules/AtlasDatabaseClient';
 import { IMemberComprehensive } from '../../../../lib/interfaces/member';
+import { getTimeBySecond } from '../../../../lib/utils/create';
 
 export const config = {
     api: {
         bodyParser: false
     }
-}
+};
 
 const fname = AvatarImageUpload.name;
 
-/** AvatarImageUpload v0.1.2
+/** AvatarImageUpload v0.1.2 FIXME: need to move the image processing to the client-side
  * 
  * Last update: 15/02/2023
  * 
@@ -81,8 +82,8 @@ export default async function AvatarImageUpload(req: NextApiRequest, res: NextAp
 
         //// Update member info ////
         const memberComprehensiveUpdateResult = await memberComprehensiveCollectionClient.updateOne({ memberId }, {
-            $set: { lastAvatarImageUpdatedTimeBySecond: Math.floor(new Date().getTime() / 1000) }
-        })
+            $set: { lastAvatarImageUpdatedTimeBySecond: getTimeBySecond() }
+        });
         if (!memberComprehensiveUpdateResult.acknowledged) {
             logWithDate(`Failed to update lastAvatarImageUpdatedTimeBySecond (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`, fname);
         }
@@ -112,7 +113,7 @@ const uploadAsync = (req: NextApiRequest, memberId: string) => {
     return new Promise<void>((resolve, reject) => {
         let imageFullName = `${memberId}.png`;
         const bb = busboy({ headers: req.headers });
-        const contianerClient = AzureBlobClient('avatar');
+        const contianerClient = AzureBlobClient('avatar'); // [!] "avatar"
         bb.on('file', async (name, file, info) => {
             let arrBuf = Array<any>();
             file
@@ -121,9 +122,11 @@ const uploadAsync = (req: NextApiRequest, memberId: string) => {
                 })
                 .on('close', async () => {
                     const blockClient = contianerClient.getBlockBlobClient(imageFullName);
-                    const initialBuf = Buffer.concat(arrBuf)
-                    if (initialBuf.byteLength > 2097152) {
-                        reject(new Error(`Attempt to upload avatar image file that exceeds size limit.`))
+                    const initialBuf = Buffer.concat(arrBuf);
+                    let requireCompression = false;
+                    if (initialBuf.byteLength > 102400) { // 100 KB
+                        // reject(new Error(`Attempt to upload avatar image file that exceeds size limit.`));
+                        requireCompression = true;
                     }
                     try {
                         let size, resize, cropX, cropY; // v0.1.2 Add sizing function
@@ -140,13 +143,19 @@ const uploadAsync = (req: NextApiRequest, memberId: string) => {
                         }
                         if (50 > size) {
                             resize = 50;
-                        } else if (500 < size) {
-                            resize = 500;
+                        } else if (400 < size) {
+                            resize = 400;
                         } else {
-                            resize = size
+                            resize = size;
                         }
 
+                        // Corp the image
                         image.crop(cropX, cropY, size, size).resize(resize, resize);
+
+                        if (requireCompression) {
+                            image.quality(80);
+                        }
+
                         const convertedBuf = await image.getBufferAsync(Jimp.MIME_PNG);
 
                         if (await blockClient.uploadData(convertedBuf)) {
@@ -165,8 +174,8 @@ const uploadAsync = (req: NextApiRequest, memberId: string) => {
         bb.on('error', (e) => {
             reject(e);
         });
-        
+
         //// Read file from request ////
         req.pipe(bb);
-    })
+    });
 };

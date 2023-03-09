@@ -36,14 +36,14 @@ import { IConcisePostComprehensive } from '../../lib/interfaces/post';
 import { IRestrictedCommentComprehensive } from '../../lib/interfaces/comment';
 import { fakeChannel, } from '../../lib/utils/for/channel';
 import { fakeRestrictedPostComprehensive, provideCoverImageUrl, provideImageUrl, } from '../../lib/utils/for/post';
-import { getRandomHexStr, } from '../../lib/utils/create';
+import { getRandomHexStr, getTimeBySecond, } from '../../lib/utils/create';
 
 import { logWithDate, restoreFromLocalStorage, timeToString, updateLocalStorage } from '../../lib/utils/general';
 import { getNicknameBrief, provideCuedMemberInfoArray, provideMemberInfoPageUrl, } from '../../lib/utils/for/member';
 import { verifyId, verifyUrl } from '../../lib/utils/verify';
 import { LangConfigs } from '../../lib/types';
 
-import { IConciseMemberInfo, IConciseMemberStatistics } from '../../lib/interfaces/member';
+import { IMemberInfo, IConciseMemberStatistics } from '../../lib/interfaces/member';
 import { IRestrictedPostComprehensive } from '../../lib/interfaces/post';
 import { IChannelInfo } from '../../lib/interfaces/channel';
 
@@ -70,6 +70,7 @@ import ListItemIcon from '@mui/material/ListItemIcon';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import BlockIcon from '@mui/icons-material/Block';
 import FlagIcon from '@mui/icons-material/Flag';
+import AlternateEmailIcon from '@mui/icons-material/AlternateEmail';
 
 import { fakeConciseMemberInfo, fakeConciseMemberStatistics, provideAvatarImageUrl } from '../../lib/utils/for/member';
 
@@ -80,7 +81,7 @@ const restorePreferenceStatesFromCache = restoreFromLocalStorage(storageName0);
 type TPostPageProps = {
     restrictedPostComprehensive_ss: IRestrictedPostComprehensive;
     channelInfo_ss: IChannelInfo;
-    authorInfo_ss: IConciseMemberInfo;
+    authorInfo_ss: IMemberInfo;
     redirect404: boolean;
     redirect500: boolean;
 };
@@ -291,7 +292,6 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
 
     const { data: session, status } = useSession();
 
-
     //////////////////////////////////////// INFO & STATISTICS ////////////////////////////////////////
     let viewerId = '';
     React.useEffect(() => {
@@ -396,8 +396,8 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
     type TViewerInfoStates = {
         nickname: string;
         allowCommenting: boolean;
-        followedMemberInfoArr: IConciseMemberInfo[],
-        blockedMemberInfoArr: IConciseMemberInfo[],
+        followedMemberInfoArr: IMemberInfo[],
+        blockedMemberInfoArr: IMemberInfo[],
     };
 
     //////// STATES - viewer info ////////
@@ -421,7 +421,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
                 signOut();
             }
             const followResp = await fetch(`/api/member/followedbyme/${viewerId}`);
-            let arr0: IConciseMemberInfo[] = [];
+            let arr0: IMemberInfo[] = [];
             if (200 === followResp.status) {
                 const _arr = await followResp.json();
                 if (Array.isArray(_arr)) {
@@ -429,7 +429,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
                 }
             }
             const blockResp = await fetch(`/api/member/blockedbyme/${viewerId}`);
-            let arr1: IConciseMemberInfo[] = [];
+            let arr1: IMemberInfo[] = [];
             if (200 === blockResp.status) {
                 const _arr = await followResp.json();
                 if (Array.isArray(_arr)) {
@@ -580,7 +580,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
         memberId: string;
         nickname: string;
         content: string;
-        cuedMemberInfoDict: { [memberId: string]: IConciseMemberInfo; };
+        cuedMemberInfoDict: { [memberId: string]: IMemberInfo; };
         alertContent: string;
         displayAlert: boolean;
         displayCueHelper: boolean;
@@ -632,7 +632,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
         }
     };
 
-    const handleCue = (memberInfo: IConciseMemberInfo) => (event: React.MouseEvent<HTMLButtonElement>) => {
+    const handleCue = (memberInfo: IMemberInfo) => (event: React.MouseEvent<HTMLButtonElement>) => {
         if (editorStates.cuedMemberInfoDict.hasOwnProperty(memberInfo.memberId)) {
             const update = { ...editorStates.cuedMemberInfoDict };
             delete update[memberInfo.memberId];
@@ -682,7 +682,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
             const { parentId, content, cuedMemberInfoDict } = editorStates;
             try {
                 const commentId: string = await resp.text();
-                const timeBySecond = Math.floor(new Date().getTime() / 1000);
+                const timeBySecond = getTimeBySecond();
                 const update: IRestrictedCommentComprehensiveWithControl = {
                     commentId,
                     postId,
@@ -919,7 +919,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
 
     //////////////////////////////////////// FUNCTIONS ////////////////////////////////////////
 
-    const makeParagraph = (paragraph: string, cuedMemberInfoArr: IConciseMemberInfo[]) => {
+    const makeParagraph = (paragraph: string, cuedMemberInfoArr: IMemberInfo[]) => {
         // [!] empty cued array
         if (0 === cuedMemberInfoArr.length) {
             return (
@@ -1074,9 +1074,9 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
                                 </Box>}
 
                                 {/* topics (conditional rendering) */}
-                                {0 !== postComprehensive_ss.topicIdsArr?.length && <Box mt={{ xs: 2, sm: 2 }}>
+                                {0 !== postComprehensive_ss.topicInfoArr?.length && <Box mt={{ xs: 2, sm: 2 }}>
                                     <Typography variant={'body1'}>
-                                        {postComprehensive_ss.topicIdsArr.map(topicId => makeTopic(topicId))}
+                                        {postComprehensive_ss.topicInfoArr.map(topicId => makeTopic(topicId))}
                                     </Typography>
                                 </Box>}
 
@@ -1390,7 +1390,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
                     <Grid container mt={2} mb={1}>
                         <Grid item>
                             <IconButton onClick={handleCueHelperOpenAndClose} disabled={editorStates.disableEditor}>
-                                <Typography variant='body1' sx={{ minWidth: 24 }}>@</Typography>
+                                <AlternateEmailIcon/>
                             </IconButton>
                         </Grid>
                         <Grid item flexGrow={1}></Grid>

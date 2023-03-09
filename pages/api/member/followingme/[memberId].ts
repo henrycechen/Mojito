@@ -8,7 +8,7 @@ import { logWithDate, response405, response500 } from '../../../../lib/utils/gen
 import { verifyId } from '../../../../lib/utils/verify';
 import AzureTableClient from '../../../../modules/AzureTableClient';
 import { IMemberMemberMapping } from '../../../../lib/interfaces/mapping';
-import { IConciseMemberInfo, IMemberComprehensive } from '../../../../lib/interfaces/member';
+import { IMemberInfo, IMemberComprehensive } from '../../../../lib/interfaces/member';
 
 const fname = GetMembersFollowingMe.name;
 
@@ -82,7 +82,7 @@ export default async function GetMembersFollowingMe(req: NextApiRequest, res: Ne
         const followingMemberMappingQuery = followingMemberMappingTableClient.listEntities<IMemberMemberMapping>({ queryOptions: { filter: `PartitionKey eq '${memberId}' and IsActive eq true` } });
         //// [!] attemp to reterieve entity makes the probability of causing RestError ////
         let followingMemberMappingQueryResult = await followingMemberMappingQuery.next();
-        const arr: IConciseMemberInfo[] = [];
+        const arr: IMemberInfo[] = [];
         while (!followingMemberMappingQueryResult.done) {
             arr.push({
                 memberId: followingMemberMappingQueryResult.value.rowKey,

@@ -9,6 +9,7 @@ import { logWithDate, response405, response500 } from '../../../../lib/utils/gen
 import { verifyEmailAddress, verifyEnvironmentVariable, verifyRecaptchaResponse } from '../../../../lib/utils/verify';
 import { ILoginJournal, IMemberComprehensive, IMemberStatistics } from '../../../../lib/interfaces/member';
 import { INotificationStatistics } from '../../../../lib/interfaces/notification';
+import { getTimeBySecond } from '../../../../lib/utils/create';
 
 
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
@@ -43,7 +44,7 @@ export default async function VerifyEmailAddressToken(req: NextApiRequest, res: 
     const atlasDbClient = AtlasDatabaseClient();
     try {
         const { recaptchaResponse } = req.query;
-        // Step #1 verify if requested by human
+        // #1 verify if requested by human
         const { status: recaptchaStatus, message } = await verifyRecaptchaResponse(recaptchaServerSecret, recaptchaResponse);
         if (200 !== recaptchaStatus) {
             if (403 === recaptchaStatus) {
@@ -55,13 +56,13 @@ export default async function VerifyEmailAddressToken(req: NextApiRequest, res: 
                 return;
             }
         }
-        // Step #2 verify request info
+        // #2 verify request info
         const { requestInfo } = req.query;
         if ('string' !== typeof requestInfo || '' === requestInfo) {
             res.status(403).send('Invalid request info');
             return;
         }
-        // Step #3 decode base64 string to plain string
+        // #3 decode base64 string to plain string
         const requestInfoStr = Buffer.from(requestInfo, 'base64').toString();
         if ('' === requestInfoStr) {
             res.status(403).send('Invalid request info');
@@ -78,7 +79,7 @@ export default async function VerifyEmailAddressToken(req: NextApiRequest, res: 
             return;
         }
         const emailAddressHash = CryptoJS.SHA1(emailAddress).toString();
-        // Step #4.1 look up verify email address credentials record (by email address hash) in [RL] Credentials
+        // #4.1 look up verify email address credentials record (by email address hash) in [RL] Credentials
         const credentialsTableClient = AzureTableClient('Credentials');
         const emailVerificationCredentialsQuery = credentialsTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${emailAddressHash}' and RowKey eq 'VerifyEmailAddress'` } });
         //// [!] attemp to reterieve entity makes the probability of causing RestError ////
@@ -88,12 +89,12 @@ export default async function VerifyEmailAddressToken(req: NextApiRequest, res: 
             return;
         }
         const { VerifyEmailAddressToken: verifyEmailAddressTokenReference } = emailVerificationCredentialsQueryResult.value;
-        // Step #4.2 match tokens
+        // #4.2 match tokens
         if (verifyEmailAddressTokenReference !== verifyEmailAddressToken) {
             res.status(404).send('Email verification tokens not match');
             return;
         }
-        // Step #4.3 look up login credentials record in [RL] Credentials
+        // #4.3 look up login credentials record in [RL] Credentials
         const loginCredentialsQuery = credentialsTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${emailAddressHash}' and RowKey eq '${providerId}'` } });
         const loginCredentialsQueryResult = await loginCredentialsQuery.next();
         if (!loginCredentialsQueryResult.value) {
@@ -101,7 +102,7 @@ export default async function VerifyEmailAddressToken(req: NextApiRequest, res: 
             return;
         }
         const { MemberId: memberId } = loginCredentialsQueryResult.value;
-        // Step #4.4 look up member status (IMemberComprehensive) in [C] memberComprehensive
+        // #4.4 look up member status (IMemberComprehensive) in [C] memberComprehensive
         await atlasDbClient.connect();
         const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
         const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne<IMemberComprehensive>({ memberId, providerId });
@@ -114,17 +115,17 @@ export default async function VerifyEmailAddressToken(req: NextApiRequest, res: 
             //// [!] member status (property of IMemberComprehensive) not found or status (code) error ////
             throw new Error(`Member status (of IMemberComprehensive, member id: ${memberId}) error in [C] memberComprehensive`);
         }
-        // Step #4.5 verify member status
+        // #4.5 verify member status
         if (0 !== status) {
             res.status(409).send('Request for activating member cannot be fulfilled');
             await atlasDbClient.close();
             return;
         }
-        // Step #5 update status code (IMemberComprehensive) in [C] memberComprehensive
+        // #5 update status code (IMemberComprehensive) in [C] memberComprehensive
         const memberComprehensiveCollectionUpdateResult = await memberComprehensiveCollectionClient.updateOne({ memberId, providerId }, {
             $set: {
                 //// info ////
-                verifiedTimeBySecond: Math.floor(new Date().getTime() / 1000),
+                verifiedTimeBySecond: getTimeBySecond(),
                 gender: -1, // "keep as secret"
                 //// management ////
                 status: 200,
@@ -135,7 +136,7 @@ export default async function VerifyEmailAddressToken(req: NextApiRequest, res: 
         if (!memberComprehensiveCollectionUpdateResult.acknowledged) {
             throw new Error(`Attempt to update document (IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
         }
-        // Step #6 insert a new document (IMemberStatistics) in [C] memberStatistics
+        // #6 insert a new document (IMemberStatistics) in [C] memberStatistics
         const memberStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IMemberStatistics>('member');
         const memberStatisticsCollectionInsertResult = await memberStatisticsCollectionClient.insertOne({
             memberId,
@@ -151,6 +152,7 @@ export default async function VerifyEmailAddressToken(req: NextApiRequest, res: 
             totalCreationUndoDislikedCount: 0,
             totalCreationSavedCount: 0, // info page required
             totalCreationUndoSavedCount: 0,
+            totalAffairOfCreationCount: 0,
 
             // attitude
             totalLikeCount: 0,
@@ -166,6 +168,7 @@ export default async function VerifyEmailAddressToken(req: NextApiRequest, res: 
             totalCommentUndoLikedCount: 0,
             totalCommentDislikedCount: 0,
             totalCommentUndoDislikedCount: 0,
+            totalAffairOfCommentCount: 0,
 
             // post
             totalSavedCount: 0,
@@ -186,7 +189,7 @@ export default async function VerifyEmailAddressToken(req: NextApiRequest, res: 
         if (!memberStatisticsCollectionInsertResult.acknowledged) {
             logWithDate(`Attempt to insert document (IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`, fname); // v0.1.3
         }
-        // Step #7 insert a new document (INotificationStatistics) in [C] notificationStatistics
+        // #7 insert a new document (INotificationStatistics) in [C] notificationStatistics
         const notificationStatisticsCollectionClient = atlasDbClient.db('statistics').collection<INotificationStatistics>('notification');
         const notificationCollectionInsertResult = await notificationStatisticsCollectionClient.insertOne({
             memberId,
@@ -201,7 +204,7 @@ export default async function VerifyEmailAddressToken(req: NextApiRequest, res: 
             logWithDate(`Attempt to insert document (of INotificationStatistics, member id: ${memberId}) in [C] notificationStatistics`, fname); // v0.1.3
         }
         res.status(200).send('Email address verified');
-        // Step #8 write journal (ILoginJournal) in [C] loginJournal
+        // #8 write journal (ILoginJournal) in [C] loginJournal
         const loginJournalCollectionClient = atlasDbClient.db('journal').collection<ILoginJournal>('login');
         await loginJournalCollectionClient.insertOne({
             memberId,
@@ -214,7 +217,7 @@ export default async function VerifyEmailAddressToken(req: NextApiRequest, res: 
     } catch (e: any) {
         let msg: string;
         if (e instanceof SyntaxError) {
-            res.status(400).send('Improperly normalized request info');
+            res.status(400).send('Attempt to parse stringified request info');
             return;
         } else if (e instanceof TypeError) {
             msg = 'Attempt to decode recaptcha verification response.';

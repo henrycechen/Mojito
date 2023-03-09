@@ -63,7 +63,7 @@ import { useRouter } from 'next/router';
 
 import Navbar from '../../ui/Navbar';
 
-import { IConciseMemberInfo, IConciseMemberStatistics, IRestrictedMemberComprehensive } from '../../lib/interfaces/member';
+import { IMemberInfo, IConciseMemberStatistics, IRestrictedMemberComprehensive } from '../../lib/interfaces/member';
 import { IConcisePostComprehensive } from '../../lib/interfaces/post';
 import { INoticeInfoWithMemberInfo } from '../../lib/interfaces/notification';
 import { IChannelInfoStates, IChannelInfoDictionary } from '../../lib/interfaces/channel';
@@ -276,18 +276,12 @@ theme = responsiveFontSizes(theme);
 const Message = () => {
 
     const router = useRouter();
-
-    const { data: session, status } = useSession();
+    const { data: session } = useSession({ required: true, onUnauthenticated() { signIn(); } });
 
     React.useEffect(() => {
 
-        if ('unauthenticated' === status) {
-            signIn();
-        }
-        if ('authenticated' === status) {
-            updateNoticeArrayAndStatistics();
-            restorePreferenceStatesFromCache(setPreferenceStates);
-        }
+        updateNoticeArrayAndStatistics();
+        restorePreferenceStatesFromCache(setPreferenceStates);
     }, [session]);
 
     //////// STATES - preference ////////

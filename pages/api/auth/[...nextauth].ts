@@ -18,7 +18,7 @@ import AzureBlobClient from '../../../modules/AzureBlobClient';
 import Jimp from 'jimp';
 import { logWithDate } from '../../../lib/utils/general';
 import { ILoginJournal, IMemberComprehensive, IMinimumMemberComprehensive } from '../../../lib/interfaces/member';
-import { getRandomHexStr, getRandomIdStr } from '../../../lib/utils/create';
+import { getRandomHexStr, getRandomIdStr, getTimeBySecond } from '../../../lib/utils/create';
 import { ILoginCredentials, IVerifyEmailAddressCredentials } from '../../../lib/interfaces/credentials';
 import { verifyEnvironmentVariable, verifyRecaptchaResponse } from '../../../lib/utils/verify';
 
@@ -111,9 +111,9 @@ export default NextAuth({
             //// [1] Login with Mojito member system ////
             if ('mojito' === provider) {
                 try {
-                    // Step #1 prepare member id
+                    // #1 prepare member id
                     const { id: memberId, email: emailAddress } = user;
-                    // Step #2.1 look up member status (IMemberComprehensive) in [C] memberComprehensive
+                    // #2.1 look up member status (IMemberComprehensive) in [C] memberComprehensive
                     await atlasDbClient.connect();
                     const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
                     const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne<IMemberComprehensive>({ memberId, providerId });
@@ -126,7 +126,7 @@ export default NextAuth({
                         //// [!] member status not found or status code error ////
                         return `/signin?error=DefectiveMember&providerId=${providerId}`;
                     }
-                    // Step #2.2 verify member status
+                    // #2.2 verify member status
                     if (200 > status) {
                         if (0 > status) {
                             //// [!] member suspended or deactivated ////
@@ -139,7 +139,7 @@ export default NextAuth({
                         //// [!] member status code error ////
                         return `/signin?error=DefectiveMember&providerId=${providerId}`;
                     }
-                    // Step #3 write journal (ILoginJournal) in [C] loginJournal
+                    // #3 write journal (ILoginJournal) in [C] loginJournal
                     const loginJournalCollectionClient = atlasDbClient.db('journal').collection<ILoginJournal>('login');
                     await loginJournalCollectionClient.insertOne({
                         memberId,
@@ -150,7 +150,7 @@ export default NextAuth({
                     });
                     await atlasDbClient.close();
                     // FIXME: update: 14/02/2023 exclude name & image from the JWT, manually retrieve nickname & avatar image every time
-                    // Step #4 complete session (jwt) info 
+                    // #4 complete session (jwt) info 
                     // const { nickname: name, avatarImageUrl: image } = memberComprehensiveQueryResult;
                     // user.name = name;
                     // user.image = image;
@@ -176,33 +176,33 @@ export default NextAuth({
                     return `/signin?error=InappropriateEmailAddress&providerId=${providerId}`;
                 }
                 const emailAddressHash = CryptoJS.SHA1(emailAddress).toString();
-                // Step #1 look up email address hash in [RL] Credentials
+                // #1 look up email address hash in [RL] Credentials
                 const credentialsTableClient = AzureTableClient('Credentials');
                 const loginCredentialsQuery = credentialsTableClient.listEntities<ILoginCredentials>({ queryOptions: { filter: `PartitionKey eq '${emailAddressHash}' and RowKey eq '${providerId}'` } });
                 //// [!] attemp to reterieve entity makes the probability of causing RestError ////
                 const loginCredentialsQueryResult = await loginCredentialsQuery.next();
                 if (loginCredentialsQueryResult.done) {
                     //// (Situation A) [!] login credential record not found deemed unregistered ////
-                    // Step #A2.1 create a new member id
+                    // #A2.1 create a new member id
                     const memberId = getRandomIdStr(true);
-                    // Step #A2.2 upsert entity (ILoginCredentials) in [RL] Credentials
+                    // #A2.2 upsert entity (ILoginCredentials) in [RL] Credentials
                     credentialsTableClient.upsertEntity<ILoginCredentials>({
                         partitionKey: emailAddressHash,
                         rowKey: providerId,
                         MemberId: memberId,
                         PasswordHash: '',
-                        LastUpdatedTimeBySecond: Math.floor(new Date().getTime() / 1000)
+                        LastUpdatedTimeBySecond: getTimeBySecond()
                     }, 'Replace');
-                    // Step #A2.3 create a new email address verification token
+                    // #A2.3 create a new email address verification token
                     const verifyEmailAddressToken = getRandomHexStr(true);
-                    // Step #A2.4 upsert entity (IVerifyEmailAddressCredentials) in [RL] Credentials
+                    // #A2.4 upsert entity (IVerifyEmailAddressCredentials) in [RL] Credentials
                     credentialsTableClient.upsertEntity<IVerifyEmailAddressCredentials>({
                         partitionKey: emailAddressHash,
                         rowKey: 'VerifyEmailAddress',
                         VerifyEmailAddressToken: verifyEmailAddressToken,
-                        CreatedTimeBySecond: Math.floor(new Date().getTime() / 1000)
+                        CreatedTimeBySecond: getTimeBySecond()
                     }, 'Replace');
-                    // Step #A2.5 (cond.) retrieve avatar image
+                    // #A2.5 (cond.) retrieve avatar image
                     if ('string' === typeof avatarImageUrl) {
                         try {
                             const resp = await fetch(avatarImageUrl);
@@ -226,12 +226,12 @@ export default NextAuth({
                         }
                     }
                     await atlasDbClient.connect();
-                    // Step #A2.6 create document (MemberComprehensive) in [C] memberComprehensive
+                    // #A2.6 create document (MemberComprehensive) in [C] memberComprehensive
                     const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMinimumMemberComprehensive>('member');
                     let memberComprehensiveCollectionInsertResult = await memberComprehensiveCollectionClient.insertOne({
                         memberId,
                         providerId,
-                        registeredTimeBySecond: Math.floor(new Date().getTime() / 1000),
+                        registeredTimeBySecond: getTimeBySecond(),
                         emailAddress,
                         nickname: nickname ?? '',
                         status: 0, // email address not verified
@@ -242,7 +242,7 @@ export default NextAuth({
                         logWithDate(`Attempt to insert document (MemberComprehensive) for registering with ${providerId}`, `SignIn Callback`);
                         return `/signin?error=ThirdPartyProviderSignin&providerId=${providerId}`;
                     }
-                    // Step #A2.7 write journal in [C] loginJournal
+                    // #A2.7 write journal in [C] loginJournal
                     const loginJournalCollectionClient = atlasDbClient.db('journal').collection<ILoginJournal>('login');
                     await loginJournalCollectionClient.insertOne({
                         memberId,
@@ -252,7 +252,7 @@ export default NextAuth({
                         message: 'Registered.'
                     });
                     await atlasDbClient.close();
-                    // Step #A3 send email
+                    // #A3 send email
                     const info: TVerifyEmailAddressRequestInfo = { emailAddress, providerId, verifyEmailAddressToken };
                     const emailMessage: TEmailMessage = {
                         sender: '<donotreply@mojito.co.nz>',
@@ -270,7 +270,7 @@ export default NextAuth({
                 } else {
                     //// (Situation B) [!] login credential record is found ////
                     const { MemberId: memberId } = loginCredentialsQueryResult.value;
-                    // Step #B2.1 member status (IMemberComprehensive) in [C] memberComprehensive
+                    // #B2.1 member status (IMemberComprehensive) in [C] memberComprehensive
                     await atlasDbClient.connect();
                     const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
                     const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne<IMemberComprehensive>({ memberId, providerId });
@@ -283,7 +283,7 @@ export default NextAuth({
                         //// [!] member status (property of IMemberComprehensive) not found or status (code) error ////
                         return `/signin?error=DefectiveMember&providerId=${providerId}`;
                     }
-                    // Step #2.2 verify member status
+                    // #2.2 verify member status
                     if (200 > status) {
                         if (0 > status) {
                             //// [!] member suspended or deactivated ////
@@ -300,7 +300,7 @@ export default NextAuth({
                     // const { nickname: name, avatarImageUrl: image } = memberComprehensiveQueryResult;
                     // user.name = name;
                     // user.image = image;
-                    // Step #4 write journal (ILoginJournal) in [C] loginJournal
+                    // #4 write journal (ILoginJournal) in [C] loginJournal
                     const loginJournalCollectionClient = atlasDbClient.db('journal').collection<ILoginJournal>('login');
                     await loginJournalCollectionClient.insertOne({
                         memberId,
@@ -310,7 +310,7 @@ export default NextAuth({
                         message: 'Login.'
                     });
                     await atlasDbClient.close();
-                    // Step #3 complete session (jwt) info
+                    // #3 complete session (jwt) info
                     user.id = memberId;
                     return true;
                 }
@@ -343,13 +343,13 @@ async function verifyLoginCredentials(credentials: TLoginRequestInfo): Promise<I
     }
     try {
         const { recaptchaResponse } = credentials;
-        // Step #1 verify if requested by human
+        // #1 verify if requested by human
         const { status } = await verifyRecaptchaResponse(recaptchaServerSecret, recaptchaResponse);
         if (200 !== status) {
             return null;
         }
         const { emailAddress, password } = credentials;
-        // Step #2 look up email address hash-sh1 in [RL] Credentials
+        // #2 look up email address hash-sh1 in [RL] Credentials
         const credentialsTableClient = AzureTableClient('Credentials');
         const loginCredentialsQuery = credentialsTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${CryptoJS.SHA1(emailAddress).toString()}' and RowKey eq 'MojitoMemberSystem'` } });
         //// [!] attemp to reterieve entity makes the probability of causing RestError ////
@@ -359,7 +359,7 @@ async function verifyLoginCredentials(credentials: TLoginRequestInfo): Promise<I
             return null;
         }
         const { MemberId: memberId, PasswordHash: passwordHashReference } = loginCredentialsQueryResult.value;
-        // Step #4 match the password hashes
+        // #4 match the password hashes
         const passwordHash = CryptoJS.SHA256(password + salt).toString();
         if (passwordHashReference !== passwordHash) {
             //// [!] password hashes not match ///

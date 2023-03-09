@@ -63,7 +63,7 @@ import { useRouter } from 'next/router';
 
 import Navbar from '../../../ui/Navbar';
 
-import { IConciseMemberInfo, IConciseMemberStatistics, IRestrictedMemberComprehensive } from '../../../lib/interfaces/member';
+import { IMemberInfo, IConciseMemberStatistics, IRestrictedMemberComprehensive } from '../../../lib/interfaces/member';
 import { IConcisePostComprehensive } from '../../../lib/interfaces/post';
 import { INoticeInfoWithMemberInfo } from '../../../lib/interfaces/notification';
 import { IChannelInfoStates, IChannelInfoDictionary } from '../../../lib/interfaces/channel';
@@ -854,11 +854,11 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
     const handleSelectPostCategory = (categoryId: 'mycreations' | 'savedposts' | 'browsinghistory') => (event: React.MouseEvent<HTMLButtonElement> | React.SyntheticEvent) => {
         let states: TPostsLayoutStates = { ...postLayoutStates, selectedCategory: categoryId };
-        // Step #1 update post layout states
+        // #1 update post layout states
         setPostLayoutStates(states);
-        // Step #2 update post layout states cache
+        // #2 update post layout states cache
         updatePostsLayoutStatesCache(states);
-        // Step #3 reset helper
+        // #3 reset helper
         setBrowsingHelper({ ...browsingHelper, memorizeViewPortPositionY: undefined });
     };
 
@@ -902,21 +902,21 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
         let states: TPostsLayoutStates = { ...postLayoutStates };
         states.selectedChannelId = channelId;
         states.memorizeChannelBarPositionX = document.getElementById('channel-bar')?.scrollLeft;
-        // Step #1 update post layout states
+        // #1 update post layout states
         setPostLayoutStates(states);
-        // Step #2 update post layout states cache
+        // #2 update post layout states cache
         updatePostsLayoutStatesCache(states);
-        // Step #3 reset helper
+        // #3 reset helper
         setBrowsingHelper({ ...browsingHelper, memorizeViewPortPositionY: undefined });
     };
 
     const handleSwitchChange = () => {
         let states: TPostsLayoutStates = { ...postLayoutStates, selectedHotPosts: !postLayoutStates.selectedHotPosts };
-        // Step #1 update post layout states
+        // #1 update post layout states
         setPostLayoutStates(states);
-        // Step #2 update post layout states cache
+        // #2 update post layout states cache
         updatePostsLayoutStatesCache(states);
-        // Step #3 reset helper
+        // #3 reset helper
         setBrowsingHelper({ ...browsingHelper, memorizeViewPortPositionY: undefined });
     };
 
@@ -952,7 +952,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
     React.useEffect(() => {
         if (processStates.selectedLayout === 'postlayout' && postLayoutStates.wasRedirected) {
             const postId = postLayoutStates.memorizeLastViewedPostId;
-            // Step #1 restore browsing position
+            // #1 restore browsing position
             if (!postId) {
                 return;
             } else if (600 > window.innerWidth) { // 0 ~ 599
@@ -960,12 +960,12 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
             } else { // 600 ~ ∞
                 setBrowsingHelper({ ...browsingHelper, memorizeViewPortPositionY: postLayoutStates.memorizeViewPortPositionY });
             }
-            // Step #2 update process states and cache
+            // #2 update process states and cache
             let states1: TMemberPageProcessStates = { ...processStates };
             setProcessStates({ ...states1 });
             updateProcessStatesCache(states1);
             let states2: TPostsLayoutStates = { ...postLayoutStates, memorizeLastViewedPostId: undefined, memorizeViewPortPositionY: undefined, wasRedirected: false };
-            // Step #3 update post layout states and cache
+            // #3 update post layout states and cache
             setPostLayoutStates({ ...states2 });
             updatePostsLayoutStatesCache(states2);
         }
@@ -976,18 +976,18 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
     }
 
     const handleClickOnPost = (postId: string) => (event: React.MouseEvent) => {
-        // Step #1 update process states and post layout cache
+        // #1 update process states and post layout cache
         updateProcessStatesCache({ ...processStates, wasRedirected: true });
         updatePostsLayoutStatesCache({ ...postLayoutStates, memorizeLastViewedPostId: postId, memorizeViewPortPositionY: window.scrollY });
-        // Step #2 jump
+        // #2 jump
         router.push(`/post/${postId}`);
     };
 
     const handleClickOnMemberInfo = (memberId: string, postId: string) => (event: React.MouseEvent) => {
-        // Step #1 update process states and post layout cache
+        // #1 update process states and post layout cache
         updateProcessStatesCache({ ...processStates, wasRedirected: true });
         updatePostsLayoutStatesCache({ ...postLayoutStates, memorizeLastViewedPostId: postId, memorizeViewPortPositionY: window.scrollY });
-        // Step #2 jump
+        // #2 jump
         router.push(`/me/id/${memberId}`);
     };
 
@@ -1004,14 +1004,14 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
         // undo save post
         if ('savedposts' === categoryId) {
-            // Step #1 mark post of chice as 'undo-saved'
+            // #1 mark post of chice as 'undo-saved'
             if (undoSavedPostArr.includes(postId)) {
                 const update = undoSavedPostArr.filter(id => postId !== id);
                 setUndoSavedPostArr([...update]);
             } else {
                 setUndoSavedPostArr([...undoSavedPostArr, postId]);
             }
-            // Step #2 request to delete record
+            // #2 request to delete record
             const resp = await fetch(``);
             if (200 !== resp.status) {
                 console.log('Attempt to undo/do save post');
@@ -1020,10 +1020,10 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
         // delete browsing history
         if ('browsinghistory' === categoryId) {
-            // Step #1 remove post card
+            // #1 remove post card
             const update = masonryPostInfoArr.filter(po => po.postId !== postId);
             setMasonryPostInfoArr([...update]);
-            // Step #2 request to delete record
+            // #2 request to delete record
             const resp = await fetch(`/api/member/browsinghistory/${authorId}`, {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' },

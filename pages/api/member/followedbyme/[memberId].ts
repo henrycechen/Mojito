@@ -6,7 +6,7 @@ import { MongoError } from 'mongodb';
 import AtlasDatabaseClient from "../../../../modules/AtlasDatabaseClient";
 import { logWithDate, response405, response500 } from '../../../../lib/utils/general';
 import { verifyId } from '../../../../lib/utils/verify';
-import { IConciseMemberInfo, IMemberComprehensive } from '../../../../lib/interfaces/member';
+import { IMemberInfo, IMemberComprehensive } from '../../../../lib/interfaces/member';
 import AzureTableClient from '../../../../modules/AzureTableClient';
 import { IMemberMemberMapping } from '../../../../lib/interfaces/mapping';
 
@@ -43,6 +43,50 @@ const bb5 = [
         createdTimeBySecond: 1673485211
 
     },
+    {
+        "memberId": "M2345EFGH",
+        "nickname": "小小巨人",
+        "briefIntro": "小小巨人已经来了，大家快来欢迎！",
+        "createdTimeBySecond": 1673495211
+    },
+    {
+        "memberId": "M3456IJKL",
+        "nickname": "游戏达人",
+        "briefIntro": "一起玩游戏，放松身心！",
+        "createdTimeBySecond": 1673505211
+    },
+    {
+        "memberId": "M4567MNOP",
+        "nickname": "电影迷",
+        "briefIntro": "电影万岁！",
+        "createdTimeBySecond": 1673515211
+    },
+    {
+        memberId: 'M4567EFGH',
+        nickname: '小学生张三',
+        briefIntro: '我是一个小学生，喜欢玩游戏和看动画片。',
+        createdTimeBySecond: 1673485222
+    },
+    {
+        memberId: 'M8901IJKL',
+        nickname: '爱旅行的小姐姐',
+        briefIntro: '我喜欢旅行，已经去过20个国家了。',
+        createdTimeBySecond: 1673485233
+    },
+    {
+        memberId: 'M2345MNOP',
+        nickname: '游戏达人李四',
+        briefIntro: '我是一名游戏开发者，制作了许多受欢迎的游戏。',
+        createdTimeBySecond: 1673485244
+    },
+    {
+        memberId: 'M0123UVWX',
+        nickname: '健身达人张三',
+        briefIntro: '我是一名健身教练，已经帮助许多人成功塑形。',
+        createdTimeBySecond: 1673485266
+    },
+
+
 ];
 
 export default async function GetMembersFollowedByMe(req: NextApiRequest, res: NextApiResponse) {
@@ -90,7 +134,7 @@ export default async function GetMembersFollowedByMe(req: NextApiRequest, res: N
         }
         await atlasDbClient.close();
 
-        const arr: IConciseMemberInfo[] = [];
+        const arr: IMemberInfo[] = [];
         if (tokenId === memberId || isAllowed) { // v0.1.3
             //// Look up record (of IMemberMemberMapping) in [RL] FollowingMemberMapping ////
             const followingMemberMappingTableClient = AzureTableClient('FollowingMemberMapping');

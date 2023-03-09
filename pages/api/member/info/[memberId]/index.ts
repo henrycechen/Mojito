@@ -8,7 +8,7 @@ import AtlasDatabaseClient from "../../../../../modules/AtlasDatabaseClient";
 
 
 import { response405, response500, logWithDate } from '../../../../../lib/utils/general';
-import { IConciseMemberInfo, IRestrictedMemberComprehensive } from '../../../../../lib/interfaces/member';
+import { IMemberInfo, IRestrictedMemberComprehensive } from '../../../../../lib/interfaces/member';
 
 
 const fname = GetMemberInfoById.name;

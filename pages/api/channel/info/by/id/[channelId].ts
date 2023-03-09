@@ -24,12 +24,12 @@ export default async function GetChannelInfoById(req: NextApiRequest, res: NextA
     }
     try {
         const { channelId } = req.query;
-        // Step #1 verify channelId
+        // #1 verify channelId
         if (!('string' === typeof channelId && '' !== channelId)) {
             res.status(400).send('Improper channel id');
             return;
         }
-        // Step #2 look up channelId from [Table] ChannelInfo
+        // #2 look up channelId from [Table] ChannelInfo
         const channelInfoTableClient = AzureTableClient('ChannelInfo');
         const channelInfoQuery = channelInfoTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq 'Info' and RowKey eq '${channelId}'` } });
         // [!] attemp to reterieve entity makes the probability of causing RestError
@@ -39,7 +39,7 @@ export default async function GetChannelInfoById(req: NextApiRequest, res: NextA
             return;
         }
         const { TW, CN, EN, SvgIconPath: svgIconPath } = channelInfoQueryResult.value;
-        // Step #3 response with channel info
+        // #3 response with channel info
         res.status(200).send({ id: channelId, name: { tw: TW, cn: CN, en: EN }, svgIconPath });
     } catch (e: any) {
 

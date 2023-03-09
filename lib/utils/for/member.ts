@@ -1,4 +1,4 @@
-import { IConciseMemberInfo, IConciseMemberStatistics, IRestrictedMemberComprehensive } from '../../interfaces/member';
+import { IMemberInfo, IConciseMemberStatistics, IRestrictedMemberComprehensive } from '../../interfaces/member';
 import { getRandomHexStr } from '../create';
 
 // Utils for Member Class v0.1.1
@@ -35,7 +35,7 @@ export function provideMemberInfoPageUrl(memberId: string, domain: string): stri
     return `${domain}/me/id/${memberId}`;
 }
 
-export function provideCuedMemberInfoArray(cuedMemberInfoDictionary: { [memberId: string]: IConciseMemberInfo }): IConciseMemberInfo[] {
+export function provideCuedMemberInfoArray(cuedMemberInfoDictionary: { [memberId: string]: IMemberInfo }): IMemberInfo[] {
     const memberIdArr = Object.keys(cuedMemberInfoDictionary);
     if (0 === memberIdArr.length) {
         return []
@@ -66,7 +66,7 @@ export function fakeRestrictedMemberInfo(): IRestrictedMemberComprehensive {
     }
 }
 
-export function fakeConciseMemberInfo(): IConciseMemberInfo {
+export function fakeConciseMemberInfo(): IMemberInfo {
     return {
         memberId: '',
         nickname: '',

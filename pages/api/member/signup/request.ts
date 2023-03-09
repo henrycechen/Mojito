@@ -141,7 +141,7 @@ export default async function RequestVerificationEmail(req: NextApiRequest, res:
             partitionKey: emailAddressHash,
             rowKey: 'VerifyEmailAddress',
             VerifyEmailAddressToken: verifyEmailAddressToken,
-            CreatedTimeBySecond: Math.floor(new Date().getTime() / 1000)
+            CreatedTimeBySecond: getTimeBySecond()
         }, 'Replace');
         await atlasDbClient.close();
 

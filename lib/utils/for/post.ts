@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { IAttitudeComprehensive, IAttitudeMapping } from '../../interfaces/attitude';
 import { IChannelInfo } from '../../interfaces/channel';
 import { ICommentComprehensive, IRestrictedCommentComprehensive } from '../../interfaces/comment';
-import { IConciseMemberInfo, IConciseMemberStatistics } from '../../interfaces/member';
+import { IMemberInfo, IConciseMemberStatistics } from '../../interfaces/member';
 import { INoticeInfoWithMemberInfo } from '../../interfaces/notification';
 import { IEditedPostComprehensive, IPostComprehensive, IRestrictedPostComprehensive } from '../../interfaces/post';
 import { ITopicComprehensive } from '../../interfaces/topic';
@@ -11,6 +11,21 @@ import { verifyNoticeId, verifyUrl } from '../verify';
 
 // Post
 
+export function contentToParagraphsArray(content: string): string[] {
+    if ('' === content) {
+        return [];
+    }
+    return content.split(/\r?\n/);
+}
+
+export function cuedMemberInfoDictionaryToArray(dict: { [memberId: string]: IMemberInfo; }): IMemberInfo[] {
+    const ids = Object.keys(dict);
+    if (0 === ids.length) {
+        return [];
+    }
+    return ids.map(id => dict[id]);
+}
+
 export function provideCoverImageUrl(postId: string, domain: string, forceBrowserUpdate = false): string {
     if (forceBrowserUpdate) {
         return `${domain}/api/coverimage/a/${postId}.png?variant=${getRandomHexStr()}`;
@@ -18,6 +33,7 @@ export function provideCoverImageUrl(postId: string, domain: string, forceBrowse
         return `${domain}/api/coverimage/a/${postId}.png`;
     }
 }
+
 export function provideImageUrl(fullname: string, domain: string, forceBrowserUpdate = false): string {
     if (forceBrowserUpdate) {
         return `${domain}/api/image/a/${fullname}?variant=${getRandomHexStr()}`;
@@ -26,14 +42,14 @@ export function provideImageUrl(fullname: string, domain: string, forceBrowserUp
     }
 }
 
-export function getImageFullnamesArrayFromRequestBody(requestBody: any): string[] {
-    if ('object' !== typeof requestBody) {
+export function getImageFullnamesArrayFromRequestBody(body: any): string[] {
+    if ('object' !== typeof body) {
         return [];
     }
-    if (!(undefined !== requestBody['imageFullNamesArr'] && Array.isArray(requestBody['imageFullNamesArr']))) {
+    if (!(undefined !== body['imageFullNamesArr'] && Array.isArray(body['imageFullNamesArr']))) {
         return [];
     }
-    return Array.prototype.filter.call([...requestBody['imageFullNamesArr']], (imageUrl) => verifyUrl(imageUrl))
+    return Array.prototype.filter.call([...body['imageFullNamesArr']], (imageUrl) => verifyUrl(imageUrl));
 }
 
 export function getParagraphsArrayFromRequestBody(requestBody: any): string[] {
@@ -46,7 +62,7 @@ export function getParagraphsArrayFromRequestBody(requestBody: any): string[] {
     return [...requestBody['paragraphsArr']];
 }
 
-export function getCuedMemberInfoArrayFromRequestBody(requestBody: any): IConciseMemberInfo[] {
+export function getCuedMemberInfoArrayFromRequestBody(requestBody: any): IMemberInfo[] {
     if ('object' !== typeof requestBody) {
         return [];
     }
@@ -60,19 +76,20 @@ type PostComprehensiveUpdate = {
     title: string;
     imageFullNamesArr: string[];
     paragraphsArr: string[];
-    cuedMemberInfoArr: IConciseMemberInfo[];
+    cuedMemberInfoArr: IMemberInfo[];
     channelId: string;
     topicIdsArr: string[];
 
     status: 201;
-    
+
     totalLikedCount: 0; // reset liked and disliked count
     totalUndoLikedCount: 0; // reset undo liked and undo disliked count
     totalDislikedCount: 0;
     totalUndoDislikedCount: 0;
-}
+};
 
-export function providePostComprehensiveUpdate(title: string, imageFullNamesArr: string[], paragraphsArr: string[], cuedMemberInfoArr: IConciseMemberInfo[], channelId: string, topicIdsArr: string[]): PostComprehensiveUpdate {
+// FIXME: no images => 201, has images (and waiting on image uploads) => 1
+export function providePostComprehensiveUpdate(title: string, imageFullNamesArr: string[], paragraphsArr: string[], cuedMemberInfoArr: IMemberInfo[], channelId: string, topicIdsArr: string[]): PostComprehensiveUpdate {
     const updated: PostComprehensiveUpdate = {
         title,
         imageFullNamesArr,
@@ -97,10 +114,11 @@ export function provideEditedPostInfo(postComprehensive: IPostComprehensive): IE
         paragraphsArrBeforeEdit: [...postComprehensive.paragraphsArr],
         cuedMemberInfoArrBeforeEdit: [...postComprehensive.cuedMemberInfoArr],
         channelIdBeforeEdit: postComprehensive.channelId,
-        topicIdsArrBeforeEdit: [...postComprehensive.topicIdsArr],
+        topicInfoArrBeforeEdit: [...postComprehensive.topicInfoArr],
         totalLikedCountBeforeEdit: postComprehensive.totalLikedCount,
         totalDislikedCountBeforeEdit: postComprehensive.totalDislikedCount,
-    }
+        totalAffairCountBeforeEdit: postComprehensive.totalAffairCount
+    };
 }
 
 export function getRestrictedFromPostComprehensive(postComprehensive: IPostComprehensive): IRestrictedPostComprehensive {
@@ -113,10 +131,11 @@ export function getRestrictedFromPostComprehensive(postComprehensive: IPostCompr
         createdTimeBySecond: postComprehensive.createdTimeBySecond,
         title: '',
         imageFullnamesArr: [],
+
         paragraphsArr: [],
         cuedMemberInfoArr: [],
         channelId: postComprehensive.channelId,
-        topicIdsArr: [],
+        topicInfoArr: [],
         pinnedCommentId: null,
 
         status: status,
@@ -140,7 +159,7 @@ export function getRestrictedFromPostComprehensive(postComprehensive: IPostCompr
     restricted.imageFullnamesArr.push(...postComprehensive.imageFullnamesArr);
     restricted.paragraphsArr.push(...postComprehensive.paragraphsArr);
     restricted.cuedMemberInfoArr.push(...postComprehensive.cuedMemberInfoArr);
-    restricted.topicIdsArr.push(...postComprehensive.topicIdsArr);
+    restricted.topicInfoArr.push(...postComprehensive.topicInfoArr);
     restricted.pinnedCommentId = postComprehensive.pinnedCommentId;
 
     if ('number' === typeof status && 1 === status % 100) {
@@ -163,7 +182,7 @@ export function fakeRestrictedPostComprehensive(): IRestrictedPostComprehensive 
         paragraphsArr: [],
         cuedMemberInfoArr: [],
         channelId: '',
-        topicIdsArr: [],
+        topicInfoArr: [],
         pinnedCommentId: null,
         status: -1,
         allowEditing: false,
@@ -174,5 +193,5 @@ export function fakeRestrictedPostComprehensive(): IRestrictedPostComprehensive 
         totalCommentCount: 0,
         totalSavedCount: 0,
         editedTimeBySecond: 0
-    }
+    };
 }

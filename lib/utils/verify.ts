@@ -25,7 +25,7 @@ export function verifyId(id: any): { isValid: boolean; category: string; id: str
     }
     const ref = `${id}`.toUpperCase();
     const cat = ref.slice(0, 1);
-    if (!(new RegExp(/[CDMNPT]/).test(cat))) {
+    if (!(new RegExp(/[CDMNP]/).test(cat))) {
         return { isValid: false, category: '', id: '' };
     }
     switch (cat) {
@@ -44,8 +44,6 @@ export function verifyId(id: any): { isValid: boolean; category: string; id: str
         case 'P':
             if (new RegExp(`^[A-Z0-9]{10,11}$`).test(ref)) { return { isValid: true, category: 'post', id: ref }; }
             else { return { isValid: false, category: 'post', id: '' }; }
-        case 'T':
-            return { isValid: true, category: 'topic', id: ref };
         default: return {
             isValid: false,
             category: '',

@@ -1,4 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { getTimeBySecond } from '../../../../lib/utils/create';
 import { logWithDate, response405, response500 } from '../../../../lib/utils/general';
 import { verifyEnvironmentVariable, verifyRecaptchaResponse } from '../../../../lib/utils/verify';
 
@@ -60,7 +61,7 @@ export default async function VerifyToken(req: NextApiRequest, res: NextApiRespo
             res.status(400).send('Defactive request info');
             return;
         }
-        if (Math.floor(new Date().getTime() / 1000) > parseInt(expireDateBySecond)) {
+        if (getTimeBySecond() > parseInt(expireDateBySecond)) {
             res.status(403).send('Reset password token expired');
             return;
         }

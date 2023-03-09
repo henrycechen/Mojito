@@ -23,7 +23,7 @@ export default async function GetChannelInfoDictionary(req: NextApiRequest, res:
         return;
     }
     try {
-        // Step #1 look up channels info from [T] ChannelIndo
+        // #1 look up channels info from [T] ChannelIndo
         const channelInfoTableClient = AzureTableClient('ChannelInfo');
         const channelInfoQuery = channelInfoTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq 'Info' and IsActive eq true` } });
         // [!] attemp to reterieve entity makes the probability of causing RestError
@@ -46,7 +46,7 @@ export default async function GetChannelInfoDictionary(req: NextApiRequest, res:
             }
             channelInfoQueryResult = await channelInfoQuery.next();
         } while (!channelInfoQueryResult.done)
-        // Step #2 response with post channel list
+        // #2 response with post channel list
         res.status(200).send(infoDict);
     } catch (e: any) {
         let msg: string;

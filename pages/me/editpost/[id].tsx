@@ -104,7 +104,12 @@ const langConfigs: LangConfigs = {
         cn: '发布',
         en: 'Publish'
     },
-    imagesUploading: {
+    savingPost: {
+        tw: '正在保存主題貼，請勿關閉或離開頁面😉',
+        cn: '上传图片中，请勿关闭或离开页面😉',
+        en: 'Uploading photos, please do not close or leave this page😉'
+    },
+    uploadingImages: {
         tw: '上传图片中，请勿关闭或离开页面😉',
         cn: '上传图片中，请勿关闭或离开页面😉',
         en: 'Uploading photos, please do not close or leave this page😉'
@@ -172,7 +177,6 @@ const EditPost = () => {
         title: '',
         content: '',
         channel: ''
-        // tags: [] // Not-in-use
 
     })
     // Handle post states change
@@ -261,21 +265,21 @@ const EditPost = () => {
     // Handle post form submit
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        // Step #1 Check requied fileds
+        // #1 Check requied fileds
         if ('' === postStates.title || '' === postStates.channel) {
             return;
         }
-        // Step #2 Upload image
+        // #2 Upload image
         const uploadList: Image[] = [...imageList];
         const imageUrlArr: string[] = [];
         if (uploadList.length !== 0) {
-            setProcessStates({ ...processStates, alertSeverity: 'info', alertContent: langConfigs.imagesUploading[lang], displayAlert: true, submitting: true });
+            setProcessStates({ ...processStates, alertSeverity: 'info', alertContent: langConfigs.uploadingImages[lang], displayAlert: true, submitting: true });
             for (let i = 0; i < imageList.length; i++) {
                 const img = uploadList[0];
                 console.log(`Uploading ${img.url}`);
                 if (img !== null && img.url) {
                     setUploadStates({ ...uploadStates, imageUrlOnUpload: img?.url });
-                    // Step #2.1 Create form data
+                    // #2.1 Create form data
                     let formData = new FormData();
                     const config = {
                         headers: { 'Content-Type': 'multipart/form-data' },
@@ -307,7 +311,7 @@ const EditPost = () => {
         } else {
             setProcessStates({ ...processStates, alertSeverity: 'success', alertContent: langConfigs.imagesUploadSuccess[lang], displayAlert: true, submitting: true });
         }
-        // Step #3 Publish post
+        // #3 Publish post
         const post: PostInfo = {
             title: postStates.title,
             content: postStates.content,
