@@ -600,7 +600,7 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
                                             {/* image */}
                                             <Box
                                                 component={'img'}
-                                                src={p.imageUrlsArr[0]}
+                                                src={p.imageUrlsArr[0]} // FIXME:FIXME:FIXME:FIXME:FIXME:FIXME:FIXME:FIXME:FIXME:FIXME:FIXME:FIXME:FIXME:
                                                 // src={provideCoverImageUrl(post.postId, domain)} FIXME:FIXME:FIXME:FIXME:FIXME:FIXME:
                                                 sx={{ maxWidth: { xs: width / 2, sm: 300 }, height: 'auto', borderTopLeftRadius: 4, borderTopRightRadius: 4 }}
                                                 onClick={handleClickOnPost(p.postId)}

@@ -10,7 +10,7 @@ import AzureBlobClient from '../../../../modules/AzureBlobClient';
 import AtlasDatabaseClient from '../../../../modules/AtlasDatabaseClient';
 
 import { logWithDate, response405, response500 } from '../../../../lib/utils/general';
-import { createId, getRandomIdStr, getTimeBySecond } from '../../../../lib/utils/create';
+import { getRandomIdStr, getTimeBySecond } from '../../../../lib/utils/create';
 import { TUploadImageRequestInfo } from '../../../../lib/types';
 import { verifyId } from '../../../../lib/utils/verify';
 
@@ -23,7 +23,7 @@ export const config = {
 const appSecret = process.env.APP_AES_SECRET ?? '';
 const fname = ImageUpload.name;
 
-/** ImageUpload v0.1.1 FIXME: test mode
+/** ImageUpload v0.1.1
  * 
  * Last update: 3/3/2023
  * 
@@ -37,6 +37,7 @@ const fname = ImageUpload.name;
  */
 
 export default async function ImageUpload(req: NextApiRequest, res: NextApiResponse) {
+
     const { method } = req;
     if ('POST' !== method) {
         response405(req, res);

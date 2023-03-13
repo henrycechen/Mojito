@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { MongoError } from 'mongodb';
 import { getToken } from 'next-auth/jwt';
+import { MongoError } from 'mongodb';
 import CryptoJS from 'crypto-js';
 
 import AtlasDatabaseClient from '../../../../modules/AtlasDatabaseClient';
@@ -8,14 +8,14 @@ import AtlasDatabaseClient from '../../../../modules/AtlasDatabaseClient';
 import { logWithDate, response405, response500 } from '../../../../lib/utils/general';
 import { IMemberComprehensive } from '../../../../lib/interfaces/member';
 import { TUploadImageRequestInfo } from '../../../../lib/types';
-import { createId, getTimeBySecond } from '../../../../lib/utils/create';
+import { getTimeBySecond } from '../../../../lib/utils/create';
 import { IPostComprehensive } from '../../../../lib/interfaces/post';
 import { verifyId } from '../../../../lib/utils/verify';
 
 const appSecret = process.env.APP_AES_SECRET ?? '';
 const fname = RequestImageUpload.name;
 
-/** RequestImageUpload v0.1.1 FIXME: test mode
+/** RequestImageUpload v0.1.1
  * 
  * Last update: 3/3/2023
  * 
@@ -30,6 +30,7 @@ const fname = RequestImageUpload.name;
  */
 
 export default async function RequestImageUpload(req: NextApiRequest, res: NextApiResponse) {
+
     const { method } = req;
     if ('GET' !== method) {
         response405(req, res);
@@ -70,7 +71,7 @@ export default async function RequestImageUpload(req: NextApiRequest, res: NextA
         }
 
         const now = getTimeBySecond();
-        if (120 < (now - lastUploadImageRequestTimeBySecond)) { // time difference no greater than 2 minutes
+        if (15 > (now - lastUploadImageRequestTimeBySecond)) { // time difference no greater than 15 seconds
             res.status(403).send('Method not allowed due to frequent request for upload image');
             await atlasDbClient.close();
             return;

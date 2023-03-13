@@ -1,4 +1,7 @@
 import * as React from 'react';
+import { NextPageContext } from 'next';
+import { useRouter } from 'next/router';
+import { signIn, useSession } from 'next-auth/react';
 
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -7,58 +10,52 @@ import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import Chip from '@mui/material/Chip';
-
-import { signIn, useSession } from 'next-auth/react';
+import Avatar from '@mui/material/Avatar';
 
 import FormControl from '@mui/material/FormControl';
-import AddIcon from '@mui/icons-material/Add';
-import IconButton from '@mui/material/IconButton';
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
 import HighlightOffIcon from '@mui/icons-material/HighlightOff';
 
+import IconButton from '@mui/material/IconButton';
+import AddIcon from '@mui/icons-material/Add';
 import SvgIcon from '@mui/material/SvgIcon';
 import AlternateEmailIcon from '@mui/icons-material/AlternateEmail';
 import TagIcon from '@mui/icons-material/Tag';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import CheckIcon from '@mui/icons-material/Check';
 
+import Alert from '@mui/material/Alert';
+import Input from '@mui/material/Input';
 import Modal from '@mui/material/Modal';
+import ListItemText from '@mui/material/ListItemText';
+import MenuList from '@mui/material/MenuList/MenuList';
+import CircularProgress from '@mui/material/CircularProgress';
+import Backdrop from '@mui/material/Backdrop';
+
 
 import { DragDropContext } from 'react-beautiful-dnd';
 import { Droppable, Draggable } from 'react-beautiful-dnd';
 
-import axios, { AxiosResponse } from 'axios';
-import Alert from '@mui/material/Alert';
-import CheckIcon from '@mui/icons-material/Check';
-import CircularProgress from '@mui/material/CircularProgress';
-
-import Navbar from '../../ui/Navbar';
-import Copyright from '../../ui/Copyright';
-
-import { useRouter } from 'next/router';
-import { IConciseTopicComprehensive, ITopicInfo } from '../../lib/interfaces/topic';
-import { LangConfigs, TPreferenceStates } from '../../lib/types';
-import { IMemberInfo } from '../../lib/interfaces/member';
-import { IPostComprehensive } from '../../lib/interfaces/post';
-import { IChannelInfoStates, IChannelInfoDictionary } from '../../lib/interfaces/channel';
-import { getNicknameBrief, provideAvatarImageUrl, } from '../../lib/utils/for/member';
-import { getRandomHexStr } from '../../lib/utils/create';
-
-import Input from '@mui/material/Input';
-import ListItemText from '@mui/material/ListItemText';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import MenuList from '@mui/material/MenuList/MenuList';
-import { CentralizedBox } from '../../ui/Styled';
-import { NextPageContext } from 'next';
-import Avatar from '@mui/material/Avatar';
-import { restoreFromLocalStorage } from '../../lib/utils/general';
-import Terms from '../../ui/Terms';
-
+import axios from 'axios';
 // import Jimp from 'jimp';
 import 'jimp';
 let Jimp: any;
 
+import { IConciseTopicComprehensive, ITopicInfo } from '../../lib/interfaces/topic';
+import { LangConfigs, TPreferenceStates } from '../../lib/types';
+import { IMemberInfo } from '../../lib/interfaces/member';
+import { IChannelInfoStates, IChannelInfoDictionary } from '../../lib/interfaces/channel';
+import { getNicknameBrief, provideAvatarImageUrl, } from '../../lib/utils/for/member';
+import { createId, getRandomHexStr } from '../../lib/utils/create';
+import { restoreFromLocalStorage } from '../../lib/utils/general';
 import { contentToParagraphsArray, cuedMemberInfoDictionaryToArray } from '../../lib/utils/for/post';
+
+import Navbar from '../../ui/Navbar';
+import Copyright from '../../ui/Copyright';
+import Terms from '../../ui/Terms';
+
 
 const storageName0 = 'PreferenceStates';
 const restorePreferenceStatesFromCache = restoreFromLocalStorage(storageName0);
@@ -152,19 +149,19 @@ const langConfigs: LangConfigs = {
         en: 'Publish'
     },
     savingPost: {
-        tw: '正在保存主題貼，請勿關閉或離開頁面😉',
-        cn: '正在保存主题贴，请勿关闭或离开页面😉',
-        en: 'Saving post, please do not close or leave this page😉'
+        tw: '正在保存主題貼😉請勿關閉或離開頁面',
+        cn: '正在保存主题贴😉请勿关闭或离开页面',
+        en: 'Saving post😉 Please do not close or leave this page'
     },
     initateSuccess: {
-        tw: '主題帖保存成功😄正在製作封面相片',
-        cn: '主题帖保存成功😄正在制作封面图片',
-        en: 'Post content saved😄 Creating cover image'
+        tw: '主題帖保存成功😄正在製作封面相片並上傳',
+        cn: '主题帖保存成功😄正在制作封面图片并上传',
+        en: 'Post content saved😄 Creating and uploading cover image'
     },
     uploadingImages: {
-        tw: '正在上傳相片，請勿關閉或離開頁面😉',
-        cn: '正在上传图片，请勿关闭或离开页面😉',
-        en: 'Uploading photos, please do not close or leave this page😉'
+        tw: '封面相片上傳成功😉正在上傳主題貼相片',
+        cn: '封面图片上传成功😉正在上传主题贴图片',
+        en: 'Cover image uploaded😉 Uploading other images'
     },
     imagesUploadSuccess: {
         tw: '相片上傳完成😄正在跳轉到主題帖頁面',
@@ -274,6 +271,8 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
         displayAlert: boolean;
         displayCueHelper: boolean;
         displayNoFollowedMemberAlert: boolean;
+        displayBackdrop: boolean;
+        backdropOnDisplayImageUrl: string;
         disableAddButton: boolean;
         submitting: boolean;
         interruptedByImageUpload: boolean;
@@ -287,6 +286,8 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
         displayAlert: false,
         displayCueHelper: false,
         displayNoFollowedMemberAlert: false,
+        displayBackdrop: false,
+        backdropOnDisplayImageUrl: '',
         disableAddButton: false,
         submitting: false,
         interruptedByImageUpload: false
@@ -294,6 +295,11 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
 
     const handleCueHelperOpenAndClose = () => {
         setProcessStates({ ...processStates, displayCueHelper: !processStates.displayCueHelper });
+    };
+
+    const handleBackdropClose = () => {
+        setProcessStates({ ...processStates, displayBackdrop: false, backdropOnDisplayImageUrl: '' });
+
     };
 
     //////////////////////////////////////// CHANNEL ////////////////////////////////////////
@@ -522,13 +528,6 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
         displayDeleteIcon: boolean;
     };
 
-    //////// STATES - image ////////
-    const [imageStates, setImageStates] = React.useState<ImageStates>({
-        enlarge: false,
-        onEnlargeImageUrl: '',
-        displayDeleteIcon: true,
-    });
-
     // Handle image states change
     const handleAddImage = async (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files?.length !== 0 && event.target.files !== null) {
@@ -559,13 +558,7 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
         if (processStates.submitting) {
             return;
         }
-        if (imageStates.onEnlargeImageUrl === imageUrl) {
-            // Click on the same image
-            setImageStates({ ...imageStates, enlarge: !imageStates.enlarge });
-        } else {
-            // Click on an other image
-            setImageStates({ ...imageStates, onEnlargeImageUrl: imageUrl, enlarge: true });
-        }
+        setProcessStates({ ...processStates, displayBackdrop: true, backdropOnDisplayImageUrl: imageUrl });
     };
 
     const handleRemove = (imageIndex: number) => (event: React.MouseEvent) => {
@@ -591,16 +584,15 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
     //////////////////////////////////////// SUBMIT ////////////////////////////////////////
 
     type UploadStates = {
-        imageUrlOnUpload: string;
+        // imageUrlOnUpload: string;
         uploadPrecent: number;
-        uploadedImageIndexArr: number[];
+        currentIndex: number;
     };
 
     //////// STATES - upload process ////////
     const [uploadStates, setUploadStates] = React.useState<UploadStates>({
-        imageUrlOnUpload: '',
         uploadPrecent: 0,
-        uploadedImageIndexArr: []
+        currentIndex: -1,
     });
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -697,6 +689,7 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
 
         // #3 Upload images (optional)
         const uploadQueue: Image[] = [...imagesArr];
+        setUploadStates({ uploadPrecent: 0, currentIndex: -1 });
 
         // #3.1 Request for an upload token
         const resptkn = await fetch(`/api/image/request/${postId}`);
@@ -767,9 +760,6 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
             submitting: true
         });
 
-
-
-
         const uploadedImageFullnamesArr: string[] = [];
 
         // #3.2 Upload images one by one
@@ -780,15 +770,20 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
             console.log(`Uploading image: ${img.url}`);
 
             if (img !== null && img.url) {
-                setUploadStates({ ...uploadStates, imageUrlOnUpload: img?.url });
 
                 // Create form data
                 let formData = new FormData();
                 const config = {
                     headers: { 'Content-Type': 'multipart/form-data' },
                     onUploadProgress: (event: any) => {
-                        setUploadStates({ ...uploadStates, uploadPrecent: Math.round((event.loaded * 100) / event.total) });
-                        console.log(`Upload progress:`, Math.round((event.loaded * 100) / event.total));
+                        console.log(i);
+
+                        setUploadStates({
+                            ...uploadStates,
+                            uploadPrecent: Math.round((event.loaded * 100) / event.total),
+                            currentIndex: i,
+                        });
+                        console.log(`Image upload progress:`, Math.round((event.loaded * 100) / event.total));
                     }
                 };
 
@@ -807,8 +802,6 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
                         imgf.scale(0.5);
                         const b = await imgf.getBufferAsync(mme);
                         bl = b.byteLength;
-                        console.log(bl);
-
                     } while (bl > 1048576);
 
 
@@ -829,8 +822,7 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
                     // Record uploaded image full name
                     uploadedImageFullnamesArr.push(imageFullname);
 
-                    // Update states
-                    setUploadStates({ ...uploadStates, uploadedImageIndexArr: [...uploadStates.uploadedImageIndexArr, i] });
+
                 } catch (e) {
                     console.log(`Attempt to upload ${img.url}. ${e}`);
                     setProcessStates({
@@ -854,13 +846,15 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
                 imageFullnamesArr: uploadedImageFullnamesArr
             })
         });
+
         if (200 !== respUpdate.status) {
             setProcessStates({
                 ...processStates,
                 alertSeverity: 'error',
                 alertContent: langConfigs.postPublishFailed[preferenceStates.lang],
                 displayAlert: true,
-                interruptedByImageUpload: true
+                interruptedByImageUpload: true,
+                submitting: false
             });
         } else {
             setProcessStates({
@@ -870,16 +864,7 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
                 displayAlert: true,
                 submitting: true
             });
-
-            setTimeout(() => {
-                setProcessStates({
-                    ...processStates,
-                    alertSeverity: 'success',
-                    alertContent: langConfigs.imagesUploadSuccess[preferenceStates.lang],
-                    displayAlert: true
-                });
-            }, 800);
-
+            // Jump
             setTimeout(() => {
                 router.push(`/post/${postId}`);
             }, 800);
@@ -982,8 +967,8 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
                                                                 {/* image wrapper */}
                                                                 <Box
                                                                     sx={{
-                                                                        width: imageStates.enlarge && imageStates.onEnlargeImageUrl === img.url ? 320 : 100,
-                                                                        height: imageStates.enlarge && imageStates.onEnlargeImageUrl === img.url ? Math.floor(320 / img.whr) : 100,
+                                                                        width: 100,
+                                                                        height: 100,
                                                                         borderRadius: '10px',
                                                                         backgroundSize: 'cover',
                                                                         backgroundPosition: 'center',
@@ -996,7 +981,6 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
                                                                     <Box sx={{ display: processStates.submitting ? 'none' : 'flex' }}>
                                                                         <IconButton
                                                                             sx={{
-                                                                                display: imageStates.enlarge && imageStates.onEnlargeImageUrl === img.url ? 'none' : 'felx',
                                                                                 backgroundColor: 'white',
                                                                                 '&:hover': { backgroundColor: 'white' },
                                                                             }}
@@ -1008,12 +992,14 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
                                                                             <HighlightOffIcon />
                                                                         </IconButton>
                                                                     </Box>
+
                                                                     {/* progress circular indeterminate */}
-                                                                    <Box sx={{ display: processStates.submitting && !uploadStates.uploadedImageIndexArr.includes(index) ? 'flex' : 'none', paddingTop: 3.8, paddingLeft: 3.8 }}>
+                                                                    <Box sx={{ display: processStates.submitting && index > uploadStates.currentIndex ? 'flex' : 'none', paddingTop: 3.8, paddingLeft: 3.8 }}>
                                                                         <CircularProgress />
                                                                     </Box>
+
                                                                     {/* progress complete sign */}
-                                                                    <Box sx={{ display: processStates.submitting && uploadStates.uploadedImageIndexArr.includes(index) ? 'flex' : 'none', paddingTop: 3, paddingLeft: 3 }}>
+                                                                    <Box sx={{ display: processStates.submitting && index <= uploadStates.currentIndex ? 'flex' : 'none', paddingTop: 3, paddingLeft: 3 }}>
                                                                         <Box sx={{ width: '52px', height: '52px', backgroundColor: 'white', borderRadius: '50%', padding: 1 }}>
                                                                             <CheckIcon fontSize='large' color='success' />
                                                                         </Box>
@@ -1088,12 +1074,7 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
                         </Box>
                         {/* submit button */}
                         <Box>
-                            <Button type={'submit'} fullWidth variant='contained'
-
-
-                                disabled={processStates.submitting || processStates.disableEditor}
-
-                            >
+                            <Button type={'submit'} fullWidth variant='contained' disabled={processStates.submitting || processStates.disableEditor}>
                                 <Typography sx={{ display: !processStates.submitting ? 'block' : 'none' }}>
                                     {langConfigs.submit[preferenceStates.lang]}
                                 </Typography>
@@ -1169,6 +1150,17 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
                     </FormControl>
                 </Stack>
             </Modal>
+
+            {/* backdrop - full screen image viewer */}
+            <Backdrop
+                sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}
+                open={processStates.displayBackdrop}
+                onClick={handleBackdropClose}
+            >
+                <Box>
+                    {processStates.backdropOnDisplayImageUrl && <Box component={'img'} src={processStates.backdropOnDisplayImageUrl} maxWidth={window.innerWidth}></Box>}
+                </Box>
+            </Backdrop>
         </>
     );
 };

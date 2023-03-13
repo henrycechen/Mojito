@@ -9,8 +9,6 @@ import Jimp from 'jimp';
 import AzureBlobClient from '../../../../modules/AzureBlobClient';
 import AtlasDatabaseClient from '../../../../modules/AtlasDatabaseClient';
 
-import { IPostComprehensive } from '../../../../lib/interfaces/post';
-import { IMemberComprehensive } from '../../../../lib/interfaces/member';
 import { logWithDate, response405, response500 } from '../../../../lib/utils/general';
 import { verifyId } from '../../../../lib/utils/verify';
 import { getTimeBySecond } from '../../../../lib/utils/create';
@@ -24,7 +22,7 @@ export const config = {
 const appSecret = process.env.APP_AES_SECRET ?? '';
 const fname = `${CoverImageUpload.name} (API)`;
 
-/** CoverImageUpload v0.1.1 FIXME: test mode
+/** CoverImageUpload v0.1.1
  * 
  * Last update: 3/3/2023
  * 
@@ -38,6 +36,7 @@ const fname = `${CoverImageUpload.name} (API)`;
  */
 
 export default async function CoverImageUpload(req: NextApiRequest, res: NextApiResponse) {
+
     const { method } = req;
     if ('POST' !== method) {
         response405(req, res);
