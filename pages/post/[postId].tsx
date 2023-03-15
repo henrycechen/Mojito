@@ -978,10 +978,10 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
         );
     };
 
-    const makeTopic = (topicId: string) => {
+    const makeTopic = (topicId: string, content: string) => {
         return (
             <Link href={`/query/${topicId}`} underline={'none'} key={getRandomHexStr()} >
-                #{Buffer.from(topicId, 'base64').toString()}
+                #{content}
             </Link>
         );
     };
@@ -1076,7 +1076,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
                                 {/* topics (conditional rendering) */}
                                 {0 !== postComprehensive_ss.topicInfoArr?.length && <Box mt={{ xs: 2, sm: 2 }}>
                                     <Typography variant={'body1'}>
-                                        {postComprehensive_ss.topicInfoArr.map(topicId => makeTopic(topicId))}
+                                        {postComprehensive_ss.topicInfoArr.map(t => makeTopic(t.topicId, t.content))}
                                     </Typography>
                                 </Box>}
 
@@ -1390,7 +1390,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
                     <Grid container mt={2} mb={1}>
                         <Grid item>
                             <IconButton onClick={handleCueHelperOpenAndClose} disabled={editorStates.disableEditor}>
-                                <AlternateEmailIcon/>
+                                <AlternateEmailIcon />
                             </IconButton>
                         </Grid>
                         <Grid item flexGrow={1}></Grid>
@@ -1440,7 +1440,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
                 </Box>
             </Backdrop>
 
-            
+
             <Copyright sx={{ mt: { xs: 8, sm: 8 }, mb: 4 }} />
 
 

@@ -43,12 +43,3 @@ export interface ITopicInfo {
     topicId: string; // base64 string from topic content string
     content: string;
 }
-
-// [C] topicPostMapping
-export interface ITopicPostMapping {
-    topicId: string;
-    postId: string;
-    channelId: string;
-    createdTimeBySecond: number; // created time of this document (post est. time)
-    status: number;
-}

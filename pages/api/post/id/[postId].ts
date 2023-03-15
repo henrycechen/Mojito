@@ -18,7 +18,7 @@ import { getTimeBySecond } from '../../../../lib/utils/create';
 
 const fname = GetRestrictedPostComprehensiveById.name;
 
-/** GetRestrictedPostComprehensiveById v0.1.1 FIXME: test mode
+/** GetRestrictedPostComprehensiveById v0.1.1
  * 
  * Last update: 24/02/2023
  * 
@@ -28,70 +28,65 @@ const fname = GetRestrictedPostComprehensiveById.name;
  * - token: JWT (optional)
  */
 
-const ifo = {
-    postId: 'P1234ABCDX',
-    memberId: 'M1234XXXX',
-    createdTimeBySecond: 1673389239,
-    title: '《周杰倫的床邊故事》',
-    // imageUrlsArr: [
-    //     'https://img3.chinadaily.com.cn/images/202008/24/5f431dc9a310a85979164989.jpeg',
-    //     'https://upload.wikimedia.org/wikipedia/zh/b/b2/JayChouBedtimeStories-2016_Cover.jpg'
-    // ],
-    imageFullnamesArr: [
-        '1234.jpg',
-        '2345.jpg',
-    ],
-    paragraphsArr: [
-        `《周杰倫的床邊故事》(英語：Jay Chou's Bedtime Stories)是臺灣男歌手周杰倫的第14張錄音室專輯，2016年6月8日开始预购，6月24日正式發行[2][3]。`,
-        `本專輯為周杰倫與妻子昆凌結婚生子後發行的首張專輯，為周杰倫個人第14張專輯[4]。新專輯以床邊故事命名，專輯設計打造成有聲書概念，訴說10個與眾不同、充滿想像的音樂故事[5][6][7]。專輯中與張惠妹首度合唱，是繼《依然范特西》專輯中的《千里之外》與費玉清的合作後，再次跨公司與線上歌手合唱，並且收錄於專輯中[8][9]`,
-        `這是@WebMaster從維基百科搬過來的...@县长马邦德是@WebMaster的老闆`
-    ],
-    cuedMemberInfoArr: [
-        { memberId: 'M1234XXXX', nickname: 'WebMaster' },
-        { memberId: 'M1234ABCD', nickname: '县长马邦德' },
-    ],
-    channelId: 'hobby',
-    topicIdsArr: [
-        '5ZGo5p2w5Lym', // 周杰伦
-        '6Z+z5LmQ' // 音乐
-    ],
-    pinnedCommentId: '',
-    status: 201,
-    editedTimeBySecond: 1673479039454,
-
-    totalHitCount: 1480,
-    totalLikedCount: 24,
-    totalDislikedCount: 1,
-    totalCommentCount: 5,
-    totalSavedCount: 12,
-};
-
 export default async function GetRestrictedPostComprehensiveById(req: NextApiRequest, res: NextApiResponse) {
 
-    // res.send(ifo);
-    const atlasDbClient = AtlasDatabaseClient();
-    await atlasDbClient.connect();
-    const postComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IPostComprehensive>('post');
-    const postComprehensiveQueryResult = await postComprehensiveCollectionClient.findOne({ postId: req.query.postId });
-    if (null === postComprehensiveQueryResult) {
-        res.status(404).send('Post not found');
-        await atlasDbClient.close();
-        return;
-    }
+    res.send({
+        "postId": "P4CD624HHS",
+        "memberId": "M1234XXXX",
+        "createdTimeBySecond": 1678679403,
+        "title": "MX5-RE-RE",
+        "imageFullnamesArr": [
+            "P4CD624HHS_DLBVJIQ1T.jpeg",
+            "P4CD624HHS_6NR6EKKW11.jpeg",
+            "P4CD624HHS_226CDUSEQK.jpeg",
+            "P4CD624HHS_1BEEE1FJR8.jpeg",
+            "P4CD624HHS_342QM85WET.jpeg",
+            "P4CD624HHS_VG9OMAVRL.jpeg"
+        ],
+        "paragraphsArr": [
+            "I am selling with regret (in fact I don't have one)\n",
+            "I am selling with regret (in fact I don't have one)\n",
+            "I am selling with regret (in fact I don't have one)\n",
+            "@县长马邦德",
+        ],
+        "cuedMemberInfoArr": [
+            {
+                memberId: 'M1234ABCD',
+                nickname: '县长马邦德',
+                briefIntro: 'xxx',
+                createdTimeBySecond: 0
+            }
+        ],
+        "channelId": "automobile",
+        "topicInfoArr": [
+            {
+                topicId: '5ZGo5p2w5Lym',
+                content: '周杰伦',
+                // channelId: 'chat',
+                // totalHitCount: 1024,
+                // totalPostCount: 126
+            },
+            {
+                topicId: '6K+05aW95LiN5ZOt',
+                content: '说好不哭',
+                // channelId: 'chat',
+                // totalHitCount: 624,
+                // totalPostCount: 75
+            },
+        ],
+        "pinnedCommentId": null,
+        "status": 200,
+        "allowEditing": true,
+        "allowCommenting": true,
+        "totalHitCount": 0,
+        "totalLikedCount": 0,
+        "totalDislikedCount": 0,
+        "totalCommentCount": 0,
+        "totalSavedCount": 0,
+        "editedTimeBySecond": null
 
-    //// Verify post status ////
-    const { status: postStatus } = postComprehensiveQueryResult;
-    if (0 > postStatus) {
-        res.status(404).send('Method not allowed due to post deleted');
-        await atlasDbClient.close();
-        return;
-    }
-
-    //// Response 200 ////
-    res.status(200).send(getRestrictedFromPostComprehensive(postComprehensiveQueryResult));
-
+    });
     return;
-
     const { method } = req;
     if ('GET' !== method) {
         response405(req, res);
@@ -106,11 +101,11 @@ export default async function GetRestrictedPostComprehensiveById(req: NextApiReq
     }
 
     //// Declare DB client ////
-    // const atlasDbClient = AtlasDatabaseClient();
+    const atlasDbClient = AtlasDatabaseClient();
     try {
         await atlasDbClient.connect();
 
-        // Look up post status (IPostComprehensive) in [C] postComprehensive
+        //// Look up post status ////
         const postComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IPostComprehensive>('post');
         const postComprehensiveQueryResult = await postComprehensiveCollectionClient.findOne({ postId });
         if (null === postComprehensiveQueryResult) {
@@ -159,6 +154,7 @@ export default async function GetRestrictedPostComprehensiveById(req: NextApiReq
                     Nickname: '',
                     Title: title,
                     CreatedTimeBySecond: getTimeBySecond(),
+                    HasImages: false,
                     IsActive: true
                 }, 'Merge');
                 viewerIsMemberButNotAuthor = authorId !== viewerId;
@@ -202,17 +198,17 @@ export default async function GetRestrictedPostComprehensiveById(req: NextApiReq
         }
 
         //// (Cond.) Update totalHitCount (of ITopicComprehensive) in [C] topicComprehensive ////
-        const { topicIdsArr } = postComprehensiveQueryResult;
-        if (Array.isArray(topicIdsArr) && topicIdsArr.length !== 0) {
+        const { topicInfoArr } = postComprehensiveQueryResult;
+        if (Array.isArray(topicInfoArr) && topicInfoArr.length !== 0) {
             const topicComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<ITopicComprehensive>('topic');
-            for await (const topicId of topicIdsArr) {
-                const topicComprehensiveUpdateResult = await topicComprehensiveCollectionClient.updateOne({ topicId }, {
+            for await (const t of topicInfoArr) {
+                const topicComprehensiveUpdateResult = await topicComprehensiveCollectionClient.updateOne({ topicId: t.topicId }, {
                     $inc: {
                         totalHitCount: 1
                     }
                 });
                 if (!topicComprehensiveUpdateResult.acknowledged) {
-                    logWithDate(`Failed to update totalHitCount (of ITopicStatistics, topic id:${topicId}, post id: ${postId}) in [C] topicStatistics`, fname);
+                    logWithDate(`Failed to update totalHitCount (of ITopicStatistics, topic id:${t.topicId}, post id: ${postId}) in [C] topicStatistics`, fname);
                 }
             }
         }

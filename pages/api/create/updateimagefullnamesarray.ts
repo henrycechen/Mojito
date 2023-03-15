@@ -13,10 +13,11 @@ import { IPostComprehensive } from '../../../lib/interfaces/post';
 import { INoticeInfo, INotificationStatistics } from '../../../lib/interfaces/notification';
 import { getNicknameFromToken } from '../../../lib/utils/for/member';
 import { verifyId } from '../../../lib/utils/verify';
+import { IMemberMemberMapping } from '../../../lib/interfaces/mapping';
 
 const fname = UpdateImageFullnamesArray.name;
 
-/** UpdateImageFullnamesArray v0.1.1 FIXME: test mode
+/** UpdateImageFullnamesArray v0.1.1
  * 
  * Last update: 4/3/2023
  * 
@@ -43,7 +44,6 @@ export default async function UpdateImageFullnamesArray(req: NextApiRequest, res
     }
 
     //// Verify post id ////
-    // Verify post id ////
     const { isValid, category, id: postId } = verifyId(req.body?.postId);
     if (!(isValid && 'post' === category)) {
         res.status(400).send('Invalid post id');
@@ -103,27 +103,32 @@ export default async function UpdateImageFullnamesArray(req: NextApiRequest, res
         }
 
         //// Response 200 ////
-        res.status(200).end();
+        res.status(200).send('Image fullname array updated');
 
-        //// Handle notice.cue (cond.) ////
+        //// (Cond.) Handle notice.cue ////
         if (cuedMemberInfoArr.length !== 0) {
-            // #4.1 verify cued member ids array
             const blockingMemberMappingTableClient = AzureTableClient('BlockingMemberMapping');
             const notificationStatisticsCollectionClient = atlasDbClient.db('statistics').collection<INotificationStatistics>('notification');
-            // #4.2 maximum 9 members are allowed to cued at one time (in one comment)
-            const cuedMemberIdsArrSliced = cuedMemberInfoArr.slice(0, 9);
+
+            // #1 maximum 12 members are allowed to cued at one time (in one comment)
+            const cuedMemberIdsArrSliced = cuedMemberInfoArr.slice(0, 12);
             for await (const cuedMemberInfo of cuedMemberIdsArrSliced) {
-                const { memberId: memberId_cued } = cuedMemberInfo;
-                // #4.3 look up record (of IMemberMemberMapping) in [RL] BlockingMemberMapping
-                const _blockingMemberMappingQuery = blockingMemberMappingTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${memberId_cued}' and RowKey eq '${memberId}'` } });
-                //// [!] attemp to reterieve entity makes the probability of causing RestError ////
-                const _blockingMemberMappingQueryResult = await _blockingMemberMappingQuery.next();
-                if (!_blockingMemberMappingQueryResult.value) {
-                    //// [!] comment author has not been blocked by cued member ////
-                    // #4.4 upsert record (INoticeInfo.Cued) in [PRL] Notice
+                const { memberId: cuedId } = cuedMemberInfo;
+
+                let isBlocked = false;
+                // #2 look up record (of IMemberMemberMapping) in [RL] BlockingMemberMapping
+                const blockingMemberMappingQuery = blockingMemberMappingTableClient.listEntities<IMemberMemberMapping>({ queryOptions: { filter: `PartitionKey eq '${cuedId}' and RowKey eq '${memberId}'` } });
+                // [!] attemp to reterieve entity makes the probability of causing RestError
+                const blockingMemberMappingQueryResult = await blockingMemberMappingQuery.next();
+                if (blockingMemberMappingQueryResult.value) {
+                    const { IsActive: isActive } = blockingMemberMappingQueryResult.value;
+                    isBlocked = isActive;
+                }
+                if (!isBlocked) {
+                    // #3 upsert record (INoticeInfo.Cued) in [PRL] Notice
                     const noticeTableClient = AzureTableClient('Notice');
                     noticeTableClient.upsertEntity<INoticeInfo>({
-                        partitionKey: memberId_cued,
+                        partitionKey: cuedId,
                         rowKey: createNoticeId('cue', memberId, postId), // combined id
                         Category: 'cue',
                         InitiateId: memberId,
@@ -133,18 +138,15 @@ export default async function UpdateImageFullnamesArray(req: NextApiRequest, res
                         CommentBrief: '', // [!] comment brief is not supplied in this case
                         CreatedTimeBySecond: getTimeBySecond()
                     }, 'Replace');
-                    // #4.5 update cue (of INotificationStatistics) (of cued member) in [C] notificationStatistics
-                    const notificationStatisticsUpdateResult = await notificationStatisticsCollectionClient.updateOne({ memberId: memberId_cued }, {
-                        $inc: {
-                            cue: 1
-                        }
-                    });
+                    // #4 update cue (of INotificationStatistics) (of cued member) in [C] notificationStatistics
+                    const notificationStatisticsUpdateResult = await notificationStatisticsCollectionClient.updateOne({ memberId: cuedId }, { $inc: { cue: 1 } });
                     if (!notificationStatisticsUpdateResult.acknowledged) {
-                        logWithDate(`Document (IPostComprehensive, post id: ${postId}) inserted in [C] postComprehensive successfully but failed to update cue (of INotificationStatistics, member id: ${memberId_cued}) in [C] notificationStatistics`, fname);
+                        logWithDate(`Document (IPostComprehensive, post id: ${postId}) inserted in [C] postComprehensive successfully but failed to update cue (of INotificationStatistics, member id: ${cuedId}) in [C] notificationStatistics`, fname);
                     }
                 }
             }
         }
+        
         await atlasDbClient.close();
         return;
     } catch (e: any) {

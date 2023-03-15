@@ -87,7 +87,7 @@ export default async function RequestImageUpload(req: NextApiRequest, res: NextA
         }
 
         const { status: postStatus, allowEditing, imageFullnamesArr } = postComprehensiveQueryResult;
-        if (!([1, 200].includes(postStatus) && allowEditing)) { // 1: initiated, 200: normal (allow to edit)
+        if (!([1, 21].includes(postStatus) && allowEditing)) { // 1: initiated (post info saved), 21: edited (post info saved)
             res.status(403).send('Method not allowed due to restriced post status or management');
             await atlasDbClient.close();
             return;

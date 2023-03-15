@@ -12,14 +12,16 @@ import { getTopicInfoArrayFromRequestBody, createTopicComprehensive } from '../.
 import { getCuedMemberInfoArrayFromRequestBody, getImageFullnamesArrayFromRequestBody, getParagraphsArrayFromRequestBody } from '../../../../../lib/utils/for/post';
 import { IPostComprehensive } from '../../../../../lib/interfaces/post';
 import { IChannelStatistics } from '../../../../../lib/interfaces/channel';
-import { ITopicComprehensive, ITopicPostMapping } from '../../../../../lib/interfaces/topic';
+import { ITopicComprehensive } from '../../../../../lib/interfaces/topic';
 import { INoticeInfo, INotificationStatistics } from '../../../../../lib/interfaces/notification';
 import { getNicknameFromToken } from '../../../../../lib/utils/for/member';
+import { verifyId } from '../../../../../lib/utils/verify';
+import { IMemberMemberMapping } from '../../../../../lib/interfaces/mapping';
 
 const domain = process.env.NEXT_PUBLIC_APP_DOMAIN;
 const fname = UpdateImageFullnamesArray.name;
 
-/** CreatePost v0.1.1 FIXME:
+/** CreatePost v0.1.1
  * 
  * Last update: 
  * 
@@ -45,6 +47,13 @@ export default async function UpdateImageFullnamesArray(req: NextApiRequest, res
         return;
     }
 
+    //// Verify post id ////
+    const { isValid, category, id: postId } = verifyId(req.body?.postId);
+    if (!(isValid && 'post' === category)) {
+        res.status(400).send('Invalid post id');
+        return;
+    }
+
     //// Verify array ////
     const { imageFullnamesArr } = req.body;
     if (!Array.isArray(imageFullnamesArr)) {
@@ -59,7 +68,6 @@ export default async function UpdateImageFullnamesArray(req: NextApiRequest, res
         await atlasDbClient.connect();
 
         const { sub: memberId } = token;
-        // #1.2 look up member status (IMemberComprehensive) in [C] memberComprehensive
         const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
         const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne<IMemberComprehensive>({ memberId });
         if (null === memberComprehensiveQueryResult) {
@@ -71,26 +79,77 @@ export default async function UpdateImageFullnamesArray(req: NextApiRequest, res
             await atlasDbClient.close();
             return;
         }
-        //// Create post ////
-        // #2.1 create a new post id
-        const postId = getRandomIdStr(true);
 
-
-
-
-        // #2.3 insert a new document (of IPostComprehensive) in [C] postComprehensive
+        //// Verify post status ////
         const postComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IPostComprehensive>('post');
+        const postComprehensiveQueryResult = await postComprehensiveCollectionClient.findOne({ postId }, { projection: { _id: 0, status: 1, allowEditing: 1 } });
+        if (null === postComprehensiveQueryResult) {
+            res.status(404).send('Post not found');
+            await atlasDbClient.close();
+            return;
+        }
+        const { status: postStatus, allowEditing, title, cuedMemberInfoArr } = postComprehensiveQueryResult;
+        if (!(21 === postStatus && allowEditing)) {
+            res.status(403).send('Method not allowed due to restricted post status');
+            await atlasDbClient.close();
+            return;
+        }
+
+        //// Update image fullnames array ////
         const postComprehensiveInsertResult = await postComprehensiveCollectionClient.updateOne({ postId }, {
-
-            imageFullnamesArr,
-            status: 200
-
+            $set: {
+                imageFullnamesArr,
+                status: 201
+            }
         });
         if (!postComprehensiveInsertResult.acknowledged) {
-            throw new Error(`Failed to insert document (of IPostComprehensive, member id: ${memberId}) in [C] postComprehensive`);
+            throw new Error(`Failed to update document (of IPostComprehensive, member id: ${memberId}) in [C] postComprehensive`);
         }
-        res.status(200).end();
 
+        //// Response 200 ////
+        res.status(200).send('Image fullname array updated');
+
+        //// (Cond.) Handle notice.cue ////
+        if (cuedMemberInfoArr.length !== 0) {
+            const blockingMemberMappingTableClient = AzureTableClient('BlockingMemberMapping');
+            const notificationStatisticsCollectionClient = atlasDbClient.db('statistics').collection<INotificationStatistics>('notification');
+
+            // #1 maximum 12 members are allowed to cued at one time (in one comment)
+            const cuedMemberIdsArrSliced = cuedMemberInfoArr.slice(0, 12);
+            for await (const cuedMemberInfo of cuedMemberIdsArrSliced) {
+                const { memberId: cuedId } = cuedMemberInfo;
+
+                let isBlocked = false;
+                // #2 look up record (of IMemberMemberMapping) in [RL] BlockingMemberMapping
+                const blockingMemberMappingQuery = blockingMemberMappingTableClient.listEntities<IMemberMemberMapping>({ queryOptions: { filter: `PartitionKey eq '${cuedId}' and RowKey eq '${memberId}'` } });
+                // [!] attemp to reterieve entity makes the probability of causing RestError
+                const blockingMemberMappingQueryResult = await blockingMemberMappingQuery.next();
+                if (blockingMemberMappingQueryResult.value) {
+                    const { IsActive: isActive } = blockingMemberMappingQueryResult.value;
+                    isBlocked = isActive;
+                }
+                if (!isBlocked) {
+                    // #3 upsert record (INoticeInfo.Cued) in [PRL] Notice
+                    const noticeTableClient = AzureTableClient('Notice');
+                    noticeTableClient.upsertEntity<INoticeInfo>({
+                        partitionKey: cuedId,
+                        rowKey: createNoticeId('cue', memberId, postId), // combined id
+                        Category: 'cue',
+                        InitiateId: memberId,
+                        Nickname: getNicknameFromToken(token),
+                        // PostId: postId,
+                        PostTitle: title,
+                        CommentBrief: '', // [!] comment brief is not supplied in this case
+                        CreatedTimeBySecond: getTimeBySecond()
+                    }, 'Replace');
+                    // #4 update cue (of INotificationStatistics) (of cued member) in [C] notificationStatistics
+                    const notificationStatisticsUpdateResult = await notificationStatisticsCollectionClient.updateOne({ memberId: cuedId }, { $inc: { cue: 1 } });
+                    if (!notificationStatisticsUpdateResult.acknowledged) {
+                        logWithDate(`Document (IPostComprehensive, post id: ${postId}) inserted in [C] postComprehensive successfully but failed to update cue (of INotificationStatistics, member id: ${cuedId}) in [C] notificationStatistics`, fname);
+                    }
+                }
+            }
+        }
 
         await atlasDbClient.close();
         return;

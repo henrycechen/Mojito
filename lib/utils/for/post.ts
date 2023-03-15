@@ -5,7 +5,7 @@ import { ICommentComprehensive, IRestrictedCommentComprehensive } from '../../in
 import { IMemberInfo, IConciseMemberStatistics } from '../../interfaces/member';
 import { INoticeInfoWithMemberInfo } from '../../interfaces/notification';
 import { IEditedPostComprehensive, IPostComprehensive, IRestrictedPostComprehensive } from '../../interfaces/post';
-import { ITopicComprehensive } from '../../interfaces/topic';
+import { ITopicComprehensive, ITopicInfo } from '../../interfaces/topic';
 import { getRandomHexStr } from '../create';
 import { verifyNoticeId, verifyUrl } from '../verify';
 
@@ -78,9 +78,9 @@ type PostComprehensiveUpdate = {
     paragraphsArr: string[];
     cuedMemberInfoArr: IMemberInfo[];
     channelId: string;
-    topicIdsArr: string[];
+    topicInfoArr: ITopicInfo[];
 
-    status: 201;
+    status: 21 | 201;
 
     totalLikedCount: 0; // reset liked and disliked count
     totalUndoLikedCount: 0; // reset undo liked and undo disliked count
@@ -88,16 +88,17 @@ type PostComprehensiveUpdate = {
     totalUndoDislikedCount: 0;
 };
 
-// FIXME: no images => 201, has images (and waiting on image uploads) => 1
-export function providePostComprehensiveUpdate(title: string, imageFullNamesArr: string[], paragraphsArr: string[], cuedMemberInfoArr: IMemberInfo[], channelId: string, topicIdsArr: string[]): PostComprehensiveUpdate {
+export function providePostComprehensiveUpdate(title: string, hasImages: boolean, paragraphsArr: string[], cuedMemberInfoArr: IMemberInfo[], channelId: string, topicInfoArr: ITopicInfo[]): PostComprehensiveUpdate {
     const updated: PostComprehensiveUpdate = {
         title,
-        imageFullNamesArr,
+        imageFullNamesArr: [],
         paragraphsArr,
         cuedMemberInfoArr,
         channelId,
-        topicIdsArr,
-        status: 201,
+        topicInfoArr,
+
+        status: hasImages ? 21 : 201, // [!] 21: waiting on images upload
+
         totalLikedCount: 0,
         totalUndoLikedCount: 0,
         totalDislikedCount: 0,

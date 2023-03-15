@@ -43,25 +43,29 @@ import axios from 'axios';
 import 'jimp';
 let Jimp: any;
 
-import { IConciseTopicComprehensive, ITopicInfo } from '../../lib/interfaces/topic';
-import { LangConfigs, TPreferenceStates } from '../../lib/types';
-import { IMemberInfo } from '../../lib/interfaces/member';
-import { IChannelInfoStates, IChannelInfoDictionary } from '../../lib/interfaces/channel';
-import { getNicknameBrief, provideAvatarImageUrl, } from '../../lib/utils/for/member';
-import { createId, getRandomHexStr } from '../../lib/utils/create';
-import { restoreFromLocalStorage } from '../../lib/utils/general';
-import { contentToParagraphsArray, cuedMemberInfoDictionaryToArray } from '../../lib/utils/for/post';
+import { IConciseTopicComprehensive, ITopicInfo } from '../../../lib/interfaces/topic';
+import { LangConfigs, TPreferenceStates } from '../../../lib/types';
+import { IMemberInfo } from '../../../lib/interfaces/member';
+import { IChannelInfoStates, IChannelInfoDictionary } from '../../../lib/interfaces/channel';
+import { getNicknameBrief, provideAvatarImageUrl, } from '../../../lib/utils/for/member';
+import { createId, getRandomHexStr } from '../../../lib/utils/create';
+import { restoreFromLocalStorage } from '../../../lib/utils/general';
+import { contentToParagraphsArray, cuedMemberInfoDictionaryToArray, fakeRestrictedPostComprehensive, provideImageUrl } from '../../../lib/utils/for/post';
 
-import Navbar from '../../ui/Navbar';
-import Copyright from '../../ui/Copyright';
-import Terms from '../../ui/Terms';
+import Navbar from '../../../ui/Navbar';
+import Copyright from '../../../ui/Copyright';
+import Terms from '../../../ui/Terms';
+import { IPostComprehensive, IRestrictedPostComprehensive } from '../../../lib/interfaces/post';
+import { TextButton } from '../../../ui/Styled';
 
 
 const storageName0 = 'PreferenceStates';
 const restorePreferenceStatesFromCache = restoreFromLocalStorage(storageName0);
 
 type TCreatePostPageProps = {
+    restrictedPostComprehensive_ss: IRestrictedPostComprehensive;
     channelInfoDict_ss: IChannelInfoDictionary;
+    redirect404: boolean;
     redirect500: boolean;
 };
 
@@ -69,9 +73,29 @@ const domain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? '';
 const defaultLang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
     title: {
-        tw: '創作新主題帖',
-        cn: '创作新主题帖',
-        en: 'Create a new post'
+        tw: '编辑主題帖',
+        cn: '编辑主题帖',
+        en: 'Edit post'
+    },
+    delete: {
+        tw: '刪除帖',
+        cn: '删除帖',
+        en: 'Delete post'
+    },
+    deletePost: {
+        tw: '您確認要刪除本帖嗎？',
+        cn: '您确认要删除本帖吗？',
+        en: 'Are you sure you want to delete this post?'
+    },
+    confirmDelete: {
+        tw: '確認',
+        cn: '确认',
+        en: 'Confirm'
+    },
+    cancelDelete: {
+        tw: '取消',
+        cn: '取消',
+        en: 'Cancel'
     },
     titlePlaceholder: {
         tw: '題目',
@@ -183,22 +207,46 @@ const langConfigs: LangConfigs = {
         cn: '主题帖发布失败😟请尝试重新发布主题帖',
         en: 'Publishing failed😟 Please try to re-publish your post'
     },
-    noPermissionAlert: {
-        tw: '您的賬號被限制因而不能創作新主題帖',
-        cn: '您的账户被限制因而不能创作新主题帖',
-        en: 'Unable to create post due to restricted member'
+    noPermissionAlert0: {
+        tw: '您的賬號被限制因而不能编辑新主題帖',
+        cn: '您的账户被限制因而不能编辑新主题帖',
+        en: 'Unable to edit post due to restricted member'
+    },
+    noPermissionAlert1: {
+        tw: '这篇主题帖被限制因而不能被编辑',
+        cn: '这篇主题帖被限制因而不能被编辑',
+        en: 'Unable to edit post due to restricted status'
     },
 
 };
 
 export async function getServerSideProps(context: NextPageContext): Promise<{ props: TCreatePostPageProps; }> {
+    let restrictedPostComprehensive_ss: IRestrictedPostComprehensive;
     let channelInfoDict_ss: IChannelInfoDictionary;
     try {
-        const resp = await fetch(`${domain}/api/channel/info/dictionary`);
-        if (200 !== resp.status) {
+        const { postId } = context.query;
+        //// GET post comprehensive ////
+        const resp0 = await fetch(`${domain}/api/post/id/${postId}`);
+        if (200 !== resp0.status) {
+            if (404 === resp0.status) {
+                return {
+                    props: {
+                        restrictedPostComprehensive_ss: fakeRestrictedPostComprehensive(),
+                        channelInfoDict_ss: {},
+                        redirect404: true,
+                        redirect500: false
+                    }
+                };
+            }
+            throw new Error('Attempt to GET post comprehensive');
+        }
+        restrictedPostComprehensive_ss = await resp0.json();
+        //// GET channel info ////
+        const resp1 = await fetch(`${domain}/api/channel/info/dictionary`);
+        if (200 !== resp1.status) {
             throw new Error('Attempt to GET channel info dictionary');
         }
-        channelInfoDict_ss = await resp.json();
+        channelInfoDict_ss = await resp1.json();
     } catch (e: any) {
         if (e instanceof SyntaxError) {
             console.log(`Attempt to parse channel info dictionary (JSON string) from resp. ${e}`);
@@ -207,24 +255,31 @@ export async function getServerSideProps(context: NextPageContext): Promise<{ pr
         }
         return {
             props: {
+                restrictedPostComprehensive_ss: fakeRestrictedPostComprehensive(),
                 channelInfoDict_ss: {},
+                redirect404: false,
                 redirect500: true
             }
         };
     }
     return {
         props: {
+            restrictedPostComprehensive_ss,
             channelInfoDict_ss,
+            redirect404: false,
             redirect500: false
         }
     };
 }
 
-const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) => {
+const CreatePost = ({ restrictedPostComprehensive_ss, channelInfoDict_ss, redirect404, redirect500 }: TCreatePostPageProps) => {
     const router = useRouter();
     const { data: session } = useSession({ required: true, onUnauthenticated() { signIn(); } });
 
     React.useEffect(() => {
+        if (redirect404) {
+            router.push('/404');
+        }
         if (redirect500) {
             router.push('/500');
         }
@@ -240,30 +295,41 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
         const authorSession: any = { ...session };
         authorId = authorSession?.user?.id;
         restorePreferenceStatesFromCache(setPreferenceStates);
-        verifyMemberStatus(authorId);
+        verifyPermissions(authorId);
     }, [session]);
 
-    const verifyMemberStatus = async (memberId: string) => {
+    const verifyPermissions = async (memberId: string) => {
+        //// Verify post status ////
+        const { allowEditing } = restrictedPostComprehensive_ss;
+        if (!allowEditing) {
+            setProcessStates({
+                ...processStates,
+                disableEditor: true,
+                alertSeverity: 'error',
+                alertContent: langConfigs.noPermissionAlert1[preferenceStates.lang],
+                displayAlert: true
+            });
+            return;
+        }
+        //// Verify member status ////
         const resp = await fetch(`/api/member/info/${memberId}`);
-
         if (200 !== resp.status) {
             setProcessStates({
                 ...processStates,
                 disableEditor: true,
                 alertSeverity: 'error',
-                alertContent: langConfigs.noPermissionAlert[preferenceStates.lang],
+                alertContent: langConfigs.noPermissionAlert0[preferenceStates.lang],
                 displayAlert: true
             });
             return;
         }
         const { status, allowPosting } = await resp.json();
-
         if (!(0 < status && allowPosting)) {
             setProcessStates({
                 ...processStates,
                 disableEditor: true,
                 alertSeverity: 'error',
-                alertContent: langConfigs.noPermissionAlert[preferenceStates.lang],
+                alertContent: langConfigs.noPermissionAlert0[preferenceStates.lang],
                 displayAlert: true
             });
         }
@@ -277,7 +343,7 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
 
     //////////////////////////////////////// PROCESS ////////////////////////////////////////
 
-    type TProcessStates = {
+    type ProcessStates = {
         disableEditor: boolean;
         alertSeverity: 'error' | 'info' | 'success';
         alertContent: string;
@@ -292,7 +358,7 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
     };
 
     //////// STATES - process ////////
-    const [processStates, setProcessStates] = React.useState<TProcessStates>({
+    const [processStates, setProcessStates] = React.useState<ProcessStates>({
         disableEditor: false,
         alertSeverity: 'info',
         alertContent: '',
@@ -350,6 +416,7 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
     type TPostInfoOnEdit = {
         postId: string;
         title: string;
+        imageUrlsArr: string[];
         content: string; // require converting to paragraphsArr on submit
         cuedMemberInfoDict: { [memberId: string]: IMemberInfo; }; // require converting to cuedMemberInfoArr on submit
         channelId: string;
@@ -360,6 +427,7 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
     const [postInfoStates, setPostInfoStates] = React.useState<TPostInfoOnEdit>({
         postId: '',
         title: '',
+        imageUrlsArr: [],
         content: '', // require converting to paragraphsArr on submit
         cuedMemberInfoDict: {}, // require converting to cuedMemberInfoArr on submit
         channelId: '',
@@ -369,6 +437,24 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
     const handlePostStatesChange = (prop: keyof TPostInfoOnEdit) => (event: React.ChangeEvent<HTMLInputElement>) => {
         setPostInfoStates({ ...postInfoStates, [prop]: event.target.value });
     };
+
+    React.useEffect(() => {
+        const dict: { [memberId: string]: IMemberInfo; } = {};
+        if (0 !== restrictedPostComprehensive_ss.cuedMemberInfoArr.length) {
+            restrictedPostComprehensive_ss.cuedMemberInfoArr.forEach(m => {
+                dict[m.memberId] = { ...m };
+            });
+        }
+        setPostInfoStates({
+            ...postInfoStates,
+            postId: restrictedPostComprehensive_ss.postId,
+            title: restrictedPostComprehensive_ss.title,
+            content: restrictedPostComprehensive_ss.paragraphsArr.join(''),
+            cuedMemberInfoDict: dict,
+            channelId: restrictedPostComprehensive_ss.channelId,
+            topicInfoArr: [...restrictedPostComprehensive_ss.topicInfoArr]
+        });
+    }, []);
 
     //////////////////////////////////////// MEMBER INFO ////////////////////////////////////////
 
@@ -527,12 +613,18 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
 
     type TImage = {
         url: string;
-        isUploaded: boolean;
         fullname: string;
+        isUploaded: boolean;
     };
 
     //////// STATES - images array ////////
     const [imagesArr, setImagesArr] = React.useState<TImage[]>([]);
+
+    React.useEffect(() => {
+        if (0 !== restrictedPostComprehensive_ss.imageFullnamesArr.length) {
+            setImagesArr(restrictedPostComprehensive_ss.imageFullnamesArr.map(fullname => { return { url: provideImageUrl(fullname, domain), fullname, isUploaded: true }; }));
+        }
+    }, []);
 
     // Handle image states change
     const handleAddImage = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -547,7 +639,11 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
                     const img = new Image();
                     img.src = url;
                     img.onload = () => {
-                        resolve({ url, isUploaded: false, fullname: '' });
+                        resolve({
+                            url,
+                            fullname: '',
+                            isUploaded: false
+                        });
                     };
                     img.onerror = (e) => {
                         reject(e);
@@ -633,7 +729,7 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
                 hasImages: boolean;
             };
 
-            // #2.1 Initate (upload post info except for images)
+            // #2.1 Update (upload post info except for images)
             const post: TPostInfoOnInitiate = {
                 title: postInfoStates.title,
                 paragraphsArr: contentToParagraphsArray(postInfoStates.content),
@@ -643,8 +739,8 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
                 hasImages: imagesArr.length !== 0
             };
 
-            const respInit = await fetch('/api/create/initiate', {
-                method: 'POST',
+            const respInit = await fetch(`/api/creation/id/${postId}`, {
+                method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(post)
             });
@@ -658,9 +754,6 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
                 });
                 return;
             }
-
-            // #2.2 retrieve post id
-            postId = await respInit.text();
 
             if (imagesArr.length === 0) {
                 // Case [No images], display 'save success' alert
@@ -769,6 +862,7 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
 
         // #3.2 Upload images one by one
         for (let i = 0; i < uploadQueue.length; i++) {
+
             // Continue if uploaded
             if (uploadQueue[i].isUploaded) {
                 continue;
@@ -779,7 +873,6 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
             console.log(`Uploading image: ${img.url}`);
 
             if (img !== null && img.url) {
-
                 // Create form data
                 let formData = new FormData();
                 const config = {
@@ -847,7 +940,7 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
         }
 
         // #4 Update image fullnames array
-        const respUpdate = await fetch('/api/create/updateimagefullnamesarray', {
+        const respUpdate = await fetch(`/api/creation/id/${postId}/updateimagefullnamesarray`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -881,6 +974,29 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
         }
     };
 
+    //////////////////////////////////////// DELETE ////////////////////////////////////////
+    type TDeleteSaver = {
+        display: boolean;
+    };
+
+    //////// STATE - topic helper ////////
+    const [deleteSaverStates, setDeleteSaverState] = React.useState<TDeleteSaver>({
+        display: false,
+    });
+
+    const handleDeletePost = async () => {
+        await fetch(`/api/creation/id/${postInfoStates.postId}`, { method: 'DELETE' });
+        // Jump to member info page (author's post layout)
+        router.push(`/me/id/${authorId}`);
+    };
+
+    const handleDeleteSaverOpen = () => {
+        setDeleteSaverState({ display: true });
+    };
+    const handleDeleteSaverClose = () => {
+        setDeleteSaverState({ display: false });
+    };
+
     return (
         <>
             <Navbar />
@@ -889,7 +1005,16 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
             <Box sx={{ display: 'flex', justifyContent: 'center' }}>
                 <Box component={'form'} sx={{ maxWidth: 600, flexGrow: 1, padding: 2, borderRadius: 1, boxShadow: { xs: 0, sm: 1 }, backgroundColor: 'background' }} onSubmit={handleSubmit}>
                     <Stack spacing={2}>
-                        <Typography>{langConfigs.title[preferenceStates.lang]}</Typography>
+                        <Grid container>
+                            <Grid item flexGrow={1}>
+                                <Typography>{langConfigs.title[preferenceStates.lang]}</Typography>
+                            </Grid>
+                            <Grid item>
+                                <Button sx={{ py: 0 }} onClick={handleDeleteSaverOpen}>
+                                    <Typography variant='body2'>{langConfigs.delete[preferenceStates.lang]}</Typography>
+                                </Button>
+                            </Grid>
+                        </Grid>
 
                         {/* (T) title */}
                         <TextField
@@ -1022,6 +1147,7 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
 
                                             {/* the 'add' button */}
                                             {!processStates.disableAddButton && !processStates.submitting && 10 > imagesArr.length && <IconButton
+
                                                 sx={{
                                                     width: 100,
                                                     height: 100,
@@ -1094,12 +1220,40 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
                 </Box>
             </Box>
 
+            {/* delete saver */}
+            <Modal
+                open={deleteSaverStates.display}
+                onClose={handleDeleteSaverClose}
+                aria-labelledby='modal-delete-saver-title'
+                aria-describedby='modal-delete-saver-description'
+            >
+                <Box
+                    sx={{
+                        position: 'absolute' as 'absolute',
+                        top: '50%',
+                        left: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        width: 330,
+                        bgcolor: 'background.paper',
+                        borderRadius: 2,
+                        boxShadow: 24,
+                        p: 4,
+                    }}
+                >
+                    <Typography align='center'>{langConfigs.deletePost[preferenceStates.lang]}</Typography>
+                    <Box pt={3} sx={{ display: 'flex', justifyContent: 'space-evenly' }}>
+                        <Button variant='contained' color='inherit' onClick={async () => { await handleDeletePost(); }}>{langConfigs.confirmDelete[preferenceStates.lang]}</Button>
+                        <Button variant='contained' onClick={handleDeleteSaverClose}>{langConfigs.cancelDelete[preferenceStates.lang]}</Button>
+                    </Box>
+                </Box>
+            </Modal>
+
             {/* topic helper */}
             <Modal
                 open={topicHelperStates.display}
                 onClose={handleTopicHelperClose}
-                aria-labelledby='modal-modal-title'
-                aria-describedby='modal-modal-description'
+                aria-labelledby='modal-topic-helper-title'
+                aria-describedby='modal-topic-helper-description'
             >
                 <Stack spacing={1} sx={{
                     position: 'absolute' as 'absolute',

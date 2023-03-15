@@ -18,3 +18,11 @@ export interface IMemberPostMapping {
     CreatedTimeBySecond: number;
     IsActive: boolean;
 }
+
+export interface ITopicPostMapping {
+    topicId: string;
+    postId: string;
+    channelId: string;
+    createdTimeBySecond: number; // created time of this document (post est. time)
+    status: number;
+}

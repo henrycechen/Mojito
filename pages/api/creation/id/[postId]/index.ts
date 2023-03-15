@@ -8,13 +8,13 @@ import AtlasDatabaseClient from "../../../../../modules/AtlasDatabaseClient";
 
 import { verifyId } from '../../../../../lib/utils/verify';
 import { response405, response500, logWithDate } from '../../../../../lib/utils/general';
-import { IMemberInfo, IMemberComprehensive, IMemberStatistics } from '../../../../../lib/interfaces/member';
+import { IMemberComprehensive, IMemberStatistics } from '../../../../../lib/interfaces/member';
 import { IPostComprehensive } from '../../../../../lib/interfaces/post';
-import { IMemberMemberMapping, IMemberPostMapping } from '../../../../../lib/interfaces/mapping';
+import { IMemberMemberMapping, IMemberPostMapping, ITopicPostMapping } from '../../../../../lib/interfaces/mapping';
 import { IChannelStatistics } from '../../../../../lib/interfaces/channel';
-import { ITopicComprehensive, ITopicPostMapping } from '../../../../../lib/interfaces/topic';
+import { ITopicComprehensive } from '../../../../../lib/interfaces/topic';
 import { getTopicInfoArrayFromRequestBody, createTopicComprehensive } from '../../../../../lib/utils/for/topic';
-import { getCuedMemberInfoArrayFromRequestBody, getImageFullnamesArrayFromRequestBody, getParagraphsArrayFromRequestBody, provideEditedPostInfo, providePostComprehensiveUpdate } from '../../../../../lib/utils/for/post';
+import { getCuedMemberInfoArrayFromRequestBody, getParagraphsArrayFromRequestBody, provideEditedPostInfo, providePostComprehensiveUpdate } from '../../../../../lib/utils/for/post';
 import { INoticeInfo, INotificationStatistics } from '../../../../../lib/interfaces/notification';
 import { createNoticeId, getTimeBySecond } from '../../../../../lib/utils/create';
 import { getNicknameFromToken } from '../../../../../lib/utils/for/member';
@@ -44,9 +44,6 @@ export default async function UpdateOrDeleteCreationById(req: NextApiRequest, re
         response405(req, res);
         return;
     }
-
-    // res.status(200).send('ok');
-    // return;
 
     //// Verify identity ////
     const token = await getToken({ req });
@@ -83,7 +80,20 @@ export default async function UpdateOrDeleteCreationById(req: NextApiRequest, re
 
         //// Verify post status ////
         const postComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IPostComprehensive>('post');
-        const postComprehensiveQueryResult = await postComprehensiveCollectionClient.findOne({ postId }, { projection: { _id: 0, status: 1, allowEditing: 1 } });
+        const postComprehensiveQueryResult = await postComprehensiveCollectionClient.findOne({ postId }, {
+            projection: {
+                _id: 0,
+                memberId: 1,
+                title: 1,
+                imageFullnamesArr: 1,
+                paragraphsArr: 1,
+                cuedMemberInfoArr: 1,
+                channelId: 1,
+                topicInfoArr: 1,
+                status: 1,
+                allowEditing: 1
+            }
+        });
         if (null === postComprehensiveQueryResult) {
             res.status(404).send('Post not found');
             await atlasDbClient.close();
@@ -106,7 +116,7 @@ export default async function UpdateOrDeleteCreationById(req: NextApiRequest, re
         //////// DELETE | delete a creation ////////
         if ('DELETE' === method) {
 
-            const { title, channelId, topicInfoArr: topicIdsArr } = postComprehensiveQueryResult;
+            const { title, channelId, topicInfoArr } = postComprehensiveQueryResult;
 
             //// Update record (of IMemberPostMapping) in [RL] CreationsMapping
             const mappingTableClient = AzureTableClient('CreationsMapping');
@@ -123,7 +133,7 @@ export default async function UpdateOrDeleteCreationById(req: NextApiRequest, re
             //// Update post status (of IPostComprehensive) [C] postComprehensive ////
             const postComprehensiveUpdateResult = await postComprehensiveCollectionClient.updateOne({ postId }, { $set: { status: -1 } });
             if (!postComprehensiveUpdateResult.acknowledged) {
-                throw new Error(`Failed to update status (-1: delete, of IPostComprehensive, post id: ${postId}) in [C] postComprehensive`);
+                throw new Error(`Failed to update status (-1, delete, of IPostComprehensive, post id: ${postId}) in [C] postComprehensive`);
             }
 
             //// Response 200 for DELETE requests ////
@@ -145,21 +155,21 @@ export default async function UpdateOrDeleteCreationById(req: NextApiRequest, re
             }
 
             //// (Cond.) Update totalPostDeleteCount (of ITopicComprehensive) [C] topicComprehensive ////
-            if (Array.isArray(topicIdsArr) && topicIdsArr.length !== 0) {
+            if (Array.isArray(topicInfoArr) && topicInfoArr.length !== 0) {
                 const topicComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<ITopicComprehensive>('topic');
                 const topicPostMappingCollectionClient = atlasDbClient.db('mapping').collection<ITopicPostMapping>('topic-post');
-                for await (const topicId of topicIdsArr) {
+                for await (const t of topicInfoArr) {
 
                     //// Update totalPostDeleteCount (of ITopicComprehensive) in [C] topicComprehensive ////
-                    const topicComprehensiveUpdateResult = await topicComprehensiveCollectionClient.updateOne({ topicId }, { $inc: { totalPostDeleteCount: 1 } });
+                    const topicComprehensiveUpdateResult = await topicComprehensiveCollectionClient.updateOne({ topicId: t.topicId }, { $inc: { totalPostDeleteCount: 1 } });
                     if (!topicComprehensiveUpdateResult.acknowledged) {
-                        logWithDate(`Document (IPostComprehensive, post id: ${postId}) updated (deleted, status -1) in [C] postComprehensive successfully but failed to update totalPostDeleteCount (of ITopicComprehensive, topic id: ${topicId}) in [C] topicComprehensive`, fname);
+                        logWithDate(`Document (IPostComprehensive, post id: ${postId}) updated (deleted, status -1) in [C] postComprehensive successfully but failed to update totalPostDeleteCount (of ITopicComprehensive, topic id: ${t.topicId}) in [C] topicComprehensive`, fname);
                     }
 
                     //// Update status (of ITopicPostMapping) in [C] topicPostMapping ////
-                    const topicPostMappingInsertResult = await topicPostMappingCollectionClient.updateOne({ topicId, postId }, { $set: { status: -1 } });
+                    const topicPostMappingInsertResult = await topicPostMappingCollectionClient.updateOne({ topicId: t.topicId, postId }, { $set: { status: -1 } });
                     if (!topicPostMappingInsertResult.acknowledged) {
-                        logWithDate(`Document (IPostComprehensive, post id: ${postId}) updated (deleted, status -1) in [C] postComprehensive successfully but failed to update document (of ITopicPostMapping, topic id: ${topicId}, status -1) in [C] topicPostMapping`, fname);
+                        logWithDate(`Document (IPostComprehensive, post id: ${postId}) updated (deleted, status -1) in [C] postComprehensive successfully but failed to update document (of ITopicPostMapping, topic id: ${t.topicId}, status -1) in [C] topicPostMapping`, fname);
                     }
                 }
             }
@@ -169,201 +179,189 @@ export default async function UpdateOrDeleteCreationById(req: NextApiRequest, re
         }
 
         //////// PUT | edit a creation ////////
-        if ('PUT' === method) {
-
-            // FIXME:FIXME:FIXME:
-            // when updating image fullnames, remove the removed images then waiting for the new ones updated
-
-            const { allowPosting } = memberComprehensiveQueryResult;
-            if (!allowPosting) {
-                res.status(403).send('Method not allowed due to member suspended or deactivated');
-                await atlasDbClient.close();
-                return;
-            }
-
-            const { allowEditing } = postComprehensiveQueryResult;
-            if (!allowEditing) {
-                res.status(403).send('Method not allowed due to post suspended or deactivated');
-                await atlasDbClient.close();
-                return;
-            }
-
-            //// Verify edited title ////
-            const { title } = req.body;
-            if (!('string' === typeof title && '' !== title)) {
-                res.status(400).send('Improper or blank post title');
-                await atlasDbClient.close();
-                return;
-            }
-
-            const { channelId } = req.body;
-            if (!('string' === typeof channelId && '' !== channelId)) {
-                res.status(400).send('Improper channel id');
-                await atlasDbClient.close();
-                return;
-            }
-
-            //// Verify edited channelId ////
-            const channelInfoTableClient = AzureTableClient('ChannelInfo');
-            const channelInfoQuery = channelInfoTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq 'Info' and RowKey eq '${channelId}' and IsActive eq true` } });
-            // [!] attemp to reterieve entity makes the probability of causing RestError
-            let channelInfoQueryResult = await channelInfoQuery.next();
-            if (!channelInfoQueryResult.value) {
-                res.status(400).send('Channel id not found');
-                await atlasDbClient.close();
-                return;
-            }
-
-            //// Explicitly get topic id array and cued member info array ////
-            const topicIdsArr = getTopicInfoArrayFromRequestBody(req.body);
-            const cuedMemberInfoArr = getCuedMemberInfoArrayFromRequestBody(req.body);
-
-            //// Update document (of IPostComprehensive) in [C] postComprehensive ////
-            const postComprehensiveUpdateResult = await postComprehensiveCollectionClient.updateOne({ postId }, {
-                $set:
-                    providePostComprehensiveUpdate(
-                        title,
-                        getImageFullnamesArrayFromRequestBody(req.body),
-                        getParagraphsArrayFromRequestBody(req.body),
-                        cuedMemberInfoArr,
-                        channelId,
-                        topicIdsArr,
-                    ),
-                $inc: {
-                    totalEditCount: 1
-                },
-                $push: {
-                    edited: provideEditedPostInfo(postComprehensiveQueryResult)
-                }
-            });
-            if (!postComprehensiveUpdateResult.acknowledged) {
-                throw new Error(`Failed to update postInfo, totalEditCount and editedPostInfo (of IPostComprehensive, post id: ${postId}) in [C] postComprehensive`);
-            }
-
-            //// Response 200 for PUT requests ////
-            res.status(200).send('Edit post success');
-
-            //// Update statistics ////
-
-            //// Update totalCreationEditCount (of IMemberStatistics) in [C] memberStatistics ////
-            const memberStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IMemberStatistics>('member');
-            const memberStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId: authorId }, {
-                $inc: {
-                    totalCreationEditCount: 1
-                }
-            });
-            if (!memberStatisticsUpdateResult.acknowledged) {
-                logWithDate(`Document (IPostComprehensive, post id: ${postId}) updated in [C] postComprehensive successfully but failed to update totalCreationEditCount (of IMemberStatistics, member id: ${authorId}) in [C] memberStatistics`, fname);
-            }
-
-            //// (Cond.) Update totalPostCount (ITopicComprehensive) in [C] topicComprehensive ////
-
-            if (topicIdsArr.length !== 0) {
-
-                const topicPostMappingCollectionClient = atlasDbClient.db('mapping').collection<ITopicPostMapping>('topic-post');
-                const topicComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<ITopicComprehensive>('topic');
-
-                const arr = [];
-
-                //// Delete outdated mapping (ITopicPostMapping) in [C] topicPostMapping ////
-                //// And collect topic ids that have connections (mapping) with this post ////
-                const mappingQuery = topicPostMappingCollectionClient.find({ postId });
-                let mappingQureyResult = await mappingQuery.next();
-                while (null !== mappingQureyResult) {
-
-                    const { topicId } = mappingQureyResult;
-                    if (!topicIdsArr.includes(topicId)) {
-                        // Set mapping status to -1 (of ITopicPostMapping)
-                        topicPostMappingCollectionClient.updateOne({ topicId, postId }, { $set: { status: -1 } });
-                        // Accumulate post delete count (+1)
-                        topicComprehensiveCollectionClient.updateOne({ topicId }, { $inc: { totalPostDeleteCount: 1 } });
-                    } else {
-                        // collect the topic id that has connection (mapping) with this post
-                        arr.push(topicId);
-                    }
-                }
-
-                //// Accumulate totalPostCount or create new mapping (ITopicPostMapping) for the topics ////
-                //// That have no mapping (with this post) in [C] topicComprehensive ////
-                for await (const topicId of topicIdsArr) {
-                    if (!arr.includes(topicId)) {
-
-                        //// Newly added topic ////
-                        const topicComprehensiveQueryResult = await topicComprehensiveCollectionClient.findOneAndUpdate({ topicId }, { $inc: { totalPostCount: 1 } });
-                        if (!topicComprehensiveQueryResult.ok) {
-                            // Topic dose not appear in the database
-                            const topicComprehensiveUpsertResult = await topicComprehensiveCollectionClient.updateOne({ topicId }, { $set: createTopicComprehensive(topicId, channelId) }, { upsert: true });
-                            if (!topicComprehensiveUpsertResult.acknowledged) {
-                                logWithDate(`Document (IPostComprehensive, post id: ${postId}) inserted in [C] postComprehensive successfully but failed to upsert a new topic (document of ITopicComprehensive, topic id: ${topicId}) in [C] topicComprehensive`, fname);
-                            }
-                        }
-
-                        //// Upsert a new document (of ITopicPostMapping) in [C] topicPostMapping
-                        const topicPostMappingInsertResult = await topicPostMappingCollectionClient.updateOne({ topicId }, {
-                            $setOnInsert: {
-                                topicId,
-                                postId,
-                                channelId,
-                                createdTimeBySecond: new Date().getTime(),
-                                status: 200
-                            }
-                        }, { upsert: true }
-                        );
-                        if (!topicPostMappingInsertResult.acknowledged) {
-                            logWithDate(`Document (ITopicPostMapping, post id: ${postId}) inserted in [C] postComprehensive successfully but failed to insert document (of ITopicPostMapping, topic id: ${topicId}) in [C] topicPostMapping`, fname);
-                        }
-                    }
-                }
-            }
-
-            //// (Cond.) Handle notice.cue ////
-
-            if (cuedMemberInfoArr.length !== 0) {
-                const blockingMemberMappingTableClient = AzureTableClient('BlockingMemberMapping');
-                const notificationStatisticsCollectionClient = atlasDbClient.db('statistics').collection<INotificationStatistics>('notification');
-
-                let arr: IMemberInfo[] = [...cuedMemberInfoArr];
-                //// Maximum 13 members are allowed to cued at one time
-                if (13 < cuedMemberInfoArr.length) {
-                    arr = arr.slice(0, 13);
-                }
-                for await (const info of arr) {
-                    const { memberId: cuedId } = info;
-
-                    //// Look up record (of IMemberMemberMapping) in [RL] BlockingMemberMapping ////
-                    const blockingMemberMappingQuery = blockingMemberMappingTableClient.listEntities<IMemberMemberMapping>({ queryOptions: { filter: `PartitionKey eq '${cuedId}' and RowKey eq '${authorId}'` } });
-                    const blockingMemberMappingQueryResult = await blockingMemberMappingQuery.next();
-                    if (!blockingMemberMappingQueryResult.done) {
-                        const { IsActive: notBlocked } = blockingMemberMappingQueryResult.value;
-
-                        if (!!notBlocked) { // [!] comment author has not been blocked by cued member //
-
-                            //// Upsert record (of INoticeInfo.Cued) in [PRL] Notice ////
-                            const noticeTableClient = AzureTableClient('Notice');
-                            noticeTableClient.upsertEntity<INoticeInfo>({
-                                partitionKey: cuedId,
-                                rowKey: createNoticeId('cue', authorId, postId), // combined id
-                                Category: 'cue',
-                                InitiateId: authorId,
-                                Nickname: getNicknameFromToken(token),
-                                PostTitle: title,
-                                CommentBrief: '', // [!] comment brief is not supplied in this case
-                                CreatedTimeBySecond: getTimeBySecond(),
-                            }, 'Replace');
-
-                            //// Update statistics.cue (INotificationStatistics) (of cued member) in [C] notificationStatistics ////
-                            const notificationStatisticsUpdateResult = await notificationStatisticsCollectionClient.updateOne({ memberId: cuedId }, { $inc: { cue: 1 } });
-                            if (!notificationStatisticsUpdateResult.acknowledged) {
-                                logWithDate(`Document (IPostComprehensive, post id: ${postId}) updated in [C] postComprehensive successfully but failed to update cue (of INotificationStatistics, member id: ${cuedId}) in [C] notificationStatistics`, fname);
-                            }
-                        }
-                    }
-                }
-            }
-
+        const { allowPosting } = memberComprehensiveQueryResult;
+        if (!allowPosting) {
+            res.status(403).send('Method not allowed due to member suspended or deactivated');
             await atlasDbClient.close();
             return;
         }
+
+        const { allowEditing } = postComprehensiveQueryResult;
+        if (!allowEditing) {
+            res.status(403).send('Method not allowed due to post suspended or deactivated');
+            await atlasDbClient.close();
+            return;
+        }
+
+        //// Verify edited title ////
+        const { title } = req.body;
+        if (!('string' === typeof title && '' !== title)) {
+            res.status(400).send('Improper or blank post title');
+            await atlasDbClient.close();
+            return;
+        }
+
+        const { channelId } = req.body;
+        if (!('string' === typeof channelId && '' !== channelId)) {
+            res.status(400).send('Improper channel id');
+            await atlasDbClient.close();
+            return;
+        }
+
+        //// Verify edited channelId ////
+        const channelInfoTableClient = AzureTableClient('ChannelInfo');
+        const channelInfoQuery = channelInfoTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq 'Info' and RowKey eq '${channelId}' and IsActive eq true` } });
+        // [!] attemp to reterieve entity makes the probability of causing RestError
+        let channelInfoQueryResult = await channelInfoQuery.next();
+        if (!channelInfoQueryResult.value) {
+            res.status(400).send('Channel id not found');
+            await atlasDbClient.close();
+            return;
+        }
+
+        //// Verify if comes with images ////
+        const hasImages = !!(req.body?.hasImages);
+
+        //// Update post ////
+        // #1 get current time (by second)
+        const now = getTimeBySecond();
+        // #2 explicitly get topic id array and cued member info array
+        const topicInfoArr = getTopicInfoArrayFromRequestBody(req.body);
+        const cuedMemberInfoArr = getCuedMemberInfoArrayFromRequestBody(req.body);
+        // #3 update document (of IPostComprehensive) in [C] postComprehensive
+        const postComprehensiveUpdateResult = await postComprehensiveCollectionClient.updateOne({ postId }, {
+            $set:
+                providePostComprehensiveUpdate(
+                    title,
+                    hasImages,
+                    getParagraphsArrayFromRequestBody(req.body),
+                    cuedMemberInfoArr,
+                    channelId,
+                    topicInfoArr,
+                ),
+            $inc: {
+                totalEditCount: 1
+            },
+            $push: {
+                edited: provideEditedPostInfo(postComprehensiveQueryResult)
+            }
+        });
+        if (!postComprehensiveUpdateResult.acknowledged) {
+            throw new Error(`Failed to update postInfo, totalEditCount and editedPostInfo (of IPostComprehensive, post id: ${postId}) in [C] postComprehensive`);
+        }
+
+        //// Response 200 for PUT requests ////
+        res.status(200).send(postId);
+
+        //// Update statistics ////
+        // #1 update totalCreationEditCount (of IMemberStatistics) in [C] memberStatistics
+        const memberStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IMemberStatistics>('member');
+        const memberStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId: authorId }, { $inc: { totalCreationEditCount: 1 } });
+        if (!memberStatisticsUpdateResult.acknowledged) {
+            logWithDate(`Document (IPostComprehensive, post id: ${postId}) updated in [C] postComprehensive successfully but failed to update totalCreationEditCount (of IMemberStatistics, member id: ${authorId}) in [C] memberStatistics`, fname);
+        }
+
+        // #2 (cond.) update totalPostCount (ITopicComprehensive) in [C] topicComprehensive
+        if (topicInfoArr.length !== 0) {
+            const topicPostMappingCollectionClient = atlasDbClient.db('mapping').collection<ITopicPostMapping>('topic-post');
+            const topicComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<ITopicComprehensive>('topic');
+
+            // #2.1 prepare topic ids array
+            const topicIdsArr = topicInfoArr.map(t => t.topicId);
+            const topicIdsArr_dismissed = [];
+
+            // #2.2 delete invalid mapping (ITopicPostMapping) in [C] topicPostMapping
+            const mappingQuery = topicPostMappingCollectionClient.find({ postId });
+            let mappingQureyResult = await mappingQuery.next();
+            while (null !== mappingQureyResult) {
+
+                const { topicId } = mappingQureyResult;
+                if (!topicIdsArr.includes(topicId)) {
+                    // Set mapping status to -1 (of ITopicPostMapping)
+                    topicPostMappingCollectionClient.updateOne({ topicId, postId }, { $set: { status: -1 } });
+                    // Accumulate post delete count (+1)
+                    topicComprehensiveCollectionClient.updateOne({ topicId }, { $inc: { totalPostDeleteCount: 1 } });
+                } else {
+                    // And collect topic ids that have connections with this post (topic-post mapping)
+                    topicIdsArr_dismissed.push(topicId);
+                }
+            }
+
+            // #2.3 accumulate totalPostCount or create new mapping (ITopicPostMapping) for the newly-added topics
+            for await (const t of topicInfoArr) {
+                if (!topicIdsArr_dismissed.includes(t.topicId)) {
+                    const topicComprehensiveQueryResult = await topicComprehensiveCollectionClient.findOneAndUpdate({ topicId: t }, { $inc: { totalPostCount: 1 } });
+                    if (!topicComprehensiveQueryResult.ok) {
+                        // [!] topic not found, create new topic
+                        const topicComprehensiveUpsertResult = await topicComprehensiveCollectionClient.updateOne({ topicId: t }, { $set: createTopicComprehensive(t.topicId, t.content, channelId) }, { upsert: true });
+                        if (!topicComprehensiveUpsertResult.acknowledged) {
+                            logWithDate(`Document (IPostComprehensive, post id: ${postId}) updated in [C] postComprehensive successfully but failed to upsert a new topic (document of ITopicComprehensive, topic id: ${t}) in [C] topicComprehensive`, fname);
+                        }
+                    }
+                    // Update mapping
+                    const topicPostMappingInsertResult = await topicPostMappingCollectionClient.updateOne({ topicId: t }, {
+                        $set: {
+                            createdTimeBySecond: new Date().getTime(),
+                        },
+                        $setOnInsert: {
+                            topicId: t.topicId,
+                            postId,
+                            channelId,
+                            status: 200
+                        }
+                    }, { upsert: true }
+                    );
+                    if (!topicPostMappingInsertResult.acknowledged) {
+                        logWithDate(`Document (ITopicPostMapping, post id: ${postId}) inserted in [C] postComprehensive successfully but failed to insert document (of ITopicPostMapping, topic id: ${t}) in [C] topicPostMapping`, fname);
+                    }
+                }
+            }
+        }
+
+        //// (Cond.) Handle notice.cue ////
+        if (!hasImages && cuedMemberInfoArr.length !== 0) {
+            const blockingMemberMappingTableClient = AzureTableClient('BlockingMemberMapping');
+            const notificationStatisticsCollectionClient = atlasDbClient.db('statistics').collection<INotificationStatistics>('notification');
+
+            // #1 maximum 12 members are allowed to cued at one time (in one comment)
+            const cuedMemberIdsArrSliced = cuedMemberInfoArr.slice(0, 12);
+            for await (const cuedMemberInfo of cuedMemberIdsArrSliced) {
+                const { memberId: cuedId } = cuedMemberInfo;
+
+                let isBlocked = false;
+                // #2 look up record (of IMemberMemberMapping) in [RL] BlockingMemberMapping
+                const blockingMemberMappingQuery = blockingMemberMappingTableClient.listEntities<IMemberMemberMapping>({ queryOptions: { filter: `PartitionKey eq '${cuedId}' and RowKey eq '${memberId}'` } });
+                // [!] attemp to reterieve entity makes the probability of causing RestError
+                const blockingMemberMappingQueryResult = await blockingMemberMappingQuery.next();
+                if (blockingMemberMappingQueryResult.value) {
+                    const { IsActive: isActive } = blockingMemberMappingQueryResult.value;
+                    isBlocked = isActive;
+                }
+                if (!isBlocked) {
+                    // #3 upsert record (INoticeInfo.Cued) in [PRL] Notice
+                    const noticeTableClient = AzureTableClient('Notice');
+                    noticeTableClient.upsertEntity<INoticeInfo>({
+                        partitionKey: cuedId,
+                        rowKey: createNoticeId('cue', memberId, postId), // combined id
+                        Category: 'cue',
+                        InitiateId: memberId,
+                        Nickname: getNicknameFromToken(token),
+                        // PostId: postId,
+                        PostTitle: title,
+                        CommentBrief: '', // [!] comment brief is not supplied in this case
+                        CreatedTimeBySecond: getTimeBySecond()
+                    }, 'Replace');
+                    // #4 update cue (of INotificationStatistics) (of cued member) in [C] notificationStatistics
+                    const notificationStatisticsUpdateResult = await notificationStatisticsCollectionClient.updateOne({ memberId: cuedId }, { $inc: { cue: 1 } });
+                    if (!notificationStatisticsUpdateResult.acknowledged) {
+                        logWithDate(`Document (IPostComprehensive, post id: ${postId}) inserted in [C] postComprehensive successfully but failed to update cue (of INotificationStatistics, member id: ${cuedId}) in [C] notificationStatistics`, fname);
+                    }
+                }
+            }
+        }
+
+        await atlasDbClient.close();
+        return;
     } catch (e: any) {
         let msg;
         if (e instanceof RestError) {
@@ -371,7 +369,7 @@ export default async function UpdateOrDeleteCreationById(req: NextApiRequest, re
         } else if (e instanceof MongoError) {
             msg = `Attempt to communicate with atlas mongodb.`;
         } else {
-            msg = `Uncategorized. ${e?.msg}`;
+            msg = `Uncategorized. ${e}`;
         }
         if (!res.headersSent) {
             response500(res, msg);
@@ -381,7 +379,3 @@ export default async function UpdateOrDeleteCreationById(req: NextApiRequest, re
         return;
     }
 }
-
-
-
-

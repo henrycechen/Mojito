@@ -31,12 +31,14 @@ export default async function QueryTopicByIdFragment(req: NextApiRequest, res: N
             topicId: '5ZGo5p2w5Lym',
             content: '周杰伦',
             channelId: 'chat',
+            totalHitCount: 1024,
             totalPostCount: 126
         },
         {
             topicId: '6K+05aW95LiN5ZOt',
             content: '说好不哭',
             channelId: 'chat',
+            totalHitCount: 624,
             totalPostCount: 75
         },
         {
