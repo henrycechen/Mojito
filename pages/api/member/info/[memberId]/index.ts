@@ -46,8 +46,11 @@ export default async function GetMemberInfoById(req: NextApiRequest, res: NextAp
             registeredTimeBySecond: 1671484182,
             verifiedTimeBySecond: 1671593378,
 
-            nickname: '店小二',
-            briefIntro: '歡迎大家來到我們的社區:)',
+            nickname: '店小二WebMaster',
+            briefIntro: `專業的臺灣書評媒體
+            \n提供原生報導，文化觀察，人物採訪與國內外重大出版消息
+            \nLife is an openbook.  
+            \n打開來讀，有人陪你`,
             gender: -1,
             birthdayBySecond: 840344435,
 
@@ -61,7 +64,6 @@ export default async function GetMemberInfoById(req: NextApiRequest, res: NextAp
         };
 
         res.send(info);
-        // avatarImageUrl: 'https://p3-pc-sign.douyinpic.com/image-cut-tos-priv/3e1f26ab6652e8bab2146d9685309421~tplv-dy-resize-origshort-autoq-75:330.jpeg?x-expires=1988985600&x-signature=QXW59uArpZ4MLuzLDFUUD8X80Kg%3D&from=3213915784&s=PackSourceEnum_AWEME_DETAIL&se=false&sc=cover&biz_tag=pcweb_cover&l=202301140039005D37849F840BB8293C1A'
 
 
         await atlasDbClient.close();

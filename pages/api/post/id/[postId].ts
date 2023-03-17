@@ -36,12 +36,12 @@ export default async function GetRestrictedPostComprehensiveById(req: NextApiReq
         "createdTimeBySecond": 1678679403,
         "title": "MX5-RE-RE",
         "imageFullnamesArr": [
-            "P4CD624HHS_DLBVJIQ1T.jpeg",
-            "P4CD624HHS_6NR6EKKW11.jpeg",
-            "P4CD624HHS_226CDUSEQK.jpeg",
-            "P4CD624HHS_1BEEE1FJR8.jpeg",
-            "P4CD624HHS_342QM85WET.jpeg",
-            "P4CD624HHS_VG9OMAVRL.jpeg"
+            // "P4CD624HHS_DLBVJIQ1T.jpeg",
+            // "P4CD624HHS_6NR6EKKW11.jpeg",
+            // "P4CD624HHS_226CDUSEQK.jpeg",
+            // "P4CD624HHS_1BEEE1FJR8.jpeg",
+            // "P4CD624HHS_342QM85WET.jpeg",
+            // "P4CD624HHS_VG9OMAVRL.jpeg"
         ],
         "paragraphsArr": [
             "I am selling with regret (in fact I don't have one)\n",
@@ -87,6 +87,8 @@ export default async function GetRestrictedPostComprehensiveById(req: NextApiReq
 
     });
     return;
+
+
     const { method } = req;
     if ('GET' !== method) {
         response405(req, res);

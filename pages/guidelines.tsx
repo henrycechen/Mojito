@@ -171,7 +171,7 @@ const langConfigs: LangConfigs = {
             '3. No Personal Information: Nicknames should not contain personal privacy, such as full names, addresses, or contact information.',
             '4. Non-Commercial: Nicknames should not promote or advertise any products, services, or websites unless permitted.',
             '5. Compliance with Laws: Nicknames should not violate any local, national, or international laws.',
-            '6. High-Readability: Nicknames should not be no longer than 13 characters or difficult to read or type.',
+            '6. Readability: Nicknames should not be no longer than 13 characters or difficult to read or type.',
             '7. Minimize Confusion: Nicknames should not contain excessive punctuation or symbols that may cause confusion or disrupt communication.',
         ],
         tw: [
@@ -180,7 +180,7 @@ const langConfigs: LangConfigs = {
             '3. 無個人信息：暱稱不得包含個人隱私，如全名、地址或聯繫方式。',
             '4. 非商業：暱稱不得宣傳或宣傳任何產品、服務或網站，除非獲得許可。',
             '5. 遵守法律：暱稱不得違反任何地方、國家或國際法律。',
-            '6. 高可讀性：暱稱不得超過13個字符或使用難以閱讀或輸入的文字。',
+            '6. 可讀性：暱稱不得超過13個字符或使用難以閱讀或輸入的文字。',
             '7. 減少混淆：暱稱不應包含過多的標點符號或可能導致混淆或乾擾交流的符號。',
         ],
         cn: [
@@ -189,7 +189,7 @@ const langConfigs: LangConfigs = {
             '3. 无个人信息：昵称不得包含个人隐私，如全名、地址或联系方式。',
             '4. 非商业：昵称不得宣传或宣传任何产品、服务或网站，除非获得许可。',
             '5. 遵守法律：昵称不得违反任何地方、国家或国际法律。',
-            '6. 高可读性：昵称不得超过13个字符或使用难以阅读或输入的文字。',
+            '6. 可读性：昵称不得超过13个字符或使用难以阅读或输入的文字。',
             '7. 减少混淆：昵称不应包含过多的标点符号或可能导致混淆或干扰交流的符号。',
         ],
     },

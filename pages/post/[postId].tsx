@@ -182,6 +182,12 @@ const langConfigs: LangConfigs = {
         cn: '您的账户被限制因而不能发布评论',
         en: 'Unable to submit comment due to restricted member'
     },
+
+
+
+
+
+
     creations: {
         tw: '創作',
         cn: '发帖',
@@ -986,6 +992,23 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
         );
     };
 
+    const makeBriefIntro = (briefIntro: any) => {
+        if ('string' !== typeof briefIntro) {
+
+            return (
+                <></>
+                // <Typography variant='body2' color={'text.disabled'}>{authorInfo_ss.briefIntro}</Typography>
+            );
+        }
+        return (
+            <>
+                {briefIntro.split('/n').map(t =>
+                    <Typography variant='body2' color={'text.disabled'}>{t}</Typography>
+                )}
+            </>
+        );
+    };
+
     return (
         <>
             <Navbar />
@@ -1283,48 +1306,51 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
                         <Stack spacing={1} sx={{ ml: 2, maxWidth: 320, display: { xs: 'none', sm: 'none', md: 'block', lg: 'block' } }} >
 
                             {/* member info card */}
-                            <ResponsiveCard sx={{ paddingY: 2 }}>
-                                <Stack>
+                            <ResponsiveCard sx={{ p: 4 }}>
+                                {/* <Box> */}
 
-                                    {/* avatar */}
-                                    <CentralizedBox mt={1}>
-                                        <Avatar src={provideAvatarImageUrl(authorId, domain)} sx={{ width: 56, height: 56, bgcolor: 'grey' }}>{authorInfo_ss.nickname?.charAt(0).toUpperCase()}</Avatar>
-                                    </CentralizedBox>
+                                {/* avatar */}
+                                <Box sx={{ display: 'flex', flexDirection: 'row' }}>
+                                    <Avatar src={provideAvatarImageUrl(authorId, domain)} sx={{ width: 64, height: 64, bgcolor: 'grey' }}>{authorInfo_ss.nickname?.charAt(0).toUpperCase()}</Avatar>
+                                </Box>
 
-                                    {/* nickname */}
-                                    <CentralizedBox mt={1}><Typography variant='body1'>{authorInfo_ss.nickname}</Typography></CentralizedBox>
+                                {/* nickname */}
+                                <Box pt={3} sx={{ display: 'flex', flexDirection: 'row' }}>
+                                    <Typography sx={{ fontSize: 19 }} fontWeight={700}>{authorInfo_ss.nickname}</Typography>
+                                </Box>
+                                {/* brief intro */}
+                                <Box pt={0} maxWidth={200}>
+                                    {makeBriefIntro(authorInfo_ss.briefIntro)}
+                                </Box>
+                                {/* statistics - follow */}
+                                <Box pt={4} sx={{ display: 'flex', flexDirection: 'row' }}>
+                                    <Typography fontWeight={700}>{authorStatisticsState.totalFollowedByCount}</Typography>
+                                    <Typography color={'text.disabled'}>{'位会员正在关注作者'}</Typography>
+                                </Box>
+                                {/* statistics - like */}
+                                <Box sx={{ display: 'flex', flexDirection: 'row', }}>
+                                    <Typography color={'text.disabled'}> {'获得了'}</Typography>
+                                    <Typography fontWeight={700}>{authorStatisticsState.totalCreationLikedCount}</Typography>
+                                    <Typography color={'text.disabled'}>{'次喜欢'}</Typography>
+                                </Box>
 
-                                    {/* 'follow' button */}
-                                    <CentralizedBox >
-                                        <Tooltip title={behaviourStates.followed ? langConfigs.undoFollow[preferenceStates.lang] : langConfigs.follow[preferenceStates.lang]}>
-                                            <Button variant='text' color={behaviourStates.followed ? 'inherit' : 'info'} sx={{ paddingY: 0.1, borderRadius: 4, fontSize: 13 }} onClick={async () => { await handleFollowOrUndoFollow(); }}>{behaviourStates.followed ? langConfigs.followed[preferenceStates.lang] : langConfigs.follow[preferenceStates.lang]}</Button>
-                                        </Tooltip>
-                                    </CentralizedBox>
+                                {viewerId !== authorId && <Box pt={4} sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'center' }}>
+                                    <Tooltip title={behaviourStates.followed ? langConfigs.undoFollow[preferenceStates.lang] : langConfigs.follow[preferenceStates.lang]}>
+                                        <Button
+                                            variant='contained'
+                                            sx={{
+                                                color: behaviourStates.followed ? 'inherit' : 'info',
+                                                paddingY: 0.5,
+                                                paddingX: 5,
+                                            }}
+                                            onClick={async () => { await handleFollowOrUndoFollow(); }}
 
-                                    <Box mt={1}><Divider /></Box>
-
-                                    {/* info */}
-                                    <CentralizedBox mt={2} >
-
-                                        {/* info left column */}
-                                        <Box>
-                                            <CentralizedBox><Typography variant='body1'>{langConfigs.creations[preferenceStates.lang]}</Typography></CentralizedBox>
-                                            <CentralizedBox><Typography variant='body1'>{authorStatisticsState.totalCreationCount}</Typography></CentralizedBox>
-                                        </Box>
-
-                                        {/* info middle column */}
-                                        <Box marginX={4}>
-                                            <CentralizedBox><Typography variant='body1' >{langConfigs.followedBy[preferenceStates.lang]}</Typography></CentralizedBox>
-                                            <CentralizedBox><Typography variant='body1'>{authorStatisticsState.totalFollowedByCount}</Typography></CentralizedBox>
-                                        </Box>
-
-                                        {/* info right column */}
-                                        <Box>
-                                            <CentralizedBox><Typography variant='body1'>{langConfigs.liked[preferenceStates.lang]}</Typography></CentralizedBox>
-                                            <CentralizedBox><Typography variant='body1'>{authorStatisticsState.totalCreationLikedCount}</Typography></CentralizedBox>
-                                        </Box>
-                                    </CentralizedBox>
-                                </Stack>
+                                        >
+                                            {behaviourStates.followed ? langConfigs.followed[preferenceStates.lang] : langConfigs.follow[preferenceStates.lang]}
+                                        </Button>
+                                    </Tooltip>
+                                </Box>}
+                                {/* </Box> */}
                             </ResponsiveCard>
 
                             {/* other post recommend in this channel */}

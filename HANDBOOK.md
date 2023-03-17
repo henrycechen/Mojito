@@ -2564,6 +2564,66 @@ console.log(`TEST-3G29WQD: path='/api/comment/on/[id]/index.ts/' result: ` + a.v
 
 
 
+# Moderate
+
+
+
+## Use OpenAI API to examine content
+
+
+
+```javascript
+const fetch = require('node-fetch');
+
+const API_KEY = 'YOUR_API_KEY'; // 替换为您的 OpenAI API KEY
+const MODEL_ID = 'YOUR_MODEL_ID'; // 替换为您的 OpenAI 模型 ID
+const URL = `https://api.openai.com/v1/models/${MODEL_ID}/completions`;
+
+async function detectNonstandardLanguage(text) {
+  const prompt = `识别文本中的不规范用语：\n${text}\n建议替换为：`;
+  const data = {
+    prompt,
+    temperature: 0.5,
+    max_tokens: 10,
+    n: 1,
+    stop: '\n',
+  };
+  const headers = {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${API_KEY}`,
+  };
+
+  const response = await fetch(URL, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(data),
+  });
+
+  if (response.ok) {
+    const json = await response.json();
+    return json.choices[0].text.trim();
+  } else {
+    throw new Error('OpenAI API request failed');
+  }
+}
+
+// 使用示例
+const text = '我讨厌现在的中国ZF';
+detectNonstandardLanguage(text)
+  .then((suggestion) => {
+    console.log(`您可以尝试使用 "${suggestion}" 来替换 "ZF"`);
+  })
+  .catch((error) => {
+    console.error(error);
+  });
+```
+
+
+
+
+
+
+
 # TypeScript
 
 
