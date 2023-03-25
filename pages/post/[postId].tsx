@@ -183,6 +183,21 @@ const langConfigs: LangConfigs = {
         en: 'Unable to submit comment due to restricted member'
     },
 
+    authorsTotalFollowing: {
+        tw: '位會員正在關注作者',
+        cn: '位会员正在关注作者',
+        en: 'members are following the author',
+    },
+    authorsTotalLikesP1: {
+        tw: '获得了',
+        cn: '获得了',
+        en: 'Gained ',
+    },
+    authorsTotalLikesP2: {
+        tw: '次喜欢',
+        cn: '次喜欢',
+        en: ' likes',
+    },
 
 
 
@@ -564,6 +579,10 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
         }
     };
 
+    const handleClickOnAuthorNickname = (event: React.MouseEvent<any>) => {
+        router.push(`/me/id/${authorId}`);
+    };
+
     const handleBlock = async (memberId: string) => {
         if ('authenticated' !== status) {
             router.push(`/signin`);
@@ -732,8 +751,6 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
             setProcessStates({ ...processStates, displayEditor: true });
         }
     };
-
-
 
     interface IRestrictedCommentComprehensiveWithControl extends IRestrictedCommentComprehensive {
         isExpended: boolean;
@@ -994,16 +1011,12 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
 
     const makeBriefIntro = (briefIntro: any) => {
         if ('string' !== typeof briefIntro) {
-
-            return (
-                <></>
-                // <Typography variant='body2' color={'text.disabled'}>{authorInfo_ss.briefIntro}</Typography>
-            );
+            return (<></>);
         }
         return (
             <>
                 {briefIntro.split('/n').map(t =>
-                    <Typography variant='body2' color={'text.disabled'}>{t}</Typography>
+                    <Typography key={getRandomHexStr()} variant='body2' color={'text.disabled'}>{t}</Typography>
                 )}
             </>
         );
@@ -1052,7 +1065,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
 
                                         {/* nickname and created time */}
                                         <Grid item >
-                                            <TextButton color='inherit'>
+                                            <TextButton color='inherit' onClick={handleClickOnAuthorNickname}>
                                                 <Typography variant='body2' >
                                                     {authorInfo_ss.nickname}
                                                 </Typography>
@@ -1307,7 +1320,6 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
 
                             {/* member info card */}
                             <ResponsiveCard sx={{ p: 4 }}>
-                                {/* <Box> */}
 
                                 {/* avatar */}
                                 <Box sx={{ display: 'flex', flexDirection: 'row' }}>
@@ -1316,22 +1328,27 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
 
                                 {/* nickname */}
                                 <Box pt={3} sx={{ display: 'flex', flexDirection: 'row' }}>
-                                    <Typography sx={{ fontSize: 19 }} fontWeight={700}>{authorInfo_ss.nickname}</Typography>
+                                    <Button variant={'text'} color={'inherit'} sx={{ pl: 0, textTransform: 'none' }} onClick={handleClickOnAuthorNickname}>
+                                        <Typography sx={{ fontSize: 19 }} fontWeight={700}>{authorInfo_ss.nickname}</Typography>
+                                    </Button>
                                 </Box>
+
                                 {/* brief intro */}
                                 <Box pt={0} maxWidth={200}>
                                     {makeBriefIntro(authorInfo_ss.briefIntro)}
                                 </Box>
+
                                 {/* statistics - follow */}
                                 <Box pt={4} sx={{ display: 'flex', flexDirection: 'row' }}>
                                     <Typography fontWeight={700}>{authorStatisticsState.totalFollowedByCount}</Typography>
-                                    <Typography color={'text.disabled'}>{'位会员正在关注作者'}</Typography>
+                                    <Typography color={'text.disabled'}>{langConfigs.authorsTotalFollowing[preferenceStates.lang]}</Typography>
                                 </Box>
+
                                 {/* statistics - like */}
                                 <Box sx={{ display: 'flex', flexDirection: 'row', }}>
-                                    <Typography color={'text.disabled'}> {'获得了'}</Typography>
+                                    <Typography color={'text.disabled'}> {langConfigs.authorsTotalLikesP1[preferenceStates.lang]}</Typography>
                                     <Typography fontWeight={700}>{authorStatisticsState.totalCreationLikedCount}</Typography>
-                                    <Typography color={'text.disabled'}>{'次喜欢'}</Typography>
+                                    <Typography color={'text.disabled'}>{langConfigs.authorsTotalLikesP2[preferenceStates.lang]}</Typography>
                                 </Box>
 
                                 {viewerId !== authorId && <Box pt={4} sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'center' }}>
@@ -1350,7 +1367,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
                                         </Button>
                                     </Tooltip>
                                 </Box>}
-                                {/* </Box> */}
+
                             </ResponsiveCard>
 
                             {/* other post recommend in this channel */}

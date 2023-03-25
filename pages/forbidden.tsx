@@ -1,6 +1,4 @@
 import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Link from '@mui/material/Link';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
@@ -19,7 +17,7 @@ const langConfigs: LangConfigs = {
     },
     requireSignUpOrSignIn: {
         tw: '请注冊或登入后嘗試🙂',
-        cn: '请注册或登入后重试🙂',
+    cn: '请注册或登入后重试🙂',
         en: 'Please sign up or sign in before trying again🙂'
     }
 }

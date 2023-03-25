@@ -168,6 +168,8 @@ export async function getServerSideProps(context: NextPageContext): Promise<{ pr
     let channelInfoDict_ss: IChannelInfoDictionary;
 
     const resp = await fetch(`${domain}/api/channel/info/dictionary`);
+    console.log(resp.status);
+    
     try {
         if (200 !== resp.status) {
             throw new Error();
