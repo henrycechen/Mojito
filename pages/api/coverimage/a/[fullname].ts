@@ -3,8 +3,10 @@ import { response405, response500 } from '../../../../lib/utils/general';
 import { verifyId } from '../../../../lib/utils/verify';
 import AzureBlobClient from '../../../../modules/AzureBlobClient';
 
+import fs from 'fs';
+import path from 'path';
 
-/** GetAvatarImageByFullame v0.1.2 (FIXME: Test mode)
+/** GetAvatarImageByFullame v0.1.3
  *  
  * Last update 15/02/2023
  * 
@@ -43,7 +45,10 @@ export default async function GetAvatarImageByFullame(req: NextApiRequest, res: 
             res.setHeader('Content-Disposition', 'inline');
             res.send(await imageBlobClient.downloadToBuffer());
         } else {
-            res.status(404).send('Image not found');
+            const filePath = path.join(process.cwd(), 'public', 'image-not-found.png'); // v0.1.3 
+            const file = await fs.readFileSync(filePath);
+            res.setHeader('Content-Type', 'image/jpeg');
+            res.send(file);
         }
     } catch (e) {
         response500(res, `${fname}: Attempt to retrieve blob (avatar image, full name: ${fullname}) from Azure blob storage. ${e}`);
