@@ -28,7 +28,7 @@ export default async function GetConciseMemberStatisticsById(req: NextApiRequest
 
 
     res.send({
-        totalCreationCount: 4,
+        totalCreationsCount: 4,
         totalCreationHitCount: 1783,
         totalFollowedByCount: 18,
         totalCreationSavedCount: 127,
@@ -78,7 +78,7 @@ export default async function GetConciseMemberStatisticsById(req: NextApiRequest
 
         const statistics: IConciseMemberStatistics = {
             memberId,
-            totalCreationCount: 0,
+            totalCreationsCount: 0,
             totalCreationHitCount: 0,
             totalFollowedByCount: 0,
             totalCreationLikedCount: 0,
@@ -88,7 +88,7 @@ export default async function GetConciseMemberStatisticsById(req: NextApiRequest
         const memberStatisticsQueryResult = await memberStatisticsCollectionClient.findOne({ memberId }, {
             projection: {
                 _id: 0,
-                totalCreationCount: 1,
+                totalCreationsCount: 1,
                 totalCreationDeleteCount: 1,
 
                 totalCreationHitCount: 1,
@@ -108,7 +108,7 @@ export default async function GetConciseMemberStatisticsById(req: NextApiRequest
                 memberId,
 
                 // creation
-                totalCreationCount: 0, // info page required
+                totalCreationsCount: 0, // info page required
                 totalCreationHitCount: 0,
                 totalCreationEditCount: 0,
                 totalCreationDeleteCount: 0,
@@ -151,7 +151,7 @@ export default async function GetConciseMemberStatisticsById(req: NextApiRequest
                 totalUndoBlockedByCount: 0
             });
         } else {
-            statistics.totalCreationCount = memberStatisticsQueryResult.totalCreationCount - memberStatisticsQueryResult.totalCreationDeleteCount;
+            statistics.totalCreationsCount = memberStatisticsQueryResult.totalCreationsCount - memberStatisticsQueryResult.totalCreationDeleteCount;
             statistics.totalCreationHitCount = memberStatisticsQueryResult.totalCreationHitCount;
             statistics.totalFollowedByCount = memberStatisticsQueryResult.totalFollowedByCount - memberStatisticsQueryResult.totalUndoFollowedByCount;
             statistics.totalCreationSavedCount = memberStatisticsQueryResult.totalCreationSavedCount - memberStatisticsQueryResult.totalCreationUndoSavedCount;

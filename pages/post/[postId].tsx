@@ -347,14 +347,14 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
     }, []);
 
     type TConciseMemberStatistics = {
-        totalCreationCount: number;
+        totalCreationsCount: number;
         totalCreationLikedCount: number;
         totalFollowedByCount: number;
     };
 
     //////// STATES - author statistics ////////
     const [authorStatisticsState, setAuthorStatisticsState] = React.useState<TConciseMemberStatistics>({
-        totalCreationCount: 0,
+        totalCreationsCount: 0,
         totalCreationLikedCount: 0,
         totalFollowedByCount: 0,
     });
@@ -1016,7 +1016,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
         return (
             <>
                 {briefIntro.split('/n').map(t =>
-                    <Typography key={getRandomHexStr()} variant='body2' color={'text.disabled'}>{t}</Typography>
+                    <Typography key={getRandomHexStr()} variant='body1' color={'text.disabled'}>{t}</Typography>
                 )}
             </>
         );
@@ -1321,10 +1321,32 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
                             {/* member info card */}
                             <ResponsiveCard sx={{ p: 4 }}>
 
-                                {/* avatar */}
+                                {/* avatar row */}
                                 <Box sx={{ display: 'flex', flexDirection: 'row' }}>
-                                    <Avatar src={provideAvatarImageUrl(authorId, domain)} sx={{ width: 64, height: 64, bgcolor: 'grey' }}>{authorInfo_ss.nickname?.charAt(0).toUpperCase()}</Avatar>
                                 </Box>
+                                <Grid container>
+
+                                    {/* avatar image */}
+                                    <Grid item flexGrow={1}>
+                                        <Avatar src={provideAvatarImageUrl(authorId, domain)} sx={{ width: 64, height: 64, bgcolor: 'grey' }}>{authorInfo_ss.nickname?.charAt(0).toUpperCase()}</Avatar>
+                                    </Grid>
+                                    {/* 'follow' button */}
+                                    <Grid item sx={{ mt: 2 }} >
+                                        {viewerId !== authorId &&
+                                            <Tooltip title={behaviourStates.followed ? langConfigs.undoFollow[preferenceStates.lang] : langConfigs.follow[preferenceStates.lang]}>
+                                                <Button
+                                                    variant='contained'
+                                                    sx={{
+                                                        color: behaviourStates.followed ? 'inherit' : 'info',
+                                                        borderRadius: 4,
+                                                    }}
+                                                    onClick={async () => { await handleFollowOrUndoFollow(); }}
+                                                >
+                                                    {behaviourStates.followed ? langConfigs.followed[preferenceStates.lang] : langConfigs.follow[preferenceStates.lang]}
+                                                </Button>
+                                            </Tooltip>}
+                                    </Grid>
+                                </Grid>
 
                                 {/* nickname */}
                                 <Box pt={3} sx={{ display: 'flex', flexDirection: 'row' }}>
@@ -1351,12 +1373,14 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
                                     <Typography color={'text.disabled'}>{langConfigs.authorsTotalLikesP2[preferenceStates.lang]}</Typography>
                                 </Box>
 
-                                {viewerId !== authorId && <Box pt={4} sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'center' }}>
+                                {/* 'follow' button */}
+                                {false && <Box pt={4} sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'center' }}>
                                     <Tooltip title={behaviourStates.followed ? langConfigs.undoFollow[preferenceStates.lang] : langConfigs.follow[preferenceStates.lang]}>
                                         <Button
                                             variant='contained'
                                             sx={{
                                                 color: behaviourStates.followed ? 'inherit' : 'info',
+                                                borderRadius: 4,
                                                 paddingY: 0.5,
                                                 paddingX: 5,
                                             }}

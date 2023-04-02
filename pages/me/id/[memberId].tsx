@@ -37,6 +37,16 @@ import CheckBoxIcon from '@mui/icons-material/CheckBox';
 import PhotoCamera from '@mui/icons-material/PhotoCamera';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
+import EditIcon from '@mui/icons-material/Edit';
+
+
+
+import { Global } from '@emotion/react';
+import CssBaseline from '@mui/material/CssBaseline';
+import { grey } from '@mui/material/colors';
+import Skeleton from '@mui/material/Skeleton';
+import SwipeableDrawer from '@mui/material/SwipeableDrawer';
+
 
 import Masonry from '@mui/lab/Masonry';
 
@@ -97,6 +107,7 @@ import Tooltip from '@mui/material/Tooltip';
 
 import { createTheme, responsiveFontSizes, styled, ThemeProvider } from '@mui/material/styles';
 import { provideCoverImageUrl } from '../../../lib/utils/for/post';
+import { getRandomHexStr } from '../../../lib/utils/create';
 
 const storageName0 = 'PreferenceStates';
 const updatePreferenceStatesCache = updateLocalStorage(storageName0);
@@ -125,11 +136,55 @@ type TMemberPageProcessStates = {
 const domain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? '';
 const defaultLang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
-    message: {
-        tw: '訊息',
-        cn: '消息',
-        en: 'Message'
+
+
+
+    authorsTotalCreationsP1: {
+        tw: '作者发布了',
+        cn: '位会员正在关注作者',
+        en: 'members are following the author',
     },
+    authorsTotalCreationsP2: {
+        tw: ' 篇主题帖',
+        cn: '',
+        en: 'members are following the author',
+    },
+    noCreations: {
+        tw: '作者还未发布主题帖',
+        cn: '位会员正在关注作者',
+        en: 'members are following the author',
+    },
+    authorsTotalFollowing: {
+        tw: ' 位會員正在關注作者',
+        cn: '位会员正在关注作者',
+        en: 'members are following the author',
+    },
+    noFollowing: {
+        tw: '还没有會員關注作者',
+        cn: '位会员正在关注作者',
+        en: 'members are following the author',
+    },
+
+    authorsTotalLikesP1: {
+        tw: '获得了',
+        cn: '获得了',
+        en: 'Gained ',
+    },
+    authorsTotalLikesP2: {
+        tw: '次喜欢',
+        cn: '次喜欢',
+        en: ' likes',
+    },
+
+    authorsTotalSavesP2: {
+        tw: '次收藏',
+        cn: '次喜欢',
+        en: 'likes',
+    },
+
+
+
+
     following: {
         tw: '訂閲',
         cn: '粉丝',
@@ -632,7 +687,7 @@ const langConfigs: LangConfigs = {
         cn: '统计数据',
         en: 'Member statistics'
     },
-    totalCreationCount: {
+    totalCreationsCount: {
         tw: '創作',
         cn: '发布',
         en: 'Total creations'
@@ -658,19 +713,6 @@ const langConfigs: LangConfigs = {
         en: 'Followers'
     },
 };
-
-let theme = createTheme({
-    typography: {
-        body2: {
-            fontSize: 14, // Default font size
-            '@media (min-width:600px)': { // Font size when screen width is >= 600px
-                fontSize: 16,
-            },
-        }
-    }
-});
-
-theme = responsiveFontSizes(theme);
 
 //// Get multiple member info server-side ////
 export async function getServerSideProps(context: NextPageContext): Promise<{ props: TMemberPageProps; }> {
@@ -751,11 +793,11 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
     //////// INFO - viewer //////// (Cond.)
     let viewerId = '';
-    React.useEffect(() => { 
+    React.useEffect(() => {
         if ('authenticated' === status) {
             const viewerSession: any = { ...session };
             viewerId = viewerSession?.user?.id;
-            restorePreferenceStatesFromCache(setPreferenceStates); 
+            restorePreferenceStatesFromCache(setPreferenceStates);
         }
     }, [session]);
 
@@ -1035,13 +1077,248 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
         }
     };
 
+    //////////////////////////////////////// FUNCTIONS ////////////////////////////////////////
+
+    const makeBriefIntro = (briefIntro: any) => {
+        if ('string' !== typeof briefIntro) {
+            return (<></>);
+        }
+        return (
+            <>
+                {briefIntro.split('\n').map(t =>
+                    <Typography key={getRandomHexStr()} variant='body1' fontSize={{ md: 18 }} color={'text.disabled'}>{t}</Typography>
+                )}
+            </>
+        );
+    };
+
+
+
+
+
+    const StyledBox = styled(Box)(({ theme }) => ({
+        backgroundColor: theme.palette.mode === 'light' ? '#fff' : grey[800],
+    }));
+
+    const Puller = styled(Box)(({ theme }) => ({
+        width: 30,
+        height: 6,
+        backgroundColor: theme.palette.mode === 'light' ? grey[300] : grey[900],
+        borderRadius: 3,
+        position: 'absolute',
+        top: 8,
+        left: 'calc(50% - 15px)',
+    }));
+
+
+    const [open, setOpen] = React.useState(false);
+
+    const toggleDrawer = (newOpen: boolean) => () => {
+        setOpen(newOpen);
+    };
+
+    type TAuthorInfoSettingStates = {
+        alternativeImageUrl: string | undefined;
+        alternativeName: string;
+        alternativeIntro: string;
+        disableButton: boolean;
+        progressStatus: 0 | 100 | 300 | 400;
+    };
+
+    const [authorInfoSettingStates, setAvatarImageSettingStates] = React.useState<TAuthorInfoSettingStates>({
+        alternativeImageUrl: provideAvatarImageUrl('authorId', domain),
+        alternativeName: memberInfoStates.nickname,
+        alternativeIntro: memberInfoStates.briefIntro,
+        disableButton: true,
+        progressStatus: 0
+    });
+
+    const handleOpenFile = (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (event.target.files?.length !== 0 && event.target.files !== null) {
+            const url = URL.createObjectURL(event.target.files[0]);
+            setAvatarImageSettingStates({ ...authorInfoSettingStates, alternativeImageUrl: url, disableButton: false, progressStatus: 100 });
+        }
+    };
+
+    const handleUploadAvatarImage = async () => {
+        if (!(undefined !== authorInfoSettingStates.alternativeImageUrl && '' !== authorInfoSettingStates.alternativeImageUrl)) {
+            return;
+        }
+
+        // Prepare to upload avatar image
+        setAvatarImageSettingStates({ ...authorInfoSettingStates, disableButton: true, progressStatus: 300 });
+        let formData = new FormData();
+        const config = {
+            headers: { 'Content-Type': 'multipart/form-data' },
+            onUploadProgress: (event: any) => {
+                console.log(`Upload progress:`, Math.round((event.loaded * 100) / event.total));
+            }
+        };
+
+        // Retrieve file and measure the size
+        const bb = await fetch(authorInfoSettingStates.alternativeImageUrl).then(r => r.blob());
+        if ((await bb.arrayBuffer()).byteLength > 2097152) { // new image file no larger than 2 MB
+            setAvatarImageSettingStates({ ...authorInfoSettingStates, disableButton: false, progressStatus: 400 });
+            return;
+        }
+
+        // Post avatar image file
+        formData.append('image', bb);
+        await axios.post(`/api/avatar/upload/${authorId}`, formData, config)
+            .then((response: AxiosResponse) => {
+                setMemberInfoStates({ ...memberInfoStates, avatarImageUrl: provideAvatarImageUrl(authorId, domain, true) });
+            })
+            .catch((error: AxiosError) => {
+                setAvatarImageSettingStates({ ...authorInfoSettingStates, disableButton: true, progressStatus: 400 });
+                console.log(`Attempt to upload avatar image. ${error}`);
+            });
+    };
+
+    const handleNicknameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (13 < `${event.target.value}`.length) {
+            setNicknameSettingStates({ ...nicknameSettingStates, displayError: true });
+        } else {
+            if (memberInfoStates.nickname === event.target.value) {
+                setNicknameSettingStates({ ...nicknameSettingStates, disableButton: true, alternativeName: event.target.value });
+            } else {
+                setNicknameSettingStates({ ...nicknameSettingStates, disableButton: false, alternativeName: event.target.value });
+            }
+        }
+    };
+
+    const handleBriefIntroChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (21 < `${event.target.value}`.length) {
+            setBriefIntroSettingStates({ ...briefIntroSettingStates, displayError: true, disableButton: true, alternativeIntro: event.target.value });
+        } else {
+            if (memberInfoStates.briefIntro === event.target.value) {
+                setBriefIntroSettingStates({ ...briefIntroSettingStates, displayError: false, disableButton: true, alternativeIntro: event.target.value });
+            } else {
+                setBriefIntroSettingStates({ ...briefIntroSettingStates, displayError: false, disableButton: false, alternativeIntro: event.target.value });
+            }
+
+        }
+    };
 
     ///////// COMPONENT - member page /////////
     return (
-        <ThemeProvider theme={theme}>
+        <>
+            <Global
+                styles={{
+                    '@media (max-width: 600px)': {
+
+                        '.MuiDrawer-root > .MuiPaper-root': {
+                            height: `calc(75%)`,
+                            borderTopLeftRadius: 8,
+                            borderTopRightRadius: 8,
+                            // overflow: 'visible',
+                        },
+                    },
+                    '@media (min-width: 600px)': {
+
+                        '.MuiDrawer-root > .MuiPaper-root': {
+                            height: `calc(75%)`,
+                            borderTopLeftRadius: 8,
+                            borderTopRightRadius: 8,
+                            // overflow: 'visible',
+                            maxWidth: 600,
+                            left: '50vw',
+                            // transform: 'translate(-200, 0) scale(1)'
+                        },
+                    }
+                }}
+            />
+
+            <SwipeableDrawer
+                anchor="bottom"
+                open={open}
+                onClose={toggleDrawer(false)}
+                onOpen={toggleDrawer(true)}
+                swipeAreaWidth={50}
+                disableSwipeToOpen={false}
+                ModalProps={{
+                    keepMounted: true,
+                }}
+
+            >
+                <StyledBox
+                    sx={{
+                        px: 5,
+                        pt: 2,
+                        height: '100%',
+                        overflow: 'auto',
+
+                    }}
+                >
+                    <Puller />
+
+
+                    {/* buttons */}
+                    <Grid container>
+                        <Grid item >
+                            <Button variant='text'>Cancel</Button>
+                        </Grid>
+                        <Grid item flexGrow={1}>
+                        </Grid>
+                        <Grid item>
+                            <Button>Update</Button>
+
+                        </Grid>
+                    </Grid>
+
+                    {/* image */}
+                    <CentralizedBox>
+                        <Avatar src={authorInfoSettingStates.alternativeImageUrl} sx={{ width: { xs: 96, md: 128 }, height: { xs: 96, md: 128 }, }}></Avatar>
+                    </CentralizedBox>
+
+                    {/* 'open file' button */}
+                    <CentralizedBox mt={1}>
+                        <Box>
+                            <IconButton color={'primary'} aria-label={'upload picture'} component={'label'} >
+                                <input hidden accept={'image/*'} type={'file'} onChange={handleOpenFile} />
+                                <PhotoCamera />
+                            </IconButton>
+                        </Box>
+                    </CentralizedBox>
+                    {/* nickname */}
+
+                    <CentralizedBox>
+                        <TextField
+                            error={authorInfoSettingStates.displayError}
+                            label={langConfigs.newNickname[preferenceStates.lang]}
+                            value={authorInfoSettingStates.alternativeName}
+                            onChange={handleNicknameChange}
+                            size={'small'}
+                        />
+                    </CentralizedBox>
+
+                    {/* brief intro */}
+                    <CentralizedBox>
+                        <TextField
+                            error={authorInfoSettingStates.displayError}
+                            label={langConfigs.briefIntro[preferenceStates.lang]}
+                            multiline
+                            rows={3}
+                            value={authorInfoSettingStates.alternativeIntro}
+                            placeholder={langConfigs.brieflyIntrodueYourself[preferenceStates.lang]}
+                            onChange={handleBriefIntroChange}
+                            size={'small'}
+                            fullWidth
+                        />
+                    </CentralizedBox>
+                </StyledBox>
+
+
+
+            </SwipeableDrawer>
+
+
+
+
+
             <Navbar avatarImageUrl={memberInfoStates.avatarImageUrl} />
 
 
+            {/* //// first layer - member info //// */}
             <Grid container >
 
                 <Grid item xs={0} sm={1} md={2} lg={3} xl={3}></Grid>
@@ -1051,45 +1328,95 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
 
 
-                    {/* //// first layer - member info //// */}
-                    <Box sx={{ minHeight: { xs: 160, md: 200 }, px: 2 }}>
+                    <Box sx={{ minHeight: { xs: 160, md: 200 }, px: { xs: 2, sm: 0 } }}>
                         <Stack>
 
-                            {/* avatar */}
+                            {/* 1st row - avatar */}
                             <Grid container sx={{ mt: { xs: 4, sm: 5 } }}>
+                                {/* avatar image */}
                                 <Grid item flexGrow={1}>
-                                    <Avatar src={memberInfoStates.avatarImageUrl} sx={{ height: { xs: 64, sm: 72 }, width: { xs: 64, sm: 72 } }}>{memberInfoStates.nickname?.charAt(0).toUpperCase()}</Avatar>
-
+                                    <Avatar src={memberInfoStates.avatarImageUrl} sx={{ height: { xs: 64, sm: 90 }, width: { xs: 64, sm: 90 } }}>{memberInfoStates.nickname?.charAt(0).toUpperCase()}</Avatar>
                                 </Grid>
-                                <Grid item sx={{ mt: 2 }}>
-                                    {/* <Tooltip title={behaviourStates.followed ? langConfigs.undoFollow[preferenceStates.lang] : langConfigs.follow[preferenceStates.lang]}> */}
-                                    <Tooltip title={'Follow'}>
-                                        <Button variant={'contained'} color={'info'} sx={{ paddingY: 0.1, borderRadius: 4 }} onClick={async () => { await handleFollowOrUndoFollow(); }}>{'訂閲'}</Button>
-                                    </Tooltip>
+                                {/* 'customize' button */}
+                                <Grid item pt={2}>
+                                    {viewerId !== authorId && <>
+                                        <Tooltip title={'Follow'}>
+                                            <>
+                                                <IconButton sx={{ display: { xs: 'none', sm: 'flex' }, backgroundColor: 'grey.200' }} onClick={toggleDrawer(true)}><EditIcon sx={{}} /></IconButton>
+                                                <IconButton sx={{ display: { xs: 'flex', sm: 'none' }, backgroundColor: 'grey.200' }} onClick={toggleDrawer(true)}><EditIcon fontSize='small' /></IconButton>
+                                            </>
+                                        </Tooltip>
+                                    </>}
+                                </Grid>
+                                {/* 'follow' button */}
+                                <Grid item sx={{ mt: 2 }} pl={1}>
+                                    {viewerId !== authorId && <Tooltip title={'Follow'}>
+                                        <Button variant={'contained'} color={'info'} sx={{ padding: { xs: 0.5, sm: 3 / 4 }, borderRadius: 4 }} onClick={async () => { await handleFollowOrUndoFollow(); }}>{'訂閲'}</Button>
+                                    </Tooltip>}
                                 </Grid>
                             </Grid>
 
-                            {/* nickname */}
-                            <Box sx={{ mt: { xs: 1, sm: 1 } }}>
-                                <Typography variant='body1' fontSize={{ xs: 22, sm: 26 }}>{memberInfoStates.nickname}</Typography>
+                            {/* 2nd row - nickname */}
+                            <Box pt={{ xs: 2, sm: 2, md: 4 }}>
+                                <Typography variant='body1' fontSize={{ xs: 22, sm: 24, md: 27 }} fontWeight={600} color={'grey.800'} >{memberInfoStates.nickname}</Typography>
                             </Box>
 
                             {/* brief intro */}
-                            <Box sx={{ mt: { xs: 0 } }}>
-                                <Typography variant={'body2'} fontSize={{ xs: 14, sm: 15 }}>{memberInfoStates.briefIntro}</Typography>
+                            <Box pt={1} maxWidth={600}>
+                                {makeBriefIntro(memberInfoStates.briefIntro)}
                             </Box>
 
-                            <Stack direction={'row'} spacing={1} sx={{ mt: { xs: 1 } }}>
+                            {/* statistics - follow */}
+                            <Box pt={4} sx={{ display: 'flex', flexDirection: 'row' }} >
+                                {0 === memberStatistics_ss.totalFollowedByCount && <>
+                                    <Typography fontSize={{ md: 17 }} color={'text.disabled'} >{langConfigs.noFollowing[preferenceStates.lang]}</Typography>
+                                </>}
+                                {0 !== memberStatistics_ss.totalFollowedByCount && <>
+                                    <Typography fontSize={{ md: 17 }} fontWeight={700} color={'grey.700'} >{memberStatistics_ss.totalFollowedByCount}</Typography>
+                                    <Typography fontSize={{ md: 17 }} color={'text.disabled'}>{langConfigs.authorsTotalFollowing[preferenceStates.lang]}</Typography>
+                                </>}
+                            </Box>
 
-                                <Typography variant={'body2'}>{memberStatistics_ss.totalCreationCount}{langConfigs.creations[preferenceStates.lang]}</Typography>
-                                <Typography variant={'body2'}>{memberStatistics_ss.totalFollowedByCount}{langConfigs.followedBy[preferenceStates.lang]}</Typography>
-                                <Typography variant={'body2'}>{memberStatistics_ss.totalCreationSavedCount}{langConfigs.saved[preferenceStates.lang]}</Typography>
-                                <Typography variant={'body2'}>{memberStatistics_ss.totalCreationLikedCount}{langConfigs.like[preferenceStates.lang]}</Typography>
+                            {/* statistics - creations */}
+                            <Box pt={{ xs: 0, sm: 1 / 2 }} sx={{ display: 'flex', flexDirection: 'row' }}>
+                                {0 === memberStatistics_ss.totalFollowedByCount && <>
+                                    <Typography fontSize={{ md: 17 }} color={'text.disabled'}>{langConfigs.noCreations[preferenceStates.lang]}</Typography>
+                                </>}
+                                {0 !== memberStatistics_ss.totalFollowedByCount && <>
+                                    <Typography fontSize={{ md: 17 }} color={'text.disabled'}>{langConfigs.authorsTotalCreationsP1[preferenceStates.lang]}</Typography>
+                                    <Typography fontSize={{ md: 17 }} fontWeight={700} color={'grey.700'} >{memberStatistics_ss.totalCreationsCount}</Typography>
+                                    <Typography fontSize={{ md: 17 }} color={'text.disabled'}>{langConfigs.authorsTotalCreationsP2[preferenceStates.lang]}</Typography>
+                                </>}
+                            </Box>
+
+                            {/* statistics - likes & saves */}
+                            <Box pt={{ xs: 0, sm: 1 / 2 }} sx={{ display: 'flex', flexDirection: 'row' }}>
+                                {0 !== memberStatistics_ss.totalFollowedByCount && <>
+                                    {0 !== memberStatistics_ss.totalFollowedByCount && <>
+                                        <Typography fontSize={{ md: 17 }} color={'text.disabled'}>{langConfigs.authorsTotalLikesP1[preferenceStates.lang]}</Typography>
+                                        <Typography fontSize={{ md: 17 }} fontWeight={700} color={'grey.700'} >{memberStatistics_ss.totalFollowedByCount}</Typography>
+                                        <Typography fontSize={{ md: 17 }} color={'text.disabled'}>{langConfigs.authorsTotalLikesP2[preferenceStates.lang]}</Typography>
+                                    </>}
+                                    {0 !== memberStatistics_ss.totalFollowedByCount && 0 !== memberStatistics_ss.totalFollowedByCount && <>
+                                        <Typography fontSize={{ md: 17 }} fontWeight={700} color={'grey.700'} >{memberStatistics_ss.totalFollowedByCount}</Typography>
+                                        <Typography fontSize={{ md: 17 }} color={'text.disabled'}>{langConfigs.authorsTotalSavesP2[preferenceStates.lang]}</Typography>
+
+                                    </>}
+                                </>}
+
+                            </Box>
+
+                            {/* <Stack direction={'row'} spacing={1} sx={{ mt: { xs: 1 } }}> */}
+
+                            {/* <Typography variant={'body2'}>{memberStatistics_ss.totalCreationsCount}{langConfigs.creations[preferenceStates.lang]}</Typography> */}
+                            {/* <Typography variant={'body2'}>{memberStatistics_ss.totalFollowedByCount}{langConfigs.followedBy[preferenceStates.lang]}</Typography> */}
+                            {/* <Typography variant={'body2'}>{memberStatistics_ss.totalCreationSavedCount}{langConfigs.saved[preferenceStates.lang]}</Typography> */}
+                            {/* <Typography variant={'body2'}>{memberStatistics_ss.totalCreationLikedCount}{langConfigs.like[preferenceStates.lang]}</Typography> */}
 
 
 
 
-                            </Stack>
+                            {/* </Stack> */}
 
                             <Box sx={{ py: 2 }}>
                                 <Divider />
@@ -1344,7 +1671,8 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
             <Copyright sx={{ mt: 16 }} lang={preferenceStates.lang} />
             <Terms sx={{ mb: 8 }} lang={preferenceStates.lang} />
 
-        </ThemeProvider>
+        </>
+
     );
 };
 

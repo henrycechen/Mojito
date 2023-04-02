@@ -157,11 +157,11 @@ export default async function InitiatePost(req: NextApiRequest, res: NextApiResp
         }, 'Replace');
 
         //// Update statistics ////
-        // #1 update totalCreationCount (IMemberStatistics) in [C] memberStatistics
+        // #1 update totalCreationsCount (IMemberStatistics) in [C] memberStatistics
         const memberStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IMemberStatistics>('member');
-        const memberStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId }, { $inc: { totalCreationCount: 1 } });
+        const memberStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId }, { $inc: { totalCreationsCount: 1 } });
         if (!memberStatisticsUpdateResult.acknowledged) {
-            logWithDate(`Document (IPostComprehensive, post id: ${postId}) inserted in [C] postComprehensive successfully but failed to update totalCreationCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`, fname);
+            logWithDate(`Document (IPostComprehensive, post id: ${postId}) inserted in [C] postComprehensive successfully but failed to update totalCreationsCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`, fname);
         }
         // #2 update totalPostCount (IChannelStatistics) in [C] channelStatistics
         const channelStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IChannelStatistics>('channel');

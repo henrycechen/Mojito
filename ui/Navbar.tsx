@@ -33,7 +33,6 @@ import { ColorModeContext } from './Theme';
 import { provideAvatarImageUrl } from '../lib/utils/for/member';
 
 const domain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? '';
-const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
     signIn: {
         tw: '登入',
@@ -65,16 +64,18 @@ const langConfigs: LangConfigs = {
         cn: '登出',
         en: 'Sign out'
     }
-}
+};
 
 type TNavBarProps = {
     avatarImageUrl?: string;
-}
+    lang?: string;
+};
 
 export default function NavBar(props: TNavBarProps) {
 
     const router = useRouter();
 
+    let lang = 'tw';
     let viewerId = '';
     let avatarImageUrl = '';
 
@@ -82,11 +83,14 @@ export default function NavBar(props: TNavBarProps) {
     if ('authenticated' === status) {
         const viewerSession: any = { ...session };
         viewerId = viewerSession?.user?.id;
-        const { avatarImageUrl: url } = props;
+        const { avatarImageUrl: url, lang: preferredLang } = props;
         if ('string' === typeof url) {
             avatarImageUrl = url;
         } else {
             avatarImageUrl = provideAvatarImageUrl(viewerId, domain);
+        }
+        if ('string' === typeof preferredLang) {
+            lang = preferredLang;
         }
     }
 
@@ -94,27 +98,27 @@ export default function NavBar(props: TNavBarProps) {
     const colorMode = React.useContext(ColorModeContext);
 
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
-    const handleOpenMemberMenu = (event: React.MouseEvent<HTMLElement>) => { setAnchorEl(event.currentTarget) }
-    const handleCloseMemberMenu = () => { setAnchorEl(null) }
+    const handleOpenMemberMenu = (event: React.MouseEvent<HTMLElement>) => { setAnchorEl(event.currentTarget); };
+    const handleCloseMemberMenu = () => { setAnchorEl(null); };
     const handleClick = (actionIndex: number) => {
         setAnchorEl(null);
-        if (actionIndex === 0) { router.push('/me/createpost') };
-        if (actionIndex === 1) { router.push(`/me/message`) };
-        if (actionIndex === 2) { router.push(`/me/id/${viewerId}`) };
-        if (actionIndex === 3) { router.push(`/me/settings`) };
-        if (actionIndex === 4) { signOut() };
-    }
+        if (actionIndex === 0) { router.push('/me/createpost'); };
+        if (actionIndex === 1) { router.push(`/me/message`); };
+        if (actionIndex === 2) { router.push(`/me/id/${viewerId}`); };
+        if (actionIndex === 3) { router.push(`/me/settings`); };
+        if (actionIndex === 4) { signOut(); };
+    };
 
     const handleSignIn = (event: React.MouseEvent<HTMLElement>) => {
         event.preventDefault();
         signIn();
-    }
+    };
 
     const handleColorModeSelect = () => {
-        const preferredColorMode = colorMode.mode === 'dark' ? 'light' : 'dark'
+        const preferredColorMode = colorMode.mode === 'dark' ? 'light' : 'dark';
         colorMode.setMode(preferredColorMode);
-        document.cookie = `PreferredColorMode=${preferredColorMode}`
-    }
+        document.cookie = `PreferredColorMode=${preferredColorMode}`;
+    };
 
     return (
         <AppBar position='sticky'>
@@ -179,5 +183,5 @@ export default function NavBar(props: TNavBarProps) {
                 </Toolbar>
             </Container>
         </AppBar>
-    )
+    );
 }

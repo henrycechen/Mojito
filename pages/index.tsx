@@ -16,6 +16,10 @@ import IconButton from '@mui/material/IconButton';
 
 import EmailIcon from '@mui/icons-material/Email';
 import BubbleChartIcon from '@mui/icons-material/BubbleChart';
+import FormatAlignJustifyIcon from '@mui/icons-material/FormatAlignJustify';
+import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
+import ReorderIcon from '@mui/icons-material/Reorder';
+import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import CastIcon from '@mui/icons-material/Cast';
 
@@ -106,7 +110,7 @@ const langConfigs: LangConfigs = {
         cn: '最新',
         en: 'Newest'
     },
-    totalCreationCount: {
+    totalCreationsCount: {
         tw: '創作',
         cn: '发帖',
         en: 'Creations'
@@ -496,7 +500,7 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
                                 {/* the 'all' menu item */}
                                 <MenuItem onClick={handleChannelSelect('all')} selected={processStates.selectedChannelId === 'all'}>
                                     <ListItemIcon>
-                                        <BubbleChartIcon />
+                                        <ReorderIcon />
                                     </ListItemIcon>
                                     <ListItemText>
                                         <Typography>{langConfigs.allPosts[preferenceStates.lang]}</Typography>
@@ -506,7 +510,7 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
                                 {/* the 'following' menu item */}
                                 <MenuItem onClick={handleChannelSelect('following')} selected={'following' === processStates.selectedChannelId}>
                                     <ListItemIcon>
-                                        <CastIcon />
+                                        <NotificationsActiveIcon />
                                     </ListItemIcon>
                                     <ListItemText>
                                         <Typography>{langConfigs.following[preferenceStates.lang]}</Typography>

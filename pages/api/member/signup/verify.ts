@@ -142,7 +142,7 @@ export default async function VerifyEmailAddressToken(req: NextApiRequest, res: 
             memberId,
 
             // creation
-            totalCreationCount: 0, // info page required
+            totalCreationsCount: 0, // info page required
             totalCreationHitCount: 0,
             totalCreationEditCount: 0,
             totalCreationDeleteCount: 0,

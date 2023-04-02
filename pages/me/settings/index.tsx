@@ -38,6 +38,17 @@ import PhotoCamera from '@mui/icons-material/PhotoCamera';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 
+import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
+import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
+
+import { Alert, Menu } from '@mui/material';
+
+
+import Accordion from '@mui/material/Accordion';
+import AccordionSummary from '@mui/material/AccordionSummary';
+import AccordionDetails from '@mui/material/AccordionDetails';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+
 import Masonry from '@mui/lab/Masonry';
 
 import dayjs, { Dayjs } from 'dayjs';
@@ -61,21 +72,21 @@ import ListItemIcon from '@mui/material/ListItemIcon';
 
 import { useRouter } from 'next/router';
 
-import Navbar from '../../ui/Navbar';
+import Navbar from '../../../ui/Navbar';
 
-import { IMemberInfo, IConciseMemberStatistics, IRestrictedMemberComprehensive } from '../../lib/interfaces/member';
-import { IConcisePostComprehensive } from '../../lib/interfaces/post';
-import { INoticeInfoWithMemberInfo } from '../../lib/interfaces/notification';
-import { IChannelInfoStates, IChannelInfoDictionary } from '../../lib/interfaces/channel';
+import { IMemberInfo, IConciseMemberStatistics, IRestrictedMemberComprehensive } from '../../../lib/interfaces/member';
+import { IConcisePostComprehensive } from '../../../lib/interfaces/post';
+import { INoticeInfoWithMemberInfo } from '../../../lib/interfaces/notification';
+import { IChannelInfoStates, IChannelInfoDictionary } from '../../../lib/interfaces/channel';
 
-import { TBrowsingHelper, LangConfigs, TPreferenceStates } from '../../lib/types';
+import { TBrowsingHelper, LangConfigs, TPreferenceStates } from '../../../lib/types';
 
-import { timeToString, getContentBrief, updateLocalStorage, provideLocalStorage, restoreFromLocalStorage, logWithDate } from '../../lib/utils/general';
-import { verifyId, verifyNoticeId, verifyPassword } from '../../lib/utils/verify';
-import { provideAvatarImageUrl, getNicknameBrief, fakeConciseMemberInfo, fakeConciseMemberStatistics, fakeRestrictedMemberInfo } from '../../lib/utils/for/member';
-import { noticeIdToUrl, noticeInfoToString } from '../../lib/utils/for/notification';
+import { timeToString, getContentBrief, updateLocalStorage, provideLocalStorage, restoreFromLocalStorage, logWithDate } from '../../../lib/utils/general';
+import { verifyId, verifyNoticeId, verifyPassword } from '../../../lib/utils/verify';
+import { provideAvatarImageUrl, getNicknameBrief, fakeConciseMemberInfo, fakeConciseMemberStatistics, fakeRestrictedMemberInfo } from '../../../lib/utils/for/member';
+import { noticeIdToUrl, noticeInfoToString } from '../../../lib/utils/for/notification';
 
-import { CentralizedBox, ResponsiveCard, StyledSwitch, TextButton } from '../../ui/Styled';
+import { CentralizedBox, ResponsiveCard, StyledSwitch, TextButton } from '../../../ui/Styled';
 
 import FormGroup from '@mui/material/FormGroup';
 import Switch from '@mui/material/Switch';
@@ -85,15 +96,15 @@ import Link from '@mui/material/Link';
 import DoneIcon from '@mui/icons-material/Done';
 
 import axios, { AxiosError, AxiosResponse } from 'axios';
-import Copyright from '../../ui/Copyright';
-import Terms from '../../ui/Terms';
+import Copyright from '../../../ui/Copyright';
+import Terms from '../../../ui/Terms';
 import Table from '@mui/material/Table/Table';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import TableCell from '@mui/material/TableCell';
 
 import { createTheme, responsiveFontSizes, styled, ThemeProvider } from '@mui/material/styles';
-import { provideCoverImageUrl } from '../../lib/utils/for/post';
+import { provideCoverImageUrl } from '../../../lib/utils/for/post';
 
 const storageName0 = 'PreferenceStates';
 const updatePreferenceStatesCache = updateLocalStorage(storageName0);
@@ -629,7 +640,7 @@ const langConfigs: LangConfigs = {
         cn: '统计数据',
         en: 'Member statistics'
     },
-    totalCreationCount: {
+    totalCreationsCount: {
         tw: '創作',
         cn: '发布',
         en: 'Total creations'
@@ -762,32 +773,6 @@ const Settings = () => {
         channelIdSequence: [],
     });
 
-    React.useEffect(() => { updateChannelIdSequence(); }, []);
-
-    const updateChannelIdSequence = async () => {
-        const resp = await fetch(`/api/channel/id/sequence`);
-        if (200 !== resp.status) {
-            setChannelInfoStates({ ...channelInfoStates, channelIdSequence: Object.keys(channelInfoDict_ss) });
-            console.log(`Attemp to GET channel id array. Using sequence from channel info dictionary instead`);
-            return;
-        }
-        try {
-            const idArr = await resp.json();
-            setChannelInfoStates({ ...channelInfoStates, channelIdSequence: [...idArr] });
-        } catch (e) {
-            console.log(`Attemp to parese channel id array. ${e}`);
-        } finally {
-            setChannelInfoStates({ ...channelInfoStates, channelIdSequence: Object.keys(channelInfoDict_ss) });
-        }
-    };
-
-    // Handle channel bar restore on refresh
-    React.useEffect(() => {
-        if (undefined !== postLayoutStates.memorizeChannelBarPositionX) {
-            document.getElementById('channel-bar')?.scrollBy(postLayoutStates.memorizeChannelBarPositionX ?? 0, 0);
-        }
-    }, [channelInfoStates.channelIdSequence]);
-
     const handleChannelSelect = (channelId: string) => (event: React.MouseEvent<HTMLButtonElement> | React.SyntheticEvent) => {
         let states: TPostsLayoutStates = { ...postLayoutStates };
         states.selectedChannelId = channelId;
@@ -810,56 +795,7 @@ const Settings = () => {
         setBrowsingHelper({ ...browsingHelper, memorizeViewPortPositionY: undefined });
     };
 
-    //////// STATES - (masonry) post info array ////////
-    const [masonryPostInfoArr, setMasonryPostInfoArr] = React.useState<IConcisePostComprehensive[]>([]);
 
-    React.useEffect(() => { updatePostsArr(); }, [postLayoutStates.selectedHotPosts, postLayoutStates.selectedChannelId, postLayoutStates.selectedCategory]);
-
-    const updatePostsArr = async () => {
-        let url = '';
-
-        if ('mycreations' === postLayoutStates.selectedCategory) {
-            url = `/api/creation/s/of/${authorId}`;
-        }
-        if ('savedposts' === postLayoutStates.selectedCategory) {
-            url = `/api/member/savedposts/${authorId}`;
-        }
-        if ('browsinghistory' === postLayoutStates.selectedCategory) {
-            url = `/api/member/browsinghistory/${authorId}`;
-        }
-
-        const resp = await fetch(`${url}?channelId=${postLayoutStates.selectedChannelId}&sort=${postLayoutStates.selectedHotPosts ? 'hot' : 'new'}`);
-        if (200 === resp.status) {
-            try {
-                setMasonryPostInfoArr(await resp.json());
-            } catch (e) {
-                console.log(`Attempt to GET posts of ${postLayoutStates.selectedHotPosts ? '24 hours hot' : 'new'}. ${e}`);
-            }
-        }
-    };
-
-    // Handle restore browsing position after reload
-    React.useEffect(() => {
-        if (processStates.selectedLayout === 'postlayout' && postLayoutStates.wasRedirected) {
-            const postId = postLayoutStates.memorizeLastViewedPostId;
-            // #1 restore browsing position
-            if (!postId) {
-                return;
-            } else if (600 > window.innerWidth) { // 0 ~ 599
-                setBrowsingHelper({ ...browsingHelper, memorizeViewPortPositionY: (document.getElementById(postId)?.offsetTop ?? 0) / 2 - 200 });
-            } else { // 600 ~ ∞
-                setBrowsingHelper({ ...browsingHelper, memorizeViewPortPositionY: postLayoutStates.memorizeViewPortPositionY });
-            }
-            // #2 update process states and cache
-            let states1: TMemberPageProcessStates = { ...processStates };
-            setProcessStates({ ...states1 });
-            updateProcessStatesCache(states1);
-            let states2: TPostsLayoutStates = { ...postLayoutStates, memorizeLastViewedPostId: undefined, memorizeViewPortPositionY: undefined, wasRedirected: false };
-            // #3 update post layout states and cache
-            setPostLayoutStates({ ...states2 });
-            updatePostsLayoutStatesCache(states2);
-        }
-    }, [masonryPostInfoArr]);
 
     if (!!browsingHelper.memorizeViewPortPositionY) {
         window.scrollTo(0, browsingHelper.memorizeViewPortPositionY ?? 0);
@@ -943,7 +879,7 @@ const Settings = () => {
     const updateSettingslayoutStates = async () => {
         // TODO: 1 ~ 6 have not satistied
         if (7 === settinglayoutStates.selectedSettingId) {
-            const resp = await fetch(`/api/member/blockedbyme/${authorId}`);
+            const resp = await fetch(`/api/member/blockedbyme/${'authorId'}`);
             if (200 !== resp.status) {
                 console.log(`Attempt to GET blocked member info array`);
                 return;
@@ -973,7 +909,7 @@ const Settings = () => {
             };
 
             const [avatarImageSettingStates, setAvatarImageSettingStates] = React.useState<TAvatarImageSettingStates>({
-                alternativeImageUrl: provideAvatarImageUrl(authorId, domain),
+                alternativeImageUrl: provideAvatarImageUrl('authorId', domain),
                 disableButton: true,
                 progressStatus: 0
             });
@@ -1903,9 +1839,9 @@ const Settings = () => {
                             <TableCell sx={{ px: 0, pt: 0, pb: 1 }}></TableCell>
                         </TableRow>
                         <TableRow>
-                            {/* totalCreationCount */}
-                            <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }}>{langConfigs.totalCreationCount[preferenceStates.lang]}</TableCell>
-                            <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }} align='right'>{memberStatistics_ss.totalCreationCount}</TableCell>
+                            {/* totalCreationsCount */}
+                            <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }}>{langConfigs.totalCreationsCount[preferenceStates.lang]}</TableCell>
+                            <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }} align='right'>{memberStatistics_ss.totalCreationsCount}</TableCell>
                         </TableRow>
                         <TableRow>
                             <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }}>{langConfigs.totalCreationHitCount[preferenceStates.lang]}</TableCell>
@@ -1964,14 +1900,14 @@ const Settings = () => {
                                 </MenuItem>
 
                                 {/* password */}
-                                {'MojitoMemberSystem' === memberComprehensive_ss.providerId && <MenuItem onClick={handleSettingSelect(2)} selected={2 === settinglayoutStates.selectedSettingId}>
+                                <MenuItem onClick={handleSettingSelect(2)} selected={2 === settinglayoutStates.selectedSettingId}>
                                     <ListItemIcon>
                                         <LockIcon />
                                     </ListItemIcon>
                                     <ListItemText>
                                         <Typography variant={'body2'}>{langConfigs.password[preferenceStates.lang]}</Typography>
                                     </ListItemText>
-                                </MenuItem>}
+                                </MenuItem>
 
                                 {/* brief intro */}
                                 <MenuItem onClick={handleSettingSelect(3)} selected={3 === settinglayoutStates.selectedSettingId}>
@@ -2058,356 +1994,122 @@ const Settings = () => {
         );
     };
 
+    type TPopUpMenuStates = {
+        anchorEl: null | HTMLElement;
+    };
+
+    //////// STATES - pop up menu ////////
+    const [popUpMenuStates, setPopUpMenuStates] = React.useState<TPopUpMenuStates>({
+        anchorEl: null,
+    });
+
+    const handleOpenPopUpMenu = (event: React.MouseEvent<HTMLElement>) => {
+        setPopUpMenuStates({ anchorEl: event.currentTarget });
+    };
+
+    const handleClosePopUpMenu = () => {
+        setPopUpMenuStates({ anchorEl: null });
+    };
+
+    const handleSelectLang = (lang: string) => (event: React.MouseEvent<HTMLElement>) => {
+        setPopUpMenuStates({ anchorEl: null });
+        setPreferenceStates({ ...preferenceStates, lang });
+        updatePreferenceStatesCache({ ...preferenceStates, lang });
+    };
+
+
+
     ///////// COMPONENT - member page /////////
     return (
         <ThemeProvider theme={theme}>
-            <Navbar avatarImageUrl={memberInfoStates.avatarImageUrl} />
+            <Navbar avatarImageUrl={memberInfoStates.avatarImageUrl} lang={preferenceStates.lang}/>
 
-            {/* //// first layer - member info //// */}
-            <Box sx={{ minHeight: { xs: 160, md: 200 } }}>
-                <Box>
 
-                    {/* avatar */}
-                    <CentralizedBox sx={{ mt: { xs: 4, sm: 5 } }}>
-                        <Avatar src={memberInfoStates.avatarImageUrl} sx={{ height: { xs: 90, sm: 72 }, width: { xs: 90, sm: 72 } }}>{memberInfoStates.nickname?.charAt(0).toUpperCase()}</Avatar>
-                    </CentralizedBox>
+            {/* <SettingLayout /> */}
+            <Grid container mt={{ xs: 1, sm: 10 }}>
+                {/* placeholder */}
+                <Grid item xs={0} sm={2} md={3} lg={3}></Grid>
 
-                    {/* nickname */}
-                    <CentralizedBox sx={{ mt: { xs: 1, sm: 1 } }}>
-                        <Typography variant='body1' textAlign={'center'} fontSize={{ xs: 22, sm: 26 }}>{memberInfoStates.nickname}</Typography>
-                    </CentralizedBox>
+                {/* middle column */}
+                <Grid item xs={12} sm={8} md={6} lg={6}>
+                    <ResponsiveCard sx={{ pt: { xs: 0, sm: 2 }, minHeight: 500 }}>
 
-                    {/* brief intro */}
-                    <CentralizedBox sx={{ mt: { xs: 0 } }}>
-                        <Typography variant={'body2'} textAlign={'center'} fontSize={{ xs: 14, sm: 15 }}>{memberInfoStates.briefIntro}</Typography>
-                    </CentralizedBox>
+                        <MenuList >
+                            <Box px={1}>
+                                <Typography sx={{ color: 'text.disabled' }}>UI</Typography>
+                            </Box>
+                            <MenuItem onClick={handleOpenPopUpMenu}>
+                                <ListItemText>Change language</ListItemText>
+                                <ListItemIcon ><ArrowForwardIosIcon fontSize="small" /></ListItemIcon>
 
-                    {/* divider */}
-                    <CentralizedBox sx={{ mt: { xs: 1, sm: 2 } }}>
-                        <Box></Box>
-                        <Box sx={{ width: { xs: 220, sm: 280 } }}><Divider></Divider></Box>
-                        <Box></Box>
-                    </CentralizedBox>
+                            </MenuItem>
+                       
 
-                    {/* info */}
-                    <Grid container columnSpacing={{ xs: 3, sm: 5 }} sx={{ mt: { xs: 1, sm: 2 } }}>
+                            <Box px={1} pt={3}>
+                                <Typography sx={{ color: 'text.disabled' }}>Account</Typography>
+                            </Box>
+                            <MenuItem>
+                                <ListItemText>Update your password</ListItemText>
+                                <ListItemIcon><ArrowForwardIosIcon fontSize="small" /></ListItemIcon>
+                            </MenuItem>
+                            <MenuItem>
+                                <ListItemText>Data & Privacy</ListItemText>
+                                <ListItemIcon><ArrowForwardIosIcon fontSize="small" /></ListItemIcon>
+                            </MenuItem>
 
-                        {/* blank space */}
-                        <Grid item flexGrow={1}></Grid>
 
-                        {/* creation count */}
-                        <Grid item>
-                            <CentralizedBox>
-                                <Typography variant={'body2'}>{langConfigs.creations[preferenceStates.lang]}</Typography>
-                            </CentralizedBox>
-                            <CentralizedBox>
-                                <Typography variant={'body2'}>{memberStatistics_ss.totalCreationCount}</Typography>
-                            </CentralizedBox>
-                        </Grid>
 
-                        {/* followed by count */}
-                        <Grid item>
-                            <CentralizedBox>
-                                <Typography variant={'body2'}>{langConfigs.followedBy[preferenceStates.lang]}</Typography>
-                            </CentralizedBox>
-                            <CentralizedBox>
-                                <Typography variant={'body2'}>{memberStatistics_ss.totalFollowedByCount}</Typography>
-                            </CentralizedBox>
-                        </Grid>
+                            <Box px={1} pt={3}>
+                                <Typography sx={{ color: 'text.disabled' }}>Member</Typography>
+                            </Box>
+                            <MenuItem>
+                                <ListItemText>Info & Statistics</ListItemText>
+                                <ListItemIcon><ArrowForwardIosIcon fontSize="small" /></ListItemIcon>
+                            </MenuItem>
 
-                        {/* creation saved count */}
-                        <Grid item>
-                            <CentralizedBox>
-                                <Typography variant={'body2'}>{langConfigs.saved[preferenceStates.lang]}</Typography>
-                            </CentralizedBox>
-                            <CentralizedBox>
-                                <Typography variant={'body2'}>{memberStatistics_ss.totalCreationSavedCount}</Typography>
-                            </CentralizedBox>
-                        </Grid>
 
-                        {/* creation liked count */}
-                        <Grid item>
-                            <CentralizedBox>
-                                <Typography variant={'body2'}>{langConfigs.like[preferenceStates.lang]}</Typography>
-                            </CentralizedBox>
-                            <CentralizedBox>
-                                <Typography variant={'body2'}>{memberStatistics_ss.totalCreationLikedCount}</Typography>
-                            </CentralizedBox>
-                        </Grid>
+                        </MenuList>
 
-                        {/* blank space */}
-                        <Grid item flexGrow={1}></Grid>
-                    </Grid>
 
-                    {/* layout select */}
-                    <Stack spacing={1} direction='row' mt={2} sx={{ pb: 1, justifyContent: 'center', overflow: 'auto' }}>
 
-                        {/* s0 - message layout */}
-                        {('authenticated' === status && memberId === authorId) && <Button variant={'contained'} size='small' color={'messagelayout' === processStates.selectedLayout ? 'primary' : 'inherit'} onClick={handleSelectLayout('messagelayout')}>
-                            <Typography variant={'body2'} color={'dark' === theme.palette.mode ? 'black' : 'inherit'}  >
-                                {langConfigs.message[preferenceStates.lang]}
-                            </Typography>
-                        </Button>}
+                        <Menu
+                            sx={{ mt: '45px' }}
+                            anchorEl={popUpMenuStates.anchorEl}
+                            anchorOrigin={{ vertical: 'top', horizontal: 'right', }}
+                            keepMounted
+                            transformOrigin={{ vertical: 'top', horizontal: 'right', }}
+                            open={Boolean(popUpMenuStates.anchorEl)}
+                            onClose={handleClosePopUpMenu}
+                            MenuListProps={{}}
+                        >
 
-                        {/* s1 - list layout - my/author's following */}
-                        <Button variant={'contained'} size='small' color={'listlayout' === processStates.selectedLayout ? 'primary' : 'inherit'} onClick={handleSelectLayout('listlayout')}>
-                            <Typography variant={'body2'} color={'dark' === theme.palette.mode ? 'black' : 'inherit'}  >
-                                {memberId === authorId ? langConfigs.following[preferenceStates.lang] : langConfigs.hisFollowing[preferenceStates.lang]}
-                            </Typography>
-                        </Button>
+                            <MenuItem onClick={handleSelectLang('tw')}>
+                                <ListItemText>繁体中文</ListItemText>
+                            </MenuItem>
+                            <MenuItem onClick={handleSelectLang('cn')}>
+                                <ListItemText>简体中文</ListItemText>
+                            </MenuItem>
+                            <MenuItem onClick={handleSelectLang('en')}>
+                                <ListItemText>English</ListItemText>
+                            </MenuItem>
+                        </Menu>
 
-                        {/* s2 - post layout - my/author's posts */}
-                        <Button variant={'contained'} size='small' color={'postlayout' === processStates.selectedLayout ? 'primary' : 'inherit'} onClick={handleSelectLayout('postlayout')}>
-                            <Typography variant={'body2'} color={'dark' === theme.palette.mode ? 'black' : 'inherit'}  >
-                                {memberId === authorId ? langConfigs.posts[preferenceStates.lang] : langConfigs.authorsPosts[preferenceStates.lang]}
-                            </Typography>
-                        </Button>
-
-                        {/* s3 - setting layout */}
-                        {('authenticated' === status && memberId === authorId) && <Button variant={'contained'} size='small' color={'settinglayout' === processStates.selectedLayout ? 'primary' : 'inherit'} onClick={handleSelectLayout('settinglayout')}>
-                            <Typography variant={'body2'} color={'dark' === theme.palette.mode ? 'black' : 'inherit'}  >
-                                {langConfigs.settings[preferenceStates.lang]}
-                            </Typography>
-                        </Button>}
-
-                    </Stack>
-                </Box>
-            </Box>
-
-            {/* blank space (gap) */}
-            <Box mt={{ xs: 0, sm: 0, md: 2 }}></Box>
-
-            {/* //// second layer - multi-display */}
-
-            {/* message layout */}
-            {'messagelayout' === processStates.selectedLayout && <MessageLayout />}
-
-            {/* posts layout */}
-            <Grid container display={'postlayout' === processStates.selectedLayout ? 'flex' : 'none'}>
-
-                {/* //// placeholder left //// */}
-                <Grid item xs={0} sm={1} md={2} lg={2} xl={1}></Grid>
-
-                {/* //// left column //// */}
-                <Grid item xs={0} sm={0} md={2} lg={2} xl={2} sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'right' }}>
-                    <Stack spacing={0} sx={{ pr: 1, display: { xs: 'none', sm: 'none', md: 'block' } }} >
-
-                        {/* my posts / saved posts / browsing history switch */}
-                        <ResponsiveCard sx={{ padding: 1 }}>
-                            <MenuList>
-
-                                {/* creations list item */}
-                                <MenuItem onClick={handleSelectPostCategory('mycreations')} selected={'mycreations' === postLayoutStates.selectedCategory}>
-                                    <ListItemIcon ><CreateIcon /></ListItemIcon>
-                                    <ListItemText>
-                                        <Typography>{memberComprehensive_ss.memberId === memberId ? langConfigs.myCreations[preferenceStates.lang] : langConfigs.authorsCreations[preferenceStates.lang]}</Typography>
-                                    </ListItemText>
-                                </MenuItem>
-
-                                {/* saved post list item */}
-                                <MenuItem onClick={handleSelectPostCategory('savedposts')} selected={'savedposts' === postLayoutStates.selectedCategory}>
-                                    <ListItemIcon ><StarIcon /></ListItemIcon>
-                                    <ListItemText>
-                                        <Typography>{memberComprehensive_ss.memberId === memberId ? langConfigs.mySavedPosts[preferenceStates.lang] : langConfigs.authorsSavedPosts[preferenceStates.lang]}</Typography>
-                                    </ListItemText>
-                                </MenuItem>
-
-                                {/* browsing history list item */}
-                                {('authenticated' === status && authorId === memberId) && <MenuItem onClick={handleSelectPostCategory('browsinghistory')} selected={'browsinghistory' === postLayoutStates.selectedCategory}>
-                                    <ListItemIcon >
-                                        <HistoryIcon />
-                                    </ListItemIcon>
-                                    <ListItemText>
-                                        <Typography>{langConfigs.browsingHistory[preferenceStates.lang]}</Typography>
-                                    </ListItemText>
-                                </MenuItem>}
-                            </MenuList>
-                        </ResponsiveCard>
-
-                        {/* the channel menu (desktop mode) */}
-                        <ResponsiveCard sx={{ padding: 1 }}>
-                            <MenuList>
-                                {/* the 'all' menu item */}
-                                <MenuItem onClick={handleChannelSelect('all')} selected={postLayoutStates.selectedChannelId === 'all'}>
-                                    <ListItemIcon >
-                                        <BubbleChartIcon />
-                                    </ListItemIcon>
-                                    <ListItemText>
-                                        <Typography>{langConfigs.allPosts[preferenceStates.lang]}</Typography>
-                                    </ListItemText>
-                                </MenuItem>
-
-                                {/* other channels */}
-                                {channelInfoStates.channelIdSequence.map(id => {
-                                    const { channelId, name, svgIconPath } = channelInfoDict_ss[id];
-                                    return (
-                                        <MenuItem key={`item-${channelId}`}
-                                            onClick={handleChannelSelect(channelId)}
-                                            selected={channelId === postLayoutStates.selectedChannelId}
-                                        >
-                                            <ListItemIcon >
-                                                <SvgIcon><path d={svgIconPath} /></SvgIcon>
-                                            </ListItemIcon>
-                                            <ListItemText>
-                                                <Typography>{name[preferenceStates.lang]}</Typography>
-                                            </ListItemText>
-                                        </MenuItem>
-                                    );
-                                })}
-                            </MenuList>
-                        </ResponsiveCard>
-
-                        {/* hotest / newest switch (*disabled since 24/02/2023) */}
-                        {/* <ResponsiveCard sx={{ padding: 0, paddingY: 2, paddingLeft: 2 }}>
-                            <FormControlLabel
-                                control={<StyledSwitch sx={{ ml: 1 }} checked={postLayoutStates.selectedHotPosts} />}
-                                label={postLayoutStates.selectedHotPosts ? langConfigs.hotPosts[preferenceStates.lang] : langConfigs.newPosts[preferenceStates.lang]}
-                                onChange={handleSwitchChange}
-                                sx={{ marginRight: 0 }}
-                            />
-                        </ResponsiveCard> */}
-                    </Stack>
+                    </ResponsiveCard>
                 </Grid>
 
-                {/* //// right column //// */}
-                <Grid item xs={12} sm={10} md={6} lg={6} xl={7}>
 
-                    {/* channel bar (mobile mode) */}
-                    <Stack id={'channel-bar'} direction={'row'} spacing={1} sx={{ display: { sm: 'flex', md: 'none' }, padding: 1, overflow: 'auto' }}>
 
-                        {/* creations button */}
-                        <Button variant={'mycreations' === postLayoutStates.selectedCategory ? 'contained' : 'outlined'} size='small' sx={{ minWidth: 'max-content' }} onClick={handleSelectPostCategory('mycreations')}>
-                            <Typography variant='body2'>{memberComprehensive_ss.memberId === memberId ? langConfigs.myCreations[preferenceStates.lang] : langConfigs.authorsCreations[preferenceStates.lang]}</Typography>
-                        </Button>
+                {/* placeholder */}
+                <Grid item xs={0} sm={2} md={3} lg={3}></Grid>
 
-                        {/*  saved post button */}
-                        <Button variant={'savedposts' === postLayoutStates.selectedCategory ? 'contained' : 'outlined'} size='small' sx={{ minWidth: 'max-content' }} onClick={handleSelectPostCategory('savedposts')}>
-                            <Typography variant='body2'>{langConfigs.mySavedPosts[preferenceStates.lang]}</Typography>
-                        </Button>
 
-                        {/* browsing history button */}
-                        {('authenticated' === status && authorId === memberId) && <Button variant={'browsinghistory' === postLayoutStates.selectedCategory ? 'contained' : 'outlined'} size='small' sx={{ minWidth: 'max-content' }} onClick={handleSelectPostCategory('browsinghistory')}>
-                            <Typography variant='body2'>{langConfigs.browsingHistory[preferenceStates.lang]}</Typography>
-                        </Button>}
 
-                        {/* the 'all' button */}
-                        <Button variant={'all' === postLayoutStates.selectedChannelId ? 'contained' : 'text'} size='small' onClick={handleChannelSelect('all')} >
-                            <Typography variant={'body2'} color={'all' === postLayoutStates.selectedChannelId ? 'white' : 'text.secondary'} sx={{ backgroundColor: 'primary' }}>
-                                {langConfigs.allPosts[preferenceStates.lang]}
-                            </Typography>
-                        </Button>
 
-                        {/* other channels */}
-                        {channelInfoStates.channelIdSequence.map(id =>
-                            <Button
-                                key={`button-${channelInfoDict_ss[id].channelId}`}
-                                variant={channelInfoDict_ss[id].channelId === postLayoutStates.selectedChannelId ? 'contained' : 'text'}
-                                size='small'
-                                sx={{ minWidth: 'en' === preferenceStates.lang ? 'max-content' : 64 }}
-                                onClick={handleChannelSelect(channelInfoDict_ss[id].channelId)}
-                            >
-                                <Typography
-                                    variant={'body2'}
-                                    color={channelInfoDict_ss[id].channelId === postLayoutStates.selectedChannelId ? 'white' : 'text.secondary'}
-                                    sx={{ backgroundColor: 'primary' }}
-                                >
-                                    {channelInfoDict_ss[id].name[preferenceStates.lang]}
-                                </Typography>
-                            </Button>
 
-                        )}
-                    </Stack>
-
-                    {0 === masonryPostInfoArr.length &&
-                        <Box minHeight={200} mt={10}>
-                            {/* ('authenticated' === status && authorId === viewerId) */}
-                            {/* "mycreations" | "savedposts" | "browsinghistory" */}
-                            {'mycreations' === postLayoutStates.selectedCategory && <Typography color={'text.secondary'} align={'center'}>
-                                {memberId === authorId ? langConfigs.noCreationsRecord[preferenceStates.lang] : langConfigs.authorNoCreationsRecord[preferenceStates.lang]}
-                            </Typography>}
-                            {'savedposts' === postLayoutStates.selectedCategory && <Typography color={'text.secondary'} align={'center'}>
-                                {memberId === authorId ? langConfigs.noSavedPostsRecord[preferenceStates.lang] : langConfigs.authorNoSavedPostsRecord[preferenceStates.lang]}
-                            </Typography>}
-                            {'browsinghistory' === postLayoutStates.selectedCategory && <Typography color={'text.secondary'} align={'center'}>
-                                {langConfigs.noBrowsingHistoryRecord[preferenceStates.lang]}
-                            </Typography>}
-                        </Box>
-                    }
-
-                    {/* mansoy */}
-                    <Box ml={1} ref={masonryWrapper}>
-                        <Masonry columns={{ xs: 2, sm: 3, md: 2, lg: 3, xl: 4 }}>
-
-                            {/* posts */}
-                            {0 !== masonryPostInfoArr.length && masonryPostInfoArr.map(info =>
-                                <Paper key={info.postId} id={info.postId} sx={{ maxWidth: 300, '&:hover': { cursor: 'pointer' } }}>
-                                    <Stack>
-                                        {/* image */}
-                                        <Box
-                                            component={'img'}
-                                            src={provideCoverImageUrl(info.postId, domain)}
-                                            sx={{
-                                                maxWidth: { xs: width / 2, sm: 300 },
-                                                maxHeight: 'max-content',
-                                                borderTopLeftRadius: 4,
-                                                borderTopRightRadius: 4
-                                            }}
-                                            onClick={handleClickOnPost(info.postId)}
-                                        />
-
-                                        {/* title */}
-                                        <Box paddingTop={2} paddingX={2} onClick={handleClickOnPost(info.postId)}>
-                                            <Typography variant={'body1'}>{info.title}</Typography>
-                                        </Box>
-
-                                        {/* member info & member behaviour */}
-                                        <Box paddingTop={1} >
-                                            <Grid container>
-
-                                                {/* member info */}
-                                                <Grid item flexGrow={1}>
-                                                    <Box display={'flex'} flexDirection={'row'}>
-                                                        <Button variant={'text'} color={'inherit'} sx={{ textTransform: 'none' }} onClick={handleClickOnMemberInfo(info.memberId, info.postId)}>
-                                                            <Avatar src={provideAvatarImageUrl(authorId, domain)} sx={{ width: 34, height: 34, bgcolor: 'grey' }}>{info.nickname?.charAt(0).toUpperCase()}</Avatar>
-                                                            <Box ml={1}>
-
-                                                                {/* nickname */}
-                                                                <Typography variant={'body2'}>{getNicknameBrief(info.nickname)}</Typography>
-
-                                                                {/* created time */}
-                                                                <Typography fontSize={12} align={'left'}>{timeToString(info.createdTimeBySecond, preferenceStates.lang)}</Typography>
-                                                            </Box>
-                                                        </Button>
-                                                    </Box>
-                                                </Grid>
-
-                                                {/* member behaviour / placeholder */}
-                                                {('authenticated' === status && memberId === authorId) && <Grid item>
-                                                    <IconButton sx={{ mt: 1 }} onClick={async () => { await handleMultiProposeButtonClick(postLayoutStates.selectedCategory, info.postId); }}>
-                                                        {'mycreations' === postLayoutStates.selectedCategory && <CreateIcon color={'inherit'} sx={{ fontSize: { xs: 20, sm: 24 } }} />}
-                                                        {'savedposts' === postLayoutStates.selectedCategory && <StarIcon color={undoSavedPostArr.includes(info.postId) ? 'inherit' : 'warning'} sx={{ fontSize: { xs: 20, sm: 24 } }} />}
-                                                        {'browsinghistory' === postLayoutStates.selectedCategory && <DeleteIcon color={'inherit'} sx={{ fontSize: { xs: 20, sm: 24 } }} />}
-                                                    </IconButton>
-                                                </Grid>}
-                                            </Grid>
-                                        </Box>
-                                    </Stack>
-                                </Paper>
-                            )}
-                        </Masonry>
-                    </Box>
-
-                </Grid>
-
-                {/* //// placeholder - right //// */}
-                <Grid item xs={0} sm={1} md={2} lg={2} xl={1}></Grid>
             </Grid>
 
-            {/* list layout */}
-            {'listlayout' === processStates.selectedLayout && <ListLayout />}
 
-            {/* setting layout */}
-            {'settinglayout' === processStates.selectedLayout && <SettingLayout />}
+
 
             <Copyright sx={{ mt: 16 }} lang={preferenceStates.lang} />
             <Terms sx={{ mb: 8 }} lang={preferenceStates.lang} />

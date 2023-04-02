@@ -83,7 +83,7 @@ export interface IMemberStatistics {
     memberId: string;
 
     // creation
-    totalCreationCount: number; // info page required
+    totalCreationsCount: number; // info page required
     totalCreationHitCount: number;
     totalCreationEditCount: number;
     totalCreationDeleteCount: number;
@@ -132,7 +132,7 @@ export interface IMemberStatistics {
 
 export interface IConciseMemberStatistics {
     memberId: string;
-    totalCreationCount: number;
+    totalCreationsCount: number;
     totalCreationHitCount: number;
     totalFollowedByCount: number;
     totalCreationLikedCount: number;

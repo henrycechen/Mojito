@@ -445,7 +445,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
     memberId: string;
     
     // creation
-    totalCreationCount: number; // info page required
+    totalCreationsCount: number; // info page required
     totalCreationHitCount: number;
     totalCreationEditCount: number;
     totalCreationDeleteCount: number;
@@ -508,7 +508,7 @@ mongosh "mongodb+srv://mojito-statistics-dev.cukb0vs.mongodb.net/mojito-statisti
 ```typescript
 {
     // creation
-    totalCreationCount: number; // info page required
+    totalCreationsCount: number; // info page required
     totalCreationEditCount: number;
     totalCreationDeleteCount: number;
     // by other members
@@ -1258,7 +1258,7 @@ const { topicIdsArr } = postComprehensiveQueryResult;
    {
        memberId: "_",
        //// total statistics ////
-       totalCreationCount: 0, // info page required
+       totalCreationsCount: 0, // info page required
        totalCreationEditCount: 0,
        // ...
    }
@@ -1643,12 +1643,12 @@ Only allow updating other info after 30 seconds since last update
 
 | Behaviour     | Affected tables / collections                                |
 | ------------- | ------------------------------------------------------------ |
-| Create a post | [C] postComprehensive,<br />[C] memberStatistics***.totalCreationCount (acc.)***,<br />[C] channelStatistics***.totalPostCount (acc.)***<br />( Cond. [C] topicComprehensive***.totalPostCount (acc.)*** ),<br />( Cond. [C] topicPostMapping ***(est.)*** )<br />( Cond. [PRL] Notice***.Cued (est.)*** ),<br />( Cond. [C] notificationStatistics***.cuedCount (acc.)*** ) |
+| Create a post | [C] postComprehensive,<br />[C] memberStatistics***.totalCreationsCount (acc.)***,<br />[C] channelStatistics***.totalPostCount (acc.)***<br />( Cond. [C] topicComprehensive***.totalPostCount (acc.)*** ),<br />( Cond. [C] topicPostMapping ***(est.)*** )<br />( Cond. [PRL] Notice***.Cued (est.)*** ),<br />( Cond. [C] notificationStatistics***.cuedCount (acc.)*** ) |
 
 1. Insert a new document of ***IPostComprehensive*** in **[C] postComprehensive**
 2. Skip (if this post not belonged to any topics) or Insert a new document of ***ITopicPostMapping*** in **[C] topicPostMapping**
 3. Skip (if this post belongs to no new topics) or Insert a new document of ***ITopicComprehensive***  in **[C] topicComprehensive**, Insert a new document of ***ITopicPostMapping*** in **[C] topicPostMapping**
-4. Update document (**totalCreationCount**) in **[C] memberStatistics**
+4. Update document (**totalCreationsCount**) in **[C] memberStatistics**
 5. Update document (**totalPostCount**) in **[C] channelStatistics**
 6. Skip (if this post not belonged to any topics) or Update documents (**totalPostCount**) in **[C] topicComprehensive**
 7. Skip (if blocked by post author) or Create a new record of ***CuedNotice*** in **[PRL] Notice**

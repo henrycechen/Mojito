@@ -50,7 +50,7 @@ export default async function GetMemberInfoById(req: NextApiRequest, res: NextAp
             briefIntro: `專業的臺灣書評媒體
             \n提供原生報導，文化觀察，人物採訪與國內外重大出版消息
             \nLife is an openbook.  
-            \n打開來讀，有人陪你`,
+            \n打開來讀，有人陪你,換日線。台灣高雄人。二十歲後流浪到台北工作七年後回高雄定居至今。\n從事接案工作十餘年。大多數時間從事的事都跟書和出版社有關。`,
             gender: -1,
             birthdayBySecond: 840344435,
 
