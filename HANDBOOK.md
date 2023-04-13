@@ -12,7 +12,7 @@
 
 26/10/2022 | Domain name officially announced
 
-- mojito.co.nz 莫希托新西兰
+- mojito.co.nz 莫希托新西兰 (beta test)
 - themojitoapp.com 🆕
 
 
