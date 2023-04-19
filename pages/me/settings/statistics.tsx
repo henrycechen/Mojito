@@ -255,7 +255,7 @@ const MemberInfoAndStatistics = () => {
                 <Grid item xs={12} sm={8} md={6} lg={6}>
                     <ResponsiveCard sx={{ pt: { xs: 0, sm: 2 }, minHeight: 500 }}>
 
-                        {/*  */}
+                        {/* 'backward' button */}
                         <Box>
                             <Button color='inherit' onClick={onBackwardClick}>
                                 <ArrowBackIosIcon fontSize={'small'} sx={{ color: 'grey' }} />
