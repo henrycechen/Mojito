@@ -45,6 +45,7 @@ export default async function GetMemberInfoById(req: NextApiRequest, res: NextAp
             providerId: "MojitoMemberSystem",
             registeredTimeBySecond: 1671484182,
             verifiedTimeBySecond: 1671593378,
+            emailAddress: 'henrycechen@gmail.com',
 
             nickname: '店小二WebMaster',
             briefIntro: `專業的臺灣書評媒體

@@ -49,6 +49,7 @@ export interface IRestrictedMemberComprehensive {
     providerId: string; // "MojitoMemberSystem" | "GitHubOAuth" | ...
     registeredTimeBySecond: number; // Math.floor(new Date().getTime() / 1000)
     verifiedTimeBySecond: number;
+    emailAddress: string;
 
     nickname: string;
     briefIntro: string;

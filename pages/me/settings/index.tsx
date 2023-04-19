@@ -133,6 +133,49 @@ type TMemberPageProcessStates = {
 const domain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? '';
 const defaultLang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
+
+
+
+    ui: {
+        tw: '界面',
+        cn: '界面',
+        en: 'UI'
+    },
+    changeLang: {
+        tw: '變更界面語言',
+        cn: '变更界面语言',
+        en: 'Change UI language'
+    },
+    account: {
+        tw: '賬號',
+        cn: '账户',
+        en: 'Account'
+    },
+    updatePassword: {
+        tw: '變更密碼',
+        cn: '变更密码',
+        en: 'Update your password'
+    },
+    dataPrivacy: {
+        tw: '資料和隱私權',
+        cn: '资料与隐私',
+        en: 'Data & Privacy'
+    },
+    member: {
+        tw: '會員',
+        cn: '会员',
+        en: 'Member'
+    },
+    infoStatistics: {
+        tw: '信息和數據',
+        cn: '信息和数据',
+        en: 'Info & Statistics'
+    },
+
+
+
+
+
     message: {
         tw: '訊息',
         cn: '消息',
@@ -2017,12 +2060,22 @@ const Settings = () => {
         updatePreferenceStatesCache({ ...preferenceStates, lang });
     };
 
+    const handleMenuItemClick = (cat: number) => (event: React.MouseEvent<HTMLElement>) => {
+
+        if (1 === cat) {
+            router.push('/me/settings/privacy');
+
+        }
+        if (2 === cat) {
+            router.push('/me/settings/statistics');
+        }
+    };
 
 
     ///////// COMPONENT - member page /////////
     return (
         <ThemeProvider theme={theme}>
-            <Navbar avatarImageUrl={memberInfoStates.avatarImageUrl} lang={preferenceStates.lang}/>
+            <Navbar avatarImageUrl={memberInfoStates.avatarImageUrl} lang={preferenceStates.lang} />
 
 
             {/* <SettingLayout /> */}
@@ -2035,35 +2088,35 @@ const Settings = () => {
                     <ResponsiveCard sx={{ pt: { xs: 0, sm: 2 }, minHeight: 500 }}>
 
                         <MenuList >
+                            {/* row 1 */}
                             <Box px={1}>
-                                <Typography sx={{ color: 'text.disabled' }}>UI</Typography>
+                                <Typography sx={{ color: 'text.disabled' }}>{langConfigs.ui[preferenceStates.lang]}</Typography>
                             </Box>
                             <MenuItem onClick={handleOpenPopUpMenu}>
-                                <ListItemText>Change language</ListItemText>
+                                <ListItemText>{langConfigs.changeLang[preferenceStates.lang]}</ListItemText>
                                 <ListItemIcon ><ArrowForwardIosIcon fontSize="small" /></ListItemIcon>
 
                             </MenuItem>
-                       
 
+                            {/* row 2 */}
                             <Box px={1} pt={3}>
-                                <Typography sx={{ color: 'text.disabled' }}>Account</Typography>
+                                <Typography sx={{ color: 'text.disabled' }}>{langConfigs.account[preferenceStates.lang]}</Typography>
                             </Box>
-                            <MenuItem>
-                                <ListItemText>Update your password</ListItemText>
+                            <MenuItem onClick={handleMenuItemClick(0)}>
+                                <ListItemText>{langConfigs.updatePassword[preferenceStates.lang]}</ListItemText>
                                 <ListItemIcon><ArrowForwardIosIcon fontSize="small" /></ListItemIcon>
                             </MenuItem>
-                            <MenuItem>
-                                <ListItemText>Data & Privacy</ListItemText>
+                            <MenuItem onClick={handleMenuItemClick(1)}>
+                                <ListItemText>{langConfigs.dataPrivacy[preferenceStates.lang]}</ListItemText>
                                 <ListItemIcon><ArrowForwardIosIcon fontSize="small" /></ListItemIcon>
                             </MenuItem>
 
-
-
+                            {/* row 3 */}
                             <Box px={1} pt={3}>
-                                <Typography sx={{ color: 'text.disabled' }}>Member</Typography>
+                                <Typography sx={{ color: 'text.disabled' }}>{langConfigs.member[preferenceStates.lang]}</Typography>
                             </Box>
-                            <MenuItem>
-                                <ListItemText>Info & Statistics</ListItemText>
+                            <MenuItem onClick={handleMenuItemClick(2)}>
+                                <ListItemText>{langConfigs.infoStatistics[preferenceStates.lang]}</ListItemText>
                                 <ListItemIcon><ArrowForwardIosIcon fontSize="small" /></ListItemIcon>
                             </MenuItem>
 
