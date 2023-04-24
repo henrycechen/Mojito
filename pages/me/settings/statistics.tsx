@@ -5,12 +5,15 @@ import { useRouter } from 'next/router';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import Divider from '@mui/material/Divider';
+
 import Grid from '@mui/material/Grid';
 import Typography from '@mui/material/Typography';
 
 import Table from '@mui/material/Table/Table';
 import TableRow from '@mui/material/TableRow';
 import TableCell from '@mui/material/TableCell';
+import TableBody from '@mui/material/TableBody';
 
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 
@@ -114,19 +117,6 @@ const langConfigs: LangConfigs = {
     },
 };
 
-let theme = createTheme({
-    typography: {
-        body2: {
-            fontSize: 14, // Default font size
-            '@media (min-width:600px)': { // Font size when screen width is >= 600px
-                fontSize: 16,
-            },
-        }
-    }
-});
-
-theme = responsiveFontSizes(theme);
-
 const MemberInfoAndStatistics = () => {
 
     const router = useRouter();
@@ -146,11 +136,11 @@ const MemberInfoAndStatistics = () => {
         lang: defaultLang,
         mode: 'light'
     });
-    
+
     type TProcessStates = {
         displayAlert: boolean;
     };
-    
+
     //////// STATES - process ////////
     const [processStates, setProcessStates] = React.useState<TProcessStates>({
         displayAlert: false
@@ -160,19 +150,23 @@ const MemberInfoAndStatistics = () => {
         memberId: string;
         avatarImageUrl: string;
         nickname: string;
-        registeredTimeBySecond: number;
-        verifiedTimeBySecond: number;
+        // registeredTimeBySecond: number;
+        registeredTime: string;
+        // verifiedTimeBySecond: number;
+        verifiedTime: string;
         emailAddress: string;
         status: number;
     };
 
     //////// STATES - memberInfo ////////
     const [memberInfoStates, setMemberInfoStates] = React.useState<TMemberInfoStates>({
-        memberId: memberId,
+        memberId: '',
         avatarImageUrl: provideAvatarImageUrl(memberId, domain),
         nickname: '',
-        registeredTimeBySecond: 0,
-        verifiedTimeBySecond: 0,
+        // registeredTimeBySecond: 0,
+        registeredTime: '',
+        // verifiedTimeBySecond: 0,
+        verifiedTime: '',
         emailAddress: '',
         status: 0,
     });
@@ -197,52 +191,61 @@ const MemberInfoAndStatistics = () => {
     //////// Init states ////////
     React.useEffect(() => {
         fetchMemberInfoAsync();
-        fetchMemberStatisticsAsync();
+        getMemberStatisticsAsync();
     }, []);
 
     const fetchMemberInfoAsync = async () => {
         const resp = await fetch(`/api/member/info/${memberId}`);
-        if (200 !== resp.status) {
-            // error handling
+        try {
+            if (200 !== resp.status) {
+                // error handling
+                throw new Error(`Bad fetch response`);
+            }
+            const info = await resp.json();
+            setMemberInfoStates({
+                ...memberInfoStates,
+                memberId: info.memberId,
+                // registeredTimeBySecond: info.registeredTimeBySecond,
+                registeredTime: new Date(info.registeredTimeBySecond * 1000).toLocaleDateString(),
+                // verifiedTimeBySecond: info.verifiedTimeBySecond,
+                verifiedTime: new Date(info.verifiedTimeBySecond * 1000).toLocaleDateString(),
+                emailAddress: info.emailAddress,
+                status: info.status,
+                nickname: info.nickname,
+            });
+        } catch (e) {
+            console.log(`Attempt to get member info. ${e}`);
             setProcessStates({ ...processStates, displayAlert: true });
-            return;
         }
-        const info = await resp.json();
-        setMemberInfoStates({
-            ...memberInfoStates,
-            memberId: info.memberId,
-            registeredTimeBySecond: info.registeredTimeBySecond,
-            verifiedTimeBySecond: info.verifiedTimeBySecond,
-            emailAddress: info.emailAddress,
-            status: info.status,
-            nickname: info.nickname,
-        });
     };
 
-    const fetchMemberStatisticsAsync = async () => {
-        const resp = await fetch(`/api/member/statistics/${memberId}`);
-        if (200 !== resp.status) {
-            // error handling
+    const getMemberStatisticsAsync = async () => {
+        try {
+            const resp = await fetch(`/api/member/statistics/${memberId}`);
+            if (200 !== resp.status) {
+                throw new Error(`Bad fetch response`);
+            }
+            const stat = await resp.json();
+            setMemberStatisticsStates({
+                ...memberStatisticsStates,
+                totalCreationsCount: stat.totalCreationsCount,
+                totalCreationHitCount: stat.totalCreationHitCount,
+                totalFollowedByCount: stat.totalFollowedByCount,
+                totalCreationSavedCount: stat.totalCreationSavedCount,
+                totalCreationLikedCount: stat.totalCreationLikedCount,
+            });
+        } catch (e) {
+            console.log(`Attempt to get member statistics. ${e}`);
             setProcessStates({ ...processStates, displayAlert: true });
-            return;
         }
-        const stat = await resp.json();
-        setMemberStatisticsStates({
-            ...memberStatisticsStates,
-            totalCreationsCount: stat.totalCreationsCount,
-            totalCreationHitCount: stat.totalCreationHitCount,
-            totalFollowedByCount: stat.totalFollowedByCount,
-            totalCreationSavedCount: stat.totalCreationSavedCount,
-            totalCreationLikedCount: stat.totalCreationLikedCount,
-        });
     };
 
     const onBackwardClick = () => {
         router.push('/me/settings/');
     };
-    
+
     return (
-        <ThemeProvider theme={theme}>
+        <>
             <Navbar avatarImageUrl={memberInfoStates.avatarImageUrl} />
 
 
@@ -271,82 +274,91 @@ const MemberInfoAndStatistics = () => {
                             </Box>
                             <Box pt={1}></Box>
 
+                            {/* table title - info */}
+                            <Box>
+                                <Typography>{langConfigs.memberInfo[preferenceStates.lang]}</Typography>
+                                <Divider></Divider>
+                            </Box>
+
                             <Table aria-label='simple table' >
-                                {/* table title - info */}
-                                <TableRow>
-                                    <TableCell sx={{ px: 0, pt: 0, pb: 1 }}><Typography variant={'body2'} color={'text.secondary'}>{langConfigs.memberInfo[preferenceStates.lang]}</Typography></TableCell>
-                                    <TableCell sx={{ px: 0, pt: 0, pb: 1 }}></TableCell>
-                                </TableRow>
+                                <TableBody>
 
-                                {/* memberId */}
-                                <TableRow>
-                                    <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }}>{langConfigs.memberId[preferenceStates.lang]}</TableCell>
-                                    <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }} align='right'>{memberInfoStates.memberId}</TableCell>
-                                </TableRow>
+                                    {/* memberId */}
+                                    <TableRow>
+                                        <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }}>{langConfigs.memberId[preferenceStates.lang]}</TableCell>
+                                        <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }} align='right'>{memberInfoStates.memberId}</TableCell>
+                                    </TableRow>
 
-                                {/* email address */}
-                                <TableRow>
-                                    <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }}>{langConfigs.emailAddress[preferenceStates.lang]}</TableCell>
-                                    <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none', maxWidth: { xs: 120, sm: 160 } }} align='right'>
-                                        <Typography variant={'body2'} sx={{ overflowWrap: 'anywhere' }}>{memberInfoStates.emailAddress}</Typography>
-                                    </TableCell>
-                                </TableRow>
+                                    {/* email address */}
+                                    <TableRow>
+                                        <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }}>{langConfigs.emailAddress[preferenceStates.lang]}</TableCell>
+                                        <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none', maxWidth: { xs: 120, sm: 160 } }} align='right'>
+                                            <Typography variant={'body2'} sx={{ overflowWrap: 'anywhere' }}>{memberInfoStates.emailAddress}</Typography>
+                                        </TableCell>
+                                    </TableRow>
 
-                                {/* registered date */}
-                                <TableRow>
-                                    <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }}>{langConfigs.registeredDate[preferenceStates.lang]}</TableCell>
-                                    <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }} align='right'>{new Date(memberInfoStates.registeredTimeBySecond * 1000).toLocaleDateString()}</TableCell>
-                                </TableRow>
+                                    {/* registered date */}
+                                    <TableRow>
+                                        <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }}>{langConfigs.registeredDate[preferenceStates.lang]}</TableCell>
+                                        <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }} align='right'>{memberInfoStates.registeredTime}</TableCell>
+                                    </TableRow>
 
-                                {/* verified date */}
-                                <TableRow>
-                                    <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }}>{langConfigs.verifiedDate[preferenceStates.lang]}</TableCell>
-                                    <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }} align='right'>{new Date(memberInfoStates.verifiedTimeBySecond * 1000).toLocaleDateString()}</TableCell>
-                                </TableRow>
+                                    {/* verified date */}
+                                    <TableRow>
+                                        <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }}>{langConfigs.verifiedDate[preferenceStates.lang]}</TableCell>
+                                        <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }} align='right'>{memberInfoStates.verifiedTime}</TableCell>
+                                    </TableRow>
 
-                                {/* status */}
-                                <TableRow>
-                                    <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }}>{langConfigs.memberStatus[preferenceStates.lang]}</TableCell>
-                                    <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }} align='right'>{200 === memberInfoStates.status ? langConfigs.normalStatus[preferenceStates.lang] : langConfigs.restrictedStatus[preferenceStates.lang]}</TableCell>
-                                </TableRow>
+                                    {/* status */}
+                                    <TableRow>
+                                        <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }}>{langConfigs.memberStatus[preferenceStates.lang]}</TableCell>
+                                        <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }} align='right'>{200 === memberInfoStates.status ? langConfigs.normalStatus[preferenceStates.lang] : langConfigs.restrictedStatus[preferenceStates.lang]}</TableCell>
+                                    </TableRow>
+                                </TableBody>
+                            </Table >
 
-                                <Box pt={4}></Box>
+                            {/* space */}
+                            <Box pt={4}></Box>
 
-                                {/* table title - statistics */}
-                                <TableRow>
-                                    <TableCell sx={{ px: 0, pt: 0, pb: 1 }}><Typography variant={'body2'} color={'text.secondary'}>{langConfigs.memberStatistics[preferenceStates.lang]}</Typography></TableCell>
-                                    <TableCell sx={{ px: 0, pt: 0, pb: 1 }}></TableCell>
-                                </TableRow>
+                            {/* table title - statistics */}
+                            <Box>
+                                <Typography>{langConfigs.memberStatistics[preferenceStates.lang]}</Typography>
+                                <Divider></Divider>
+                            </Box>
 
-                                {/* creation count */}
-                                <TableRow>
-                                    <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }}>{langConfigs.totalCreationsCount[preferenceStates.lang]}</TableCell>
-                                    <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }} align='right'>{memberStatisticsStates.totalCreationsCount}</TableCell>
-                                </TableRow>
+                            <Table aria-label='simple table' >
+                                <TableBody>
 
-                                {/* creation hit */}
-                                <TableRow>
-                                    <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }}>{langConfigs.totalCreationHitCount[preferenceStates.lang]}</TableCell>
-                                    <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }} align='right'>{memberStatisticsStates.totalCreationHitCount}</TableCell>
-                                </TableRow>
+                                    {/* creation count */}
+                                    <TableRow>
+                                        <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }}>{langConfigs.totalCreationsCount[preferenceStates.lang]}</TableCell>
+                                        <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }} align='right'>{memberStatisticsStates.totalCreationsCount}</TableCell>
+                                    </TableRow>
 
-                                {/* like */}
-                                <TableRow>
-                                    <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }}>{langConfigs.totalCreationLikedCount[preferenceStates.lang]}</TableCell>
-                                    <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }} align='right'>{memberStatisticsStates.totalCreationLikedCount}</TableCell>
-                                </TableRow>
+                                    {/* creation hit */}
+                                    <TableRow>
+                                        <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }}>{langConfigs.totalCreationHitCount[preferenceStates.lang]}</TableCell>
+                                        <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }} align='right'>{memberStatisticsStates.totalCreationHitCount}</TableCell>
+                                    </TableRow>
 
-                                {/* save */}
-                                <TableRow>
-                                    <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }}>{langConfigs.totalCreationSavedCount[preferenceStates.lang]}</TableCell>
-                                    <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }} align='right'>{memberStatisticsStates.totalCreationSavedCount}</TableCell>
-                                </TableRow>
+                                    {/* like */}
+                                    <TableRow>
+                                        <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }}>{langConfigs.totalCreationLikedCount[preferenceStates.lang]}</TableCell>
+                                        <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }} align='right'>{memberStatisticsStates.totalCreationLikedCount}</TableCell>
+                                    </TableRow>
 
-                                {/* followed */}
-                                <TableRow>
-                                    <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }}>{langConfigs.totalFollowedByCount[preferenceStates.lang]}</TableCell>
-                                    <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }} align='right'>{memberStatisticsStates.totalFollowedByCount}</TableCell >
-                                </TableRow >
+                                    {/* save */}
+                                    <TableRow>
+                                        <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }}>{langConfigs.totalCreationSavedCount[preferenceStates.lang]}</TableCell>
+                                        <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }} align='right'>{memberStatisticsStates.totalCreationSavedCount}</TableCell>
+                                    </TableRow>
+
+                                    {/* followed */}
+                                    <TableRow>
+                                        <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }}>{langConfigs.totalFollowedByCount[preferenceStates.lang]}</TableCell>
+                                        <TableCell sx={{ pt: 1, pb: 0, px: { xs: 0, sm: 1 }, borderBottom: 'none' }} align='right'>{memberStatisticsStates.totalFollowedByCount}</TableCell >
+                                    </TableRow >
+                                </TableBody>
                             </Table >
                         </Box >
 
@@ -360,13 +372,10 @@ const MemberInfoAndStatistics = () => {
 
             </Grid>
 
-
-
-
             <Copyright sx={{ mt: 16 }} lang={preferenceStates.lang} />
             <Terms sx={{ mb: 8 }} lang={preferenceStates.lang} />
 
-        </ThemeProvider>
+        </>
     );
 };
 

@@ -14,7 +14,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import ReCAPTCHA from "react-google-recaptcha";
 
 import { LangConfigs } from '../../lib/types';
-import { verifyEmailAddress } from '../../lib/utils';
+import { verifyEmailAddress } from '../../lib/utils/verify';
 
 import Copyright from '../../ui/Copyright';
 import BackToHomeButtonGroup from '../../ui/BackToHomeButtonGroup';

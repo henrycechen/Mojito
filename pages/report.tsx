@@ -28,7 +28,7 @@ import ListItemText from '@mui/material/ListItemText';
 
 import { useRouter } from 'next/router';
 import { CentralizedBox } from '../ui/Styled';
-import { Divider } from '@mui/material';
+import Divider from '@mui/material/Divider';
 import Terms from '../ui/Terms';
 
 const domain = process.env.NEXT_PUBLIC_APP_DOMAIN;

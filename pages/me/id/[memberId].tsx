@@ -1174,6 +1174,20 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
             });
     };
 
+    type TNicknameSetting = {
+        alternativeName: string;
+        displayError: boolean;
+        disableButton: boolean;
+        progressStatus: 100 | 200 | 300 | 422 | 500;
+    };
+
+    const [nicknameSettingStates, setNicknameSettingStates] = React.useState<TNicknameSetting>({
+        alternativeName: memberComprehensive_ss.nickname,
+        displayError: false,
+        disableButton: true,
+        progressStatus: 100
+    });
+
     const handleNicknameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (13 < `${event.target.value}`.length) {
             setNicknameSettingStates({ ...nicknameSettingStates, displayError: true });
@@ -1185,6 +1199,20 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
             }
         }
     };
+
+    type TBriefIntroSetting = {
+        alternativeIntro: string;
+        displayError: boolean;
+        disableButton: boolean;
+        progressStatus: 100 | 200 | 300 | 422 | 500;
+    };
+
+    const [briefIntroSettingStates, setBriefIntroSettingStates] = React.useState<TBriefIntroSetting>({
+        alternativeIntro: memberInfoStates.briefIntro,
+        displayError: false,
+        disableButton: true,
+        progressStatus: 100
+    });
 
     const handleBriefIntroChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (21 < `${event.target.value}`.length) {

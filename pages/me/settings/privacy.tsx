@@ -262,19 +262,22 @@ const PravicySettings = () => {
 
     const fetchPrivacySettings = async () => {
         const resp = await fetch(`/api/member/info/${memberId}`);
-        if (200 !== resp.status) {
-            // error handling
+        try {
+            if (200 !== resp.status) {
+                // error handling
+                throw new Error(`Bad fetch response`);
+            }
+            const info = await resp.json();
+            setPreviousSettingsStates({
+                allowKeepingBrowsingHistory: info.allowKeepingBrowsingHistory,
+                allowVisitingFollowedMembers: info.allowVisitingFollowedMembers,
+                allowVisitingSavedPosts: info.allowVisitingSavedPosts,
+                hidePostsAndCommentsOfBlockedMember: info.hidePostsAndCommentsOfBlockedMember,
+            });
+        } catch (e) {
+            console.log(`Attempt to get member info (privacy settings). ${e}`);
             setProcessStates({ ...processStates, displayAlert: true });
-            return;
         }
-        const stt = await resp.json();
-        setPreviousSettingsStates({
-            allowKeepingBrowsingHistory: stt.allowKeepingBrowsingHistory,
-            allowVisitingFollowedMembers: stt.allowVisitingFollowedMembers,
-            allowVisitingSavedPosts: stt.allowVisitingSavedPosts,
-            hidePostsAndCommentsOfBlockedMember: stt.hidePostsAndCommentsOfBlockedMember,
-        });
-        setPrivacySettingsStates;
     };
 
     //////// STATES - previous settings ////////
