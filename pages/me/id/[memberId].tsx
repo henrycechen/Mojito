@@ -129,16 +129,44 @@ type TMemberPageProps = {
     redirect500: boolean;
 };
 
-type TMemberPageProcessStates = {
-    selectedLayout: 'messagelayout' | 'listlayout' | 'postlayout' | 'settinglayout';
-};
 
 const domain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? '';
 const defaultLang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
 
 
+    //// UI contents ////
+    editProfile: {
+        tw: '資料設定',
+        cn: '更改信息',
+        en: 'Edit profile',
+    },
+    followAuthor: {
+        tw: '關注作者',
+        cn: '关注作者',
+        en: 'Follow author',
+    },
+    follow: {
+        tw: '關注',
+        cn: '关注',
+        en: 'Follow',
+    },
 
+    noFollowing: {
+        tw: '还没有會員關注作者',
+        cn: '位会员正在关注作者',
+        en: 'members are following the author',
+    },
+    authorsTotalFollowing: {
+        tw: '位會員正在關注作者',
+        cn: '位会员正在关注作者',
+        en: 'members are following the author',
+    },
+    noCreations: {
+        tw: '作者还未发布主题帖',
+        cn: '作者还未发布主题帖',
+        en: 'members are following the author',
+    },
     authorsTotalCreationsP1: {
         tw: '作者发布了',
         cn: '位会员正在关注作者',
@@ -149,22 +177,6 @@ const langConfigs: LangConfigs = {
         cn: '',
         en: 'members are following the author',
     },
-    noCreations: {
-        tw: '作者还未发布主题帖',
-        cn: '位会员正在关注作者',
-        en: 'members are following the author',
-    },
-    authorsTotalFollowing: {
-        tw: ' 位會員正在關注作者',
-        cn: '位会员正在关注作者',
-        en: 'members are following the author',
-    },
-    noFollowing: {
-        tw: '还没有會員關注作者',
-        cn: '位会员正在关注作者',
-        en: 'members are following the author',
-    },
-
     authorsTotalLikesP1: {
         tw: '获得了',
         cn: '获得了',
@@ -175,7 +187,6 @@ const langConfigs: LangConfigs = {
         cn: '次喜欢',
         en: ' likes',
     },
-
     authorsTotalSavesP2: {
         tw: '次收藏',
         cn: '次喜欢',
@@ -184,167 +195,41 @@ const langConfigs: LangConfigs = {
 
 
 
-
-    following: {
-        tw: '訂閲',
-        cn: '粉丝',
-        en: 'Following'
-    },
-    myFollowing: {
-        tw: '我的訂閲',
-        cn: '我的关注',
-        en: 'My following'
-    },
-    hisFollowing: {
-        tw: '作者的訂閲',
-        cn: '作者的关注和粉丝',
-        en: `Author's following`
-    },
-    authorsFollowing: {
-        tw: '作者的訂閲',
-        cn: '作者的关注',
-        en: `Author's following`
-    },
-    followedBy: {
-        tw: '訂閲',
-        cn: '粉丝',
-        en: 'Followed'
-    },
-    myFollowedBy: {
-        tw: '訂閲我的用戶',
-        cn: '我的粉丝',
-        en: 'My fans'
-    },
-    authorsFollowedBy: {
-        tw: '訂閲作者的用戶',
-        cn: '作者的粉丝',
-        en: `Author's following`
-    },
-    undoFollow: {
-        tw: '取消訂閲',
-        cn: '取关',
-        en: 'Undo'
-    },
-    posts: {
-        tw: '帖子',
-        cn: '帖子',
-        en: 'Posts'
-    },
-    authorsPosts: {
-        tw: '作者的創作和收藏',
-        cn: '作者的发布和收藏',
-        en: `Author's creations and saved posts`
-    },
-    creations: {
-        tw: '創作',
-        cn: '发布',
-        en: 'Creations'
-    },
     myCreations: {
-        tw: '我的創作',
-        cn: '我的发布',
-        en: 'My creations'
+        tw: '我的作品',
+        cn: '我的作品',
+        en: 'likes',
     },
     authorsCreations: {
-        tw: '作者的創作',
-        cn: '作者的发布',
-        en: `Author's creations`
-    },
-    saved: {
-        tw: '收藏',
-        cn: '收藏',
-        en: 'Saved'
+        tw: '作者的作品',
+        cn: '作者的作品',
+        en: 'Author\'s creations',
     },
     mySavedPosts: {
         tw: '我的收藏',
         cn: '我的收藏',
-        en: 'Saved'
+        en: 'likes',
     },
     authorsSavedPosts: {
         tw: '作者的收藏',
         cn: '作者的收藏',
-        en: `Author's saved posts`
+        en: 'Author\'s saved posts',
     },
+    browsingHistory: {
+        tw: '瀏覽記錄',
+        cn: '浏览记录',
+        en: 'Browsing history',
+    },
+
     allPosts: {
         tw: '全部',
         cn: '全部',
-        en: 'All posts'
+        en: 'All',
     },
-    hotPosts: {
-        tw: '熱帖',
-        cn: '最热',
-        en: 'Hotest'
-    },
-    newPosts: {
-        tw: '新帖',
-        cn: '最新',
-        en: 'Newest'
-    },
-    like: {
-        tw: '喜歡',
-        cn: '获赞',
-        en: 'Like'
-    },
-    liked: {
-        tw: '喜歡',
-        cn: '赞过',
-        en: 'Liked'
-    },
-    replied: {
-        tw: '回復',
-        cn: '回复',
-        en: 'Liked'
-    },
-    cued: {
-        tw: '提及',
-        cn: '提及',
-        en: 'Cued'
-    },
-    history: {
-        tw: '歷史',
-        cn: '历史',
-        en: 'History'
-    },
-    browsingHistory: {
-        tw: '瀏覽歷史',
-        cn: '历史记录',
-        en: 'History'
-    },
-    settings: {
-        tw: '設定',
-        cn: '设置',
-        en: 'Settings'
-    },
-    submit: {
-        tw: '提交',
-        cn: '提交',
-        en: 'Submit'
-    },
-    noNotificationRecord: {
-        tw: '暫時沒有本類別的訊息',
-        cn: '暂时没有本类别的讯息',
-        en: 'No records of notification'
-    },
-    noFollowingMemberInfoRecord: {
-        tw: '您沒有訂閲其他用戶',
-        cn: '您没有关注其他用户',
-        en: 'You have not followed any members'
-    },
-    authorNoFollowingMemberInfoRecord: {
-        tw: '作者沒有訂閲其他用戶',
-        cn: '作者没有关注其他用户',
-        en: 'Author has not followed any members'
-    },
-    noFollowedByMemberInfoRecord: {
-        tw: '暫時沒有其他用戶訂閲您',
-        cn: '暂时没有其他用户关注您',
-        en: 'No records of following members'
-    },
-    authorNoFollowedByMemberInfoRecord: {
-        tw: '暫時沒有其他用戶訂閲作者',
-        cn: '暂时没有其他用户关注作者',
-        en: 'No records of following members'
-    },
+
+
+
+    //// Alert contents ////
     noCreationsRecord: {
         tw: '您還未發表任何作品',
         cn: '您还未发表任何作品',
@@ -370,16 +255,27 @@ const langConfigs: LangConfigs = {
         cn: '暂时没有您的浏览记录',
         en: 'No records of browsing history'
     },
+
+
+    //// Member info editing ////
+    cancel: {
+        tw: '取消',
+        cn: '取消',
+        en: 'Cancel'
+    },
+    update: {
+        tw: '更新',
+        cn: '更新',
+        en: 'Update'
+    },
+
+
+
     //// Avatar setting ////
     avatar: {
         tw: '相片',
         cn: '头像',
         en: 'Avatar'
-    },
-    upload: {
-        tw: '上傳',
-        cn: '上传',
-        en: 'Upload'
     },
     chooseImageToUpload: {
         tw: '選擇相片以上傳',
@@ -406,16 +302,12 @@ const langConfigs: LangConfigs = {
         cn: '上传失败，点击以重试',
         en: 'Upload failed, click to re-try'
     },
+
     //// Nickname setting ////
     nickname: {
         tw: '暱稱',
         cn: '昵称',
         en: 'Nickname'
-    },
-    update: {
-        tw: '更新',
-        cn: '更新',
-        en: 'Update'
     },
     updatinging: {
         tw: '更新中...',
@@ -433,8 +325,8 @@ const langConfigs: LangConfigs = {
         en: 'Please refer to our Community Guidelines'
     },
     invalidNicknameOrConflict: {
-        tw: '暱稱不合規或已被佔用，點擊以重試',
-        cn: '昵称不合规或已被占用，点击以重试',
+        tw: '暱稱被佔用或不符合社區規範，請修改後重試',
+        cn: '昵称被占用或不符合社区规范，请修改后重试',
         en: 'Nickname invalid or already taken'
     },
     updateSucceeded: {
@@ -452,58 +344,7 @@ const langConfigs: LangConfigs = {
         cn: '新昵称',
         en: 'New nickname'
     },
-    //// Password setting ////
-    password: {
-        tw: '密碼',
-        cn: '密码',
-        en: 'Password'
-    },
-    currentPassword: {
-        tw: '現有密碼',
-        cn: '现有密码',
-        en: 'Current password'
-    },
-    newPassword: {
-        tw: '新密碼',
-        cn: '新密码',
-        en: 'New password'
-    },
-    repeatPassword: {
-        tw: '重複鍵入新密碼',
-        cn: '重复输入新密码',
-        en: 'Repeat new password'
-    },
-    mismatchedPassword: {
-        tw: '兩次輸入的密碼不相符，請重試',
-        cn: '两次输入的密码不相符，请重试',
-        en: 'Passwords do not match'
-    },
-    currentPasswordMismatched: {
-        tw: '現有密碼與我們的記錄不符，請重試',
-        cn: '现有密码与我们的记录不符，请重试',
-        en: 'Password does not meet complexity requirements'
-    },
-    unsatisfiedPassword: {
-        tw: '密碼不符合複雜性要求，請重試',
-        cn: '密码不符合复杂性要求，请重试',
-        en: 'Current password does not match the one on our records'
-    },
-    passwordLengthRequirement: {
-        tw: '*密碼長度不得少於 8 個字符。',
-        cn: '*密码长度不得少于 8 个字符。',
-        en: '*Password must be at least 8 characters long'
-    },
-    passwordComplexityRequirement: {
-        tw: '請包括大寫字母、小寫字母、數字和至少一個特殊字符。',
-        cn: '请包括大写字母、小写字母、数字和至少一个特殊字符。',
-        en: 'Please include uppercase, lowercase letters, digits and at least one special characters.'
-    },
-    forgotPassword: {
-        tw: '我忘記密碼了...',
-        cn: '我忘记密码了...',
-        en: 'I forgot my password...'
 
-    },
     //// Bried intro setting ////
     briefIntro: {
         tw: '簡介',
@@ -516,202 +357,16 @@ const langConfigs: LangConfigs = {
         en: 'Write something about yourself'
     },
     briefIntroRequirement: {
-        tw: '*請添加符合規則的簡介並且長度不超過21個字符',
-        cn: '*请添加符合规则的简介并且长度不超过21个字符',
-        en: '*Please add a brief intro that complies with the rules and the length does not exceed 21 characters'
+        tw: '*請添加符合規則的簡介並且長度不超過150個字符',
+        cn: '*请添加符合规则的简介并且长度不超过150个字符',
+        en: '*Please add a brief intro that complies with the rules and the length does not exceed 150 characters'
     },
     invalidBriefIntro: {
-        tw: '簡介長度超過21個字符或不合規，請重試',
-        cn: '简介长度超过21个字符或不合规，请重试',
+        tw: '簡介長度超過150個字符或不符合社區規範，請重試',
+        cn: '简介长度超过150个字符或不符合社区规范，请重试',
         en: 'Brief intro length exceeds limit or invalid'
     },
-    //// Gender setting ////
-    gender: {
-        tw: '性別',
-        cn: '性别',
-        en: 'Gender'
-    },
-    female: {
-        tw: '女',
-        cn: '女',
-        en: 'Female'
-    },
-    male: {
-        tw: '男',
-        cn: '男',
-        en: 'Male'
-    },
-    keepAsSecret: {
-        tw: '我選擇不透露',
-        cn: '保密',
-        en: 'Keep as secret'
-    },
-    //// Birthday setting ////
-    birthday: {
-        tw: '生日',
-        cn: '生日',
-        en: 'Birthday'
-    },
-    chooseYourBirthday: {
-        tw: '選擇您的出生日期',
-        cn: '选择您的生日',
-        en: 'Choose your birthday'
-    },
-    //// Privacy setting ////
-    privacySettings: {
-        tw: '設定',
-        cn: '设置',
-        en: 'Settings'
-    },
-    privacy: {
-        tw: '隱私',
-        cn: '隐私',
-        en: 'Privacy'
-    },
-    language: {
-        tw: '語言',
-        cn: '语言',
-        en: 'Language'
-    },
-    cancel: {
-        tw: '注銷',
-        cn: '注銷',
-        en: 'Confirm'
-    },
-    cancelSucceeded: {
-        tw: '注銷成功',
-        cn: '注銷成功',
-        en: 'Success'
-    },
-    cancelFailed: {
-        tw: '注銷失敗，點擊以重試',
-        cn: '注銷失败，点击以重试',
-        en: 'Cancel membership failed, click to re-try',
-    },
-    allowVisitingFollowedMembers: {
-        tw: '允許他人查看您的訂閲',
-        cn: '允许他人查看您的订阅',
-        en: 'Allow other members visiting your followed members'
-    },
-    allowVisitingSavedPosts: {
-        tw: '允許他人訪問您的收藏',
-        cn: '允许他人访问您的收藏',
-        en: 'Allow other members visiting your saved posts'
-    },
-    clickXTimesToCancelMemberShip: {
-        tw: (t: number) => 0 !== t ? `繼續點擊${t}次以注銷賬號` : `繼續點擊以注銷賬號`,
-        cn: (t: number) => 0 !== t ? `继续点击${t}次以注销账户` : `继续点击以注销账户`,
-        en: (t: number) => 0 !== t ? `Keep taping ${t} times to cancel membershipt` : `Keep taping to cancel membershipt`,
-    },
-    allowKeepingBrowsingHistory: {
-        tw: '保存您的瀏覽記錄',
-        cn: '保存您的浏览记录',
-        en: 'Save browsing history'
 
-    },
-    hidePostsAndCommentsOfBlockedMember: {
-        tw: '隱藏屏蔽的用戶的作品和評論',
-        cn: '隐藏屏蔽的用户的作品与评论',
-        en: 'Hide posts and comments from blocked member'
-
-    },
-    wishToCancelMembership: {
-        tw: '我希望注銷我的賬號',
-        cn: '我希望注销我的账户',
-        en: 'I wish to cancel my membership'
-    },
-    //// Black list ////
-    blacklist: {
-        tw: '黑名單',
-        cn: '黑名单',
-        en: 'Blacklist'
-    },
-    noRecordOfBlacklist: {
-        tw: '您還沒有屏蔽任何用戶',
-        cn: '您还没有屏蔽任何用户',
-        en: 'You have not blocked any members'
-    },
-    undoBlock: {
-        tw: '移除',
-        cn: '移除',
-        en: 'Undo'
-    },
-    //// Member info ////
-    info: {
-        tw: '資訊',
-        cn: '信息',
-        en: 'Info'
-    },
-    memberInfo: {
-        tw: '賬號資訊',
-        cn: '账户信息',
-        en: 'Member info'
-    },
-    memberId: {
-        tw: '賬號 ID',
-        cn: '账户 ID',
-        en: 'Member ID'
-    },
-    emailAddress: {
-        tw: '郵件地址',
-        cn: '电子邮箱',
-        en: 'Email'
-    },
-    registeredDate: {
-        tw: '注冊日期',
-        cn: '注册日期',
-        en: 'Register date'
-    },
-    verifiedDate: {
-        tw: '驗證日期',
-        cn: '验证日期',
-        en: 'Verified date'
-    },
-    memberStatus: {
-        tw: '賬號狀況',
-        cn: '账户状态',
-        en: 'Member status'
-    },
-    normalStatus: {
-        tw: '正常',
-        cn: '正常',
-        en: 'normal'
-    },
-    restrictedStatus: {
-        tw: '受限',
-        cn: '受限',
-        en: 'restricted'
-    },
-    memberStatistics: {
-        tw: '統計數據',
-        cn: '统计数据',
-        en: 'Member statistics'
-    },
-    totalCreationsCount: {
-        tw: '創作',
-        cn: '发布',
-        en: 'Total creations'
-    },
-    totalCreationHitCount: {
-        tw: '觀看',
-        cn: '浏览',
-        en: 'Total creation viewed'
-    },
-    totalCreationLikedCount: {
-        tw: '喜歡',
-        cn: '点赞',
-        en: 'Total creation liked'
-    },
-    totalCreationSavedCount: {
-        tw: '收藏',
-        cn: '收藏',
-        en: 'Total creation saved'
-    },
-    totalFollowedByCount: {
-        tw: '訂閲',
-        cn: '粉丝',
-        en: 'Followers'
-    },
 };
 
 //// Get multiple member info server-side ////
@@ -791,12 +446,10 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
     const { data: session, status } = useSession();
 
-    //////// INFO - viewer //////// (Cond.)
-    let viewerId = '';
     React.useEffect(() => {
         if ('authenticated' === status) {
             const viewerSession: any = { ...session };
-            viewerId = viewerSession?.user?.id;
+            setProcessStates({ ...processStates, viewerId: viewerSession?.user?.id });
             restorePreferenceStatesFromCache(setPreferenceStates);
         }
     }, [session]);
@@ -805,7 +458,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
     const masonryWrapper = React.useRef<any>();
     const [width, setWidth] = React.useState(375); // default 636, now use the width of iphonse se3
 
-    //////// INFO - member (authod) ////////
+    //////// INFO - member (author) ////////
     const { memberId: authorId } = memberComprehensive_ss;
 
     type TMemberInfoStates = {
@@ -831,40 +484,36 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
         mode: 'light'
     });
 
+    type TProcessStates = {
+        viewerId: string;
+        selectedCategory: 'mycreations' | 'savedposts' | 'browsinghistory';
+        selectedHotPosts: boolean;
+        selectedChannelId: string;
+        memorizeChannelBarPositionX: number | undefined;
+        memorizeViewPortPositionY: number | undefined;
+        memorizeLastViewedPostId: string | undefined;
+        wasRedirected: boolean;
+    };
 
     //////// STATES - process ////////
-    const [processStates, setProcessStates] = React.useState<TMemberPageProcessStates>({
-        selectedLayout: 'postlayout', // default
+    const [processStates, setProcessStates] = React.useState<TProcessStates>({
+        viewerId: '',
+        selectedCategory: 'mycreations', // 'mycreations' | 'savedposts' | 'browsinghistory'
+        selectedHotPosts: false, // default
+        selectedChannelId: 'all', // default
+        memorizeChannelBarPositionX: undefined,
+        memorizeViewPortPositionY: undefined,
+        memorizeLastViewedPostId: undefined,
+        wasRedirected: false,
     });
-
-    React.useEffect(() => { selectLayoutByQuery(); }, [router]);
-
-    const selectLayoutByQuery = () => {
-        const { layout } = router.query;
-        if ('message' === layout) {
-            setProcessStates({ ...processStates, selectedLayout: 'messagelayout' });
-        }
-        if ('post' === layout) {
-            setProcessStates({ ...processStates, selectedLayout: 'postlayout' });
-        }
-    };
 
     React.useEffect(() => {
         restoreProcessStatesFromCache(setProcessStates);
         restorePostsLayoutStatesFromCache(setPostLayoutStates);
     }, []);
 
-    React.useEffect(() => { setWidth(masonryWrapper?.current?.offsetWidth); }, [processStates.selectedLayout]);
-
-    const handleSelectLayout = (layout: 'messagelayout' | 'listlayout' | 'postlayout' | 'settinglayout') => (event: React.MouseEvent<HTMLButtonElement>) => {
-        let _processStates: TMemberPageProcessStates = { ...processStates, selectedLayout: layout };
-        let postlayoutStates: TPostsLayoutStates = { ...postLayoutStates, };
-        postlayoutStates.memorizeViewPortPositionY = window.scrollY;
-        setProcessStates(_processStates);
-        updateProcessStatesCache(_processStates);
-        return;
-    };
-
+    // Reset masonry width
+    React.useEffect(() => { setWidth(masonryWrapper?.current?.offsetWidth); }, []);
 
 
     const handleFollowOrUndoFollow = async () => {
@@ -872,7 +521,6 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
     };
 
 
-    ////////////////////////   Post Layout   ////////////////////////
     type TPostsLayoutStates = {
         selectedCategory: 'mycreations' | 'savedposts' | 'browsinghistory';
         selectedHotPosts: boolean;
@@ -992,7 +640,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
     // Handle restore browsing position after reload
     React.useEffect(() => {
-        if (processStates.selectedLayout === 'postlayout' && postLayoutStates.wasRedirected) {
+        if (postLayoutStates.wasRedirected) {
             const postId = postLayoutStates.memorizeLastViewedPostId;
             // #1 restore browsing position
             if (!postId) {
@@ -1003,7 +651,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                 setBrowsingHelper({ ...browsingHelper, memorizeViewPortPositionY: postLayoutStates.memorizeViewPortPositionY });
             }
             // #2 update process states and cache
-            let states1: TMemberPageProcessStates = { ...processStates };
+            let states1: TProcessStates = { ...processStates };
             setProcessStates({ ...states1 });
             updateProcessStatesCache(states1);
             let states2: TPostsLayoutStates = { ...postLayoutStates, memorizeLastViewedPostId: undefined, memorizeViewPortPositionY: undefined, wasRedirected: false };
@@ -1110,33 +758,47 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
         left: 'calc(50% - 15px)',
     }));
 
+    //// STATES - info editor ////
+    const [authorInfoEditorStates, setAuthorInfoEditorStates] = React.useState<TEditorStates>({
+        open: true
+    });
 
-    const [open, setOpen] = React.useState(false);
-
-    const toggleDrawer = (newOpen: boolean) => () => {
-        setOpen(newOpen);
+    const handleToggleEditor = (open: boolean) => () => {
+        setAuthorInfoEditorStates({ ...authorInfoEditorStates, open });
     };
 
     type TAuthorInfoSettingStates = {
+        // displayEditor: boolean;
         alternativeImageUrl: string | undefined;
         alternativeName: string;
         alternativeIntro: string;
         disableButton: boolean;
+        displayError: boolean;
         progressStatus: 0 | 100 | 300 | 400;
     };
+    //// STATES - author info ////
 
-    const [authorInfoSettingStates, setAvatarImageSettingStates] = React.useState<TAuthorInfoSettingStates>({
+    const [authorInfoSettingStates, setAuthorInfoSettingStates] = React.useState<TAuthorInfoSettingStates>({
+        // displayEditor: false,
         alternativeImageUrl: provideAvatarImageUrl('authorId', domain),
         alternativeName: memberInfoStates.nickname,
         alternativeIntro: memberInfoStates.briefIntro,
         disableButton: true,
+        displayError: false,
         progressStatus: 0
     });
 
+    type TEditorStates = {
+        open: boolean;
+    };
+
+
+
+    // Edit avatar image
     const handleOpenFile = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files?.length !== 0 && event.target.files !== null) {
             const url = URL.createObjectURL(event.target.files[0]);
-            setAvatarImageSettingStates({ ...authorInfoSettingStates, alternativeImageUrl: url, disableButton: false, progressStatus: 100 });
+            setAuthorInfoSettingStates({ ...authorInfoSettingStates, alternativeImageUrl: url, disableButton: false, progressStatus: 100 });
         }
     };
 
@@ -1146,7 +808,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
         }
 
         // Prepare to upload avatar image
-        setAvatarImageSettingStates({ ...authorInfoSettingStates, disableButton: true, progressStatus: 300 });
+        setAuthorInfoSettingStates({ ...authorInfoSettingStates, disableButton: true, progressStatus: 300 });
         let formData = new FormData();
         const config = {
             headers: { 'Content-Type': 'multipart/form-data' },
@@ -1158,7 +820,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
         // Retrieve file and measure the size
         const bb = await fetch(authorInfoSettingStates.alternativeImageUrl).then(r => r.blob());
         if ((await bb.arrayBuffer()).byteLength > 2097152) { // new image file no larger than 2 MB
-            setAvatarImageSettingStates({ ...authorInfoSettingStates, disableButton: false, progressStatus: 400 });
+            setAuthorInfoSettingStates({ ...authorInfoSettingStates, disableButton: false, progressStatus: 400 });
             return;
         }
 
@@ -1169,7 +831,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                 setMemberInfoStates({ ...memberInfoStates, avatarImageUrl: provideAvatarImageUrl(authorId, domain, true) });
             })
             .catch((error: AxiosError) => {
-                setAvatarImageSettingStates({ ...authorInfoSettingStates, disableButton: true, progressStatus: 400 });
+                setAuthorInfoSettingStates({ ...authorInfoSettingStates, disableButton: true, progressStatus: 400 });
                 console.log(`Attempt to upload avatar image. ${error}`);
             });
     };
@@ -1235,7 +897,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                     '@media (max-width: 600px)': {
 
                         '.MuiDrawer-root > .MuiPaper-root': {
-                            height: `calc(75%)`,
+                            height: `calc(80%)`,
                             borderTopLeftRadius: 8,
                             borderTopRightRadius: 8,
                             // overflow: 'visible',
@@ -1244,234 +906,121 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                     '@media (min-width: 600px)': {
 
                         '.MuiDrawer-root > .MuiPaper-root': {
-                            height: `calc(75%)`,
+                            height: `calc(70%)`,
                             borderTopLeftRadius: 8,
                             borderTopRightRadius: 8,
-                            // overflow: 'visible',
+                            maxWidth: 500,
+                            left: `calc(50% - 250px);`,
+                        },
+                    },
+                    '@media (min-width: 900px)': {
+
+                        '.MuiDrawer-root > .MuiPaper-root': {
+                            height: `calc(70%)`,
+                            borderTopLeftRadius: 8,
+                            borderTopRightRadius: 8,
                             maxWidth: 600,
-                            left: '50vw',
-                            // transform: 'translate(-200, 0) scale(1)'
+                            left: `calc(50% - 300px);`,
                         },
                     }
                 }}
             />
 
-            <SwipeableDrawer
-                anchor="bottom"
-                open={open}
-                onClose={toggleDrawer(false)}
-                onOpen={toggleDrawer(true)}
-                swipeAreaWidth={50}
-                disableSwipeToOpen={false}
-                ModalProps={{
-                    keepMounted: true,
-                }}
-
-            >
-                <StyledBox
-                    sx={{
-                        px: 5,
-                        pt: 2,
-                        height: '100%',
-                        overflow: 'auto',
-
-                    }}
-                >
-                    <Puller />
-
-
-                    {/* buttons */}
-                    <Grid container>
-                        <Grid item >
-                            <Button variant='text'>Cancel</Button>
-                        </Grid>
-                        <Grid item flexGrow={1}>
-                        </Grid>
-                        <Grid item>
-                            <Button>Update</Button>
-
-                        </Grid>
-                    </Grid>
-
-                    {/* image */}
-                    <CentralizedBox>
-                        <Avatar src={authorInfoSettingStates.alternativeImageUrl} sx={{ width: { xs: 96, md: 128 }, height: { xs: 96, md: 128 }, }}></Avatar>
-                    </CentralizedBox>
-
-                    {/* 'open file' button */}
-                    <CentralizedBox mt={1}>
-                        <Box>
-                            <IconButton color={'primary'} aria-label={'upload picture'} component={'label'} >
-                                <input hidden accept={'image/*'} type={'file'} onChange={handleOpenFile} />
-                                <PhotoCamera />
-                            </IconButton>
-                        </Box>
-                    </CentralizedBox>
-                    {/* nickname */}
-
-                    <CentralizedBox>
-                        <TextField
-                            error={authorInfoSettingStates.displayError}
-                            label={langConfigs.newNickname[preferenceStates.lang]}
-                            value={authorInfoSettingStates.alternativeName}
-                            onChange={handleNicknameChange}
-                            size={'small'}
-                        />
-                    </CentralizedBox>
-
-                    {/* brief intro */}
-                    <CentralizedBox>
-                        <TextField
-                            error={authorInfoSettingStates.displayError}
-                            label={langConfigs.briefIntro[preferenceStates.lang]}
-                            multiline
-                            rows={3}
-                            value={authorInfoSettingStates.alternativeIntro}
-                            placeholder={langConfigs.brieflyIntrodueYourself[preferenceStates.lang]}
-                            onChange={handleBriefIntroChange}
-                            size={'small'}
-                            fullWidth
-                        />
-                    </CentralizedBox>
-                </StyledBox>
-
-
-
-            </SwipeableDrawer>
-
-
-
-
-
             <Navbar avatarImageUrl={memberInfoStates.avatarImageUrl} />
-
 
             {/* //// first layer - member info //// */}
             <Grid container >
 
+                {/* placeholder - left */}
                 <Grid item xs={0} sm={1} md={2} lg={3} xl={3}></Grid>
 
-                {/* //// middle column //// */}
+                {/* middle column */}
                 <Grid item xs={12} sm={10} md={8} lg={6} xl={6}>
-
-
-
                     <Box sx={{ minHeight: { xs: 160, md: 200 }, px: { xs: 2, sm: 0 } }}>
-                        <Stack>
 
-                            {/* 1st row - avatar */}
-                            <Grid container sx={{ mt: { xs: 4, sm: 5 } }}>
-                                {/* avatar image */}
-                                <Grid item flexGrow={1}>
-                                    <Avatar src={memberInfoStates.avatarImageUrl} sx={{ height: { xs: 64, sm: 90 }, width: { xs: 64, sm: 90 } }}>{memberInfoStates.nickname?.charAt(0).toUpperCase()}</Avatar>
-                                </Grid>
-                                {/* 'customize' button */}
-                                <Grid item pt={2}>
-                                    {viewerId !== authorId && <>
-                                        <Tooltip title={'Follow'}>
-                                            <>
-                                                <IconButton sx={{ display: { xs: 'none', sm: 'flex' }, backgroundColor: 'grey.200' }} onClick={toggleDrawer(true)}><EditIcon sx={{}} /></IconButton>
-                                                <IconButton sx={{ display: { xs: 'flex', sm: 'none' }, backgroundColor: 'grey.200' }} onClick={toggleDrawer(true)}><EditIcon fontSize='small' /></IconButton>
-                                            </>
-                                        </Tooltip>
-                                    </>}
-                                </Grid>
-                                {/* 'follow' button */}
-                                <Grid item sx={{ mt: 2 }} pl={1}>
-                                    {viewerId !== authorId && <Tooltip title={'Follow'}>
-                                        <Button variant={'contained'} color={'info'} sx={{ padding: { xs: 0.5, sm: 3 / 4 }, borderRadius: 4 }} onClick={async () => { await handleFollowOrUndoFollow(); }}>{'訂閲'}</Button>
-                                    </Tooltip>}
-                                </Grid>
+                        {/* 1st row - avatar */}
+                        <Grid container sx={{ mt: { xs: 4, sm: 5 } }}>
+
+                            {/* avatar image */}
+                            <Grid item flexGrow={1}>
+                                <Avatar src={memberInfoStates.avatarImageUrl} sx={{ height: { xs: 64, sm: 90 }, width: { xs: 64, sm: 90 } }}>{memberInfoStates.nickname?.charAt(0).toUpperCase()}</Avatar>
                             </Grid>
 
-                            {/* 2nd row - nickname */}
-                            <Box pt={{ xs: 2, sm: 2, md: 4 }}>
-                                <Typography variant='body1' fontSize={{ xs: 22, sm: 24, md: 27 }} fontWeight={600} color={'grey.800'} >{memberInfoStates.nickname}</Typography>
-                            </Box>
+                            {/* 'edit' button */}
+                            {'authenticated' === status && processStates.viewerId === authorId && <Grid item pt={2}>
+                                <Tooltip title={langConfigs.editProfile[preferenceStates.lang]}>
+                                    <IconButton onClick={handleToggleEditor(true)}><EditIcon sx={{ height: { xs: 20, sm: 24 }, width: { xs: 20, sm: 24 }, }} /></IconButton>
+                                </Tooltip>
+                            </Grid>}
 
-                            {/* brief intro */}
-                            <Box pt={1} maxWidth={600}>
-                                {makeBriefIntro(memberInfoStates.briefIntro)}
-                            </Box>
+                            {/* 'follow' button */}
+                            {processStates.viewerId !== authorId && <Grid item sx={{ mt: 2 }} pl={1}>
+                                <Tooltip title={langConfigs.followAuthor[preferenceStates.lang]}>
+                                    <Button variant={'contained'} color={'info'} sx={{ padding: { xs: 0.5, sm: 3 / 4 }, borderRadius: 4 }} onClick={async () => { await handleFollowOrUndoFollow(); }}>{langConfigs.follow[preferenceStates.lang]}</Button>
+                                </Tooltip>
+                            </Grid>}
+                        </Grid>
 
-                            {/* statistics - follow */}
-                            <Box pt={4} sx={{ display: 'flex', flexDirection: 'row' }} >
-                                {0 === memberStatistics_ss.totalFollowedByCount && <>
-                                    <Typography fontSize={{ md: 17 }} color={'text.disabled'} >{langConfigs.noFollowing[preferenceStates.lang]}</Typography>
-                                </>}
+                        {/* 2nd row - nickname */}
+                        <Box pt={{ xs: 2, sm: 2, md: 4 }}>
+                            <Typography variant='body1' fontSize={{ xs: 22, sm: 24, md: 27 }} fontWeight={600} >{memberInfoStates.nickname}</Typography>
+                        </Box>
+
+                        {/* brief intro */}
+                        <Box pt={1} maxWidth={600}>
+                            {makeBriefIntro(memberInfoStates.briefIntro)}
+                        </Box>
+
+                        {/* statistics - follow */}
+                        <Box pt={4} sx={{ display: 'flex', flexDirection: 'row' }} >
+                            {0 === memberStatistics_ss.totalFollowedByCount && <>
+                                <Typography fontSize={{ md: 17 }} color={'text.disabled'} >{langConfigs.noFollowing[preferenceStates.lang]}</Typography>
+                            </>}
+                            {0 !== memberStatistics_ss.totalFollowedByCount && <>
+                                <Typography fontSize={{ md: 17 }} fontWeight={700} color={'grey.700'} >{memberStatistics_ss.totalFollowedByCount}</Typography>
+                                <Typography fontSize={{ md: 17 }} color={'text.disabled'}>{langConfigs.authorsTotalFollowing[preferenceStates.lang]}</Typography>
+                            </>}
+                        </Box>
+
+                        {/* statistics - creations */}
+                        <Box pt={{ xs: 0, sm: 1 / 2 }} sx={{ display: 'flex', flexDirection: 'row' }}>
+                            {0 === memberStatistics_ss.totalFollowedByCount && <>
+                                <Typography fontSize={{ md: 17 }} color={'text.disabled'}>{langConfigs.noCreations[preferenceStates.lang]}</Typography>
+                            </>}
+                            {0 !== memberStatistics_ss.totalFollowedByCount && <>
+                                <Typography fontSize={{ md: 17 }} color={'text.disabled'}>{langConfigs.authorsTotalCreationsP1[preferenceStates.lang]}</Typography>
+                                <Typography fontSize={{ md: 17 }} fontWeight={700} color={'grey.700'} >{memberStatistics_ss.totalCreationsCount}</Typography>
+                                <Typography fontSize={{ md: 17 }} color={'text.disabled'}>{langConfigs.authorsTotalCreationsP2[preferenceStates.lang]}</Typography>
+                            </>}
+                        </Box>
+
+                        {/* statistics - likes & saves */}
+                        <Box pt={{ xs: 0, sm: 1 / 2 }} sx={{ display: 'flex', flexDirection: 'row' }}>
+                            {0 !== memberStatistics_ss.totalFollowedByCount && <>
                                 {0 !== memberStatistics_ss.totalFollowedByCount && <>
+                                    <Typography fontSize={{ md: 17 }} color={'text.disabled'}>{langConfigs.authorsTotalLikesP1[preferenceStates.lang]}</Typography>
                                     <Typography fontSize={{ md: 17 }} fontWeight={700} color={'grey.700'} >{memberStatistics_ss.totalFollowedByCount}</Typography>
-                                    <Typography fontSize={{ md: 17 }} color={'text.disabled'}>{langConfigs.authorsTotalFollowing[preferenceStates.lang]}</Typography>
+                                    <Typography fontSize={{ md: 17 }} color={'text.disabled'}>{langConfigs.authorsTotalLikesP2[preferenceStates.lang]}</Typography>
                                 </>}
-                            </Box>
+                                {0 !== memberStatistics_ss.totalFollowedByCount && 0 !== memberStatistics_ss.totalFollowedByCount && <>
+                                    <Typography fontSize={{ md: 17 }} fontWeight={700} color={'grey.700'} >{memberStatistics_ss.totalFollowedByCount}</Typography>
+                                    <Typography fontSize={{ md: 17 }} color={'text.disabled'}>{langConfigs.authorsTotalSavesP2[preferenceStates.lang]}</Typography>
 
-                            {/* statistics - creations */}
-                            <Box pt={{ xs: 0, sm: 1 / 2 }} sx={{ display: 'flex', flexDirection: 'row' }}>
-                                {0 === memberStatistics_ss.totalFollowedByCount && <>
-                                    <Typography fontSize={{ md: 17 }} color={'text.disabled'}>{langConfigs.noCreations[preferenceStates.lang]}</Typography>
                                 </>}
-                                {0 !== memberStatistics_ss.totalFollowedByCount && <>
-                                    <Typography fontSize={{ md: 17 }} color={'text.disabled'}>{langConfigs.authorsTotalCreationsP1[preferenceStates.lang]}</Typography>
-                                    <Typography fontSize={{ md: 17 }} fontWeight={700} color={'grey.700'} >{memberStatistics_ss.totalCreationsCount}</Typography>
-                                    <Typography fontSize={{ md: 17 }} color={'text.disabled'}>{langConfigs.authorsTotalCreationsP2[preferenceStates.lang]}</Typography>
-                                </>}
-                            </Box>
+                            </>}
 
-                            {/* statistics - likes & saves */}
-                            <Box pt={{ xs: 0, sm: 1 / 2 }} sx={{ display: 'flex', flexDirection: 'row' }}>
-                                {0 !== memberStatistics_ss.totalFollowedByCount && <>
-                                    {0 !== memberStatistics_ss.totalFollowedByCount && <>
-                                        <Typography fontSize={{ md: 17 }} color={'text.disabled'}>{langConfigs.authorsTotalLikesP1[preferenceStates.lang]}</Typography>
-                                        <Typography fontSize={{ md: 17 }} fontWeight={700} color={'grey.700'} >{memberStatistics_ss.totalFollowedByCount}</Typography>
-                                        <Typography fontSize={{ md: 17 }} color={'text.disabled'}>{langConfigs.authorsTotalLikesP2[preferenceStates.lang]}</Typography>
-                                    </>}
-                                    {0 !== memberStatistics_ss.totalFollowedByCount && 0 !== memberStatistics_ss.totalFollowedByCount && <>
-                                        <Typography fontSize={{ md: 17 }} fontWeight={700} color={'grey.700'} >{memberStatistics_ss.totalFollowedByCount}</Typography>
-                                        <Typography fontSize={{ md: 17 }} color={'text.disabled'}>{langConfigs.authorsTotalSavesP2[preferenceStates.lang]}</Typography>
+                        </Box>
 
-                                    </>}
-                                </>}
-
-                            </Box>
-
-                            {/* <Stack direction={'row'} spacing={1} sx={{ mt: { xs: 1 } }}> */}
-
-                            {/* <Typography variant={'body2'}>{memberStatistics_ss.totalCreationsCount}{langConfigs.creations[preferenceStates.lang]}</Typography> */}
-                            {/* <Typography variant={'body2'}>{memberStatistics_ss.totalFollowedByCount}{langConfigs.followedBy[preferenceStates.lang]}</Typography> */}
-                            {/* <Typography variant={'body2'}>{memberStatistics_ss.totalCreationSavedCount}{langConfigs.saved[preferenceStates.lang]}</Typography> */}
-                            {/* <Typography variant={'body2'}>{memberStatistics_ss.totalCreationLikedCount}{langConfigs.like[preferenceStates.lang]}</Typography> */}
-
-
-
-
-                            {/* </Stack> */}
-
-                            <Box sx={{ py: 2 }}>
-                                <Divider />
-
-                            </Box>
-
-
-                        </Stack>
+                        {/* divider */}
+                        <Box py={{ xs: 2, sm: 2, md: 4 }}><Divider /></Box>
                     </Box>
-
-
-
                 </Grid>
 
-
-
+                {/* placeholder - right */}
                 <Grid item xs={0} sm={1} md={2} lg={3} xl={3}></Grid>
-
             </Grid>
 
-
-            {/* blank space (gap) */}
-            <Box mt={{ xs: 0, sm: 0, md: 2 }}></Box>
-
             {/* //// second layer - multi-display */}
-
-            {/* posts layout */}
             <Grid container >
 
                 {/* //// placeholder left //// */}
@@ -1489,7 +1038,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                                 <MenuItem onClick={handleSelectPostCategory('mycreations')} selected={'mycreations' === postLayoutStates.selectedCategory}>
                                     <ListItemIcon ><CreateIcon /></ListItemIcon>
                                     <ListItemText>
-                                        <Typography>{memberComprehensive_ss.memberId === viewerId ? langConfigs.myCreations[preferenceStates.lang] : langConfigs.authorsCreations[preferenceStates.lang]}</Typography>
+                                        <Typography>{authorId === processStates.viewerId ? langConfigs.myCreations[preferenceStates.lang] : langConfigs.authorsCreations[preferenceStates.lang]}</Typography>
                                     </ListItemText>
                                 </MenuItem>
 
@@ -1497,12 +1046,12 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                                 <MenuItem onClick={handleSelectPostCategory('savedposts')} selected={'savedposts' === postLayoutStates.selectedCategory}>
                                     <ListItemIcon ><StarIcon /></ListItemIcon>
                                     <ListItemText>
-                                        <Typography>{memberComprehensive_ss.memberId === viewerId ? langConfigs.mySavedPosts[preferenceStates.lang] : langConfigs.authorsSavedPosts[preferenceStates.lang]}</Typography>
+                                        <Typography>{authorId === processStates.viewerId ? langConfigs.mySavedPosts[preferenceStates.lang] : langConfigs.authorsSavedPosts[preferenceStates.lang]}</Typography>
                                     </ListItemText>
                                 </MenuItem>
 
                                 {/* browsing history list item */}
-                                {('authenticated' === status && authorId === viewerId) && <MenuItem onClick={handleSelectPostCategory('browsinghistory')} selected={'browsinghistory' === postLayoutStates.selectedCategory}>
+                                {'authenticated' === status && authorId === processStates.viewerId && <MenuItem onClick={handleSelectPostCategory('browsinghistory')} selected={'browsinghistory' === postLayoutStates.selectedCategory}>
                                     <ListItemIcon >
                                         <HistoryIcon />
                                     </ListItemIcon>
@@ -1566,7 +1115,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
                         {/* creations button */}
                         <Button variant={'mycreations' === postLayoutStates.selectedCategory ? 'contained' : 'outlined'} size='small' sx={{ minWidth: 'max-content' }} onClick={handleSelectPostCategory('mycreations')}>
-                            <Typography variant='body2'>{memberComprehensive_ss.memberId === viewerId ? langConfigs.myCreations[preferenceStates.lang] : langConfigs.authorsCreations[preferenceStates.lang]}</Typography>
+                            <Typography variant='body2'>{authorId === processStates.viewerId ? langConfigs.myCreations[preferenceStates.lang] : langConfigs.authorsCreations[preferenceStates.lang]}</Typography>
                         </Button>
 
                         {/*  saved post button */}
@@ -1575,7 +1124,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                         </Button>
 
                         {/* browsing history button */}
-                        {('authenticated' === status && authorId === viewerId) && <Button variant={'browsinghistory' === postLayoutStates.selectedCategory ? 'contained' : 'outlined'} size='small' sx={{ minWidth: 'max-content' }} onClick={handleSelectPostCategory('browsinghistory')}>
+                        {('authenticated' === status && authorId === processStates.viewerId) && <Button variant={'browsinghistory' === postLayoutStates.selectedCategory ? 'contained' : 'outlined'} size='small' sx={{ minWidth: 'max-content' }} onClick={handleSelectPostCategory('browsinghistory')}>
                             <Typography variant='body2'>{langConfigs.browsingHistory[preferenceStates.lang]}</Typography>
                         </Button>}
 
@@ -1609,13 +1158,12 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
                     {0 === masonryPostInfoArr.length &&
                         <Box minHeight={200} mt={10}>
-                            {/* ('authenticated' === status && authorId === viewerId) */}
                             {/* "mycreations" | "savedposts" | "browsinghistory" */}
                             {'mycreations' === postLayoutStates.selectedCategory && <Typography color={'text.secondary'} align={'center'}>
-                                {viewerId === authorId ? langConfigs.noCreationsRecord[preferenceStates.lang] : langConfigs.authorNoCreationsRecord[preferenceStates.lang]}
+                                {authorId === processStates.viewerId ? langConfigs.noCreationsRecord[preferenceStates.lang] : langConfigs.authorNoCreationsRecord[preferenceStates.lang]}
                             </Typography>}
                             {'savedposts' === postLayoutStates.selectedCategory && <Typography color={'text.secondary'} align={'center'}>
-                                {viewerId === authorId ? langConfigs.noSavedPostsRecord[preferenceStates.lang] : langConfigs.authorNoSavedPostsRecord[preferenceStates.lang]}
+                                {authorId === processStates.viewerId ? langConfigs.noSavedPostsRecord[preferenceStates.lang] : langConfigs.authorNoSavedPostsRecord[preferenceStates.lang]}
                             </Typography>}
                             {'browsinghistory' === postLayoutStates.selectedCategory && <Typography color={'text.secondary'} align={'center'}>
                                 {langConfigs.noBrowsingHistoryRecord[preferenceStates.lang]}
@@ -1671,7 +1219,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                                                 </Grid>
 
                                                 {/* member behaviour / placeholder */}
-                                                {('authenticated' === status && viewerId === authorId) && <Grid item>
+                                                {('authenticated' === status && authorId === processStates.viewerId) && <Grid item>
                                                     <IconButton sx={{ mt: 1 }} onClick={async () => { await handleMultiProposeButtonClick(postLayoutStates.selectedCategory, info.postId); }}>
                                                         {'mycreations' === postLayoutStates.selectedCategory && <CreateIcon color={'inherit'} sx={{ fontSize: { xs: 20, sm: 24 } }} />}
                                                         {'savedposts' === postLayoutStates.selectedCategory && <StarIcon color={undoSavedPostArr.includes(info.postId) ? 'inherit' : 'warning'} sx={{ fontSize: { xs: 20, sm: 24 } }} />}
@@ -1692,12 +1240,106 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                 <Grid item xs={0} sm={1} md={2} lg={2} xl={1}></Grid>
             </Grid>
 
-
-
-
-
             <Copyright sx={{ mt: 16 }} lang={preferenceStates.lang} />
             <Terms sx={{ mb: 8 }} lang={preferenceStates.lang} />
+
+            {/* info editor */}
+            <SwipeableDrawer
+                anchor="bottom"
+                open={authorInfoEditorStates.open}
+                onClose={handleToggleEditor(false)}
+                onOpen={handleToggleEditor(true)}
+                swipeAreaWidth={50}
+                disableSwipeToOpen={false}
+                ModalProps={{
+                    keepMounted: true,
+                }}
+
+            >
+                <StyledBox sx={{ px: { xs: 2, sm: 2, md: 4 }, pt: { xs: 2, sm: 2, md: 4 }, height: '100%', overflow: 'auto', }}>
+
+                    {/* puller (for mobile) */}
+                    <Puller />
+
+                    {/* buttons */}
+                    <Grid container>
+
+                        {/* 'cancel' button */}
+                        <Grid item ><Button variant='text' onClick={handleToggleEditor(false)}>{langConfigs.cancel[preferenceStates.lang]}</Button></Grid>
+
+                        {/* placeholder */}
+                        <Grid item flexGrow={1}></Grid>
+
+                        {/* 'update' button */}
+                        <Grid item><Button variant='contained'>{langConfigs.update[preferenceStates.lang]}</Button></Grid>
+
+                    </Grid>
+
+                    {/* avatar image */}
+                    <CentralizedBox sx={{ pt: 2 }}>
+                        <Avatar src={authorInfoSettingStates.alternativeImageUrl} sx={{ width: { xs: 96, md: 128 }, height: { xs: 96, md: 128 }, }}></Avatar>
+                    </CentralizedBox>
+
+                    {/* 'open file' button */}
+                    <CentralizedBox mt={1}>
+                        <Box>
+                            <IconButton color={'primary'} aria-label={'upload picture'} component={'label'} >
+                                <input hidden accept={'image/*'} type={'file'} onChange={handleOpenFile} />
+                                <PhotoCamera />
+                            </IconButton>
+                        </Box>
+                    </CentralizedBox>
+
+                    <CentralizedBox mt={0}>
+                        <Typography color={'grey'} variant={'body2'} align={'center'}>{langConfigs.avatarImageRequirement[preferenceStates.lang]}</Typography>
+                    </CentralizedBox>
+
+                    {/* nickname */}
+                    <CentralizedBox sx={{ pt: 1 }}>
+                        <TextField
+                            error={authorInfoSettingStates.displayError}
+                            label={langConfigs.newNickname[preferenceStates.lang]}
+                            value={authorInfoSettingStates.alternativeName}
+                            onChange={handleNicknameChange}
+                            size={'medium'}
+                            fullWidth
+                        />
+                    </CentralizedBox>
+
+                    <CentralizedBox mt={1}>
+                        <Typography color={'grey'} variant={'body2'} align={'center'}>{langConfigs.nicknameRequirement[preferenceStates.lang]}</Typography>
+                    </CentralizedBox>
+
+                    {/* brief intro */}
+                    <CentralizedBox sx={{ pt: 3 }}>
+                        <TextField
+                            error={authorInfoSettingStates.displayError}
+                            label={langConfigs.briefIntro[preferenceStates.lang]}
+                            multiline
+                            rows={4}
+                            value={authorInfoSettingStates.alternativeIntro}
+                            placeholder={langConfigs.brieflyIntrodueYourself[preferenceStates.lang]}
+                            onChange={handleBriefIntroChange}
+                            size={'medium'}
+                            fullWidth
+                        />
+                    </CentralizedBox>
+
+
+                    {/* requirenment */}
+                    <CentralizedBox mt={1}>
+                        <Typography color={'grey'} variant={'body2'} align={'center'}>{langConfigs.briefIntroRequirement[preferenceStates.lang]}</Typography>
+                    </CentralizedBox>
+
+                    {/* requirenment */}
+                    <CentralizedBox>
+                        <Typography color={'grey'} variant={'body2'} align={'center'}>{langConfigs.referToCommunityGuidelines[preferenceStates.lang]}</Typography>
+                    </CentralizedBox>
+                </StyledBox>
+
+
+
+            </SwipeableDrawer>
 
         </>
 

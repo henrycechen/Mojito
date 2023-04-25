@@ -50,7 +50,7 @@ const bb1 = [
         avatarImageUrl: 'https://cdn.icon-icons.com/icons2/1371/PNG/512/robot02_90810.png',
         createdTimeBySecond: 1675645871,
         postTitle: '我不知道你有这么多的话要讲',
-        commentBrief: '但是我感觉这篇帖子发的都是一些发话'
+        commentBrief: '但是我感觉这篇文章发的都是一些发话'
     },
     {
         noticeId: `${createNoticeId('like', 'M1234XXXX', createId('post'))}`,
@@ -81,7 +81,7 @@ const bb2 = [
         avatarImageUrl: 'https://cdn.icon-icons.com/icons2/1371/PNG/512/robot02_90810.png',
         createdTimeBySecond: 1675645871,
         postTitle: '我不知道你有这么多的话要讲',
-        commentBrief: '但是我感觉这篇帖子发的都是一些发话'
+        commentBrief: '但是我感觉这篇文章发的都是一些发话'
     },
     {
         noticeId: `${createNoticeId('save', 'M1234XXXX', createId('post'))}`,
@@ -112,7 +112,7 @@ const bb3 = [
         avatarImageUrl: 'https://cdn.icon-icons.com/icons2/1371/PNG/512/robot02_90810.png',
         createdTimeBySecond: 1675645871,
         postTitle: '我不知道你有这么多的话要讲',
-        commentBrief: '但是我感觉这篇帖子发的都是一些发话'
+        commentBrief: '但是我感觉这篇文章发的都是一些发话'
     },
 ];
 

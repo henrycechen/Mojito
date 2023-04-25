@@ -107,468 +107,15 @@ import { createTheme, responsiveFontSizes, styled, ThemeProvider } from '@mui/ma
 import { provideCoverImageUrl } from '../../../lib/utils/for/post';
 
 const storageName0 = 'PreferenceStates';
-const updatePreferenceStatesCache = updateLocalStorage(storageName0);
 const restorePreferenceStatesFromCache = restoreFromLocalStorage(storageName0);
-
-const storageName1 = 'MemberPageProcessStates';
-const updateProcessStatesCache = updateLocalStorage(storageName1);
-const restoreProcessStatesFromCache = restoreFromLocalStorage(storageName1);
-
-const storageName2 = 'MemberPagePostsLayoutStates';
-const updatePostsLayoutStatesCache = updateLocalStorage(storageName2);
-const restorePostsLayoutStatesFromCache = restoreFromLocalStorage(storageName2);
-
-
-
 
 const domain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? '';
 const defaultLang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
-    message: {
-        tw: '訊息',
-        cn: '消息',
-        en: 'Message'
-    },
-    following: {
-        tw: '訂閲',
-        cn: '粉丝',
-        en: 'Following'
-    },
-    myFollowing: {
-        tw: '我的訂閲',
-        cn: '我的关注',
-        en: 'My following'
-    },
-    hisFollowing: {
-        tw: '作者的訂閲',
-        cn: '作者的关注和粉丝',
-        en: `Author's following`
-    },
-    authorsFollowing: {
-        tw: '作者的訂閲',
-        cn: '作者的关注',
-        en: `Author's following`
-    },
-    followedBy: {
-        tw: '訂閲',
-        cn: '粉丝',
-        en: 'Followed'
-    },
-    myFollowedBy: {
-        tw: '訂閲我的用戶',
-        cn: '我的粉丝',
-        en: 'My fans'
-    },
-    authorsFollowedBy: {
-        tw: '訂閲作者的用戶',
-        cn: '作者的粉丝',
-        en: `Author's following`
-    },
-    undoFollow: {
-        tw: '取消訂閲',
-        cn: '取关',
-        en: 'Undo'
-    },
-    posts: {
-        tw: '帖子',
-        cn: '帖子',
-        en: 'Posts'
-    },
-    authorsPosts: {
-        tw: '作者的創作和收藏',
-        cn: '作者的发布和收藏',
-        en: `Author's creations and saved posts`
-    },
-    creations: {
-        tw: '創作',
-        cn: '发布',
-        en: 'Creations'
-    },
-    myCreations: {
-        tw: '我的創作',
-        cn: '我的发布',
-        en: 'My creations'
-    },
-    authorsCreations: {
-        tw: '作者的創作',
-        cn: '作者的发布',
-        en: `Author's creations`
-    },
-    saved: {
-        tw: '收藏',
-        cn: '收藏',
-        en: 'Saved'
-    },
-    mySavedPosts: {
-        tw: '我的收藏',
-        cn: '我的收藏',
-        en: 'Saved'
-    },
-    authorsSavedPosts: {
-        tw: '作者的收藏',
-        cn: '作者的收藏',
-        en: `Author's saved posts`
-    },
-    allPosts: {
-        tw: '全部',
-        cn: '全部',
-        en: 'All posts'
-    },
-    hotPosts: {
-        tw: '熱帖',
-        cn: '最热',
-        en: 'Hotest'
-    },
-    newPosts: {
-        tw: '新帖',
-        cn: '最新',
-        en: 'Newest'
-    },
-    like: {
-        tw: '喜歡',
-        cn: '获赞',
-        en: 'Like'
-    },
-    liked: {
-        tw: '喜歡',
-        cn: '赞过',
-        en: 'Liked'
-    },
-    replied: {
-        tw: '回復',
-        cn: '回复',
-        en: 'Liked'
-    },
-    cued: {
-        tw: '提及',
-        cn: '提及',
-        en: 'Cued'
-    },
-    history: {
-        tw: '歷史',
-        cn: '历史',
-        en: 'History'
-    },
-    browsingHistory: {
-        tw: '瀏覽歷史',
-        cn: '历史记录',
-        en: 'History'
-    },
-    settings: {
-        tw: '設定',
-        cn: '设置',
-        en: 'Settings'
-    },
-    submit: {
-        tw: '提交',
-        cn: '提交',
-        en: 'Submit'
-    },
-    noNotificationRecord: {
-        tw: '暫時沒有本類別的訊息',
-        cn: '暂时没有本类别的讯息',
-        en: 'No records of notification'
-    },
-    noFollowingMemberInfoRecord: {
-        tw: '您沒有訂閲其他用戶',
-        cn: '您没有关注其他用户',
-        en: 'You have not followed any members'
-    },
-    authorNoFollowingMemberInfoRecord: {
-        tw: '作者沒有訂閲其他用戶',
-        cn: '作者没有关注其他用户',
-        en: 'Author has not followed any members'
-    },
-    noFollowedByMemberInfoRecord: {
-        tw: '暫時沒有其他用戶訂閲您',
-        cn: '暂时没有其他用户关注您',
-        en: 'No records of following members'
-    },
-    authorNoFollowedByMemberInfoRecord: {
-        tw: '暫時沒有其他用戶訂閲作者',
-        cn: '暂时没有其他用户关注作者',
-        en: 'No records of following members'
-    },
-    noCreationsRecord: {
-        tw: '您還未發表任何作品',
-        cn: '您还未发表任何作品',
-        en: 'No records of creations'
-    },
-    authorNoCreationsRecord: {
-        tw: '作者還未發表任何作品',
-        cn: '作者还未发表任何作品',
-        en: 'No records of creations'
-    },
-    noSavedPostsRecord: {
-        tw: '您還未收藏任何作品',
-        cn: '您还未收藏任何作品',
-        en: 'No records of saved posts'
-    },
-    authorNoSavedPostsRecord: {
-        tw: '作者還未收藏任何作品',
-        cn: '作者还未收藏任何作品',
-        en: 'No records of saved posts'
-    },
-    noBrowsingHistoryRecord: {
-        tw: '暫時沒有您的瀏覽記錄',
-        cn: '暂时没有您的浏览记录',
-        en: 'No records of browsing history'
-    },
-    //// Avatar setting ////
-    avatar: {
-        tw: '相片',
-        cn: '头像',
-        en: 'Avatar'
-    },
-    upload: {
-        tw: '上傳',
-        cn: '上传',
-        en: 'Upload'
-    },
-    chooseImageToUpload: {
-        tw: '選擇相片以上傳',
-        cn: '选择照片以上传',
-        en: 'Choose image to upload'
-    },
-    avatarImageRequirement: {
-        tw: '*请选择 2 MB 以内的相片文件',
-        cn: '*请选择 2 MB 以内的照片文件',
-        en: '*Please limit the image file size to 2MB'
-    },
-    uploading: {
-        tw: '上傳中...',
-        cn: '上传中...',
-        en: 'Uploading...'
-    },
-    uploadSucceeded: {
-        tw: '上傳成功',
-        cn: '上传成功',
-        en: 'Upload succeeded'
-    },
-    uploadFailed: {
-        tw: '上傳失敗，點擊以重試',
-        cn: '上传失败，点击以重试',
-        en: 'Upload failed, click to re-try'
-    },
-    //// Nickname setting ////
-    nickname: {
-        tw: '暱稱',
-        cn: '昵称',
-        en: 'Nickname'
-    },
-    update: {
-        tw: '更新',
-        cn: '更新',
-        en: 'Update'
-    },
-    updatinging: {
-        tw: '更新中...',
-        cn: '更新中...',
-        en: 'Updating...'
-    },
-    nicknameRequirement: {
-        tw: '*請使用符合規則的暱稱並且長度不超過13個字符',
-        cn: '*请使用符合规则的昵称并且长度不超过13个字符',
-        en: '*Please use a nickname that complies with the rules and the length does not exceed 13 characters'
-    },
-    referToCommunityGuidelines: {
-        tw: '詳情請參見我們的社区準則',
-        cn: '详情请参见我们的社区规范',
-        en: 'Please refer to our Community Guidelines'
-    },
-    invalidNicknameOrConflict: {
-        tw: '暱稱不合規或已被佔用，點擊以重試',
-        cn: '昵称不合规或已被占用，点击以重试',
-        en: 'Nickname invalid or already taken'
-    },
-    updateSucceeded: {
-        tw: '更新成功',
-        cn: '更新成功',
-        en: 'Update succeeded'
-    },
-    updateFailed: {
-        tw: '更新失敗，點擊以重試',
-        cn: '更新失败，点击以重试',
-        en: 'Update failed, click to re-try'
-    },
-    newNickname: {
-        tw: '新昵稱',
-        cn: '新昵称',
-        en: 'New nickname'
-    },
-    //// Password setting ////
-    password: {
-        tw: '密碼',
-        cn: '密码',
-        en: 'Password'
-    },
-    currentPassword: {
-        tw: '現有密碼',
-        cn: '现有密码',
-        en: 'Current password'
-    },
-    newPassword: {
-        tw: '新密碼',
-        cn: '新密码',
-        en: 'New password'
-    },
-    repeatPassword: {
-        tw: '重複鍵入新密碼',
-        cn: '重复输入新密码',
-        en: 'Repeat new password'
-    },
-    mismatchedPassword: {
-        tw: '兩次輸入的密碼不相符，請重試',
-        cn: '两次输入的密码不相符，请重试',
-        en: 'Passwords do not match'
-    },
-    currentPasswordMismatched: {
-        tw: '現有密碼與我們的記錄不符，請重試',
-        cn: '现有密码与我们的记录不符，请重试',
-        en: 'Password does not meet complexity requirements'
-    },
-    unsatisfiedPassword: {
-        tw: '密碼不符合複雜性要求，請重試',
-        cn: '密码不符合复杂性要求，请重试',
-        en: 'Current password does not match the one on our records'
-    },
-    passwordLengthRequirement: {
-        tw: '*密碼長度不得少於 8 個字符。',
-        cn: '*密码长度不得少于 8 个字符。',
-        en: '*Password must be at least 8 characters long'
-    },
-    passwordComplexityRequirement: {
-        tw: '請包括大寫字母、小寫字母、數字和至少一個特殊字符。',
-        cn: '请包括大写字母、小写字母、数字和至少一个特殊字符。',
-        en: 'Please include uppercase, lowercase letters, digits and at least one special characters.'
-    },
-    forgotPassword: {
-        tw: '我忘記密碼了...',
-        cn: '我忘记密码了...',
-        en: 'I forgot my password...'
-
-    },
-    //// Bried intro setting ////
-    briefIntro: {
-        tw: '簡介',
-        cn: '简介',
-        en: 'Brief intro'
-    },
-    brieflyIntrodueYourself: {
-        tw: '撰寫您的簡介',
-        cn: '添加您的简介',
-        en: 'Write something about yourself'
-    },
-    briefIntroRequirement: {
-        tw: '*請添加符合規則的簡介並且長度不超過21個字符',
-        cn: '*请添加符合规则的简介并且长度不超过21个字符',
-        en: '*Please add a brief intro that complies with the rules and the length does not exceed 21 characters'
-    },
-    invalidBriefIntro: {
-        tw: '簡介長度超過21個字符或不合規，請重試',
-        cn: '简介长度超过21个字符或不合规，请重试',
-        en: 'Brief intro length exceeds limit or invalid'
-    },
-    //// Gender setting ////
-    gender: {
-        tw: '性別',
-        cn: '性别',
-        en: 'Gender'
-    },
-    female: {
-        tw: '女',
-        cn: '女',
-        en: 'Female'
-    },
-    male: {
-        tw: '男',
-        cn: '男',
-        en: 'Male'
-    },
-    keepAsSecret: {
-        tw: '我選擇不透露',
-        cn: '保密',
-        en: 'Keep as secret'
-    },
-    //// Birthday setting ////
-    birthday: {
-        tw: '生日',
-        cn: '生日',
-        en: 'Birthday'
-    },
-    chooseYourBirthday: {
-        tw: '選擇您的出生日期',
-        cn: '选择您的生日',
-        en: 'Choose your birthday'
-    },
-    //// Privacy setting ////
-    privacySettings: {
-        tw: '設定',
-        cn: '设置',
-        en: 'Settings'
-    },
-    privacy: {
-        tw: '隱私',
-        cn: '隐私',
-        en: 'Privacy'
-    },
-    language: {
-        tw: '語言',
-        cn: '语言',
-        en: 'Language'
-    },
-    cancel: {
-        tw: '注銷',
-        cn: '注銷',
-        en: 'Confirm'
-    },
-    cancelSucceeded: {
-        tw: '注銷成功',
-        cn: '注銷成功',
-        en: 'Success'
-    },
-    cancelFailed: {
-        tw: '注銷失敗，點擊以重試',
-        cn: '注銷失败，点击以重试',
-        en: 'Cancel membership failed, click to re-try',
-    },
-    allowVisitingFollowedMembers: {
-        tw: '允許他人查看您的訂閲',
-        cn: '允许他人查看您的订阅',
-        en: 'Allow other members visiting your followed members'
-    },
-    allowVisitingSavedPosts: {
-        tw: '允許他人訪問您的收藏',
-        cn: '允许他人访问您的收藏',
-        en: 'Allow other members visiting your saved posts'
-    },
-    clickXTimesToCancelMemberShip: {
-        tw: (t: number) => 0 !== t ? `繼續點擊${t}次以注銷賬號` : `繼續點擊以注銷賬號`,
-        cn: (t: number) => 0 !== t ? `继续点击${t}次以注销账户` : `继续点击以注销账户`,
-        en: (t: number) => 0 !== t ? `Keep taping ${t} times to cancel membershipt` : `Keep taping to cancel membershipt`,
-    },
-    allowKeepingBrowsingHistory: {
-        tw: '保存您的瀏覽記錄',
-        cn: '保存您的浏览记录',
-        en: 'Save browsing history'
-
-    },
-    hidePostsAndCommentsOfBlockedMember: {
-        tw: '隱藏屏蔽的用戶的作品和評論',
-        cn: '隐藏屏蔽的用户的作品与评论',
-        en: 'Hide posts and comments from blocked member'
-
-    },
-    wishToCancelMembership: {
-        tw: '我希望注銷我的賬號',
-        cn: '我希望注销我的账户',
-        en: 'I wish to cancel my membership'
-    },
-    //// Black list ////
-    blacklist: {
-        tw: '黑名單',
-        cn: '黑名单',
-        en: 'Blacklist'
+    alertContent: {
+        tw: '出錯了，刷新頁面以重新獲取數據',
+        cn: '出错了，刷新页面以重新获取数据',
+        en: 'Something went wrong, refresh the page to refetch the data'
     },
     noRecordOfBlacklist: {
         tw: '您還沒有屏蔽任何用戶',
@@ -580,7 +127,6 @@ const langConfigs: LangConfigs = {
         cn: '移除',
         en: 'Undo'
     },
-
 };
 
 let theme = createTheme({
@@ -605,8 +151,6 @@ const Blacklist = () => {
     let memberId = '';
 
     React.useEffect(() => {
-
-
         const viewerSession: any = { ...session };
         memberId = viewerSession?.user?.id;
         restorePreferenceStatesFromCache(setPreferenceStates);
@@ -631,10 +175,9 @@ const Blacklist = () => {
     //////// STATES - blocked member info arr ////////
     const [blockedMemberInfoArr, setBlockedMemberInfoArr] = React.useState<IMemberInfo[]>([]);
 
-    React.useEffect(() => { getBlockedMemberInfoArray(); }, [blockedMemberInfoArr]);
+    React.useEffect(() => { getBlockedMemberInfoArray(); }, []);
 
     const getBlockedMemberInfoArray = async () => {
-
         const resp = await fetch(`/api/member/blockedbyme/${memberId}`);
         try {
             if (200 !== resp.status) {
@@ -643,9 +186,9 @@ const Blacklist = () => {
             const arr = await resp.json();
             setBlockedMemberInfoArr(arr);
         } catch (e) {
-            console.log(`Attempt to get blocked member info array of from resp. ${e}`);
+            console.error(`Attempt to get blocked member info array of from resp. ${e}`);
+            setProcessStates({ ...processStates, displayAlert: true });
         }
-
     };
 
     const handleUndoBlock = async (blockedId: string) => {
@@ -665,8 +208,8 @@ const Blacklist = () => {
         }
     };
 
-    const handleClickOnInitiateInfo = (memberId: string) => (event: React.MouseEvent<HTMLButtonElement>) => {
-
+    const handleClickOnMemberInfo = (memberId: string) => (event: React.MouseEvent<HTMLButtonElement>) => {
+        router.push(`/me/id/${memberId}`);
     };
 
     const onBackwardClick = () => {
@@ -676,7 +219,6 @@ const Blacklist = () => {
     return (
         <ThemeProvider theme={theme}>
             <Navbar avatarImageUrl={provideAvatarImageUrl(memberId, domain)} />
-
 
             {/* <SettingLayout /> */}
             <Grid container mt={{ xs: 1, sm: 10 }}>
@@ -693,8 +235,16 @@ const Blacklist = () => {
                                 <ArrowBackIosIcon fontSize={'small'} sx={{ color: 'grey' }} />
                             </Button>
                         </Box>
+                        {/* space */}
+                        <Box pt={1}></Box>
 
-                        <Stack spacing={3} sx={{ px: 1 }}>
+                        {/* alert */}
+                        <Box pb={1} display={processStates.displayAlert ? 'block' : 'none'}>
+                            <Alert severity='error'><strong>{langConfigs.alertContent[preferenceStates.lang]}</strong></Alert>
+                        </Box>
+
+                        {/* component stack - member info */}
+                        <Stack spacing={2} sx={{ px: 1 }}>
                             <Box mt={{ xs: 0, sm: 0 }}></Box>
                             {0 !== blockedMemberInfoArr.length && blockedMemberInfoArr.map(info =>
 
@@ -702,11 +252,11 @@ const Blacklist = () => {
 
                                     {/* member info */}
                                     <Stack direction={'row'} sx={{ maxHeight: 40 }}>
-                                        <IconButton sx={{ px: 0 }} onClick={handleClickOnInitiateInfo(info.memberId)}>
+                                        <IconButton sx={{ px: 0 }} onClick={handleClickOnMemberInfo(info.memberId)}>
                                             <Avatar src={provideAvatarImageUrl(info.memberId, domain)} sx={{ width: 40, height: 40, bgcolor: 'grey' }}>{info.nickname?.charAt(0).toUpperCase()}</Avatar>
                                         </IconButton>
                                         <Box ml={1}>
-                                            <TextButton color={'inherit'} onClick={handleClickOnInitiateInfo(info.memberId)}>
+                                            <TextButton color={'inherit'} onClick={handleClickOnMemberInfo(info.memberId)}>
 
                                                 {/* nickname */}
                                                 <Typography variant={'body2'} align={'left'} fontSize={{ xs: 14, sm: 14 }}>{getNicknameBrief(info.nickname)}</Typography>

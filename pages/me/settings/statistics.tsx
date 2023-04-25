@@ -39,7 +39,6 @@ const langConfigs: LangConfigs = {
         cn: '出错了，刷新页面以重新获取数据',
         en: 'Something went wrong, refresh the page to refetch the data'
     },
-
     info: {
         tw: '資訊',
         cn: '信息',
@@ -248,7 +247,6 @@ const MemberInfoAndStatistics = () => {
         <>
             <Navbar avatarImageUrl={memberInfoStates.avatarImageUrl} />
 
-
             {/* <SettingLayout /> */}
             <Grid container mt={{ xs: 1, sm: 10 }}>
                 {/* placeholder */}
@@ -266,12 +264,12 @@ const MemberInfoAndStatistics = () => {
                         </Box>
 
                         <Box sx={{ px: { xs: 2, sm: 2, md: 4 }, py: 1 }}>
+                            {/* alert */}
                             <Box pb={1} display={processStates.displayAlert ? 'block' : 'none'}>
-
-                                <Alert severity='error'>
-                                    <strong>{langConfigs.alertContent[preferenceStates.lang]}</strong>
-                                </Alert>
+                                <Alert severity='error'><strong>{langConfigs.alertContent[preferenceStates.lang]}</strong></Alert>
                             </Box>
+
+                            {/* space */}
                             <Box pt={1}></Box>
 
                             {/* table title - info */}

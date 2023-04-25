@@ -148,8 +148,8 @@ const langConfigs: LangConfigs = {
         en: 'Post author'
     },
     hotPostRecommend: {
-        tw: '的热门帖子',
-        cn: '的热门帖子',
+        tw: '的热门文章',
+        cn: '的热门文章',
         en: ''
     },
     expendSubcomments: {

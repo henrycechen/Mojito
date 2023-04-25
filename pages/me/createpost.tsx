@@ -114,8 +114,8 @@ const langConfigs: LangConfigs = {
         en: 'You have not followed any member'
     },
     posts: {
-        tw: '篇帖子',
-        cn: '篇帖子',
+        tw: '篇文章',
+        cn: '篇文章',
         en: 'Posts'
     },
     query: {

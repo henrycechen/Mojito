@@ -251,8 +251,8 @@ type ResetPasswordRequestInfo = {
 | NotifiedMemberIdStr | NoticeId | `"cue"`  | MemberIdStr | string   | string    | string        |
 
 ```
-- WebMaster在帖子“WebMaster在Mojito发的第一篇帖子”中提到了您
-- WebMaster在帖子“WebMaster在Mojito发的第一篇帖子”的评论“可喜可贺可惜可...”中提到了您
+- WebMaster在文章“WebMaster在Mojito发的第一篇文章”中提到了您
+- WebMaster在文章“WebMaster在Mojito发的第一篇文章”的评论“可喜可贺可惜可...”中提到了您
 ```
 
 #### Replied (↩️)
@@ -262,8 +262,8 @@ type ResetPasswordRequestInfo = {
 | NotifiedMemberIdStr | NoticeId | `"reply"` | MemberIdStr | string   | string    | string        |
 
 ```
-- WebMaster回复了您的帖子“WebMaster在Mojito发的第一篇帖子”
-- WebMaster在帖子“WebMaster在Mojito发的第一篇帖子”中回复了您的评论“可喜可贺可惜可...”
+- WebMaster回复了您的文章“WebMaster在Mojito发的第一篇文章”
+- WebMaster在文章“WebMaster在Mojito发的第一篇文章”中回复了您的评论“可喜可贺可惜可...”
 ```
 
 #### Liked (❤️)
@@ -273,8 +273,8 @@ type ResetPasswordRequestInfo = {
 | NotifiedMemberIdStr | NoticeId | `"like"` | MemberIdStr | string   | string    | string        |
 
 ```
-- WebMaster喜欢了您的帖子“WebMaster在Mojito发的第一篇帖子”
-- WebMaster喜欢了您在“WebMaster在Mojito发的第一篇帖子”中发表的评论“可喜可贺可惜可...”
+- WebMaster喜欢了您的文章“WebMaster在Mojito发的第一篇文章”
+- WebMaster喜欢了您在“WebMaster在Mojito发的第一篇文章”中发表的评论“可喜可贺可惜可...”
 ```
 
 #### Pinned (⬆️)
@@ -284,7 +284,7 @@ type ResetPasswordRequestInfo = {
 | NotifiedMemberIdStr | NoticeId | `"pin"`  | MemberIdStr | string   | string    | string       |
 
 ```
-- WebMaster置顶了您在“WebMaster在Mojito发的第一篇帖子”中发表的评论“可喜可贺可惜可...”
+- WebMaster置顶了您在“WebMaster在Mojito发的第一篇文章”中发表的评论“可喜可贺可惜可...”
 ```
 
 #### Saved (💾)
@@ -294,7 +294,7 @@ type ResetPasswordRequestInfo = {
 | NotifiedMemberIdStr | NoticeId | `"save"` | MemberIdStr | string   | string    |
 
 ```
-- WebMaster收藏了“WebMaster在Mojito发的第一篇帖子”
+- WebMaster收藏了“WebMaster在Mojito发的第一篇文章”
 ```
 
 #### Followed (🔔)
