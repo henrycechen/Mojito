@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { NextPageContext } from 'next';
 
+import Alert from '@mui/material/Alert';
 import Avatar from '@mui/material/Avatar';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -320,6 +321,11 @@ const langConfigs: LangConfigs = {
         cn: '*请使用符合规则的昵称并且长度不超过15个字符',
         en: '*Please use a nickname that complies with the rules and the length does not exceed 15 characters'
     },
+    nicknameRequirementShort: {
+        tw: '暱稱長度不宜超過15個字符',
+        cn: '昵称长度不宜超过15个字符',
+        en: 'Please limit your nickname to 15 characters'
+    },
     referToCommunityGuidelines: {
         tw: '詳情請參見我們的社区準則',
         cn: '详情请参见我们的社区规范',
@@ -362,6 +368,11 @@ const langConfigs: LangConfigs = {
         tw: '*請添加符合規則的簡介並且長度不超過150個字符',
         cn: '*请添加符合规则的简介并且长度不超过150个字符',
         en: '*Please add a brief intro that complies with the rules and the length does not exceed 150 characters'
+    },
+    briefIntroRequirementShort: {
+        tw: '簡介長度不宜超過150個字符',
+        cn: '简介长度不宜超过150个字符',
+        en: 'Please limit your brief intro to 150 characters'
     },
     invalidBriefIntro: {
         tw: '簡介長度超過150個字符或不符合社區規範，請重試',
@@ -490,7 +501,6 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
     type TProcessStates = {
         viewerId: string;
-        displayEditor: boolean;
         selectedCategory: 'mycreations' | 'savedposts' | 'browsinghistory';
         selectedHotPosts: boolean;
         selectedChannelId: string;
@@ -503,7 +513,6 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
     //////// STATES - process ////////
     const [processStates, setProcessStates] = React.useState<TProcessStates>({
         viewerId: '',
-        displayEditor: true, //// FIXME: test
         selectedCategory: 'mycreations', // 'mycreations' | 'savedposts' | 'browsinghistory'
         selectedHotPosts: false, // default
         selectedChannelId: 'all', // default
@@ -724,16 +733,18 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
     //////////////////////////////////////// INFO EDITOR ////////////////////////////////////////
 
-    const handleToggleEditor = (display: boolean) => () => {
-        setProcessStates({ ...processStates, displayEditor: display });
-    };
+
 
     type TAuthorInfoSettingStates = {
         alternativeImageUrl: string | undefined;
         alternativeName: string;
+        invalidName: boolean;
         alternativeIntro: string;
+        invalidIntro: boolean;
+        displayEditor: boolean;
         disableButton: boolean;
-        displayError: boolean;
+        displayAlert: boolean;
+        alertContent: string;
         progressStatus: 0 | 100 | 300 | 400;
     };
 
@@ -741,11 +752,19 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
     const [authorInfoSettingStates, setAuthorInfoSettingStates] = React.useState<TAuthorInfoSettingStates>({
         alternativeImageUrl: provideAvatarImageUrl(authorId, domain),
         alternativeName: memberInfoStates.nickname,
+        invalidName: false,
         alternativeIntro: memberInfoStates.briefIntro,
+        invalidIntro: false,
+        displayEditor: true,
         disableButton: true,
-        displayError: false,
+        displayAlert: false,
+        alertContent: '',
         progressStatus: 0
     });
+
+    const handleToggleEditor = (display: boolean) => () => {
+        setAuthorInfoSettingStates({ ...authorInfoSettingStates, displayEditor: display });
+    };
 
     // Edit avatar image
     const handleOpenFile = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -790,54 +809,68 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
             });
     };
 
-    type TNicknameSetting = {
-        alternativeName: string;
-        displayError: boolean;
-        disableButton: boolean;
-        progressStatus: 100 | 200 | 300 | 422 | 500;
-    };
-
-    const [nicknameSettingStates, setNicknameSettingStates] = React.useState<TNicknameSetting>({
-        alternativeName: memberComprehensive_ss.nickname,
-        displayError: false,
-        disableButton: true,
-        progressStatus: 100
-    });
-
     const handleNicknameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        if (15 < `${event.target.value}`.length) { // Less than 15 chars
-            setAuthorInfoSettingStates({ ...authorInfoSettingStates, displayError: true });
+        if (15 < `${event.target.value}`.length) {
+            // More than 15 chars
+            setAuthorInfoSettingStates({
+                ...authorInfoSettingStates,
+                alternativeName: event.target.value,
+                invalidName: true,
+                disableButton: true,
+                displayAlert: true,
+                alertContent: langConfigs.nicknameRequirementShort[preferenceStates.lang]
+            });
         } else {
+            // Less than 15 chars
             if (memberInfoStates.nickname === event.target.value) {
-                setAuthorInfoSettingStates({ ...authorInfoSettingStates, disableButton: true, alternativeName: event.target.value });
+                setAuthorInfoSettingStates({
+                    ...authorInfoSettingStates,
+                    alternativeName: event.target.value,
+                    invalidName: false,
+                    disableButton: true,
+                    displayAlert: false,
+                });
             } else {
-                setAuthorInfoSettingStates({ ...authorInfoSettingStates, disableButton: false, alternativeName: event.target.value });
+                setAuthorInfoSettingStates({
+                    ...authorInfoSettingStates,
+                    alternativeName: event.target.value,
+                    invalidName: false,
+                    disableButton: false,
+                    displayAlert: false,
+                });
             }
         }
     };
 
-    type TBriefIntroSetting = {
-        alternativeIntro: string;
-        displayError: boolean;
-        disableButton: boolean;
-        progressStatus: 100 | 200 | 300 | 422 | 500;
-    };
-
-    const [briefIntroSettingStates, setBriefIntroSettingStates] = React.useState<TBriefIntroSetting>({
-        alternativeIntro: memberInfoStates.briefIntro,
-        displayError: false,
-        disableButton: true,
-        progressStatus: 100
-    });
-
     const handleBriefIntroChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        if (21 < `${event.target.value}`.length) {
-            setBriefIntroSettingStates({ ...briefIntroSettingStates, displayError: true, disableButton: true, alternativeIntro: event.target.value });
+        if (150 < `${event.target.value}`.length) {
+            // More than 150 chars
+            setAuthorInfoSettingStates({
+                ...authorInfoSettingStates,
+                alternativeIntro: event.target.value,
+                invalidIntro: true,
+                disableButton: true,
+                displayAlert: true,
+                alertContent: langConfigs.briefIntroRequirementShort[preferenceStates.lang]
+            });
         } else {
+            // Less than 150 chars
             if (memberInfoStates.briefIntro === event.target.value) {
-                setBriefIntroSettingStates({ ...briefIntroSettingStates, displayError: false, disableButton: true, alternativeIntro: event.target.value });
+                setAuthorInfoSettingStates({
+                    ...authorInfoSettingStates,
+                    alternativeIntro: event.target.value,
+                    invalidIntro: false,
+                    disableButton: true,
+                    displayAlert: false,
+                });
             } else {
-                setBriefIntroSettingStates({ ...briefIntroSettingStates, displayError: false, disableButton: false, alternativeIntro: event.target.value });
+                setAuthorInfoSettingStates({
+                    ...authorInfoSettingStates,
+                    alternativeIntro: event.target.value,
+                    invalidIntro: false,
+                    disableButton: false,
+                    displayAlert: false,
+                });
             }
 
         }
@@ -845,19 +878,26 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
     const cancelUpdate = () => {
         // toggle editor
-        setProcessStates({ ...processStates, displayEditor: false });
         // set alternatives to orignial
         // disable button
         setAuthorInfoSettingStates({
             alternativeImageUrl: provideAvatarImageUrl(authorId, domain),
             alternativeName: memberInfoStates.nickname,
+            invalidName: false,
             alternativeIntro: memberInfoStates.briefIntro,
+            invalidIntro: false,
+            displayEditor: false,
             disableButton: true,
-            displayError: false,
+            displayAlert: false,
+            alertContent: '',
             progressStatus: 0
         });
     };
-    const executeUpdate = async () => { };
+
+    const executeUpdate = async () => {
+
+
+    };
 
 
     const Puller = styled(Box)(({ theme }) => ({
@@ -932,7 +972,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                             {/* 'edit' button */}
                             {'authenticated' === status && processStates.viewerId === authorId && <Grid item pt={2}>
                                 <Tooltip title={langConfigs.editProfile[preferenceStates.lang]}>
-                                    <IconButton onClick={handleToggleEditor(true)}><EditIcon sx={{ height: { xs: 20, sm: 24 }, width: { xs: 20, sm: 24 }, }} /></IconButton>
+                                    <IconButton onClick={handleToggleEditor(true)} ><EditIcon sx={{ height: { xs: 20, sm: 24 }, width: { xs: 20, sm: 24 }, }} /></IconButton>
                                 </Tooltip>
                             </Grid>}
 
@@ -1141,7 +1181,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
                     {0 === masonryPostInfoArr.length &&
                         <Box minHeight={200} mt={10}>
-                            {/* "mycreations" | "savedposts" | "browsinghistory" */}
+                            {/* 'mycreations' | 'savedposts' | 'browsinghistory' */}
                             {'mycreations' === processStates.selectedCategory && <Typography color={'text.secondary'} align={'center'}>
                                 {authorId === processStates.viewerId ? langConfigs.noCreationsRecord[preferenceStates.lang] : langConfigs.authorNoCreationsRecord[preferenceStates.lang]}
                             </Typography>}
@@ -1228,8 +1268,8 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
             {/* info editor */}
             <SwipeableDrawer
-                anchor="bottom"
-                open={processStates.displayEditor}
+                anchor='bottom'
+                open={authorInfoSettingStates.displayEditor}
                 onClose={handleToggleEditor(false)}
                 onOpen={handleToggleEditor(true)}
                 swipeAreaWidth={50}
@@ -1239,7 +1279,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                 }}
 
             >
-                <Box sx={{ px: { xs: 2, sm: 2, md: 4 }, pt: { xs: 2, sm: 2, md: 4 }, height: '100%', overflow: 'auto', backgroundColor: theme.palette.mode === 'light' ? '#fff' : grey[800],}}>
+                <Box sx={{ px: { xs: 2, sm: 2, md: 4 }, pt: { xs: 2, sm: 2, md: 4 }, height: '100%', overflow: 'auto', backgroundColor: theme.palette.mode === 'light' ? '#fff' : grey[800], }}>
 
                     {/* puller (for mobile) */}
                     <Puller />
@@ -1257,6 +1297,12 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                         <Grid item><Button variant='contained' disabled={authorInfoSettingStates.disableButton}>{langConfigs.update[preferenceStates.lang]}</Button></Grid>
 
                     </Grid>
+
+                    {authorInfoSettingStates.displayAlert && <Box pt={1}>
+                        <Alert severity='error' >
+                            <strong>{authorInfoSettingStates.alertContent}</strong>
+                        </Alert>
+                    </Box>}
 
                     {/* avatar image */}
                     <CentralizedBox sx={{ pt: 2 }}>
@@ -1280,7 +1326,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                     {/* nickname */}
                     <CentralizedBox sx={{ pt: 2 }}>
                         <TextField
-                            error={authorInfoSettingStates.displayError}
+                            error={authorInfoSettingStates.invalidName}
                             label={langConfigs.newNickname[preferenceStates.lang]}
                             value={authorInfoSettingStates.alternativeName}
                             onChange={handleNicknameChange}
@@ -1296,7 +1342,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                     {/* brief intro */}
                     <CentralizedBox sx={{ pt: 2 }}>
                         <TextField
-                            error={authorInfoSettingStates.displayError}
+                            error={authorInfoSettingStates.invalidIntro}
                             label={langConfigs.briefIntro[preferenceStates.lang]}
                             multiline
                             rows={4}
@@ -1307,7 +1353,6 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                             fullWidth
                         />
                     </CentralizedBox>
-
 
                     {/* requirenment */}
                     <CentralizedBox mt={1}>
