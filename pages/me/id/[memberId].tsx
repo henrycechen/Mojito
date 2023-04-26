@@ -39,6 +39,7 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import EditIcon from '@mui/icons-material/Edit';
 
+import useTheme from '@mui/material/styles/useTheme';
 
 
 import { Global } from '@emotion/react';
@@ -117,9 +118,9 @@ const storageName1 = 'MemberPageProcessStates';
 const updateProcessStatesCache = updateLocalStorage(storageName1);
 const restoreProcessStatesFromCache = restoreFromLocalStorage(storageName1);
 
-const storageName2 = 'MemberPagePostsLayoutStates';
-const updatePostsLayoutStatesCache = updateLocalStorage(storageName2);
-const restorePostsLayoutStatesFromCache = restoreFromLocalStorage(storageName2);
+// const storageName2 = 'MemberPagePostsLayoutStates';
+// const updatePostsLayoutStatesCache = updateLocalStorage(storageName2);
+// const restorePostsLayoutStatesFromCache = restoreFromLocalStorage(storageName2);
 
 type TMemberPageProps = {
     channelInfoDict_ss: IChannelInfoDictionary;
@@ -270,7 +271,6 @@ const langConfigs: LangConfigs = {
     },
 
 
-
     //// Avatar setting ////
     avatar: {
         tw: '相片',
@@ -303,6 +303,7 @@ const langConfigs: LangConfigs = {
         en: 'Upload failed, click to re-try'
     },
 
+
     //// Nickname setting ////
     nickname: {
         tw: '暱稱',
@@ -315,9 +316,9 @@ const langConfigs: LangConfigs = {
         en: 'Updating...'
     },
     nicknameRequirement: {
-        tw: '*請使用符合規則的暱稱並且長度不超過13個字符',
-        cn: '*请使用符合规则的昵称并且长度不超过13个字符',
-        en: '*Please use a nickname that complies with the rules and the length does not exceed 13 characters'
+        tw: '*請使用符合規則的暱稱並且長度不超過15個字符',
+        cn: '*请使用符合规则的昵称并且长度不超过15个字符',
+        en: '*Please use a nickname that complies with the rules and the length does not exceed 15 characters'
     },
     referToCommunityGuidelines: {
         tw: '詳情請參見我們的社区準則',
@@ -344,6 +345,7 @@ const langConfigs: LangConfigs = {
         cn: '新昵称',
         en: 'New nickname'
     },
+
 
     //// Bried intro setting ////
     briefIntro: {
@@ -434,6 +436,8 @@ export async function getServerSideProps(context: NextPageContext): Promise<{ pr
 
 const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, memberStatistics_ss, redirect404, redirect500 }: TMemberPageProps) => {
 
+    const theme = useTheme();
+
     const router = useRouter();
     React.useEffect(() => {
         if (redirect404) {
@@ -486,6 +490,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
     type TProcessStates = {
         viewerId: string;
+        displayEditor: boolean;
         selectedCategory: 'mycreations' | 'savedposts' | 'browsinghistory';
         selectedHotPosts: boolean;
         selectedChannelId: string;
@@ -498,6 +503,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
     //////// STATES - process ////////
     const [processStates, setProcessStates] = React.useState<TProcessStates>({
         viewerId: '',
+        displayEditor: true, //// FIXME: test
         selectedCategory: 'mycreations', // 'mycreations' | 'savedposts' | 'browsinghistory'
         selectedHotPosts: false, // default
         selectedChannelId: 'all', // default
@@ -507,47 +513,22 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
         wasRedirected: false,
     });
 
+    // Restore process states from cache
     React.useEffect(() => {
         restoreProcessStatesFromCache(setProcessStates);
-        restorePostsLayoutStatesFromCache(setPostLayoutStates);
     }, []);
 
     // Reset masonry width
     React.useEffect(() => { setWidth(masonryWrapper?.current?.offsetWidth); }, []);
 
-
-    const handleFollowOrUndoFollow = async () => {
-
-    };
-
-
-    type TPostsLayoutStates = {
-        selectedCategory: 'mycreations' | 'savedposts' | 'browsinghistory';
-        selectedHotPosts: boolean;
-        selectedChannelId: string;
-        memorizeChannelBarPositionX: number | undefined;
-        memorizeViewPortPositionY: number | undefined;
-        memorizeLastViewedPostId: string | undefined;
-        wasRedirected: boolean;
-    };
-
-    //////// STATES - post layout ////////
-    const [postLayoutStates, setPostLayoutStates] = React.useState<TPostsLayoutStates>({
-        selectedCategory: 'mycreations', // 'mycreations' | 'savedposts' | 'browsinghistory'
-        selectedHotPosts: false, // default
-        selectedChannelId: 'all', // default
-        memorizeChannelBarPositionX: undefined,
-        memorizeViewPortPositionY: undefined,
-        memorizeLastViewedPostId: undefined,
-        wasRedirected: false,
-    });
+    //////////////////////////////////////// POST LAYOUT ////////////////////////////////////////
 
     const handleSelectPostCategory = (categoryId: 'mycreations' | 'savedposts' | 'browsinghistory') => (event: React.MouseEvent<HTMLButtonElement> | React.SyntheticEvent) => {
-        let states: TPostsLayoutStates = { ...postLayoutStates, selectedCategory: categoryId };
-        // #1 update post layout states
-        setPostLayoutStates(states);
-        // #2 update post layout states cache
-        updatePostsLayoutStatesCache(states);
+        let states: TProcessStates = { ...processStates, selectedCategory: categoryId };
+        // #1 update process states
+        setProcessStates(states);
+        // #2 update process states cache
+        updateProcessStatesCache(states);
         // #3 reset helper
         setBrowsingHelper({ ...browsingHelper, memorizeViewPortPositionY: undefined });
     };
@@ -583,81 +564,80 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
     // Handle channel bar restore on refresh
     React.useEffect(() => {
-        if (undefined !== postLayoutStates.memorizeChannelBarPositionX) {
-            document.getElementById('channel-bar')?.scrollBy(postLayoutStates.memorizeChannelBarPositionX ?? 0, 0);
+        if (undefined !== processStates.memorizeChannelBarPositionX) {
+            document.getElementById('channel-bar')?.scrollBy(processStates.memorizeChannelBarPositionX ?? 0, 0);
         }
     }, [channelInfoStates.channelIdSequence]);
 
     const handleChannelSelect = (channelId: string) => (event: React.MouseEvent<HTMLButtonElement> | React.SyntheticEvent) => {
-        let states: TPostsLayoutStates = { ...postLayoutStates };
+        let states: TProcessStates = { ...processStates };
         states.selectedChannelId = channelId;
         states.memorizeChannelBarPositionX = document.getElementById('channel-bar')?.scrollLeft;
-        // #1 update post layout states
-        setPostLayoutStates(states);
-        // #2 update post layout states cache
-        updatePostsLayoutStatesCache(states);
+        // #1 update process states
+        setProcessStates(states);
+        // #2 update process states cache
+        updateProcessStatesCache(states);
         // #3 reset helper
         setBrowsingHelper({ ...browsingHelper, memorizeViewPortPositionY: undefined });
     };
 
-    const handleSwitchChange = () => {
-        let states: TPostsLayoutStates = { ...postLayoutStates, selectedHotPosts: !postLayoutStates.selectedHotPosts };
-        // #1 update post layout states
-        setPostLayoutStates(states);
-        // #2 update post layout states cache
-        updatePostsLayoutStatesCache(states);
-        // #3 reset helper
-        setBrowsingHelper({ ...browsingHelper, memorizeViewPortPositionY: undefined });
-    };
+    // Disabled since 24/02/2023)
+    // const handleSwitchChange = () => {
+    //     let states: TProcessStates = { ...processStates, selectedHotPosts: !processStates.selectedHotPosts };
+    //     // #1 update process states
+    //     setProcessStates(states);
+    //     // #2 update process states cache
+    //     updateProcessStatesCache(states);
+    //     // #3 reset helper
+    //     setBrowsingHelper({ ...browsingHelper, memorizeViewPortPositionY: undefined });
+    // };
 
     //////// STATES - (masonry) post info array ////////
     const [masonryPostInfoArr, setMasonryPostInfoArr] = React.useState<IConcisePostComprehensive[]>([]);
 
-    React.useEffect(() => { updatePostsArr(); }, [postLayoutStates.selectedHotPosts, postLayoutStates.selectedChannelId, postLayoutStates.selectedCategory]);
+    React.useEffect(() => { updatePostsArr(); }, [processStates.selectedHotPosts, processStates.selectedChannelId, processStates.selectedCategory]);
 
     const updatePostsArr = async () => {
         let url = '';
 
-        if ('mycreations' === postLayoutStates.selectedCategory) {
+        if ('mycreations' === processStates.selectedCategory) {
             url = `/api/creation/s/of/${authorId}`;
         }
-        if ('savedposts' === postLayoutStates.selectedCategory) {
+
+        if ('savedposts' === processStates.selectedCategory) {
             url = `/api/member/savedposts/${authorId}`;
         }
-        if ('browsinghistory' === postLayoutStates.selectedCategory) {
+
+        if ('browsinghistory' === processStates.selectedCategory) {
             url = `/api/member/browsinghistory/${authorId}`;
         }
 
-        const resp = await fetch(`${url}?channelId=${postLayoutStates.selectedChannelId}&sort=${postLayoutStates.selectedHotPosts ? 'hot' : 'new'}`);
+        const resp = await fetch(`${url}?channelId=${processStates.selectedChannelId}&sort=${processStates.selectedHotPosts ? 'hot' : 'new'}`);
         if (200 === resp.status) {
             try {
                 setMasonryPostInfoArr(await resp.json());
             } catch (e) {
-                console.log(`Attempt to GET posts of ${postLayoutStates.selectedHotPosts ? '24 hours hot' : 'new'}. ${e}`);
+                console.log(`Attempt to GET posts of ${processStates.selectedHotPosts ? '24 hours hot' : 'new'}. ${e}`);
             }
         }
     };
 
     // Handle restore browsing position after reload
     React.useEffect(() => {
-        if (postLayoutStates.wasRedirected) {
-            const postId = postLayoutStates.memorizeLastViewedPostId;
+        if (processStates.wasRedirected) {
+            const postId = processStates.memorizeLastViewedPostId;
             // #1 restore browsing position
             if (!postId) {
                 return;
             } else if (600 > window.innerWidth) { // 0 ~ 599
                 setBrowsingHelper({ ...browsingHelper, memorizeViewPortPositionY: (document.getElementById(postId)?.offsetTop ?? 0) / 2 - 200 });
             } else { // 600 ~ ∞
-                setBrowsingHelper({ ...browsingHelper, memorizeViewPortPositionY: postLayoutStates.memorizeViewPortPositionY });
+                setBrowsingHelper({ ...browsingHelper, memorizeViewPortPositionY: processStates.memorizeViewPortPositionY });
             }
             // #2 update process states and cache
-            let states1: TProcessStates = { ...processStates };
+            let states1: TProcessStates = { ...processStates, memorizeLastViewedPostId: undefined, memorizeViewPortPositionY: undefined, wasRedirected: false };
             setProcessStates({ ...states1 });
             updateProcessStatesCache(states1);
-            let states2: TPostsLayoutStates = { ...postLayoutStates, memorizeLastViewedPostId: undefined, memorizeViewPortPositionY: undefined, wasRedirected: false };
-            // #3 update post layout states and cache
-            setPostLayoutStates({ ...states2 });
-            updatePostsLayoutStatesCache(states2);
         }
     }, [masonryPostInfoArr]);
 
@@ -667,16 +647,14 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
     const handleClickOnPost = (postId: string) => (event: React.MouseEvent) => {
         // #1 update process states and post layout cache
-        updateProcessStatesCache({ ...processStates, wasRedirected: true });
-        updatePostsLayoutStatesCache({ ...postLayoutStates, memorizeLastViewedPostId: postId, memorizeViewPortPositionY: window.scrollY });
+        updateProcessStatesCache({ ...processStates, memorizeLastViewedPostId: postId, memorizeViewPortPositionY: window.scrollY, wasRedirected: true });
         // #2 jump
         router.push(`/post/${postId}`);
     };
 
     const handleClickOnMemberInfo = (memberId: string, postId: string) => (event: React.MouseEvent) => {
         // #1 update process states and post layout cache
-        updateProcessStatesCache({ ...processStates, wasRedirected: true });
-        updatePostsLayoutStatesCache({ ...postLayoutStates, memorizeLastViewedPostId: postId, memorizeViewPortPositionY: window.scrollY });
+        updateProcessStatesCache({ ...processStates, memorizeLastViewedPostId: postId, memorizeViewPortPositionY: window.scrollY, wasRedirected: true });
         // #2 jump
         router.push(`/me/id/${memberId}`);
     };
@@ -740,35 +718,17 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
         );
     };
 
+    const handleFollowOrUndoFollow = async () => {
 
+    };
 
+    //////////////////////////////////////// INFO EDITOR ////////////////////////////////////////
 
-
-    const StyledBox = styled(Box)(({ theme }) => ({
-        backgroundColor: theme.palette.mode === 'light' ? '#fff' : grey[800],
-    }));
-
-    const Puller = styled(Box)(({ theme }) => ({
-        width: 30,
-        height: 6,
-        backgroundColor: theme.palette.mode === 'light' ? grey[300] : grey[900],
-        borderRadius: 3,
-        position: 'absolute',
-        top: 8,
-        left: 'calc(50% - 15px)',
-    }));
-
-    //// STATES - info editor ////
-    const [authorInfoEditorStates, setAuthorInfoEditorStates] = React.useState<TEditorStates>({
-        open: true
-    });
-
-    const handleToggleEditor = (open: boolean) => () => {
-        setAuthorInfoEditorStates({ ...authorInfoEditorStates, open });
+    const handleToggleEditor = (display: boolean) => () => {
+        setProcessStates({ ...processStates, displayEditor: display });
     };
 
     type TAuthorInfoSettingStates = {
-        // displayEditor: boolean;
         alternativeImageUrl: string | undefined;
         alternativeName: string;
         alternativeIntro: string;
@@ -776,23 +736,16 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
         displayError: boolean;
         progressStatus: 0 | 100 | 300 | 400;
     };
-    //// STATES - author info ////
 
+    //// STATES - author info ////
     const [authorInfoSettingStates, setAuthorInfoSettingStates] = React.useState<TAuthorInfoSettingStates>({
-        // displayEditor: false,
-        alternativeImageUrl: provideAvatarImageUrl('authorId', domain),
+        alternativeImageUrl: provideAvatarImageUrl(authorId, domain),
         alternativeName: memberInfoStates.nickname,
         alternativeIntro: memberInfoStates.briefIntro,
         disableButton: true,
         displayError: false,
         progressStatus: 0
     });
-
-    type TEditorStates = {
-        open: boolean;
-    };
-
-
 
     // Edit avatar image
     const handleOpenFile = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -802,6 +755,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
         }
     };
 
+    //// FIXME: have not test
     const handleUploadAvatarImage = async () => {
         if (!(undefined !== authorInfoSettingStates.alternativeImageUrl && '' !== authorInfoSettingStates.alternativeImageUrl)) {
             return;
@@ -851,13 +805,13 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
     });
 
     const handleNicknameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        if (13 < `${event.target.value}`.length) {
-            setNicknameSettingStates({ ...nicknameSettingStates, displayError: true });
+        if (15 < `${event.target.value}`.length) { // Less than 15 chars
+            setAuthorInfoSettingStates({ ...authorInfoSettingStates, displayError: true });
         } else {
             if (memberInfoStates.nickname === event.target.value) {
-                setNicknameSettingStates({ ...nicknameSettingStates, disableButton: true, alternativeName: event.target.value });
+                setAuthorInfoSettingStates({ ...authorInfoSettingStates, disableButton: true, alternativeName: event.target.value });
             } else {
-                setNicknameSettingStates({ ...nicknameSettingStates, disableButton: false, alternativeName: event.target.value });
+                setAuthorInfoSettingStates({ ...authorInfoSettingStates, disableButton: false, alternativeName: event.target.value });
             }
         }
     };
@@ -889,9 +843,38 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
         }
     };
 
-    ///////// COMPONENT - member page /////////
+    const cancelUpdate = () => {
+        // toggle editor
+        setProcessStates({ ...processStates, displayEditor: false });
+        // set alternatives to orignial
+        // disable button
+        setAuthorInfoSettingStates({
+            alternativeImageUrl: provideAvatarImageUrl(authorId, domain),
+            alternativeName: memberInfoStates.nickname,
+            alternativeIntro: memberInfoStates.briefIntro,
+            disableButton: true,
+            displayError: false,
+            progressStatus: 0
+        });
+    };
+    const executeUpdate = async () => { };
+
+
+    const Puller = styled(Box)(({ theme }) => ({
+        width: 30,
+        height: 6,
+        backgroundColor: theme.palette.mode === 'light' ? grey[300] : grey[600],
+        borderRadius: 3,
+        position: 'absolute',
+        top: 8,
+        left: 'calc(50% - 15px)',
+    }));
+
+    //////////////////////////////////////// JSX ////////////////////////////////////////
+
     return (
         <>
+            {/* styles for info editor */}
             <Global
                 styles={{
                     '@media (max-width: 600px)': {
@@ -1035,7 +1018,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                             <MenuList>
 
                                 {/* creations list item */}
-                                <MenuItem onClick={handleSelectPostCategory('mycreations')} selected={'mycreations' === postLayoutStates.selectedCategory}>
+                                <MenuItem onClick={handleSelectPostCategory('mycreations')} selected={'mycreations' === processStates.selectedCategory}>
                                     <ListItemIcon ><CreateIcon /></ListItemIcon>
                                     <ListItemText>
                                         <Typography>{authorId === processStates.viewerId ? langConfigs.myCreations[preferenceStates.lang] : langConfigs.authorsCreations[preferenceStates.lang]}</Typography>
@@ -1043,7 +1026,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                                 </MenuItem>
 
                                 {/* saved post list item */}
-                                <MenuItem onClick={handleSelectPostCategory('savedposts')} selected={'savedposts' === postLayoutStates.selectedCategory}>
+                                <MenuItem onClick={handleSelectPostCategory('savedposts')} selected={'savedposts' === processStates.selectedCategory}>
                                     <ListItemIcon ><StarIcon /></ListItemIcon>
                                     <ListItemText>
                                         <Typography>{authorId === processStates.viewerId ? langConfigs.mySavedPosts[preferenceStates.lang] : langConfigs.authorsSavedPosts[preferenceStates.lang]}</Typography>
@@ -1051,7 +1034,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                                 </MenuItem>
 
                                 {/* browsing history list item */}
-                                {'authenticated' === status && authorId === processStates.viewerId && <MenuItem onClick={handleSelectPostCategory('browsinghistory')} selected={'browsinghistory' === postLayoutStates.selectedCategory}>
+                                {'authenticated' === status && authorId === processStates.viewerId && <MenuItem onClick={handleSelectPostCategory('browsinghistory')} selected={'browsinghistory' === processStates.selectedCategory}>
                                     <ListItemIcon >
                                         <HistoryIcon />
                                     </ListItemIcon>
@@ -1066,7 +1049,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                         <ResponsiveCard sx={{ padding: 1 }}>
                             <MenuList>
                                 {/* the 'all' menu item */}
-                                <MenuItem onClick={handleChannelSelect('all')} selected={postLayoutStates.selectedChannelId === 'all'}>
+                                <MenuItem onClick={handleChannelSelect('all')} selected={processStates.selectedChannelId === 'all'}>
                                     <ListItemIcon >
                                         <BubbleChartIcon />
                                     </ListItemIcon>
@@ -1081,7 +1064,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                                     return (
                                         <MenuItem key={`item-${channelId}`}
                                             onClick={handleChannelSelect(channelId)}
-                                            selected={channelId === postLayoutStates.selectedChannelId}
+                                            selected={channelId === processStates.selectedChannelId}
                                         >
                                             <ListItemIcon >
                                                 <SvgIcon><path d={svgIconPath} /></SvgIcon>
@@ -1098,8 +1081,8 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                         {/* hotest / newest switch (*disabled since 24/02/2023) */}
                         {/* <ResponsiveCard sx={{ padding: 0, paddingY: 2, paddingLeft: 2 }}>
                             <FormControlLabel
-                                control={<StyledSwitch sx={{ ml: 1 }} checked={postLayoutStates.selectedHotPosts} />}
-                                label={postLayoutStates.selectedHotPosts ? langConfigs.hotPosts[preferenceStates.lang] : langConfigs.newPosts[preferenceStates.lang]}
+                                control={<StyledSwitch sx={{ ml: 1 }} checked={processStates.selectedHotPosts} />}
+                                label={processStates.selectedHotPosts ? langConfigs.hotPosts[preferenceStates.lang] : langConfigs.newPosts[preferenceStates.lang]}
                                 onChange={handleSwitchChange}
                                 sx={{ marginRight: 0 }}
                             />
@@ -1114,23 +1097,23 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                     <Stack id={'channel-bar'} direction={'row'} spacing={1} sx={{ display: { sm: 'flex', md: 'none' }, padding: 1, overflow: 'auto' }}>
 
                         {/* creations button */}
-                        <Button variant={'mycreations' === postLayoutStates.selectedCategory ? 'contained' : 'outlined'} size='small' sx={{ minWidth: 'max-content' }} onClick={handleSelectPostCategory('mycreations')}>
+                        <Button variant={'mycreations' === processStates.selectedCategory ? 'contained' : 'outlined'} size='small' sx={{ minWidth: 'max-content' }} onClick={handleSelectPostCategory('mycreations')}>
                             <Typography variant='body2'>{authorId === processStates.viewerId ? langConfigs.myCreations[preferenceStates.lang] : langConfigs.authorsCreations[preferenceStates.lang]}</Typography>
                         </Button>
 
                         {/*  saved post button */}
-                        <Button variant={'savedposts' === postLayoutStates.selectedCategory ? 'contained' : 'outlined'} size='small' sx={{ minWidth: 'max-content' }} onClick={handleSelectPostCategory('savedposts')}>
+                        <Button variant={'savedposts' === processStates.selectedCategory ? 'contained' : 'outlined'} size='small' sx={{ minWidth: 'max-content' }} onClick={handleSelectPostCategory('savedposts')}>
                             <Typography variant='body2'>{langConfigs.mySavedPosts[preferenceStates.lang]}</Typography>
                         </Button>
 
                         {/* browsing history button */}
-                        {('authenticated' === status && authorId === processStates.viewerId) && <Button variant={'browsinghistory' === postLayoutStates.selectedCategory ? 'contained' : 'outlined'} size='small' sx={{ minWidth: 'max-content' }} onClick={handleSelectPostCategory('browsinghistory')}>
+                        {('authenticated' === status && authorId === processStates.viewerId) && <Button variant={'browsinghistory' === processStates.selectedCategory ? 'contained' : 'outlined'} size='small' sx={{ minWidth: 'max-content' }} onClick={handleSelectPostCategory('browsinghistory')}>
                             <Typography variant='body2'>{langConfigs.browsingHistory[preferenceStates.lang]}</Typography>
                         </Button>}
 
                         {/* the 'all' button */}
-                        <Button variant={'all' === postLayoutStates.selectedChannelId ? 'contained' : 'text'} size='small' onClick={handleChannelSelect('all')} >
-                            <Typography variant={'body2'} color={'all' === postLayoutStates.selectedChannelId ? 'white' : 'text.secondary'} sx={{ backgroundColor: 'primary' }}>
+                        <Button variant={'all' === processStates.selectedChannelId ? 'contained' : 'text'} size='small' onClick={handleChannelSelect('all')} >
+                            <Typography variant={'body2'} color={'all' === processStates.selectedChannelId ? 'white' : 'text.secondary'} sx={{ backgroundColor: 'primary' }}>
                                 {langConfigs.allPosts[preferenceStates.lang]}
                             </Typography>
                         </Button>
@@ -1139,14 +1122,14 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                         {channelInfoStates.channelIdSequence.map(id =>
                             <Button
                                 key={`button-${channelInfoDict_ss[id].channelId}`}
-                                variant={channelInfoDict_ss[id].channelId === postLayoutStates.selectedChannelId ? 'contained' : 'text'}
+                                variant={channelInfoDict_ss[id].channelId === processStates.selectedChannelId ? 'contained' : 'text'}
                                 size='small'
                                 sx={{ minWidth: 'en' === preferenceStates.lang ? 'max-content' : 64 }}
                                 onClick={handleChannelSelect(channelInfoDict_ss[id].channelId)}
                             >
                                 <Typography
                                     variant={'body2'}
-                                    color={channelInfoDict_ss[id].channelId === postLayoutStates.selectedChannelId ? 'white' : 'text.secondary'}
+                                    color={channelInfoDict_ss[id].channelId === processStates.selectedChannelId ? 'white' : 'text.secondary'}
                                     sx={{ backgroundColor: 'primary' }}
                                 >
                                     {channelInfoDict_ss[id].name[preferenceStates.lang]}
@@ -1159,13 +1142,13 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                     {0 === masonryPostInfoArr.length &&
                         <Box minHeight={200} mt={10}>
                             {/* "mycreations" | "savedposts" | "browsinghistory" */}
-                            {'mycreations' === postLayoutStates.selectedCategory && <Typography color={'text.secondary'} align={'center'}>
+                            {'mycreations' === processStates.selectedCategory && <Typography color={'text.secondary'} align={'center'}>
                                 {authorId === processStates.viewerId ? langConfigs.noCreationsRecord[preferenceStates.lang] : langConfigs.authorNoCreationsRecord[preferenceStates.lang]}
                             </Typography>}
-                            {'savedposts' === postLayoutStates.selectedCategory && <Typography color={'text.secondary'} align={'center'}>
+                            {'savedposts' === processStates.selectedCategory && <Typography color={'text.secondary'} align={'center'}>
                                 {authorId === processStates.viewerId ? langConfigs.noSavedPostsRecord[preferenceStates.lang] : langConfigs.authorNoSavedPostsRecord[preferenceStates.lang]}
                             </Typography>}
-                            {'browsinghistory' === postLayoutStates.selectedCategory && <Typography color={'text.secondary'} align={'center'}>
+                            {'browsinghistory' === processStates.selectedCategory && <Typography color={'text.secondary'} align={'center'}>
                                 {langConfigs.noBrowsingHistoryRecord[preferenceStates.lang]}
                             </Typography>}
                         </Box>
@@ -1220,10 +1203,10 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
                                                 {/* member behaviour / placeholder */}
                                                 {('authenticated' === status && authorId === processStates.viewerId) && <Grid item>
-                                                    <IconButton sx={{ mt: 1 }} onClick={async () => { await handleMultiProposeButtonClick(postLayoutStates.selectedCategory, info.postId); }}>
-                                                        {'mycreations' === postLayoutStates.selectedCategory && <CreateIcon color={'inherit'} sx={{ fontSize: { xs: 20, sm: 24 } }} />}
-                                                        {'savedposts' === postLayoutStates.selectedCategory && <StarIcon color={undoSavedPostArr.includes(info.postId) ? 'inherit' : 'warning'} sx={{ fontSize: { xs: 20, sm: 24 } }} />}
-                                                        {'browsinghistory' === postLayoutStates.selectedCategory && <DeleteIcon color={'inherit'} sx={{ fontSize: { xs: 20, sm: 24 } }} />}
+                                                    <IconButton sx={{ mt: 1 }} onClick={async () => { await handleMultiProposeButtonClick(processStates.selectedCategory, info.postId); }}>
+                                                        {'mycreations' === processStates.selectedCategory && <CreateIcon color={'inherit'} sx={{ fontSize: { xs: 20, sm: 24 } }} />}
+                                                        {'savedposts' === processStates.selectedCategory && <StarIcon color={undoSavedPostArr.includes(info.postId) ? 'inherit' : 'warning'} sx={{ fontSize: { xs: 20, sm: 24 } }} />}
+                                                        {'browsinghistory' === processStates.selectedCategory && <DeleteIcon color={'inherit'} sx={{ fontSize: { xs: 20, sm: 24 } }} />}
                                                     </IconButton>
                                                 </Grid>}
                                             </Grid>
@@ -1246,7 +1229,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
             {/* info editor */}
             <SwipeableDrawer
                 anchor="bottom"
-                open={authorInfoEditorStates.open}
+                open={processStates.displayEditor}
                 onClose={handleToggleEditor(false)}
                 onOpen={handleToggleEditor(true)}
                 swipeAreaWidth={50}
@@ -1256,7 +1239,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                 }}
 
             >
-                <StyledBox sx={{ px: { xs: 2, sm: 2, md: 4 }, pt: { xs: 2, sm: 2, md: 4 }, height: '100%', overflow: 'auto', }}>
+                <Box sx={{ px: { xs: 2, sm: 2, md: 4 }, pt: { xs: 2, sm: 2, md: 4 }, height: '100%', overflow: 'auto', backgroundColor: theme.palette.mode === 'light' ? '#fff' : grey[800],}}>
 
                     {/* puller (for mobile) */}
                     <Puller />
@@ -1265,13 +1248,13 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                     <Grid container>
 
                         {/* 'cancel' button */}
-                        <Grid item ><Button variant='text' onClick={handleToggleEditor(false)}>{langConfigs.cancel[preferenceStates.lang]}</Button></Grid>
+                        <Grid item ><Button variant='text' onClick={cancelUpdate}>{langConfigs.cancel[preferenceStates.lang]}</Button></Grid>
 
                         {/* placeholder */}
                         <Grid item flexGrow={1}></Grid>
 
                         {/* 'update' button */}
-                        <Grid item><Button variant='contained'>{langConfigs.update[preferenceStates.lang]}</Button></Grid>
+                        <Grid item><Button variant='contained' disabled={authorInfoSettingStates.disableButton}>{langConfigs.update[preferenceStates.lang]}</Button></Grid>
 
                     </Grid>
 
@@ -1295,7 +1278,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                     </CentralizedBox>
 
                     {/* nickname */}
-                    <CentralizedBox sx={{ pt: 1 }}>
+                    <CentralizedBox sx={{ pt: 2 }}>
                         <TextField
                             error={authorInfoSettingStates.displayError}
                             label={langConfigs.newNickname[preferenceStates.lang]}
@@ -1311,7 +1294,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                     </CentralizedBox>
 
                     {/* brief intro */}
-                    <CentralizedBox sx={{ pt: 3 }}>
+                    <CentralizedBox sx={{ pt: 2 }}>
                         <TextField
                             error={authorInfoSettingStates.displayError}
                             label={langConfigs.briefIntro[preferenceStates.lang]}
@@ -1335,7 +1318,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                     <CentralizedBox>
                         <Typography color={'grey'} variant={'body2'} align={'center'}>{langConfigs.referToCommunityGuidelines[preferenceStates.lang]}</Typography>
                     </CentralizedBox>
-                </StyledBox>
+                </Box>
 
 
 
