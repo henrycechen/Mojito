@@ -8,10 +8,12 @@ import AzureTableClient from '../../../../../modules/AzureTableClient';
 
 import { IMemberComprehensive } from '../../../../../lib/interfaces/member';
 import { INicknameRegistry } from '../../../../../lib/interfaces/registry';
+
 import { response405, response500, logWithDate } from '../../../../../lib/utils/general';
+import { getTimeBySecond } from '../../../../../lib/utils/create';
 import { verifyId } from '../../../../../lib/utils/verify';
 
-const fname = UpdateNickname.name;
+const fnn = UpdateNickname.name;
 
 /** UpdateNickname v0.1.1
  * 
@@ -21,7 +23,7 @@ const fname = UpdateNickname.name;
  * 
  * Info required for PUT requests
  * - token: JWT
- * - alternativeName: string (body, length < 13)
+ * - alternativeName: string (body, length < 15)
 */
 
 
@@ -74,12 +76,15 @@ export default async function UpdateNickname(req: NextApiRequest, res: NextApiRe
         }
 
         //// Verify alternative name ////
-        const { alternativeName } = req.body;
-        if (!('string' === typeof alternativeName && 13 > alternativeName.length)) {
+        const { alternativeName: desiredName } = req.body;
+        if (!('string' === typeof desiredName && 15 > desiredName.length)) {
             // TODO: place nickname examination method here
-            res.status(409).send('Alternative name exceeds length limit or has been occupied');
+
+            res.status(409).send('Alternative name exceeds length limit or contains illegal content');
             return;
         }
+
+        const alternativeName = desiredName.trim();
 
         //// Create Base64 string of alternative name ////
         const nameB64 = Buffer.from(alternativeName).toString('base64');
@@ -100,7 +105,7 @@ export default async function UpdateNickname(req: NextApiRequest, res: NextApiRe
             MemberId: memberId,
             Nickname: alternativeName,
             IsActive: true
-        }, 'Replace')
+        }, 'Replace');
 
         //// Update properties (of IMemberComprehensive) in [C] memberComprehensive ////
         const memberComprehensiveUpdateResult = await memberComprehensiveCollectionClient.updateOne({ memberId }, {
@@ -108,10 +113,10 @@ export default async function UpdateNickname(req: NextApiRequest, res: NextApiRe
                 nickname: alternativeName,
                 lastNicknameUpdatedTimeBySecond: getTimeBySecond()
             }
-        })
+        });
 
         if (!memberComprehensiveUpdateResult.acknowledged) {
-            logWithDate(`Failed to update nickname, lastNicknameUpdatedTimeBySecond (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`, fname);
+            logWithDate(`Failed to update nickname, lastNicknameUpdatedTimeBySecond (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`, fnn);
             res.status(500).send(`Attempt to update nickname`);
             return;
         }
@@ -131,7 +136,7 @@ export default async function UpdateNickname(req: NextApiRequest, res: NextApiRe
         if (!res.headersSent) {
             response500(res, msg);
         }
-        logWithDate(msg, fname, e);
+        logWithDate(msg, fnn, e);
         await atlasDbClient.close();
         return;
     }

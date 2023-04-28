@@ -8,10 +8,10 @@ import AzureTableClient from '../../../../../modules/AzureTableClient';
 
 import { response405, response500, logWithDate } from '../../../../../lib/utils/general';
 import { ILoginJournal, IMemberComprehensive } from '../../../../../lib/interfaces/member';
-import { INicknameRegistry } from '../../../../../lib/interfaces/registry';
 
 import CryptoJS from 'crypto-js';
 
+import { getTimeBySecond } from '../../../../../lib/utils/create';
 import { verifyId, verifyPassword } from '../../../../../lib/utils/verify';
 import { IMojitoMemberSystemLoginCredentials } from '../../../../../lib/interfaces/credentials';
 

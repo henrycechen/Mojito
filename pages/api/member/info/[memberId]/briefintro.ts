@@ -8,7 +8,9 @@ import { INicknameRegistry } from '../../../../../lib/interfaces/registry';
 
 import AtlasDatabaseClient from '../../../../../modules/AtlasDatabaseClient';
 import AzureTableClient from '../../../../../modules/AzureTableClient';
+
 import { logWithDate, response405, response500 } from '../../../../../lib/utils/general';
+import { getTimeBySecond } from '../../../../../lib/utils/create';
 import { verifyId } from '../../../../../lib/utils/verify';
 
 const fname = UpdateBriefIntro.name;
@@ -21,7 +23,7 @@ const fname = UpdateBriefIntro.name;
  * 
  * Info required for PUT requests
  * - token: JWT
- * - alternativeIntro: string (body, length < 21)
+ * - alternativeIntro: string (body, length < 150)
 */
 
 export default async function UpdateBriefIntro(req: NextApiRequest, res: NextApiResponse) {
@@ -74,12 +76,15 @@ export default async function UpdateBriefIntro(req: NextApiRequest, res: NextApi
         }
 
         //// Verify alternative intro ////
-        const { alternativeIntro } = req.body;
-        if (!('string' === typeof alternativeIntro && 21 > alternativeIntro.length)) {
+        const { alternativeIntro: desiredIntro } = req.body;
+        if (!('string' === typeof desiredIntro && 150 > desiredIntro.length)) {
             // TODO: place content (of brief intro) examination method here
-            res.status(422).send('Alternative name exceeds length limit or has been occupied');
+
+            res.status(422).send('Alternative name exceeds length limit or contains illegal content');
             return;
         }
+
+        const alternativeIntro = desiredIntro.trim();
 
         //// Update properties (of IMemberComprehensive) in [C] memberComprehensive ////
         const memberComprehensiveUpdateResult = await memberComprehensiveCollectionClient.updateOne({ memberId }, {
@@ -87,7 +92,7 @@ export default async function UpdateBriefIntro(req: NextApiRequest, res: NextApi
                 briefIntro: alternativeIntro,
                 lastBriefIntroUpdatedTimeBySecond: getTimeBySecond()
             }
-        })
+        });
 
         if (!memberComprehensiveUpdateResult.acknowledged) {
             logWithDate(`Failed to update briefIntro, lastBriefIntroUpdatedTimeBySecond (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`, fname);

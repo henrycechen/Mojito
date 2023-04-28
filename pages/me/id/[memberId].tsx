@@ -40,6 +40,8 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import EditIcon from '@mui/icons-material/Edit';
 
+import CircularProgress from '@mui/material/CircularProgress';
+
 import useTheme from '@mui/material/styles/useTheme';
 
 
@@ -288,34 +290,36 @@ const langConfigs: LangConfigs = {
         cn: '*请选择 2 MB 以内的照片文件',
         en: '*Please limit the image file size to 2MB'
     },
-    uploading: {
-        tw: '上傳中...',
-        cn: '上传中...',
-        en: 'Uploading...'
+    avatarImageRequirementShort: {
+        tw: '相片文件體積不宜超過 2 MB',
+        cn: '相片文件体积不宜超过 2 MB',
+        en: 'Please limit your image file size to 2MB'
     },
-    uploadSucceeded: {
-        tw: '上傳成功',
-        cn: '上传成功',
-        en: 'Upload succeeded'
+    openFileFailed: {
+        tw: '嘗試打開文件失敗，點擊以重試',
+        cn: '尝试打开文件失败，点击以重试',
+        en: 'Attempt to open file failed, click to try again'
     },
-    uploadFailed: {
-        tw: '上傳失敗，點擊以重試',
-        cn: '上传失败，点击以重试',
-        en: 'Upload failed, click to re-try'
+    invalidFileExtensionName: {
+        tw: '您試圖打開一個非圖片文件，請重試',
+        cn: '您试图打开一个非图片文件，请重试',
+        en: 'You tried to open a non-image file, please try again'
     },
 
 
     //// Nickname setting ////
+
     nickname: {
         tw: '暱稱',
         cn: '昵称',
         en: 'Nickname'
     },
-    updatinging: {
-        tw: '更新中...',
-        cn: '更新中...',
-        en: 'Updating...'
+    newNickname: {
+        tw: '新昵稱',
+        cn: '新昵称',
+        en: 'New nickname'
     },
+
     nicknameRequirement: {
         tw: '*請使用符合規則的暱稱並且長度不超過15個字符',
         cn: '*请使用符合规则的昵称并且长度不超过15个字符',
@@ -326,31 +330,33 @@ const langConfigs: LangConfigs = {
         cn: '昵称长度不宜超过15个字符',
         en: 'Please limit your nickname to 15 characters'
     },
+    voidNickname: {
+        tw: '暱稱不能為空或全部由空格組成',
+        cn: '昵称不能为空或全部由空格组成',
+        en: 'Nickname cannot be empty or all consist of spaces'
+    },
     referToCommunityGuidelines: {
         tw: '詳情請參見我們的社区準則',
         cn: '详情请参见我们的社区规范',
         en: 'Please refer to our Community Guidelines'
     },
+
     invalidNicknameOrConflict: {
         tw: '暱稱被佔用或不符合社區規範，請修改後重試',
         cn: '昵称被占用或不符合社区规范，请修改后重试',
         en: 'Nickname invalid or already taken'
+    },
+    updateFailed: {
+        tw: '更新失敗，點擊以重試',
+        cn: '更新失败，点击以重试',
+        en: 'Update failed, click to try again'
     },
     updateSucceeded: {
         tw: '更新成功',
         cn: '更新成功',
         en: 'Update succeeded'
     },
-    updateFailed: {
-        tw: '更新失敗，點擊以重試',
-        cn: '更新失败，点击以重试',
-        en: 'Update failed, click to re-try'
-    },
-    newNickname: {
-        tw: '新昵稱',
-        cn: '新昵称',
-        en: 'New nickname'
-    },
+
 
 
     //// Bried intro setting ////
@@ -736,7 +742,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
 
     type TAuthorInfoSettingStates = {
-        alternativeImageUrl: string | undefined;
+        alternativeImageUrl: string;
         alternativeName: string;
         invalidName: boolean;
         alternativeIntro: string;
@@ -745,7 +751,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
         disableButton: boolean;
         displayAlert: boolean;
         alertContent: string;
-        progressStatus: 0 | 100 | 300 | 400;
+        displayProgress: boolean;
     };
 
     //// STATES - author info ////
@@ -759,7 +765,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
         disableButton: true,
         displayAlert: false,
         alertContent: '',
-        progressStatus: 0
+        displayProgress: false,
     });
 
     const handleToggleEditor = (display: boolean) => () => {
@@ -769,44 +775,44 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
     // Edit avatar image
     const handleOpenFile = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files?.length !== 0 && event.target.files !== null) {
-            const url = URL.createObjectURL(event.target.files[0]);
-            setAuthorInfoSettingStates({ ...authorInfoSettingStates, alternativeImageUrl: url, disableButton: false, progressStatus: 100 });
-        }
-    };
+            const file = event.target.files[0];
+            if (file) {
+                const fname = file.name;
 
-    //// FIXME: have not test
-    const handleUploadAvatarImage = async () => {
-        if (!(undefined !== authorInfoSettingStates.alternativeImageUrl && '' !== authorInfoSettingStates.alternativeImageUrl)) {
-            return;
-        }
+                if (fname !== undefined) {
+                    const nameArr = fname.split('.');
 
-        // Prepare to upload avatar image
-        setAuthorInfoSettingStates({ ...authorInfoSettingStates, disableButton: true, progressStatus: 300 });
-        let formData = new FormData();
-        const config = {
-            headers: { 'Content-Type': 'multipart/form-data' },
-            onUploadProgress: (event: any) => {
-                console.log(`Upload progress:`, Math.round((event.loaded * 100) / event.total));
+                    if (Array.isArray(nameArr) && nameArr.length > 1) {
+                        const ext = nameArr.pop();
+
+                        if (undefined !== ext && ['jpg', 'jpeg', 'png'].includes(ext.toLowerCase())) {
+                            setAuthorInfoSettingStates({
+                                ...authorInfoSettingStates,
+                                alternativeImageUrl: URL.createObjectURL(file),
+                                disableButton: false,
+                                displayAlert: false,
+                                alertContent: ''
+                            });
+                            return;
+                        }
+                    }
+                }
             }
-        };
-
-        // Retrieve file and measure the size
-        const bb = await fetch(authorInfoSettingStates.alternativeImageUrl).then(r => r.blob());
-        if ((await bb.arrayBuffer()).byteLength > 2097152) { // new image file no larger than 2 MB
-            setAuthorInfoSettingStates({ ...authorInfoSettingStates, disableButton: false, progressStatus: 400 });
-            return;
-        }
-
-        // Post avatar image file
-        formData.append('image', bb);
-        await axios.post(`/api/avatar/upload/${authorId}`, formData, config)
-            .then((response: AxiosResponse) => {
-                setMemberInfoStates({ ...memberInfoStates, avatarImageUrl: provideAvatarImageUrl(authorId, domain, true) });
-            })
-            .catch((error: AxiosError) => {
-                setAuthorInfoSettingStates({ ...authorInfoSettingStates, disableButton: true, progressStatus: 400 });
-                console.log(`Attempt to upload avatar image. ${error}`);
+            setAuthorInfoSettingStates({
+                ...authorInfoSettingStates,
+                disableButton: false,
+                displayAlert: true,
+                alertContent: langConfigs.invalidFileExtensionName[preferenceStates.lang],
             });
+        } else {
+            setAuthorInfoSettingStates({
+                ...authorInfoSettingStates,
+                disableButton: false,
+                displayAlert: true,
+                alertContent: langConfigs.openFileFailed[preferenceStates.lang],
+            });
+        }
+        event.target.files = null;
     };
 
     const handleNicknameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -823,6 +829,14 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
         } else {
             // Less than 15 chars
             if (memberInfoStates.nickname === event.target.value) {
+                setAuthorInfoSettingStates({
+                    ...authorInfoSettingStates,
+                    alternativeName: event.target.value,
+                    invalidName: false,
+                    disableButton: true,
+                    displayAlert: false,
+                });
+            } else if (!('' !== event.target.value && event.target.value.trim().length !== 0)) {
                 setAuthorInfoSettingStates({
                     ...authorInfoSettingStates,
                     alternativeName: event.target.value,
@@ -890,15 +904,171 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
             disableButton: true,
             displayAlert: false,
             alertContent: '',
-            progressStatus: 0
+            displayProgress: false
         });
     };
 
     const executeUpdate = async () => {
+        // #1 if update avatar image
+        if ('' !== authorInfoSettingStates.alternativeImageUrl && provideAvatarImageUrl(authorId, domain) !== authorInfoSettingStates.alternativeImageUrl) {
+            setAuthorInfoSettingStates({
+                ...authorInfoSettingStates,
+                disableButton: true,
+                displayProgress: true,
+            });
 
+            // Prepare to upload avatar image
+            let formData = new FormData();
+            const config = {
+                headers: { 'Content-Type': 'multipart/form-data' },
+                onUploadProgress: (event: any) => {
+                    console.log(`Upload progress:`, Math.round((event.loaded * 100) / event.total));
+                }
+            };
 
+            try {
+                // Retrieve file and measure the size
+                const bb = await fetch(authorInfoSettingStates.alternativeImageUrl).then(r => r.blob());
+                if ((await bb.arrayBuffer()).byteLength > 2097152) { // new image file no larger than 2 MB
+                    setAuthorInfoSettingStates({
+                        ...authorInfoSettingStates,
+                        disableButton: false,
+                        displayAlert: true,
+                        alertContent: langConfigs.avatarImageRequirementShort[preferenceStates.lang],
+                        displayProgress: false,
+                    });
+                    return;
+                }
+
+                // Post avatar image file
+                formData.append('image', bb);
+
+                await axios.post(`/api/avatar/upload/${authorId}`, formData, config)
+                    .then((response: AxiosResponse) => {
+                        // Succeed
+                        setMemberInfoStates({
+                            ...memberInfoStates,
+                            avatarImageUrl: provideAvatarImageUrl(authorId, domain, true)
+                        });
+                    })
+                    .catch((e: AxiosError) => {
+                        throw new AxiosError;
+                    });
+
+            } catch (e) {
+                setAuthorInfoSettingStates({
+                    ...authorInfoSettingStates,
+                    disableButton: false,
+                    displayAlert: true,
+                    alertContent: langConfigs.updateFailed[preferenceStates.lang],
+                    displayProgress: false,
+                });
+                console.error(`Attempt to upload avatar image. ${e}`);
+                return;
+            }
+        }
+
+        // #2 if update nickname
+        if (memberInfoStates.nickname !== authorInfoSettingStates.alternativeName) {
+            
+            if (!('' !== authorInfoSettingStates.alternativeName && authorInfoSettingStates.alternativeName.trim().length !== 0)) {
+                setAuthorInfoSettingStates({
+                    ...authorInfoSettingStates,
+                    disableButton: false,
+                    displayAlert: true,
+                    alertContent: langConfigs.voidNickname[preferenceStates.lang],
+                    displayProgress: false,
+                });
+                return;
+            }
+
+            setAuthorInfoSettingStates({
+                ...authorInfoSettingStates,
+                displayProgress: true,
+            });
+
+            const resp = await fetch(`/api/member/info/${authorId}/nickname`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    alternativeName: authorInfoSettingStates.alternativeName
+                })
+            });
+
+            if (200 !== resp.status) {
+                if (422 === resp.status) {
+                    setAuthorInfoSettingStates({
+                        ...authorInfoSettingStates,
+                        disableButton: false,
+                        displayAlert: true,
+                        alertContent: langConfigs.invalidNicknameOrConflict[preferenceStates.lang],
+                        displayProgress: false
+                    });
+                } else {
+                    setAuthorInfoSettingStates({
+                        ...authorInfoSettingStates,
+                        disableButton: false,
+                        displayAlert: true,
+                        alertContent: langConfigs.updateFailed[preferenceStates.lang],
+                        displayProgress: false
+                    });
+                }
+                return;
+            } else {
+                // Succeed
+                setMemberInfoStates({
+                    ...memberInfoStates,
+                    nickname: authorInfoSettingStates.alternativeName
+                });
+            }
+        }
+
+        // #3 if breif intro
+        if (memberInfoStates.briefIntro !== authorInfoSettingStates.alternativeIntro) {
+
+            setAuthorInfoSettingStates({
+                ...authorInfoSettingStates,
+                displayProgress: true,
+            });
+
+            const resp = await fetch(`/api/member/info/${authorId}/briefintro`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    alternativeIntro: authorInfoSettingStates.alternativeIntro
+                })
+            });
+
+            if (200 !== resp.status) {
+                setAuthorInfoSettingStates({
+                    ...authorInfoSettingStates,
+                    disableButton: false,
+                    displayAlert: true,
+                    alertContent: langConfigs.updateFailed[preferenceStates.lang],
+                    displayProgress: false
+                });
+                return;
+            } else {
+                // Succeed
+                setMemberInfoStates({
+                    ...memberInfoStates,
+                    briefIntro: authorInfoSettingStates.alternativeIntro
+                });
+            }
+        }
+
+        // #4 toggle info editor on success
+        setAuthorInfoSettingStates({
+            ...authorInfoSettingStates,
+            invalidName: false,
+            invalidIntro: false,
+            displayEditor: false,
+            disableButton: true,
+            displayAlert: false,
+            alertContent: '',
+            displayProgress: false
+        });
     };
-
 
     const Puller = styled(Box)(({ theme }) => ({
         width: 30,
@@ -1294,7 +1464,17 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                         <Grid item flexGrow={1}></Grid>
 
                         {/* 'update' button */}
-                        <Grid item><Button variant='contained' disabled={authorInfoSettingStates.disableButton}>{langConfigs.update[preferenceStates.lang]}</Button></Grid>
+                        <Grid item>
+                            <Button
+                                variant='contained'
+                                disabled={authorInfoSettingStates.disableButton}
+                                onClick={async () => { await executeUpdate(); }}
+                            >
+                                {!authorInfoSettingStates.displayProgress && langConfigs.update[preferenceStates.lang]}
+                                {authorInfoSettingStates.displayProgress && <CircularProgress size={24} color='inherit'/>}
+                            </Button>
+
+                        </Grid>
 
                     </Grid>
 
