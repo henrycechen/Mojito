@@ -79,7 +79,6 @@ export interface IMemberInfo {
     createdTimeBySecond: number;
 }
 
-
 export interface IMemberStatistics {
     memberId: string;
 

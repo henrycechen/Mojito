@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { getToken } from 'next-auth/jwt'
+import { getToken } from 'next-auth/jwt';
 import { RestError } from '@azure/data-tables';
 import { MongoError } from 'mongodb';
 
@@ -12,11 +12,11 @@ import { IConciseMemberStatistics, IMemberComprehensive, IMemberStatistics } fro
 import { response405, response500, logWithDate } from '../../../../lib/utils/general';
 import { verifyId } from '../../../../lib/utils/verify';
 
-const fname = GetConciseMemberStatisticsById.name;
+const fnn = GetConciseMemberStatisticsById.name;
 
 /** GetMemberStatisticsById v0.1.2 FIXME: test mode
  * 
- * Last update: 23/02/2023
+ * Last update: 28/04/2023
  * 
  * This interface ONLY accepts GET requests
  * 
@@ -26,33 +26,22 @@ const fname = GetConciseMemberStatisticsById.name;
 
 export default async function GetConciseMemberStatisticsById(req: NextApiRequest, res: NextApiResponse) {
 
-
-    res.send({
-        totalCreationsCount: 4,
-        totalCreationHitCount: 1783,
-        totalFollowedByCount: 18,
-        totalCreationSavedCount: 127,
-        totalCreationLikedCount: 335,
-    });
-    return;
-
-
     const { method } = req;
     if ('GET' !== method) {
         response405(req, res);
         return;
     }
 
-    //// Verify identity ////
-    const token = await getToken({ req });
-    if (!(token && token?.sub)) {
-        res.status(400).send('Invalid identity');
-        return;
-    }
-    const { sub: memberId } = token;
+    // //// Verify identity ////
+    // const token = await getToken({ req });
+    // if (!(token && token?.sub)) {
+    //     res.status(400).send('Invalid identity');
+    //     return;
+    // }
+    // const { sub: memberId } = token;
 
     //// Verify id ////
-    const { isValid, category, id: objectId } = verifyId(req.query?.memberId);
+    const { isValid, category, id: memberId } = verifyId(req.query?.memberId);
     if (!(isValid && 'member' === category)) {
         res.status(400).send('Invalid member id');
         return;
@@ -66,9 +55,11 @@ export default async function GetConciseMemberStatisticsById(req: NextApiRequest
         //// Verify member status ////
         const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
         const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne({ memberId }, { projection: { _id: 0, status: 1 } });
+        
         if (null === memberComprehensiveQueryResult) {
-            throw new Error(`${fname}: Member attempt to GET member statistics but have no document (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
+            throw new Error(`${fnn}: Member attempt to GET member statistics but have no document (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
         }
+
         const { status: memberStatus } = memberComprehensiveQueryResult;
         if (0 > memberStatus) {
             res.status(403).send('Method not allowed due to member suspended or deactivated');
@@ -84,6 +75,7 @@ export default async function GetConciseMemberStatisticsById(req: NextApiRequest
             totalCreationLikedCount: 0,
             totalCreationSavedCount: 0,
         };
+
         const memberStatisticsCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberStatistics>('member');
         const memberStatisticsQueryResult = await memberStatisticsCollectionClient.findOne({ memberId }, {
             projection: {
@@ -103,6 +95,7 @@ export default async function GetConciseMemberStatisticsById(req: NextApiRequest
                 totalCreationUndoLikedCount: 1,
             }
         });
+
         if (null === memberStatisticsQueryResult) {
             await memberStatisticsCollectionClient.insertOne({
                 memberId,
@@ -148,7 +141,11 @@ export default async function GetConciseMemberStatisticsById(req: NextApiRequest
                 totalFollowedByCount: 0, // info page required
                 totalUndoFollowedByCount: 0,
                 totalBlockedByCount: 0,
-                totalUndoBlockedByCount: 0
+                totalUndoBlockedByCount: 0,
+
+                // affair
+                totalAffairOfCreationCount: 0,
+                totalAffairOfCommentCount: 0
             });
         } else {
             statistics.totalCreationsCount = memberStatisticsQueryResult.totalCreationsCount - memberStatisticsQueryResult.totalCreationDeleteCount;
@@ -172,7 +169,7 @@ export default async function GetConciseMemberStatisticsById(req: NextApiRequest
         if (!res.headersSent) {
             response500(res, msg);
         }
-        logWithDate(msg, fname, e);
+        logWithDate(msg, fnn, e);
         await atlasDbClient.close();
         return;
     }

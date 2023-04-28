@@ -7,16 +7,17 @@ import AzureTableClient from '../../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from "../../../../../modules/AtlasDatabaseClient";
 
 
+import { IMemberComprehensive, IMemberInfo, IRestrictedMemberComprehensive } from '../../../../../lib/interfaces/member';
 import { response405, response500, logWithDate } from '../../../../../lib/utils/general';
-import { IMemberInfo, IRestrictedMemberComprehensive } from '../../../../../lib/interfaces/member';
+import { verifyId } from '../../../../../lib/utils/verify';
 
 
-const fname = GetMemberInfoById.name;
+const fnn = GetMemberInfoById.name;
 
 
-/** GetMemberInfoById v0.1.1
+/** GetMemberInfoById v0.1.2
  * 
- * Last update: 21/02/2023
+ * Last update: 28/04/2023
  * 
  * This interface ONLY accepts GET requests
  * 
@@ -26,51 +27,65 @@ const fname = GetMemberInfoById.name;
 */
 
 export default async function GetMemberInfoById(req: NextApiRequest, res: NextApiResponse) {
+
     const { method } = req;
-    if (!['GET', 'POST'].includes(method ?? '')) {
+    if ('GET' !== method) {
         response405(req, res);
         return;
     }
 
-    // GET | info
-
-
+    //// Verify member id ////
+    const { isValid, category, id: memberId } = verifyId(req.query?.memberId);
+    if (!(isValid && 'member' === category)) {
+        res.status(400).send('Invalid member id');
+        return;
+    }
 
     //// Declare DB client ////
     const atlasDbClient = AtlasDatabaseClient();
+
     try {
+        await atlasDbClient.connect();
 
-        const info: IRestrictedMemberComprehensive = {
-            memberId: 'M1234XXXX',
-            providerId: "MojitoMemberSystem",
-            registeredTimeBySecond: 1671484182,
-            verifiedTimeBySecond: 1671593378,
-            emailAddress: 'henrycechen@gmail.com',
+        //// Verify member status ////
+        const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
+        const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne({ memberId }, {
+            projection: {
+                _id: 0,
+                memberId: 1,
 
-            nickname: '店小二WebMaster',
-            // briefIntro: `專業的臺灣書評媒體
-            // \n提供原生報導，文化觀察，人物採訪與國內外重大出版消息
-            // \nLife is an openbook.  
-            // \n打開來讀，有人陪你,換日線。台灣高雄人。二十歲後流浪到台北工作七年後回高雄定居至今。\n從事接案工作十餘年。大多數時間從事的事都跟書和出版社有關。`,
-            
-            
-            briefIntro: `在現代社會中，人們對於工作的要求越來越高，追求高薪、穩定、有前途的職業成為了很多人的目標。但是，我們也應該注重工作所帶來的樂趣和成就感。如果一個人一直在做他不喜歡的工作，將會感到空虛和無聊，這對於健康和心理狀態都是不好的。因此，找到一份自己喜愛的工作是非常重要的。此外，通過工作可以學習新技能和知識，這有助於個人成長和發展。總之，工作不僅是賺錢和謀生的手段，更是實現自我價值和追求夢想的途徑。`,
-            
-            gender: -1,
-            birthdayBySecond: 840344435,
+                providerId: 1,
+                registeredTimeBySecond: 1,
+                verifiedTimeBySecond: 1,
+                emailAddress: 1,
 
-            status: 200,
-            allowPosting: true,
-            allowCommenting: true,
-            allowKeepingBrowsingHistory: true,
-            allowVisitingFollowedMembers: true,
-            allowVisitingSavedPosts: true,
-            hidePostsAndCommentsOfBlockedMember: false,
-        };
+                nickname: 1,
+                briefIntro: 1,
+                gender: 1,
+                birthdayBySecond: 1,
 
-        res.send(info);
+                status: 1,
+                allowPosting: 1,
+                allowCommenting: 1,
+                allowKeepingBrowsingHistory: 1,
+                allowVisitingFollowedMembers: 1,
+                allowVisitingSavedPosts: 1,
+                hidePostsAndCommentsOfBlockedMember: 1,
+            }
+        });
 
+        if (null === memberComprehensiveQueryResult) {
+            throw new Error(`Attempt to GET member statistics but have no document (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
+        }
 
+        const { status: memberStatus } = memberComprehensiveQueryResult;
+        if (0 > memberStatus) {
+            res.status(403).send('Method not allowed due to member suspended or deactivated');
+            await atlasDbClient.close();
+            return;
+        }
+
+        res.status(200).send(memberComprehensiveQueryResult);
         await atlasDbClient.close();
         return;
     } catch (e: any) {
@@ -85,7 +100,7 @@ export default async function GetMemberInfoById(req: NextApiRequest, res: NextAp
         if (!res.headersSent) {
             response500(res, msg);
         }
-        logWithDate(msg, fname, e);
+        logWithDate(msg, fnn, e);
         await atlasDbClient.close();
         return;
     }
