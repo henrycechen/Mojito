@@ -17,7 +17,7 @@ const fnn = UpdateNickname.name;
 
 /** UpdateNickname v0.1.1
  * 
- * Last update: 16/02/2023
+ * Last update: 29/04/2023
  * 
  * This interface ONLY accepts PUT requests
  * 
@@ -89,13 +89,28 @@ export default async function UpdateNickname(req: NextApiRequest, res: NextApiRe
         //// Create Base64 string of alternative name ////
         const nameB64 = Buffer.from(alternativeName).toString('base64');
 
-        //// Look up record (of INicknameRegistry) in [RL] Registry ////
+        //// Look up record (of INicknameRegistry, existance check) in [RL] Registry ////
         const registryTableClient = AzureTableClient('Registry');
         const nicknameRegistryQuery = registryTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq 'nickname' and RowKey eq '${nameB64}' and IsActive eq true` } });
         const nicknameRegistryQueryResult = await nicknameRegistryQuery.next();
         if (!!nicknameRegistryQueryResult.value) {
-            res.status(422).send('Alternative name exceeds length limit or has been occupied');
+            res.status(422).send('Alternative name has been occupied');
             return;
+        }
+        
+        //// Look up record (of INicknameRegistry, deactivate the previous record if found) in [RL] Registry ////
+        const previousNicknameRegistryQuery = registryTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq 'nickname' and MemberId eq '${memberId}' and IsActive eq true` } });
+        const previousNicknameRegistryQueryResult = await previousNicknameRegistryQuery.next();
+        if (!!previousNicknameRegistryQueryResult.value) {
+            // Deactivate the previous nickname
+            const { rowKey, MemberId, Nickname } = previousNicknameRegistryQueryResult.value;
+            await registryTableClient.updateEntity<INicknameRegistry>({
+                partitionKey: 'nickname',
+                rowKey,
+                MemberId,
+                Nickname,
+                IsActive: false
+            }, 'Merge');
         }
 
         //// Upsert record (of INicknameRegistry) in [RL] Registry ////

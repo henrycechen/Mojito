@@ -16,7 +16,7 @@ const fnn = GetConciseMemberStatisticsById.name;
 
 /** GetMemberStatisticsById v0.1.2 FIXME: test mode
  * 
- * Last update: 28/04/2023
+ * Last update: 29/04/2023
  * 
  * This interface ONLY accepts GET requests
  * 
@@ -31,14 +31,6 @@ export default async function GetConciseMemberStatisticsById(req: NextApiRequest
         response405(req, res);
         return;
     }
-
-    // //// Verify identity ////
-    // const token = await getToken({ req });
-    // if (!(token && token?.sub)) {
-    //     res.status(400).send('Invalid identity');
-    //     return;
-    // }
-    // const { sub: memberId } = token;
 
     //// Verify id ////
     const { isValid, category, id: memberId } = verifyId(req.query?.memberId);
@@ -57,7 +49,7 @@ export default async function GetConciseMemberStatisticsById(req: NextApiRequest
         const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne({ memberId }, { projection: { _id: 0, status: 1 } });
         
         if (null === memberComprehensiveQueryResult) {
-            throw new Error(`${fnn}: Member attempt to GET member statistics but have no document (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
+            throw new Error(`Attempt to GET member statistics but have no document (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
         }
 
         const { status: memberStatus } = memberComprehensiveQueryResult;
@@ -76,7 +68,7 @@ export default async function GetConciseMemberStatisticsById(req: NextApiRequest
             totalCreationSavedCount: 0,
         };
 
-        const memberStatisticsCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberStatistics>('member');
+        const memberStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IMemberStatistics>('member');
         const memberStatisticsQueryResult = await memberStatisticsCollectionClient.findOne({ memberId }, {
             projection: {
                 _id: 0,

@@ -50,6 +50,7 @@ export function fakeRestrictedMemberInfo(): IRestrictedMemberComprehensive {
         providerId: '',
         registeredTimeBySecond: 1676332800, // Date Tue Feb 14 2023 13:00:00 GMT+1300 (New Zealand Daylight Time)
         verifiedTimeBySecond: 1676332900,
+        emailAddress: '',
 
         nickname: '',
         briefIntro: '',

@@ -492,7 +492,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
     //////// STATES - memberInfo ////////
     const [memberInfoStates, setMemberInfoStates] = React.useState<TMemberInfoStates>({
-        avatarImageUrl: provideAvatarImageUrl(authorId, domain),
+        avatarImageUrl: provideAvatarImageUrl(authorId, domain, true),
         nickname: memberComprehensive_ss.nickname,
         briefIntro: memberComprehensive_ss.briefIntro,
         gender: memberComprehensive_ss.gender,
@@ -739,8 +739,6 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
     //////////////////////////////////////// INFO EDITOR ////////////////////////////////////////
 
-
-
     type TAuthorInfoSettingStates = {
         alternativeImageUrl: string;
         alternativeName: string;
@@ -761,7 +759,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
         invalidName: false,
         alternativeIntro: memberInfoStates.briefIntro,
         invalidIntro: false,
-        displayEditor: true,
+        displayEditor: false,
         disableButton: true,
         displayAlert: false,
         alertContent: '',
@@ -948,7 +946,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                         // Succeed
                         setMemberInfoStates({
                             ...memberInfoStates,
-                            avatarImageUrl: provideAvatarImageUrl(authorId, domain, true)
+                            avatarImageUrl: authorInfoSettingStates.alternativeImageUrl
                         });
                     })
                     .catch((e: AxiosError) => {
@@ -970,7 +968,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
         // #2 if update nickname
         if (memberInfoStates.nickname !== authorInfoSettingStates.alternativeName) {
-            
+
             if (!('' !== authorInfoSettingStates.alternativeName && authorInfoSettingStates.alternativeName.trim().length !== 0)) {
                 setAuthorInfoSettingStates({
                     ...authorInfoSettingStates,
@@ -1198,7 +1196,6 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                                 {0 !== memberStatistics_ss.totalFollowedByCount && 0 !== memberStatistics_ss.totalFollowedByCount && <>
                                     <Typography fontSize={{ md: 17 }} fontWeight={700} color={'grey.700'} >{memberStatistics_ss.totalFollowedByCount}</Typography>
                                     <Typography fontSize={{ md: 17 }} color={'text.disabled'}>{langConfigs.authorsTotalSavesP2[preferenceStates.lang]}</Typography>
-
                                 </>}
                             </>}
 
@@ -1471,7 +1468,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                                 onClick={async () => { await executeUpdate(); }}
                             >
                                 {!authorInfoSettingStates.displayProgress && langConfigs.update[preferenceStates.lang]}
-                                {authorInfoSettingStates.displayProgress && <CircularProgress size={24} color='inherit'/>}
+                                {authorInfoSettingStates.displayProgress && <CircularProgress size={24} color='inherit' />}
                             </Button>
 
                         </Grid>
