@@ -72,6 +72,7 @@ type THomePageProps = {
 };
 
 interface IHomePageProcessStates {
+    viewerId: string;
     selectedChannelId: string;
     selectedHotPosts: boolean;
     memorizeChannelBarPositionX: number | undefined;
@@ -173,7 +174,7 @@ export async function getServerSideProps(context: NextPageContext): Promise<{ pr
 
     const resp = await fetch(`${domain}/api/channel/info/dictionary`);
     console.log(resp.status);
-    
+
     try {
         if (200 !== resp.status) {
             throw new Error();
@@ -206,11 +207,10 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
     const { data: session, status } = useSession();
     // status - 'unauthenticated' / 'authenticated'
 
-    let viewerId = '';
     React.useEffect(() => {
         if ('authenticated' === status) {
             const authorSession: any = { ...session };
-            viewerId = authorSession?.user?.id;
+            setProcessStates({ ...processStates, viewerId: authorSession?.user?.id });
             restorePreferenceStatesFromCache(setPreferenceStates);
         }
     }, [session]);
@@ -228,6 +228,7 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
 
     //////// STATES - process ////////
     const [processStates, setProcessStates] = React.useState<IHomePageProcessStates>({
+        viewerId: '',
         selectedChannelId: '',
         selectedHotPosts: false,
         memorizeChannelBarPositionX: undefined,
@@ -483,10 +484,10 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
 
     return (
         <>
-            <Navbar lang={preferenceStates.lang}/>
+            <Navbar lang={preferenceStates.lang} />
             <Grid container>
 
-                {/* //// placeholder - left //// */}
+                {/* //// placeholder //// */}
                 <Grid item xs={0} sm={0} md={0} lg={0} xl={2}></Grid>
 
                 {/* //// left column //// */}
@@ -601,14 +602,14 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
                             {/* posts */}
                             {0 !== masonryPostInfoArr.length && masonryPostInfoArr.map(p => {
                                 return (
-                                    <Paper key={p.postId} id={p.postId} sx={{ maxWidth: 300, '&:hover': { cursor: 'pointer' } }} >
+                                    <Paper key={p.postId} id={p.postId} sx={{ maxWidth: 400, '&:hover': { cursor: 'pointer' } }} >
                                         <Stack>
                                             {/* image */}
                                             <Box
                                                 component={'img'}
                                                 src={p.imageUrlsArr[0]} // FIXME:FIXME:FIXME:FIXME:FIXME:FIXME:FIXME:FIXME:FIXME:FIXME:FIXME:FIXME:FIXME:
                                                 // src={provideCoverImageUrl(post.postId, domain)} FIXME:FIXME:FIXME:FIXME:FIXME:FIXME:
-                                                sx={{ maxWidth: { xs: width / 2, sm: 300 }, height: 'auto', borderTopLeftRadius: 4, borderTopRightRadius: 4 }}
+                                                sx={{ maxWidth: { xs: width / 2, sm: 400 }, height: 'auto', borderTopLeftRadius: 4, borderTopRightRadius: 4 }}
                                                 onClick={handleClickOnPost(p.postId)}
                                             ></Box>
 
@@ -634,9 +635,10 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
                                                     </Grid>
 
                                                     {/* member behaviour / placeholder */}
-                                                    <Grid item >
+                                                    {/* FIXME:FIXME:FIXME:FIXME:FIXME:FIXME:FIXME:FIXME:FIXME: */}
+                                                    {processStates.viewerId !== popUpMenuStates.memberId && <Grid item >
                                                         <IconButton onClick={handleOpenPopUpMenu(p.memberId, p.nickname, p.postId)}><MoreVertIcon /></IconButton>
-                                                    </Grid>
+                                                    </Grid>}
                                                 </Grid>
                                             </Box>
                                         </Stack>
@@ -669,7 +671,7 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
                     <Stack spacing={1} sx={{ marginX: 1, display: { xs: 'none', sm: 'none', md: 'flex' } }} >
 
                         {/* topic trending */}
-                        <ResponsiveCard sx={{ padding: { lg: 3, xl: 2 } }} mt={2}>
+                        <ResponsiveCard sx={{ padding: { md: 3, lg: 4 } }} mt={2}>
 
                             {/* trending title */}
                             <Typography>{langConfigs.tredingTopics[preferenceStates.lang]}</Typography>
@@ -701,7 +703,7 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
                         </ResponsiveCard>
 
                         {/* 24h trend */}
-                        <ResponsiveCard sx={{ padding: { lg: 3, xl: 2 } }} mt={2}>
+                        <ResponsiveCard sx={{ padding: { md: 3, lg: 4 } }} mt={2}>
 
                             {/* trending title */}
                             <Typography>{langConfigs.todaysTrendingPosts[preferenceStates.lang]}</Typography>
@@ -709,7 +711,7 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
 
                                 {/* posts */}
                                 {0 !== rightColumnStates.todaysTrendPostInfoArr.length && rightColumnStates.todaysTrendPostInfoArr.map(p =>
-                                    <TextButton key={getRandomHexStr()} sx={{ color: 'inherit', display: 'flex', flexDirection: 'row', justifyContent: 'flex-start' }}>
+                                    <TextButton key={getRandomHexStr()} sx={{ color: 'inherit', display: 'flex', flexDirection: 'row', justifyContent: 'space-between' }}>
 
                                         {/* title & statistics */}
                                         <Box pr={1}>
@@ -739,7 +741,7 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
                         </ResponsiveCard>
 
                         {/* 7d trend */}
-                        <ResponsiveCard sx={{ padding: { lg: 3, xl: 2 } }} mt={2}>
+                        <ResponsiveCard sx={{ padding: { md: 3, lg: 4 } }} mt={2}>
 
                             {/* trending title */}
                             <Typography>{langConfigs.thisWeeksTrendingPosts[preferenceStates.lang]}</Typography>
@@ -747,7 +749,7 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
 
                                 {/* posts */}
                                 {0 !== rightColumnStates.weeksTrendPostInfoArr.length && rightColumnStates.weeksTrendPostInfoArr.map(p =>
-                                    <TextButton key={getRandomHexStr()} sx={{ color: 'inherit', display: 'flex', flexDirection: 'row', justifyContent: 'flex-start' }}>
+                                    <TextButton key={getRandomHexStr()} sx={{ color: 'inherit', display: 'flex', flexDirection: 'row', justifyContent: 'space-between' }}>
 
                                         {/* title & statistics */}
                                         <Box pr={1}>
@@ -779,7 +781,7 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
                     </Stack>
                 </Grid>
 
-                {/* //// placeholder - right //// */}
+                {/* //// placeholder //// */}
                 <Grid item xs={0} sm={0} md={0} lg={0} xl={1}></Grid>
             </Grid>
 
@@ -799,14 +801,14 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
                 MenuListProps={{}}
             >
                 {/* block (identity required) */}
-                {('authenticated' === status && viewerId !== popUpMenuStates.memberId) &&
+                {('authenticated' === status && processStates.viewerId !== popUpMenuStates.memberId) &&
                     <MenuItem onClick={async () => { await handleBlock(); }}>
                         <ListItemIcon><BlockIcon fontSize='small' /></ListItemIcon>
                         <ListItemText><Typography variant={'body2'}>{langConfigs.block[preferenceStates.lang](popUpMenuStates.nickname)}</Typography></ListItemText>
                     </MenuItem>}
 
                 {/* report */}
-                {viewerId !== popUpMenuStates.memberId &&
+                {processStates.viewerId !== popUpMenuStates.memberId &&
                     <MenuItem onClick={handleReport}>
                         <ListItemIcon><FlagIcon fontSize='small' /></ListItemIcon>
                         <ListItemText><Typography variant={'body2'}>{langConfigs.report[preferenceStates.lang]}</Typography></ListItemText>
