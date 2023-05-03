@@ -112,7 +112,7 @@ const langConfigs: LangConfigs = {
     },
     totalCreationsCount: {
         tw: '創作',
-        cn: '发帖',
+        cn: '创作',
         en: 'Creations'
     },
     totalFollowedByCount: {
@@ -142,12 +142,12 @@ const langConfigs: LangConfigs = {
     },
     todaysTrendingPosts: {
         tw: '今日熱門',
-        cn: '当日热帖',
+        cn: '今日热门',
         en: 'Trending posts today'
     },
     thisWeeksTrendingPosts: {
         tw: '本周熱門',
-        cn: '本周热帖',
+        cn: '本周热门',
         en: 'Trending posts this week'
     },
     totalHitCount: {
@@ -483,7 +483,7 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
 
     return (
         <>
-            <Navbar />
+            <Navbar lang={preferenceStates.lang}/>
             <Grid container>
 
                 {/* //// placeholder - left //// */}

@@ -72,8 +72,7 @@ const langConfigs: LangConfigs = {
             '3. 禁止垃圾郵件或自我推銷：不允許向社區發送不相關的內容或過度的自我推銷。 用戶應保持他們的貢獻與手頭的主題相關，未經許可不得張貼鏈接或廣告。',
             '4. 版權合規：所有用戶必須尊重他人的知識產權。 未經許可不得發布受版權保護的材料，我們保留刪除任何侵權內容的權利。',
             '5. 內容責任：用戶對其發布的內容負全部責任，並且必須確保其符合所有適用的法律法規。 我們保留刪除任何非法、攻擊性或違反這些準則的內容的權利。',
-            '6. 匿名發帖：本社區不允許匿名發帖。 用戶必須使用真實姓名並提供有關自己的準確信息。',
-            '7. 舉報違規行為：如果您遇到違反這些準則的文章或評論，請向社區管理員舉報，以便他們採取適當的措施。',
+            '6. 舉報違規行為：如果您遇到違反這些準則的文章或評論，請向社區管理員舉報，以便他們採取適當的措施。',
             '參與此社區即表示您同意遵守這些準則。 如果您違反這些準則，您的帳戶可能會被暫停或終止。',
             '請記得讓我們的社區成為一個友好和尊重的地方，讓每個人都能參與和享受。',
         ],
@@ -83,8 +82,7 @@ const langConfigs: LangConfigs = {
             '3. 禁止垃圾邮件或自我推销：不允许向社区发送不相关的内容或过度的自我推销。 用户应保持他们的贡献与手头的主题相关，未经许可不得张贴链接或广告。',
             '4. 版权合规：所有用户必须尊重他人的知识产权。 未经许可不得发布受版权保护的材料，我们保留删除任何侵权内容的权利。',
             '5. 内容责任：用户对其发布的内容负全部责任，并且必须确保其符合所有适用的法律法规。 我们保留删除任何非法、攻击性或违反这些准则的内容的权利。',
-            '6. 匿名发帖：本社区不允许匿名发帖。 用户必须使用真实姓名并提供有关自己的准确信息。',
-            '7. 举报违规行为：如果您遇到违反这些准则的文章或评论，请向社区管理员举报，以便他们采取适当的措施。',
+            '6. 举报违规行为：如果您遇到违反这些准则的文章或评论，请向社区管理员举报，以便他们采取适当的措施。',
             '参与此社区即表示您同意遵守这些准则。 如果您违反这些准则，您的帐户可能会被暂停或终止。',
             '请记得让我们的社区成为一个友好和尊重的地方，让每个人都能参与和享受。',
         ],
@@ -94,8 +92,7 @@ const langConfigs: LangConfigs = {
             '3. No spamming or self-promotion: Spamming the community with irrelevant content or excessive self-promotion is not permitted. Members should keep their contributions relevant to the topic at hand and refrain from posting links or advertisements without permission.',
             '4. Copyright compliance: All members must respect the intellectual property rights of others. Posting copyrighted material without permission is not allowed, and we reserve the right to remove any infringing content.',
             '5. Responsibility for content: Members are solely responsible for the content they post and must ensure that it complies with all applicable laws and regulations. We reserve the right to remove any content that is illegal, offensive, or violates these guidelines.',
-            '6. Anonymous posting: Anonymous posting is not allowed on this community. Members must use their real names and provide accurate information about themselves.',
-            '7. Reporting violations: If you encounter a post or comment that violates these guidelines, please report it to the moderators so that they can take appropriate action.',
+            '6. Reporting violations: If you encounter a post or comment that violates these guidelines, please report it to the moderators so that they can take appropriate action.',
             'By participating in this community, you agree to abide by these guidelines. If you violate these guidelines, your account may be suspended or terminated.',
             'Please remember to keep our community a friendly and respectful place for everyone to participate and enjoy.',
         ],
@@ -236,7 +233,7 @@ export default function CommunityGidelines() {
 
     return (
         <>
-            <Navbar />
+            <Navbar lang={processStates.lang}/>
             <Container sx={{ minHeight: 600 }}>
                 <Grid container>
                     <Grid item md={1}></Grid>

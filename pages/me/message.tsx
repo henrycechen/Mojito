@@ -190,7 +190,9 @@ const Message = () => {
     //////////////////////////////////////// JSX COMPONENT ////////////////////////////////////////
     return (
         <ThemeProvider theme={theme}>
-            <Navbar />
+
+            <Navbar lang={preferenceStates.lang}/>
+            
             <Grid container mt={{ xs: 1, sm: 10 }}>
 
                 {/* left column (placeholder) */}

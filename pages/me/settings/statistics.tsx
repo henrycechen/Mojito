@@ -17,23 +17,20 @@ import TableBody from '@mui/material/TableBody';
 
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 
-import { createTheme, responsiveFontSizes, ThemeProvider } from '@mui/material/styles';
-
-import { LangConfigs, TPreferenceStates } from '../../../lib/types';
-import { restoreFromLocalStorage } from '../../../lib/utils/general';
-import { provideAvatarImageUrl, } from '../../../lib/utils/for/member';
-import { ResponsiveCard } from '../../../ui/Styled';
-
 import Navbar from '../../../ui/Navbar';
 import Copyright from '../../../ui/Copyright';
 import Terms from '../../../ui/Terms';
 
+import { LangConfigs, TPreferenceStates } from '../../../lib/types';
+import { restoreFromLocalStorage } from '../../../lib/utils/general';
+import { ResponsiveCard } from '../../../ui/Styled';
+
 const storageName0 = 'PreferenceStates';
 const restorePreferenceStatesFromCache = restoreFromLocalStorage(storageName0);
 
-const domain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? '';
 const defaultLang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
+
     alertContent: {
         tw: '出錯了，刷新頁面以重新獲取數據',
         cn: '出错了，刷新页面以重新获取数据',
@@ -57,7 +54,7 @@ const langConfigs: LangConfigs = {
     emailAddress: {
         tw: '郵件地址',
         cn: '电子邮箱',
-        en: 'Email'
+        en: 'Email address'
     },
     registeredDate: {
         tw: '注冊日期',
@@ -114,6 +111,7 @@ const langConfigs: LangConfigs = {
         cn: '粉丝',
         en: 'Followers'
     },
+
 };
 
 const MemberInfoAndStatistics = () => {
@@ -121,13 +119,10 @@ const MemberInfoAndStatistics = () => {
     const router = useRouter();
     const { data: session } = useSession({ required: true, onUnauthenticated() { signIn(); } });
 
-    let memberId = '';
-
     React.useEffect(() => {
         const viewerSession: any = { ...session };
-        memberId = viewerSession?.user?.id;
+        setMemberInfoStates({ ...memberInfoStates, memberId: viewerSession?.user?.id });
         restorePreferenceStatesFromCache(setPreferenceStates);
-
     }, [session]);
 
     //////// STATES - preference ////////
@@ -147,11 +142,8 @@ const MemberInfoAndStatistics = () => {
 
     type TMemberInfoStates = {
         memberId: string;
-        avatarImageUrl: string;
         nickname: string;
-        // registeredTimeBySecond: number;
         registeredTime: string;
-        // verifiedTimeBySecond: number;
         verifiedTime: string;
         emailAddress: string;
         status: number;
@@ -160,11 +152,8 @@ const MemberInfoAndStatistics = () => {
     //////// STATES - memberInfo ////////
     const [memberInfoStates, setMemberInfoStates] = React.useState<TMemberInfoStates>({
         memberId: '',
-        avatarImageUrl: provideAvatarImageUrl(memberId, domain),
         nickname: '',
-        // registeredTimeBySecond: 0,
         registeredTime: '',
-        // verifiedTimeBySecond: 0,
         verifiedTime: '',
         emailAddress: '',
         status: 0,
@@ -187,14 +176,15 @@ const MemberInfoAndStatistics = () => {
         totalCreationLikedCount: 0,
     });
 
-    //////// Init states ////////
     React.useEffect(() => {
-        fetchMemberInfoAsync();
-        getMemberStatisticsAsync();
-    }, []);
+        if (undefined !== memberInfoStates.memberId && '' !== memberInfoStates.memberId) {
+            fetchMemberInfoAsync();
+            getMemberStatisticsAsync();
+        }
+    }, [memberInfoStates.memberId]);
 
     const fetchMemberInfoAsync = async () => {
-        const resp = await fetch(`/api/member/info/${memberId}`);
+        const resp = await fetch(`/api/member/info/${memberInfoStates.memberId}`);
         try {
             if (200 !== resp.status) {
                 // error handling
@@ -204,9 +194,7 @@ const MemberInfoAndStatistics = () => {
             setMemberInfoStates({
                 ...memberInfoStates,
                 memberId: info.memberId,
-                // registeredTimeBySecond: info.registeredTimeBySecond,
                 registeredTime: new Date(info.registeredTimeBySecond * 1000).toLocaleDateString(),
-                // verifiedTimeBySecond: info.verifiedTimeBySecond,
                 verifiedTime: new Date(info.verifiedTimeBySecond * 1000).toLocaleDateString(),
                 emailAddress: info.emailAddress,
                 status: info.status,
@@ -220,7 +208,7 @@ const MemberInfoAndStatistics = () => {
 
     const getMemberStatisticsAsync = async () => {
         try {
-            const resp = await fetch(`/api/member/statistics/${memberId}`);
+            const resp = await fetch(`/api/member/statistics/${memberInfoStates.memberId}`);
             if (200 !== resp.status) {
                 throw new Error(`Bad fetch response`);
             }
@@ -245,16 +233,16 @@ const MemberInfoAndStatistics = () => {
 
     return (
         <>
-            <Navbar avatarImageUrl={memberInfoStates.avatarImageUrl} />
+            <Navbar lang={preferenceStates.lang} />
 
-            {/* <SettingLayout /> */}
             <Grid container mt={{ xs: 1, sm: 10 }}>
                 {/* placeholder */}
-                <Grid item xs={0} sm={2} md={3} lg={3}></Grid>
+                <Grid item xs={0} sm={2} md={3} lg={3} xl={4}></Grid>
 
                 {/* middle column */}
-                <Grid item xs={12} sm={8} md={6} lg={6}>
-                    <ResponsiveCard sx={{ pt: { xs: 0, sm: 2 }, minHeight: 500 }}>
+                <Grid item xs={12} sm={8} md={6} lg={6} xl={4}>
+                <ResponsiveCard sx={{ p: { xs: 1, sm: 2, md: 4,}, minHeight: { xs: 0, sm: 500 } }}>
+
 
                         {/* 'backward' button */}
                         <Box>
@@ -363,10 +351,8 @@ const MemberInfoAndStatistics = () => {
                     </ResponsiveCard>
                 </Grid>
 
-
-
                 {/* placeholder */}
-                <Grid item xs={0} sm={2} md={3} lg={3}></Grid>
+                <Grid item xs={0} sm={2} md={3} lg={3} xl={4}></Grid>
 
             </Grid>
 

@@ -1,116 +1,34 @@
 import * as React from 'react';
-import { NextPageContext } from 'next';
+import { signIn, signOut, useSession, } from 'next-auth/react';
+import { useRouter } from 'next/router';
 
-import Avatar from '@mui/material/Avatar';
+import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Grid from '@mui/material/Grid';
 import Stack from '@mui/material/Stack';
-import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 
-import { signIn, signOut, useSession, } from 'next-auth/react';
-
-import SvgIcon from '@mui/material/SvgIcon';
-
-import FormControl from '@mui/material/FormControl';
-import IconButton from '@mui/material/IconButton';
-import InputLabel from '@mui/material/InputLabel';
-
-import AlternateEmailIcon from '@mui/icons-material/AlternateEmail';
-import AccountCircleIcon from '@mui/icons-material/AccountCircle';
-import LabelIcon from '@mui/icons-material/Label';
-import LockIcon from '@mui/icons-material/Lock';
-import OpacityIcon from '@mui/icons-material/Opacity';
-import BubbleChartIcon from '@mui/icons-material/BubbleChart';
-import InterestsIcon from '@mui/icons-material/Interests';
-import ThumbUpIcon from '@mui/icons-material/ThumbUp';
-import ChatBubbleIcon from '@mui/icons-material/ChatBubble';
-import CreateIcon from '@mui/icons-material/Create';
-import StarIcon from '@mui/icons-material/Star';
-import DeleteIcon from '@mui/icons-material/Delete';
-import HistoryIcon from '@mui/icons-material/History';
-import CakeIcon from '@mui/icons-material/Cake';
-import InfoIcon from '@mui/icons-material/Info';
-import BlockIcon from '@mui/icons-material/Block';
-import CheckBoxIcon from '@mui/icons-material/CheckBox';
-import PhotoCamera from '@mui/icons-material/PhotoCamera';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
-
-import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
-import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
-
-import { Alert, Menu } from '@mui/material';
-
-
-import Accordion from '@mui/material/Accordion';
-import AccordionSummary from '@mui/material/AccordionSummary';
-import AccordionDetails from '@mui/material/AccordionDetails';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-
-import Masonry from '@mui/lab/Masonry';
-
-import dayjs, { Dayjs } from 'dayjs';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { MobileDatePicker } from '@mui/x-date-pickers/MobileDatePicker';
-
-import FormControlLabel from '@mui/material/FormControlLabel';
-import InputAdornment from '@mui/material/InputAdornment';
-import OutlinedInput from '@mui/material/OutlinedInput';
-import Paper from '@mui/material/Paper';
-import Select, { SelectChangeEvent } from '@mui/material/Select';
-
-import Divider from '@mui/material/Divider';
-import Container from '@mui/material/Container';
-import MenuList from '@mui/material/MenuList';
-import MenuItem from '@mui/material/MenuItem';
-import ListItemText from '@mui/material/ListItemText';
-import ListItemIcon from '@mui/material/ListItemIcon';
-
-
-import { useRouter } from 'next/router';
-
-import Navbar from '../../../ui/Navbar';
-
-import { IMemberInfo, IConciseMemberStatistics, IRestrictedMemberComprehensive } from '../../../lib/interfaces/member';
-import { IConcisePostComprehensive } from '../../../lib/interfaces/post';
-import { INoticeInfoWithMemberInfo } from '../../../lib/interfaces/notification';
-import { IChannelInfoStates, IChannelInfoDictionary } from '../../../lib/interfaces/channel';
-
-import { TBrowsingHelper, LangConfigs, TPreferenceStates } from '../../../lib/types';
-
-import { timeToString, getContentBrief, updateLocalStorage, provideLocalStorage, restoreFromLocalStorage, logWithDate } from '../../../lib/utils/general';
-import { verifyId, verifyNoticeId, verifyPassword } from '../../../lib/utils/verify';
-import { provideAvatarImageUrl, getNicknameBrief, fakeConciseMemberInfo, fakeConciseMemberStatistics, fakeRestrictedMemberInfo } from '../../../lib/utils/for/member';
-import { noticeIdToUrl, noticeInfoToString } from '../../../lib/utils/for/notification';
-
-import { CentralizedBox, ResponsiveCard, StyledSwitch, TextButton } from '../../../ui/Styled';
-
 import FormGroup from '@mui/material/FormGroup';
+import FormControlLabel from '@mui/material/FormControlLabel';
 import Switch from '@mui/material/Switch';
 import Checkbox from '@mui/material/Checkbox';
-import Link from '@mui/material/Link';
 
-import DoneIcon from '@mui/icons-material/Done';
+import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
+import CircularProgress from '@mui/material/CircularProgress';
 
-import axios, { AxiosError, AxiosResponse } from 'axios';
+
+import Navbar from '../../../ui/Navbar';
 import Copyright from '../../../ui/Copyright';
 import Terms from '../../../ui/Terms';
-import Table from '@mui/material/Table/Table';
-import TableHead from '@mui/material/TableHead';
-import TableRow from '@mui/material/TableRow';
-import TableCell from '@mui/material/TableCell';
 
-import { createTheme, responsiveFontSizes, styled, ThemeProvider } from '@mui/material/styles';
-import { provideCoverImageUrl } from '../../../lib/utils/for/post';
+import { LangConfigs, TPreferenceStates } from '../../../lib/types';
+import { restoreFromLocalStorage } from '../../../lib/utils/general';
+import { ResponsiveCard } from '../../../ui/Styled';
 
 const storageName0 = 'PreferenceStates';
-const updatePreferenceStatesCache = updateLocalStorage(storageName0);
 const restorePreferenceStatesFromCache = restoreFromLocalStorage(storageName0);
 
-const domain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? '';
 const defaultLang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
 
@@ -119,7 +37,6 @@ const langConfigs: LangConfigs = {
         cn: '出错了，刷新页面以重新获取数据',
         en: 'Something went wrong, refresh the page to refetch the data'
     },
-
     privacySettings: {
         tw: '設定',
         cn: '设置',
@@ -131,15 +48,26 @@ const langConfigs: LangConfigs = {
         en: 'Privacy'
     },
 
-    cancel: {
-        tw: '注銷',
-        cn: '注銷',
-        en: 'Confirm'
-    },
     update: {
         tw: '更新',
         cn: '更新',
         en: 'Update'
+    },
+    updateSucceeded: {
+        tw: '更新成功',
+        cn: '更新成功',
+        en: 'Success'
+    },
+    updateFailed: {
+        tw: '更新失敗，點擊以重試',
+        cn: '更新失敗，点击以重试',
+        en: 'Update failed, click to re-try'
+    },
+
+    cancel: {
+        tw: '注銷',
+        cn: '注銷',
+        en: 'Confirm'
     },
     cancelSucceeded: {
         tw: '注銷成功',
@@ -151,6 +79,7 @@ const langConfigs: LangConfigs = {
         cn: '注銷失败，点击以重试',
         en: 'Cancel membership failed, click to re-try',
     },
+
     allowVisitingFollowedMembers: {
         tw: '允許他人查看您的訂閲',
         cn: '允许他人查看您的订阅',
@@ -170,13 +99,11 @@ const langConfigs: LangConfigs = {
         tw: '保存您的瀏覽記錄',
         cn: '保存您的浏览记录',
         en: 'Save browsing history'
-
     },
     hidePostsAndCommentsOfBlockedMember: {
         tw: '隱藏屏蔽的用戶的作品和評論',
         cn: '隐藏屏蔽的用户的作品与评论',
         en: 'Hide posts and comments from blocked member'
-
     },
     wishToCancelMembership: {
         tw: '我希望注銷我的賬號',
@@ -185,31 +112,15 @@ const langConfigs: LangConfigs = {
     },
 };
 
-let theme = createTheme({
-    typography: {
-        body2: {
-            fontSize: 14, // Default font size
-            '@media (min-width:600px)': { // Font size when screen width is >= 600px
-                fontSize: 16,
-            },
-        }
-    }
-});
-
-theme = responsiveFontSizes(theme);
-
 const PravicySettings = () => {
 
     const router = useRouter();
     const { data: session } = useSession({ required: true, onUnauthenticated() { signIn(); } });
 
-    let memberId = '';
-
     React.useEffect(() => {
         const viewerSession: any = { ...session };
-        memberId = viewerSession?.user?.id;
+        setProcessStates({ ...processStates, memberId: viewerSession?.user?.id });
         restorePreferenceStatesFromCache(setPreferenceStates);
-
     }, [session]);
 
     //////// STATES - preference ////////
@@ -219,9 +130,11 @@ const PravicySettings = () => {
     });
 
     type TProcessStates = {
+        memberId: string;
         countdown: number;
         displayAlert: boolean;
         displayUpdateButton: boolean;
+        displayProgress: boolean;
         displayCancelButton: boolean;
         displayCountdown: boolean;
         disableButton: boolean;
@@ -230,9 +143,11 @@ const PravicySettings = () => {
 
     //////// STATES - process ////////
     const [processStates, setProcessStates] = React.useState<TProcessStates>({
+        memberId: '',
         countdown: 5,
         displayAlert: false,
         displayUpdateButton: false,
+        displayProgress: false,
         displayCancelButton: false,
         displayCountdown: false,
         disableButton: false,
@@ -247,7 +162,6 @@ const PravicySettings = () => {
     };
 
     //////// STATES - previous settings ////////
-
     const [previousPrivacySettingsStates, setPreviousSettingsStates] = React.useState<TPrivacySettingsStates>({
         allowKeepingBrowsingHistory: true,
         allowVisitingFollowedMembers: true,
@@ -257,11 +171,21 @@ const PravicySettings = () => {
 
     //////// Init states ////////
     React.useEffect(() => {
-        fetchPrivacySettings();
-    }, []);
+        if (undefined !== processStates.memberId && '' !== processStates.memberId) {
+            fetchPrivacySettings();
+        }
+    }, [processStates.memberId]);
+
+    //////// STATES - previous settings ////////
+    const [privacySettingsStates, setPrivacySettingsStates] = React.useState<TPrivacySettingsStates>({
+        allowKeepingBrowsingHistory: true,
+        allowVisitingFollowedMembers: true,
+        allowVisitingSavedPosts: true,
+        hidePostsAndCommentsOfBlockedMember: true,
+    });
 
     const fetchPrivacySettings = async () => {
-        const resp = await fetch(`/api/member/info/${memberId}`);
+        const resp = await fetch(`/api/member/info/${processStates.memberId}`);
         try {
             if (200 !== resp.status) {
                 // error handling
@@ -274,19 +198,17 @@ const PravicySettings = () => {
                 allowVisitingSavedPosts: info.allowVisitingSavedPosts,
                 hidePostsAndCommentsOfBlockedMember: info.hidePostsAndCommentsOfBlockedMember,
             });
+            setPrivacySettingsStates({
+                allowKeepingBrowsingHistory: info.allowKeepingBrowsingHistory,
+                allowVisitingFollowedMembers: info.allowVisitingFollowedMembers,
+                allowVisitingSavedPosts: info.allowVisitingSavedPosts,
+                hidePostsAndCommentsOfBlockedMember: info.hidePostsAndCommentsOfBlockedMember,
+            });
         } catch (e) {
             console.log(`Attempt to get member info (privacy settings). ${e}`);
             setProcessStates({ ...processStates, displayAlert: true });
         }
     };
-
-    //////// STATES - previous settings ////////
-    const [privacySettingsStates, setPrivacySettingsStates] = React.useState<TPrivacySettingsStates>({
-        allowKeepingBrowsingHistory: true,
-        allowVisitingFollowedMembers: true,
-        allowVisitingSavedPosts: true,
-        hidePostsAndCommentsOfBlockedMember: true,
-    });
 
     const handleToggle = (prop: keyof TPrivacySettingsStates) => (event: React.ChangeEvent<HTMLInputElement>) => {
         setPrivacySettingsStates({ ...privacySettingsStates, [prop]: !privacySettingsStates[prop] });
@@ -328,8 +250,8 @@ const PravicySettings = () => {
         }
 
         // Prepare to update privacy setting
-        setProcessStates({ ...processStates, displayCancelButton: false, disableButton: true, progressStatus: 300 });
-        const resp = await fetch(`/api/member/info/${memberId}/privacysetting`, {
+        setProcessStates({ ...processStates, displayProgress: true, displayCancelButton: false, disableButton: true, progressStatus: 300 });
+        const resp = await fetch(`/api/member/info/${processStates.memberId}/privacysettings`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ settings: { ...privacySettingsStates } })
@@ -337,7 +259,7 @@ const PravicySettings = () => {
 
         if (200 === resp.status) {
             setPreviousSettingsStates({ ...privacySettingsStates });
-            setProcessStates({ ...processStates, displayCancelButton: false, disableButton: true, progressStatus: 200 });
+            setProcessStates({ ...processStates, displayProgress: false, displayCancelButton: false, disableButton: true, progressStatus: 200 });
             setTimeout(() => {
                 setProcessStates({ ...processStates, displayUpdateButton: false, progressStatus: 100 });
             }, 2000);
@@ -350,7 +272,7 @@ const PravicySettings = () => {
         if (processStates.countdown > 0) {
             setProcessStates({ ...processStates, countdown: processStates.countdown - 1, displayCountdown: true });
         } else {
-            const resp = await fetch(`/api/member/info/${memberId}/cancel`, { method: 'DELETE' });
+            const resp = await fetch(`/api/member/info/${processStates.memberId}/cancel`, { method: 'DELETE' });
             if (200 === resp.status) {
                 setProcessStates({ ...processStates, displayCountdown: false, progressStatus: 200 });
                 signOut();
@@ -365,18 +287,16 @@ const PravicySettings = () => {
     };
 
     return (
-        <ThemeProvider theme={theme}>
-            <Navbar avatarImageUrl={provideAvatarImageUrl(memberId, domain)} />
+        <>
+            <Navbar lang={preferenceStates.lang} />
 
-
-            {/* <SettingLayout /> */}
             <Grid container mt={{ xs: 1, sm: 10 }}>
                 {/* placeholder */}
-                <Grid item xs={0} sm={2} md={3} lg={3}></Grid>
+                <Grid item xs={0} sm={2} md={3} lg={3} xl={4}></Grid>
 
                 {/* middle column */}
-                <Grid item xs={12} sm={8} md={6} lg={6}>
-                    <ResponsiveCard sx={{ pt: { xs: 0, sm: 2 }, minHeight: 500 }}>
+                <Grid item xs={12} sm={8} md={6} lg={6} xl={4}>
+                    <ResponsiveCard sx={{ p: { xs: 1, sm: 2, md: 4, }, minHeight: { xs: 0, sm: 500 } }}>
 
                         {/* 'backward' button */}
                         <Box>
@@ -395,8 +315,8 @@ const PravicySettings = () => {
                             <FormGroup>
 
                                 {/* title - privacy */}
-                                <Typography variant={'body2'} mt={2}>{langConfigs.privacy[preferenceStates.lang]}</Typography>
-                                <Stack pl={{ xs: 0, sm: 2, md: 4 }}>
+                                <Typography variant={'body1'} py={1}>{langConfigs.privacy[preferenceStates.lang]}</Typography>
+                                <Stack pl={{ xs: 0, sm: 2, }}>
 
                                     {/* browsing history */}
                                     <FormControlLabel
@@ -423,7 +343,7 @@ const PravicySettings = () => {
                                         sx={{ fontSize: 14 }} />
 
                                     {/* 'update' button */}
-                                    {processStates.displayUpdateButton && <Box mt={1} pl={{ xs: 0, sm: 3, md: 2 }}>
+                                    {processStates.displayUpdateButton && <Box py={2}>
                                         <Button
                                             variant={'contained'}
                                             color={400 !== processStates.progressStatus ? 'primary' : 'error'}
@@ -432,26 +352,31 @@ const PravicySettings = () => {
                                             disabled={processStates.disableButton}
                                             fullWidth
                                         >
+
+                                            {processStates.displayProgress && <CircularProgress size={24} color='inherit' />}
                                             {/* button: enabled, result: 100 (ready) */}
-                                            {100 === processStates.progressStatus && <Typography variant={'body2'}>{langConfigs.update[preferenceStates.lang]}</Typography>}
+                                            {!processStates.displayProgress && 100 === processStates.progressStatus && <Typography variant={'body2'}>{langConfigs.update[preferenceStates.lang]}</Typography>}
                                             {/* button: disabled, result: 200 (succeeded) */}
-                                            {200 === processStates.progressStatus && <Typography variant={'body2'}>{langConfigs.updateSucceeded[preferenceStates.lang]}</Typography>}
-                                            {/* button: disabled, result: 300 (ongoing) */}
-                                            {300 === processStates.progressStatus && <Typography variant={'body2'}>{langConfigs.updatinging[preferenceStates.lang]}</Typography>}
+                                            {!processStates.displayProgress && 200 === processStates.progressStatus && <Typography variant={'body2'}>{langConfigs.updateSucceeded[preferenceStates.lang]}</Typography>}
                                             {/* button: enabled, result: 400 (failed) */}
-                                            {400 === processStates.progressStatus && <Typography variant={'body2'}>{langConfigs.updateFailed[preferenceStates.lang]}</Typography>}
+                                            {!processStates.displayProgress && 400 === processStates.progressStatus && <Typography variant={'body2'}>{langConfigs.updateFailed[preferenceStates.lang]}</Typography>}
                                         </Button>
                                     </Box>}
                                 </Stack>
 
+                                {/* blank space */}
+                                <Box py={1}></Box>
+
                                 {/* title - cancel membership */}
-                                <Typography variant={'body2'} sx={{ mt: 4 }}>{langConfigs.cancel[preferenceStates.lang]}</Typography>
+                                <Typography variant={'body1'} py={1}>{langConfigs.cancel[preferenceStates.lang]}</Typography>
+
+                                {/* cancel membership */}
                                 <Box pl={{ xs: 0, sm: 2, md: 4 }}>
                                     <FormControlLabel control={<Checkbox onChange={handleCheck} checked={processStates.displayCancelButton} />} label={langConfigs.wishToCancelMembership[preferenceStates.lang]} />
                                 </Box>
 
                                 {/* 'cancel' button */}
-                                {processStates.displayCancelButton && <Box mb={4} pl={{ xs: 0, sm: 3, md: 6 }}>
+                                {processStates.displayCancelButton && <Box mb={3} >
                                     <Button variant={'contained'} color={'error'} size={'small'} onClick={async () => { await handleCancel(); }} fullWidth>
                                         {(!processStates.displayCountdown && 100 === processStates.progressStatus) && <Typography variant={'body2'}>{langConfigs.cancel[preferenceStates.lang]}</Typography>}
                                         {(!processStates.displayCountdown && 200 === processStates.progressStatus) && <Typography variant={'body2'}>{langConfigs.cancelSucceeded[preferenceStates.lang]}</Typography>}
@@ -466,20 +391,15 @@ const PravicySettings = () => {
                     </ResponsiveCard>
                 </Grid>
 
-
-
                 {/* placeholder */}
-                <Grid item xs={0} sm={2} md={3} lg={3}></Grid>
+                <Grid item xs={0} sm={2} md={3} lg={3} xl={4}></Grid>
 
             </Grid>
-
-
-
 
             <Copyright sx={{ mt: 16 }} lang={preferenceStates.lang} />
             <Terms sx={{ mb: 8 }} lang={preferenceStates.lang} />
 
-        </ThemeProvider>
+        </>
     );
 };
 

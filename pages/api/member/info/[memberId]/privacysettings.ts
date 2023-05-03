@@ -3,20 +3,20 @@ import { getToken } from 'next-auth/jwt';
 import { RestError } from '@azure/storage-blob';
 import { MongoError } from 'mongodb';
 
-import { logWithDate, response405, response500, } from '../../../../../lib/utils/general';
-import { IMemberComprehensive } from '../../../../../lib/interfaces/member';
-import { INicknameRegistry } from '../../../../../lib/interfaces/registry';
-
 import AtlasDatabaseClient from '../../../../../modules/AtlasDatabaseClient';
 import AzureTableClient from '../../../../../modules/AzureTableClient';
-import { verifyId } from '../../../../../lib/utils/verify';
+
+import { IMemberComprehensive } from '../../../../../lib/interfaces/member';
 import { IMemberPostMapping } from '../../../../../lib/interfaces/mapping';
+import { response405, response500, logWithDate, } from '../../../../../lib/utils/general';
+import { getTimeBySecond } from '../../../../../lib/utils/create';
+import { verifyId } from '../../../../../lib/utils/verify';
 
-const fname = UpdatePrivacySettings.name;
+const fnn = UpdatePrivacySettings.name;
 
-/** UpdatePrivacySettings v0.1.1
+/** UpdatePrivacySettings v0.1.2
  * 
- * Last update: 19/02/2023
+ * Last update: 03/05/2023
  * 
  * This interface ONLY accepts PUT requests
  * 
@@ -99,10 +99,10 @@ export default async function UpdatePrivacySettings(req: NextApiRequest, res: Ne
                 hidePostsAndCommentsOfBlockedMember: settings.hidePostsAndCommentsOfBlockedMember,
                 lastSettingsUpdatedTimeBySecond: getTimeBySecond()
             }
-        })
+        });
 
         if (!memberComprehensiveUpdateResult.acknowledged) {
-            logWithDate(`Failed to update allowKeepingBrowsingHistory, allowVisitingSavedPosts, hidePostsAndCommentsOfBlockedMember, lastSettingUpdatedTimeBySecond (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`, fname);
+            logWithDate(`Failed to update allowKeepingBrowsingHistory, allowVisitingSavedPosts, hidePostsAndCommentsOfBlockedMember, lastSettingUpdatedTimeBySecond (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`, fnn);
             res.status(500).send(`Attempt to update privacy settings`);
             return;
         }
@@ -131,7 +131,7 @@ export default async function UpdatePrivacySettings(req: NextApiRequest, res: Ne
         if (!res.headersSent) {
             response500(res, msg);
         }
-        logWithDate(msg, fname, e);
+        logWithDate(msg, fnn, e);
         await atlasDbClient.close();
         return;
     }

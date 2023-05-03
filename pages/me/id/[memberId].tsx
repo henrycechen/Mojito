@@ -159,7 +159,7 @@ const langConfigs: LangConfigs = {
     noFollowing: {
         tw: '还没有會員關注作者',
         cn: '位会员正在关注作者',
-        en: 'members are following the author',
+        en: 'Author has no followers',
     },
     authorsTotalFollowing: {
         tw: '位會員正在關注作者',
@@ -167,19 +167,19 @@ const langConfigs: LangConfigs = {
         en: 'members are following the author',
     },
     noCreations: {
-        tw: '作者还未发布主题帖',
-        cn: '作者还未发布主题帖',
-        en: 'members are following the author',
+        tw: '作者还未曾發佈文章',
+        cn: '作者还未曾发布文章',
+        en: 'Author has not posted any articles',
     },
     authorsTotalCreationsP1: {
         tw: '作者发布了',
-        cn: '位会员正在关注作者',
-        en: 'members are following the author',
+        cn: '作者發佈了',
+        en: 'Author has posted ',
     },
     authorsTotalCreationsP2: {
-        tw: ' 篇主题帖',
-        cn: '',
-        en: 'members are following the author',
+        tw: '篇文章',
+        cn: '篇文章',
+        en: ' articles',
     },
     authorsTotalLikesP1: {
         tw: '获得了',
@@ -1117,7 +1117,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                 }}
             />
 
-            <Navbar avatarImageUrl={memberInfoStates.avatarImageUrl} />
+            <Navbar lang={preferenceStates.lang} />
 
             {/* //// first layer - member info //// */}
             <Grid container >

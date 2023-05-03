@@ -1,12 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { getToken } from 'next-auth/jwt';
 import { RestError } from '@azure/data-tables';
 import { MongoError } from 'mongodb';
 
-import AzureTableClient from '../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from "../../../../modules/AtlasDatabaseClient";
-
-
 
 import { IConciseMemberStatistics, IMemberComprehensive, IMemberStatistics } from '../../../../lib/interfaces/member';
 import { response405, response500, logWithDate } from '../../../../lib/utils/general';
@@ -14,7 +10,7 @@ import { verifyId } from '../../../../lib/utils/verify';
 
 const fnn = GetConciseMemberStatisticsById.name;
 
-/** GetMemberStatisticsById v0.1.2 FIXME: test mode
+/** GetMemberStatisticsById v0.1.2
  * 
  * Last update: 29/04/2023
  * 

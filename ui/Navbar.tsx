@@ -1,11 +1,15 @@
 import * as React from 'react';
+import { useRouter } from 'next/router';
+
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Container from '@mui/material/Container';
 import Divider from '@mui/material/Divider';
-import Avatar from '@mui/material/Avatar';
+
 import Toolbar from '@mui/material/Toolbar';
+
+import Avatar from '@mui/material/Avatar';
 import IconButton from '@mui/material/IconButton';
 import Link from '@mui/material/Link';
 import Menu from '@mui/material/Menu';
@@ -27,13 +31,17 @@ import useTheme from '@mui/material/styles/useTheme';
 
 import { useSession, signIn, signOut } from 'next-auth/react';
 import { LangConfigs } from '../lib/types';
-import { useRouter } from 'next/router';
 
 import { ColorModeContext } from './Theme';
 import { provideAvatarImageUrl } from '../lib/utils/for/member';
 
 const domain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? '';
 const langConfigs: LangConfigs = {
+    open: {
+        tw: '打開菜單',
+        cn: '打开菜单',
+        en: 'Open menu'
+    },
     signIn: {
         tw: '登入',
         cn: '登入',
@@ -67,44 +75,44 @@ const langConfigs: LangConfigs = {
 };
 
 type TNavBarProps = {
-    avatarImageUrl?: string;
     lang?: string;
+    forceUpdateImageCache?: boolean;
 };
 
 export default function NavBar(props: TNavBarProps) {
 
     const router = useRouter();
-
-    let lang = 'tw';
-    let viewerId = '';
-    let avatarImageUrl = '';
-
     const { data: session, status } = useSession();
-    if ('authenticated' === status) {
-        const viewerSession: any = { ...session };
-        viewerId = viewerSession?.user?.id;
-        const { avatarImageUrl: url, lang: preferredLang } = props;
-        if ('string' === typeof url) {
-            avatarImageUrl = url;
-        } else {
-            avatarImageUrl = provideAvatarImageUrl(viewerId, domain);
-        }
-        if ('string' === typeof preferredLang) {
-            lang = preferredLang;
-        }
-    }
 
-    const theme = useTheme();
-    const colorMode = React.useContext(ColorModeContext);
+    const lang = props.lang ?? 'tw';
 
-    const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
-    const handleOpenMemberMenu = (event: React.MouseEvent<HTMLElement>) => { setAnchorEl(event.currentTarget); };
-    const handleCloseMemberMenu = () => { setAnchorEl(null); };
+    type TProcessStates = {
+        memberId: string;
+        menuAnchorEl: null | HTMLElement;
+    };
+
+    const [processStates, setProcessStates] = React.useState<TProcessStates>({
+        memberId: '',
+        menuAnchorEl: null,
+    });
+
+    React.useEffect(() => {
+        if ('authenticated' === status) {
+            const viewerSession: any = { ...session };
+            setProcessStates({ ...processStates, memberId: viewerSession?.user?.id, });
+        }
+    }, [session]);
+
+
+    const handleOpenMemberMenu = (event: React.MouseEvent<HTMLElement>) => { setProcessStates({ ...processStates, menuAnchorEl: event.currentTarget }); };
+
+    const handleCloseMemberMenu = () => { setProcessStates({ ...processStates, menuAnchorEl: null }); };
+
     const handleClick = (actionIndex: number) => {
-        setAnchorEl(null);
+        setProcessStates({ ...processStates, menuAnchorEl: null });
         if (actionIndex === 0) { router.push('/me/createpost'); };
         if (actionIndex === 1) { router.push(`/me/message`); };
-        if (actionIndex === 2) { router.push(`/me/id/${viewerId}`); };
+        if (actionIndex === 2) { router.push(`/me/id/${processStates.memberId}`); };
         if (actionIndex === 3) { router.push(`/me/settings`); };
         if (actionIndex === 4) { signOut(); };
     };
@@ -114,37 +122,48 @@ export default function NavBar(props: TNavBarProps) {
         signIn();
     };
 
+    const colorMode = React.useContext(ColorModeContext);
+
     const handleColorModeSelect = () => {
         const preferredColorMode = colorMode.mode === 'dark' ? 'light' : 'dark';
         colorMode.setMode(preferredColorMode);
         document.cookie = `PreferredColorMode=${preferredColorMode}`;
     };
 
+    const theme = useTheme();
+
     return (
         <AppBar position='sticky'>
+
             <Container maxWidth={'xl'}>
+
                 <Toolbar disableGutters>
+
                     <Link href='/' mt={1}>
                         <Box component={'img'} src={`${domain}/logo${'dark' === theme.palette.mode ? '-dark' : ''}.png`} sx={{ height: '2.5rem' }} />
                     </Link>
+
                     <Box sx={{ flexGrow: 1 }}></Box>
-                    {'authenticated' !== status && !session && (
-                        <Button variant='contained' onClick={handleSignIn}>{langConfigs.signIn[lang]}</Button>
+
+                    {(!session || 'authenticated' !== status) && (
+                        <Button variant='contained' onClick={handleSignIn}>{langConfigs.signIn[props.lang ?? 'tw']}</Button>
                     )}
-                    {session && (
+
+                    {(session && 'authenticated' === status) && (
                         <Box sx={{ flexGrow: 0 }}>
-                            <Tooltip title="Open settings">
+                            <Tooltip title={langConfigs.open[lang]}>
                                 <IconButton onClick={handleOpenMemberMenu} sx={{ p: 0 }}>
-                                    <Avatar src={avatarImageUrl} />
+                                    <Avatar src={'' === processStates.memberId ? '' : provideAvatarImageUrl(processStates.memberId, domain, !!props.forceUpdateImageCache)} />
                                 </IconButton>
                             </Tooltip>
+
                             <Menu
                                 sx={{ mt: '45px' }}
-                                anchorEl={anchorEl}
+                                anchorEl={processStates.menuAnchorEl}
                                 anchorOrigin={{ vertical: 'top', horizontal: 'right', }}
                                 keepMounted
                                 transformOrigin={{ vertical: 'top', horizontal: 'right', }}
-                                open={Boolean(anchorEl)}
+                                open={Boolean(processStates.menuAnchorEl)}
                                 onClose={handleCloseMemberMenu}
                                 MenuListProps={{}}
                             >
@@ -152,23 +171,29 @@ export default function NavBar(props: TNavBarProps) {
                                     <ListItemIcon><CreateIcon /></ListItemIcon>
                                     <ListItemText>{langConfigs.create[lang]}</ListItemText>
                                 </MenuItem>
+
                                 <MenuItem onClick={() => handleClick(1)} >
                                     <ListItemIcon><EmailIcon /></ListItemIcon>
                                     <ListItemText>{langConfigs.message[lang]}</ListItemText>
                                 </MenuItem>
+
                                 <MenuItem onClick={() => handleClick(2)} >
                                     <ListItemIcon><AccountCircleIcon /></ListItemIcon>
                                     <ListItemText>{langConfigs.member[lang]}</ListItemText>
                                 </MenuItem>
+
                                 <MenuItem onClick={() => handleClick(3)} >
                                     <ListItemIcon><SettingsIcon /></ListItemIcon>
                                     <ListItemText>{langConfigs.settings[lang]}</ListItemText>
                                 </MenuItem>
-                                <MenuItem onClick={() => handleClick(3)} >
+
+                                <MenuItem onClick={() => handleClick(4)} >
                                     <ListItemIcon><ExitToAppIcon /></ListItemIcon>
                                     <ListItemText>{langConfigs.signOut[lang]}</ListItemText>
                                 </MenuItem>
+
                                 <Divider />
+
                                 <MenuItem onClick={handleColorModeSelect} >
                                     <ListItemIcon>
                                         {theme.palette.mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
@@ -180,8 +205,11 @@ export default function NavBar(props: TNavBarProps) {
                             </Menu>
                         </Box>
                     )}
+
                 </Toolbar>
+
             </Container>
+
         </AppBar>
     );
 }

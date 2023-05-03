@@ -15,28 +15,6 @@ import SvgIcon from '@mui/material/SvgIcon';
 
 import FormControl from '@mui/material/FormControl';
 import IconButton from '@mui/material/IconButton';
-import InputLabel from '@mui/material/InputLabel';
-
-import AlternateEmailIcon from '@mui/icons-material/AlternateEmail';
-import AccountCircleIcon from '@mui/icons-material/AccountCircle';
-import LabelIcon from '@mui/icons-material/Label';
-import LockIcon from '@mui/icons-material/Lock';
-import OpacityIcon from '@mui/icons-material/Opacity';
-import BubbleChartIcon from '@mui/icons-material/BubbleChart';
-import InterestsIcon from '@mui/icons-material/Interests';
-import ThumbUpIcon from '@mui/icons-material/ThumbUp';
-import ChatBubbleIcon from '@mui/icons-material/ChatBubble';
-import CreateIcon from '@mui/icons-material/Create';
-import StarIcon from '@mui/icons-material/Star';
-import DeleteIcon from '@mui/icons-material/Delete';
-import HistoryIcon from '@mui/icons-material/History';
-import CakeIcon from '@mui/icons-material/Cake';
-import InfoIcon from '@mui/icons-material/Info';
-import BlockIcon from '@mui/icons-material/Block';
-import CheckBoxIcon from '@mui/icons-material/CheckBox';
-import PhotoCamera from '@mui/icons-material/PhotoCamera';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
@@ -129,32 +107,15 @@ const langConfigs: LangConfigs = {
     },
 };
 
-let theme = createTheme({
-    typography: {
-        body2: {
-            fontSize: 14, // Default font size
-            '@media (min-width:600px)': { // Font size when screen width is >= 600px
-                fontSize: 16,
-            },
-        }
-    }
-});
-
-theme = responsiveFontSizes(theme);
-
-
 const Blacklist = () => {
 
     const router = useRouter();
     const { data: session } = useSession({ required: true, onUnauthenticated() { signIn(); } });
 
-    let memberId = '';
-
     React.useEffect(() => {
         const viewerSession: any = { ...session };
-        memberId = viewerSession?.user?.id;
+        setProcessStates({ ...processStates, memberId: viewerSession?.user?.id });
         restorePreferenceStatesFromCache(setPreferenceStates);
-
     }, [session]);
 
     //////// STATES - preference ////////
@@ -164,21 +125,27 @@ const Blacklist = () => {
     });
 
     type TProcessStates = {
+        memberId: string;
         displayAlert: boolean;
     };
 
     //////// STATES - process ////////
     const [processStates, setProcessStates] = React.useState<TProcessStates>({
+        memberId: '',
         displayAlert: false,
     });
 
     //////// STATES - blocked member info arr ////////
     const [blockedMemberInfoArr, setBlockedMemberInfoArr] = React.useState<IMemberInfo[]>([]);
 
-    React.useEffect(() => { getBlockedMemberInfoArray(); }, []);
+    React.useEffect(() => {
+        if (undefined !== processStates.memberId && '' !== processStates.memberId) {
+            getBlockedMemberInfoArray();
+        }
+    }, [processStates.memberId]);
 
     const getBlockedMemberInfoArray = async () => {
-        const resp = await fetch(`/api/member/blockedbyme/${memberId}`);
+        const resp = await fetch(`/api/member/blockedbyme/${processStates.memberId}`);
         try {
             if (200 !== resp.status) {
                 throw new Error(`Bad fetch response`);
@@ -217,17 +184,18 @@ const Blacklist = () => {
     };
 
     return (
-        <ThemeProvider theme={theme}>
-            <Navbar avatarImageUrl={provideAvatarImageUrl(memberId, domain)} />
+        <>
+            <Navbar lang={preferenceStates.lang} />
 
             {/* <SettingLayout /> */}
             <Grid container mt={{ xs: 1, sm: 10 }}>
                 {/* placeholder */}
-                <Grid item xs={0} sm={2} md={3} lg={3}></Grid>
+                <Grid item xs={0} sm={2} md={3} lg={3} xl={4}></Grid>
 
                 {/* middle column */}
-                <Grid item xs={12} sm={8} md={6} lg={6}>
-                    <ResponsiveCard sx={{ pt: { xs: 0, sm: 2 }, minHeight: 500 }}>
+                <Grid item xs={12} sm={8} md={6} lg={6} xl={4}>
+                    <ResponsiveCard sx={{ p: { xs: 1, sm: 2, md: 4, lg: 6 }, minHeight: { xs: 0, sm: 500 } }}>
+
 
                         {/* 'backward' button */}
                         <Box>
@@ -235,6 +203,7 @@ const Blacklist = () => {
                                 <ArrowBackIosIcon fontSize={'small'} sx={{ color: 'grey' }} />
                             </Button>
                         </Box>
+                        
                         {/* space */}
                         <Box pt={1}></Box>
 
@@ -282,20 +251,15 @@ const Blacklist = () => {
                     </ResponsiveCard>
                 </Grid>
 
-
-
                 {/* placeholder */}
-                <Grid item xs={0} sm={2} md={3} lg={3}></Grid>
+                <Grid item xs={0} sm={2} md={3} lg={3} xl={4}></Grid>
 
             </Grid>
-
-
-
 
             <Copyright sx={{ mt: 16 }} lang={preferenceStates.lang} />
             <Terms sx={{ mb: 8 }} lang={preferenceStates.lang} />
 
-        </ThemeProvider>
+        </>
     );
 };
 

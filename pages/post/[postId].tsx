@@ -98,8 +98,8 @@ const domain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? '';
 const defaultLang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
     title: {
-        tw: '撰寫新主題帖',
-        cn: '撰写新主题帖',
+        tw: '撰寫新文章',
+        cn: '撰写新文章',
         en: 'Create a new post'
     },
     editPost: {
@@ -1024,7 +1024,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
 
     return (
         <>
-            <Navbar />
+            <Navbar lang={preferenceStates.lang}/>
             {/* post component */}
             <Container disableGutters >
                 <Grid container >

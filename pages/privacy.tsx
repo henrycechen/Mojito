@@ -72,7 +72,7 @@ export default function PrivacyPolicy() {
 
     return (
         <>
-            <Navbar />
+            <Navbar lang={processStates.lang}/>
             <Container sx={{ minHeight: 600 }}>
                 <Grid container>
                     <Grid item md={1}></Grid>
