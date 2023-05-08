@@ -16,6 +16,7 @@ import TableCell from '@mui/material/TableCell';
 import TableBody from '@mui/material/TableBody';
 
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
+import CircularProgress from '@mui/material/CircularProgress';
 
 import Navbar from '../../../ui/Navbar';
 import Copyright from '../../../ui/Copyright';
@@ -117,13 +118,15 @@ const langConfigs: LangConfigs = {
 const MemberInfoAndStatistics = () => {
 
     const router = useRouter();
-    const { data: session } = useSession({ required: true, onUnauthenticated() { signIn(); } });
+    const { data: session, status } = useSession({ required: true, onUnauthenticated() { signIn(); } });
 
     React.useEffect(() => {
-        const viewerSession: any = { ...session };
-        setMemberInfoStates({ ...memberInfoStates, memberId: viewerSession?.user?.id });
-        restorePreferenceStatesFromCache(setPreferenceStates);
-    }, [session]);
+        if ('authenticated' === status) {
+            const viewerSession: any = { ...session };
+            setMemberInfoStates({ ...memberInfoStates, memberId: viewerSession?.user?.id ?? '' });
+            restorePreferenceStatesFromCache(setPreferenceStates);
+        }
+    }, [status]);
 
     //////// STATES - preference ////////
     const [preferenceStates, setPreferenceStates] = React.useState<TPreferenceStates>({
@@ -133,11 +136,13 @@ const MemberInfoAndStatistics = () => {
 
     type TProcessStates = {
         displayAlert: boolean;
+        displayProgress: boolean;
     };
 
     //////// STATES - process ////////
     const [processStates, setProcessStates] = React.useState<TProcessStates>({
-        displayAlert: false
+        displayAlert: false,
+        displayProgress: true,
     });
 
     type TMemberInfoStates = {
@@ -149,7 +154,7 @@ const MemberInfoAndStatistics = () => {
         status: number;
     };
 
-    //////// STATES - memberInfo ////////
+    //////// STATES - info ////////
     const [memberInfoStates, setMemberInfoStates] = React.useState<TMemberInfoStates>({
         memberId: '',
         nickname: '',
@@ -167,7 +172,7 @@ const MemberInfoAndStatistics = () => {
         totalCreationLikedCount: number;
     };
 
-    //////// STATES - memberInfo ////////
+    //////// STATES - statistics ////////
     const [memberStatisticsStates, setMemberStatisticsStates] = React.useState<TMemberStatisticsStates>({
         totalCreationsCount: 0,
         totalCreationHitCount: 0,
@@ -177,9 +182,10 @@ const MemberInfoAndStatistics = () => {
     });
 
     React.useEffect(() => {
-        if (undefined !== memberInfoStates.memberId && '' !== memberInfoStates.memberId) {
+        if ('' !== memberInfoStates.memberId) {
             fetchMemberInfoAsync();
             getMemberStatisticsAsync();
+            setProcessStates({ ...processStates, displayProgress: false });
         }
     }, [memberInfoStates.memberId]);
 
@@ -241,13 +247,14 @@ const MemberInfoAndStatistics = () => {
 
                 {/* middle column */}
                 <Grid item xs={12} sm={8} md={6} lg={6} xl={4}>
-                <ResponsiveCard sx={{ p: { xs: 1, sm: 2, md: 4,}, minHeight: { xs: 0, sm: 500 } }}>
+                    <ResponsiveCard sx={{ p: { xs: 1, sm: 2, md: 4 }, minHeight: { xs: 0, sm: 500 } }}>
 
 
                         {/* 'backward' button */}
                         <Box>
                             <Button color='inherit' onClick={onBackwardClick}>
                                 <ArrowBackIosIcon fontSize={'small'} sx={{ color: 'grey' }} />
+                                {('authenticated' !== status || processStates.displayProgress) && <CircularProgress size={20} />}
                             </Button>
                         </Box>
 

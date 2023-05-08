@@ -274,7 +274,7 @@ export async function getServerSideProps(context: NextPageContext): Promise<{ pr
 
 const CreatePost = ({ restrictedPostComprehensive_ss, channelInfoDict_ss, redirect404, redirect500 }: TCreatePostPageProps) => {
     const router = useRouter();
-    const { data: session } = useSession({ required: true, onUnauthenticated() { signIn(); } });
+    const { data: session, status } = useSession({ required: true, onUnauthenticated() { signIn(); } });
 
     React.useEffect(() => {
         if (redirect404) {
@@ -289,14 +289,14 @@ const CreatePost = ({ restrictedPostComprehensive_ss, channelInfoDict_ss, redire
     }, [router]);
 
     //////// INFO - author ////////
-    let authorId = '';
     React.useEffect(() => {
-
-        const authorSession: any = { ...session };
-        authorId = authorSession?.user?.id;
-        restorePreferenceStatesFromCache(setPreferenceStates);
-        verifyPermissions(authorId);
-    }, [session]);
+        if ('authenticated' === status) {
+            const authorSession: any = { ...session };
+            verifyPermissions(authorSession?.user?.id ?? '');
+            setAuthorInfoStates({ ...authorInfoStates, memberId: authorSession?.user?.id ?? '' });
+            restorePreferenceStatesFromCache(setPreferenceStates);
+        }
+    }, [status]);
 
     const verifyPermissions = async (memberId: string) => {
         //// Verify post status ////
@@ -459,19 +459,21 @@ const CreatePost = ({ restrictedPostComprehensive_ss, channelInfoDict_ss, redire
     //////////////////////////////////////// MEMBER INFO ////////////////////////////////////////
 
     type TAuthorInfo = {
+        memberId: string,
         followedMemberInfoArr: IMemberInfo[];
     };
 
     //////// STATE - author info ////////
     const [authorInfoStates, setAuthorInfoStates] = React.useState<TAuthorInfo>({
+        memberId: '',
         followedMemberInfoArr: []
     });
 
-    React.useEffect(() => { updateAuthorInfoStates(); }, []);
+    React.useEffect(() => { if ('' === authorInfoStates.memberId) { updateAuthorInfoStates(); } }, [authorInfoStates.memberId]);
 
     const updateAuthorInfoStates = async () => {
         // get followed member info
-        const resp = await fetch(`/api/member/followedbyme/${authorId}`);
+        const resp = await fetch(`/api/member/followedbyme/${authorInfoStates.memberId}`);
         if (200 === resp.status) {
             try {
                 const memberInfoArr = await resp.json();
@@ -480,10 +482,10 @@ const CreatePost = ({ restrictedPostComprehensive_ss, channelInfoDict_ss, redire
                     setProcessStates({ ...processStates, displayNoFollowedMemberAlert: true });
                 }
             } catch (e) {
-                console.log(`Attempt to parese followed member info array (JSON string) from response. ${e}`);
+                console.error(`Attempt to parese followed member info array (JSON string) from response of updateAuthorInfoStates request. ${e}`);
             }
         } else {
-            console.log(`Attempt to GET following restricted member info array.`);
+            console.error(`Attempt to GET following restricted member info array.`);
         }
     };
 
@@ -987,7 +989,7 @@ const CreatePost = ({ restrictedPostComprehensive_ss, channelInfoDict_ss, redire
     const handleDeletePost = async () => {
         await fetch(`/api/creation/id/${postInfoStates.postId}`, { method: 'DELETE' });
         // Jump to member info page (author's post layout)
-        router.push(`/me/id/${authorId}`);
+        router.push(`/me/id/${authorInfoStates.memberId}`);
     };
 
     const handleDeleteSaverOpen = () => {
@@ -999,7 +1001,7 @@ const CreatePost = ({ restrictedPostComprehensive_ss, channelInfoDict_ss, redire
 
     return (
         <>
-            <Navbar lang={preferenceStates.lang}/>
+            <Navbar lang={preferenceStates.lang} />
 
             {/* post editor */}
             <Box sx={{ display: 'flex', justifyContent: 'center' }}>

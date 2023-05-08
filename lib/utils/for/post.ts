@@ -1,15 +1,8 @@
-import type { NextApiRequest, NextApiResponse } from 'next';
-import { IAttitudeComprehensive, IAttitudeMapping } from '../../interfaces/attitude';
-import { IChannelInfo } from '../../interfaces/channel';
-import { ICommentComprehensive, IRestrictedCommentComprehensive } from '../../interfaces/comment';
-import { IMemberInfo, IConciseMemberStatistics } from '../../interfaces/member';
-import { INoticeInfoWithMemberInfo } from '../../interfaces/notification';
+import { IMemberInfo } from '../../interfaces/member';
 import { IEditedPostComprehensive, IPostComprehensive, IRestrictedPostComprehensive } from '../../interfaces/post';
-import { ITopicComprehensive, ITopicInfo } from '../../interfaces/topic';
-import { getRandomHexStr } from '../create';
-import { verifyNoticeId, verifyUrl } from '../verify';
-
-// Post
+import { ITopicInfo } from '../../interfaces/topic';
+import { getRandomHexStr, getTimeBySecond } from '../create';
+import { verifyUrl } from '../verify';
 
 export function contentToParagraphsArray(content: string): string[] {
     if ('' === content) {
@@ -109,7 +102,7 @@ export function providePostComprehensiveUpdate(title: string, hasImages: boolean
 
 export function provideEditedPostInfo(postComprehensive: IPostComprehensive): IEditedPostComprehensive {
     return {
-        editedTimeBySecond: new Date().getTime(),
+        editedTimeBySecond: getTimeBySecond(),
         titleBeforeEdit: postComprehensive.title,
         imageFullnamesArrBeforeEdit: [...postComprehensive.imageFullnamesArr],
         paragraphsArrBeforeEdit: [...postComprehensive.paragraphsArr],

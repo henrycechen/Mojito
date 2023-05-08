@@ -1,5 +1,6 @@
 import { ICommentComprehensive, IRestrictedCommentComprehensive } from '../../interfaces/comment';
 import { IMemberInfo } from '../../interfaces/member';
+import { getTimeBySecond } from '../create';
 
 /** Utils for Comment Class v0.1.1
  * 
@@ -27,7 +28,7 @@ export function createCommentComprehensive(commentId: string, parentId: string, 
         postId,
         memberId,
         nickname,
-        createdTimeBySecond: new Date().getTime(),
+        createdTimeBySecond: getTimeBySecond(),
         content, // required
         cuedMemberInfoArr: arr,
         status: 200,

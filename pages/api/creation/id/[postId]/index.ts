@@ -21,9 +21,7 @@ import { getNicknameFromToken } from '../../../../../lib/utils/for/member';
 
 const fname = UpdateOrDeleteCreationById.name;
 
-/** UpdateOrDeleteCreationById v0.1.1
- * 
- * Last update: 24/02/2023
+/** UpdateOrDeleteCreationById v0.1.2
  * 
  * This interface accepts PUT and DELETE requests
  * 
@@ -35,6 +33,8 @@ const fname = UpdateOrDeleteCreationById.name;
  * - token: JWT
  * - postId: string (query)
  * 
+ * Last update: 24/02/2023 v0.1.1
+ * Last update: 08/05/2023 v0.1.2 Fix issue communicating with atlas db
 */
 
 export default async function UpdateOrDeleteCreationById(req: NextApiRequest, res: NextApiResponse) {
@@ -272,18 +272,19 @@ export default async function UpdateOrDeleteCreationById(req: NextApiRequest, re
 
             // #2.2 delete invalid mapping (ITopicPostMapping) in [C] topicPostMapping
             const mappingQuery = topicPostMappingCollectionClient.find({ postId });
-            let mappingQureyResult = await mappingQuery.next();
-            while (null !== mappingQureyResult) {
-
-                const { topicId } = mappingQureyResult;
-                if (!topicIdsArr.includes(topicId)) {
-                    // Set mapping status to -1 (of ITopicPostMapping)
-                    topicPostMappingCollectionClient.updateOne({ topicId, postId }, { $set: { status: -1 } });
-                    // Accumulate post delete count (+1)
-                    topicComprehensiveCollectionClient.updateOne({ topicId }, { $inc: { totalPostDeleteCount: 1 } });
-                } else {
-                    // And collect topic ids that have connections with this post (topic-post mapping)
-                    topicIdsArr_dismissed.push(topicId);
+            while (await mappingQuery.hasNext()) {
+                let mappingQureyResult = await mappingQuery.next();
+                if (null !== mappingQureyResult && Object.keys(mappingQureyResult).length !== 0) {
+                    const { topicId } = mappingQureyResult;
+                    if (!topicIdsArr.includes(topicId)) {
+                        // Set mapping status to -1 (of ITopicPostMapping)
+                        topicPostMappingCollectionClient.updateOne({ topicId, postId }, { $set: { status: -1 } });
+                        // Accumulate post delete count (+1)
+                        topicComprehensiveCollectionClient.updateOne({ topicId }, { $inc: { totalPostDeleteCount: 1 } });
+                    } else {
+                        // And collect topic ids that have connections with this post (topic-post mapping)
+                        topicIdsArr_dismissed.push(topicId);
+                    }
                 }
             }
 
@@ -301,7 +302,7 @@ export default async function UpdateOrDeleteCreationById(req: NextApiRequest, re
                     // Update mapping
                     const topicPostMappingInsertResult = await topicPostMappingCollectionClient.updateOne({ topicId: t }, {
                         $set: {
-                            createdTimeBySecond: new Date().getTime(),
+                            createdTimeBySecond: getTimeBySecond(),
                         },
                         $setOnInsert: {
                             topicId: t.topicId,

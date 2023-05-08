@@ -1,129 +1,66 @@
 import * as React from 'react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/router';
 import { NextPageContext } from 'next';
 
 import Alert from '@mui/material/Alert';
 import Avatar from '@mui/material/Avatar';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import CircularProgress from '@mui/material/CircularProgress';
+import Divider from '@mui/material/Divider';
 import Grid from '@mui/material/Grid';
+import IconButton from '@mui/material/IconButton';
+import ListItemText from '@mui/material/ListItemText';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import MenuList from '@mui/material/MenuList';
+import MenuItem from '@mui/material/MenuItem';
+import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
+import SwipeableDrawer from '@mui/material/SwipeableDrawer';
 import TextField from '@mui/material/TextField';
+import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 
-import { signIn, signOut, useSession, } from 'next-auth/react';
-
 import SvgIcon from '@mui/material/SvgIcon';
-
-import FormControl from '@mui/material/FormControl';
-import IconButton from '@mui/material/IconButton';
-import InputLabel from '@mui/material/InputLabel';
-
-import AlternateEmailIcon from '@mui/icons-material/AlternateEmail';
-import AccountCircleIcon from '@mui/icons-material/AccountCircle';
-import LabelIcon from '@mui/icons-material/Label';
-import LockIcon from '@mui/icons-material/Lock';
-import OpacityIcon from '@mui/icons-material/Opacity';
 import BubbleChartIcon from '@mui/icons-material/BubbleChart';
-import InterestsIcon from '@mui/icons-material/Interests';
-import ThumbUpIcon from '@mui/icons-material/ThumbUp';
-import ChatBubbleIcon from '@mui/icons-material/ChatBubble';
 import CreateIcon from '@mui/icons-material/Create';
 import StarIcon from '@mui/icons-material/Star';
 import DeleteIcon from '@mui/icons-material/Delete';
 import HistoryIcon from '@mui/icons-material/History';
-import CakeIcon from '@mui/icons-material/Cake';
-import InfoIcon from '@mui/icons-material/Info';
-import BlockIcon from '@mui/icons-material/Block';
-import CheckBoxIcon from '@mui/icons-material/CheckBox';
 import PhotoCamera from '@mui/icons-material/PhotoCamera';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import EditIcon from '@mui/icons-material/Edit';
 
-import CircularProgress from '@mui/material/CircularProgress';
-
 import useTheme from '@mui/material/styles/useTheme';
-
+import { styled } from '@mui/material/styles';
+import grey from '@mui/material/colors/grey';
 
 import { Global } from '@emotion/react';
-import CssBaseline from '@mui/material/CssBaseline';
-import { grey } from '@mui/material/colors';
-import Skeleton from '@mui/material/Skeleton';
-import SwipeableDrawer from '@mui/material/SwipeableDrawer';
-
-
 import Masonry from '@mui/lab/Masonry';
+import axios, { AxiosError, AxiosResponse } from 'axios';
 
-import dayjs, { Dayjs } from 'dayjs';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { MobileDatePicker } from '@mui/x-date-pickers/MobileDatePicker';
-
-import FormControlLabel from '@mui/material/FormControlLabel';
-import InputAdornment from '@mui/material/InputAdornment';
-import OutlinedInput from '@mui/material/OutlinedInput';
-import Paper from '@mui/material/Paper';
-import Select, { SelectChangeEvent } from '@mui/material/Select';
-
-import Divider from '@mui/material/Divider';
-import Container from '@mui/material/Container';
-import MenuList from '@mui/material/MenuList';
-import MenuItem from '@mui/material/MenuItem';
-import ListItemText from '@mui/material/ListItemText';
-import ListItemIcon from '@mui/material/ListItemIcon';
-
-
-import { useRouter } from 'next/router';
-
-import Navbar from '../../../ui/Navbar';
-
-import { IMemberInfo, IConciseMemberStatistics, IRestrictedMemberComprehensive } from '../../../lib/interfaces/member';
+import { IConciseMemberStatistics, IRestrictedMemberComprehensive } from '../../../lib/interfaces/member';
 import { IConcisePostComprehensive } from '../../../lib/interfaces/post';
-import { INoticeInfoWithMemberInfo } from '../../../lib/interfaces/notification';
 import { IChannelInfoStates, IChannelInfoDictionary } from '../../../lib/interfaces/channel';
 
 import { TBrowsingHelper, LangConfigs, TPreferenceStates } from '../../../lib/types';
-
-import { timeToString, getContentBrief, updateLocalStorage, provideLocalStorage, restoreFromLocalStorage, logWithDate } from '../../../lib/utils/general';
-import { verifyId, verifyNoticeId, verifyPassword } from '../../../lib/utils/verify';
-import { provideAvatarImageUrl, getNicknameBrief, fakeConciseMemberInfo, fakeConciseMemberStatistics, fakeRestrictedMemberInfo } from '../../../lib/utils/for/member';
-import { noticeIdToUrl, noticeInfoToString } from '../../../lib/utils/for/notification';
-
-import { CentralizedBox, ResponsiveCard, StyledSwitch, TextButton } from '../../../ui/Styled';
-
-import FormGroup from '@mui/material/FormGroup';
-import Switch from '@mui/material/Switch';
-import Checkbox from '@mui/material/Checkbox';
-import Link from '@mui/material/Link';
-
-import DoneIcon from '@mui/icons-material/Done';
-
-import axios, { AxiosError, AxiosResponse } from 'axios';
-import Copyright from '../../../ui/Copyright';
-import Terms from '../../../ui/Terms';
-import Table from '@mui/material/Table/Table';
-import TableHead from '@mui/material/TableHead';
-import TableRow from '@mui/material/TableRow';
-import TableCell from '@mui/material/TableCell';
-
-import Tooltip from '@mui/material/Tooltip';
-
-
-import { createTheme, responsiveFontSizes, styled, ThemeProvider } from '@mui/material/styles';
+import { timeToString, updateLocalStorage, restoreFromLocalStorage, logWithDate } from '../../../lib/utils/general';
+import { verifyId } from '../../../lib/utils/verify';
+import { provideAvatarImageUrl, getNicknameBrief, fakeConciseMemberStatistics, fakeRestrictedMemberInfo } from '../../../lib/utils/for/member';
 import { provideCoverImageUrl } from '../../../lib/utils/for/post';
 import { getRandomHexStr } from '../../../lib/utils/create';
 
+import { CentralizedBox, ResponsiveCard } from '../../../ui/Styled';
+import Navbar from '../../../ui/Navbar';
+import Copyright from '../../../ui/Copyright';
+import Terms from '../../../ui/Terms';
+
 const storageName0 = 'PreferenceStates';
-const updatePreferenceStatesCache = updateLocalStorage(storageName0);
 const restorePreferenceStatesFromCache = restoreFromLocalStorage(storageName0);
 
 const storageName1 = 'MemberPageProcessStates';
 const updateProcessStatesCache = updateLocalStorage(storageName1);
 const restoreProcessStatesFromCache = restoreFromLocalStorage(storageName1);
-
-// const storageName2 = 'MemberPagePostsLayoutStates';
-// const updatePostsLayoutStatesCache = updateLocalStorage(storageName2);
-// const restorePostsLayoutStatesFromCache = restoreFromLocalStorage(storageName2);
 
 type TMemberPageProps = {
     channelInfoDict_ss: IChannelInfoDictionary;
@@ -133,11 +70,9 @@ type TMemberPageProps = {
     redirect500: boolean;
 };
 
-
 const domain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? '';
 const defaultLang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
-
 
     //// UI contents ////
     editProfile: {
@@ -470,10 +405,10 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
     React.useEffect(() => {
         if ('authenticated' === status) {
             const viewerSession: any = { ...session };
-            setProcessStates({ ...processStates, viewerId: viewerSession?.user?.id });
+            setProcessStates({ ...processStates, viewerId: viewerSession?.user?.id ?? '' });
             restorePreferenceStatesFromCache(setPreferenceStates);
         }
-    }, [session]);
+    }, [status]);
 
     //////// REF - masonry ////////
     const masonryWrapper = React.useRef<any>();
@@ -1210,7 +1145,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                 <Grid item xs={0} sm={1} md={2} lg={3} xl={3}></Grid>
             </Grid>
 
-            {/* //// second layer - multi-display */}
+            {/* //// second layer - post layout */}
             <Grid container >
 
                 {/* //// placeholder left //// */}
@@ -1224,7 +1159,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                         <ResponsiveCard sx={{ padding: 1 }}>
                             <MenuList>
 
-                                {/* creations list item */}
+                                {/* creations */}
                                 <MenuItem onClick={handleSelectPostCategory('mycreations')} selected={'mycreations' === processStates.selectedCategory}>
                                     <ListItemIcon ><CreateIcon /></ListItemIcon>
                                     <ListItemText>
@@ -1232,7 +1167,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                                     </ListItemText>
                                 </MenuItem>
 
-                                {/* saved post list item */}
+                                {/* saved post*/}
                                 <MenuItem onClick={handleSelectPostCategory('savedposts')} selected={'savedposts' === processStates.selectedCategory}>
                                     <ListItemIcon ><StarIcon /></ListItemIcon>
                                     <ListItemText>
@@ -1240,7 +1175,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                                     </ListItemText>
                                 </MenuItem>
 
-                                {/* browsing history list item */}
+                                {/* browsing history */}
                                 {'authenticated' === status && authorId === processStates.viewerId && <MenuItem onClick={handleSelectPostCategory('browsinghistory')} selected={'browsinghistory' === processStates.selectedCategory}>
                                     <ListItemIcon >
                                         <HistoryIcon />
@@ -1285,15 +1220,6 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                             </MenuList>
                         </ResponsiveCard>
 
-                        {/* hotest / newest switch (*disabled since 24/02/2023) */}
-                        {/* <ResponsiveCard sx={{ padding: 0, paddingY: 2, paddingLeft: 2 }}>
-                            <FormControlLabel
-                                control={<StyledSwitch sx={{ ml: 1 }} checked={processStates.selectedHotPosts} />}
-                                label={processStates.selectedHotPosts ? langConfigs.hotPosts[preferenceStates.lang] : langConfigs.newPosts[preferenceStates.lang]}
-                                onChange={handleSwitchChange}
-                                sx={{ marginRight: 0 }}
-                            />
-                        </ResponsiveCard> */}
                     </Stack>
                 </Grid>
 
@@ -1361,7 +1287,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                         </Box>
                     }
 
-                    {/* mansoy */}
+                    {/* masonry */}
                     <Box ml={1} ref={masonryWrapper}>
                         <Masonry columns={{ xs: 2, sm: 3, md: 2, lg: 3, xl: 4 }}>
 

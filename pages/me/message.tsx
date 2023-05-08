@@ -9,7 +9,6 @@ import Button from '@mui/material/Button';
 import Grid from '@mui/material/Grid';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import { createTheme, responsiveFontSizes, ThemeProvider } from '@mui/material/styles';
 
 import AlternateEmailIcon from '@mui/icons-material/AlternateEmail';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
@@ -136,11 +135,7 @@ const Message = () => {
     };
 
     //////////////////////////////////////// BEHAVIOURS ////////////////////////////////////////
-    React.useEffect(() => {
-        if ('authenticated' === status) {
-            updateNoticeArray();
-        }
-    }, [processStates.selectedCategory]);
+    React.useEffect(() => { if ('authenticated' === status) { updateNoticeArray(); } }, [processStates.selectedCategory]);
 
     const updateNoticeArray = async () => {
         const resp = await fetch(`/api/notice/of/${processStates.selectedCategory}`);

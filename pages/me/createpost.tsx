@@ -39,7 +39,6 @@ import { DragDropContext } from 'react-beautiful-dnd';
 import { Droppable, Draggable } from 'react-beautiful-dnd';
 
 import axios from 'axios';
-// import Jimp from 'jimp';
 import 'jimp';
 let Jimp: any;
 
@@ -55,7 +54,6 @@ import { contentToParagraphsArray, cuedMemberInfoDictionaryToArray } from '../..
 import Navbar from '../../ui/Navbar';
 import Copyright from '../../ui/Copyright';
 import Terms from '../../ui/Terms';
-
 
 const storageName0 = 'PreferenceStates';
 const restorePreferenceStatesFromCache = restoreFromLocalStorage(storageName0);
@@ -188,6 +186,11 @@ const langConfigs: LangConfigs = {
         cn: '您的账户被限制因而不能创作新文章',
         en: 'Unable to create post due to restricted member'
     },
+    permissionCheckError: {
+        tw: '無法獲得您的賬戶資料，請刷新頁面以重試或聯絡管理員',
+        cn: '无法获得您的账户资料，请刷新页面以重试或联络管理员',
+        en: 'Unable to obtain your account information, please refresh the page to try again or contact the WebMaster'
+    },
 
 };
 
@@ -222,30 +225,28 @@ export async function getServerSideProps(context: NextPageContext): Promise<{ pr
 
 const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) => {
     const router = useRouter();
-    const { data: session } = useSession({ required: true, onUnauthenticated() { signIn(); } });
+    const { data: session, status } = useSession({ required: true, onUnauthenticated() { signIn(); } });
 
     React.useEffect(() => {
         if (redirect500) {
             router.push('/500');
         }
-
         Jimp = (window as any).Jimp;
-
     }, [router]);
 
-    //////// INFO - author ////////
-    let authorId = '';
-    React.useEffect(() => {
+    //////////////////////////////////////// INFO ////////////////////////////////////////
 
-        const authorSession: any = { ...session };
-        authorId = authorSession?.user?.id;
-        restorePreferenceStatesFromCache(setPreferenceStates);
-        verifyMemberStatus(authorId);
-    }, [session]);
+    React.useEffect(() => {
+        if ('authenticated' === status) {
+            const authorSession: any = { ...session };
+            verifyMemberStatus(authorSession?.user?.id);
+            setAuthorInfoStates({ ...authorInfoStates, memberId: authorSession?.user?.id });
+            restorePreferenceStatesFromCache(setPreferenceStates);
+        }
+    }, [status]);
 
     const verifyMemberStatus = async (memberId: string) => {
         const resp = await fetch(`/api/member/info/${memberId}`);
-
         if (200 !== resp.status) {
             setProcessStates({
                 ...processStates,
@@ -256,14 +257,24 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
             });
             return;
         }
-        const { status, allowPosting } = await resp.json();
-
-        if (!(0 < status && allowPosting)) {
+        try {
+            const { status, allowPosting } = await resp.json();
+            if (!(0 < status && allowPosting)) {
+                setProcessStates({
+                    ...processStates,
+                    disableEditor: true,
+                    alertSeverity: 'error',
+                    alertContent: langConfigs.noPermissionAlert[preferenceStates.lang],
+                    displayAlert: true
+                });
+            }
+        } catch (e) {
+            console.error(`Attemp to parse member status obj (JSON string) from response of verifyMemberStatus request. ${e}`);
             setProcessStates({
                 ...processStates,
                 disableEditor: true,
                 alertSeverity: 'error',
-                alertContent: langConfigs.noPermissionAlert[preferenceStates.lang],
+                alertContent: langConfigs.permissionCheckError[preferenceStates.lang],
                 displayAlert: true
             });
         }
@@ -327,7 +338,7 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
     const updateChannelIdSequence = async () => {
         const resp = await fetch(`/api/channel/id/sequence`);
         if (200 !== resp.status) {
-            console.log(`Attemp to GET channel id array. Using sequence from channel info dictionary instead`);
+            console.error(`Attemp to GET channel id array. Using sequence from channel info dictionary instead`);
             setChannelInfoStates({
                 ...channelInfoStates,
                 channelIdSequence: Object.keys(channelInfoDict_ss)
@@ -340,7 +351,7 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
                     channelIdSequence: [...idArr]
                 });
             } catch (e) {
-                console.log(`Attemp to parese channel id array. ${e}`);
+                console.error(`Attemp to parese channel id array from response of updateChannelIdSequence request. ${e}`);
             }
         }
     };
@@ -370,22 +381,24 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
         setPostInfoStates({ ...postInfoStates, [prop]: event.target.value });
     };
 
-    //////////////////////////////////////// MEMBER INFO ////////////////////////////////////////
+    //////////////////////////////////////// AUTHOR INFO ////////////////////////////////////////
 
     type TAuthorInfo = {
+        memberId: string;
         followedMemberInfoArr: IMemberInfo[];
     };
 
     //////// STATE - author info ////////
     const [authorInfoStates, setAuthorInfoStates] = React.useState<TAuthorInfo>({
+        memberId: '',
         followedMemberInfoArr: []
     });
 
-    React.useEffect(() => { updateAuthorInfoStates(); }, []);
+    React.useEffect(() => { if ('' === authorInfoStates.memberId) { updateAuthorInfoStates(); } }, [authorInfoStates.memberId]);
 
     const updateAuthorInfoStates = async () => {
         // get followed member info
-        const resp = await fetch(`/api/member/followedbyme/${authorId}`);
+        const resp = await fetch(`/api/member/followedbyme/${authorInfoStates.memberId}`);
         if (200 === resp.status) {
             try {
                 const memberInfoArr = await resp.json();
@@ -394,10 +407,10 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
                     setProcessStates({ ...processStates, displayNoFollowedMemberAlert: true });
                 }
             } catch (e) {
-                console.log(`Attempt to parese followed member info array (JSON string) from response. ${e}`);
+                console.error(`Attempt to parese followed member info array (JSON string) from response of updateAuthorInfoStates request. ${e}`);
             }
         } else {
-            console.log(`Attempt to GET following restricted member info array.`);
+            console.error(`Attempt to GET following restricted member info array.`);
         }
     };
 
@@ -477,7 +490,7 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
                 });
             } catch (e) {
                 setTopicHelperStates({ ...topicHelperStates, conciseTopicComprehensiveArr: [], displayNotFoundAlert: true });
-                console.log(`Attempt to GET concise topic comprehensive array by fragment. ${e}`);
+                console.error(`Attempt to GET concise topic comprehensive array by fragment. ${e}`);
             }
         }
     };
@@ -691,7 +704,6 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
                 displayAlert: true,
                 submitting: true
             });
-
         }
 
         // #3 Upload images (optional)
@@ -747,6 +759,7 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
             formData.append('image', new Blob([new Uint8Array(bbf)], { type: Jimp.MIME_JPEG }));
             const resp = await axios.post(`/api/coverimage/upload/${postId}?requestInfo=${tkn}`, formData, config);
             tkn = resp.data?.updatedRequestInfoToken;
+
         } catch (e: any) {
             console.log(`Attempt to upload cover image. ${e}`);
             setProcessStates({
@@ -831,7 +844,7 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
                     uploadQueue[i].fullname = imageFullname;
 
                 } catch (e) {
-                    console.log(`Attempt to upload the ${i} image of the queue, url: ${img.url}. ${e}`);
+                    console.error(`Attempt to upload the ${i} image of the queue, url: ${img.url}. ${e}`);
                     // Save the current image upload progress
                     setImagesArr([...uploadQueue]);
                     setProcessStates({
@@ -883,7 +896,7 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
 
     return (
         <>
-            <Navbar lang={preferenceStates.lang}/>
+            <Navbar lang={preferenceStates.lang} />
 
             {/* post editor */}
             <Box sx={{ display: 'flex', justifyContent: 'center' }}>

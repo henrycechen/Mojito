@@ -15,13 +15,8 @@ import SvgIcon from '@mui/material/SvgIcon';
 import IconButton from '@mui/material/IconButton';
 
 import EmailIcon from '@mui/icons-material/Email';
-import BubbleChartIcon from '@mui/icons-material/BubbleChart';
-import FormatAlignJustifyIcon from '@mui/icons-material/FormatAlignJustify';
-import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
 import ReorderIcon from '@mui/icons-material/Reorder';
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
-import ThumbUpIcon from '@mui/icons-material/ThumbUp';
-import CastIcon from '@mui/icons-material/Cast';
 
 import Masonry from '@mui/lab/Masonry';
 
@@ -39,10 +34,9 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import BlockIcon from '@mui/icons-material/Block';
 import FlagIcon from '@mui/icons-material/Flag';
 import ArticleIcon from '@mui/icons-material/Article';
-import BarChartIcon from '@mui/icons-material/BarChart';
 import ForumIcon from '@mui/icons-material/Forum';
+import BarChartIcon from '@mui/icons-material/BarChart';
 
-import { useTheme } from '@emotion/react';
 import { useRouter } from 'next/router';
 
 import { TBrowsingHelper, LangConfigs } from '../lib/types';
@@ -59,7 +53,6 @@ import { getRandomHexStr } from '../lib/utils/create';
 import Terms from '../ui/Terms';
 
 const storageName0 = 'PreferenceStates';
-// const updatePreferenceStatesCache = updateLocalStorage(storageName0);
 const restorePreferenceStatesFromCache = restoreFromLocalStorage(storageName0);
 
 const storageName = 'HomePageProcessStates';
@@ -80,13 +73,6 @@ interface IHomePageProcessStates {
     memorizeLastViewedPostId: string | undefined;
     wasRedirected: boolean;
 }
-
-type TViewerComprehensive = {
-    totalFollowedByCount: number;
-    totalCreationSavedCount: number;
-    totalCreationLikedCount: number;
-    reply: number;
-};
 
 const domain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? '';
 const defaultLang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
@@ -210,10 +196,10 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
     React.useEffect(() => {
         if ('authenticated' === status) {
             const authorSession: any = { ...session };
-            setProcessStates({ ...processStates, viewerId: authorSession?.user?.id });
+            setProcessStates({ ...processStates, viewerId: authorSession?.user?.id ?? '' });
             restorePreferenceStatesFromCache(setPreferenceStates);
         }
-    }, [session]);
+    }, [status]);
 
     //////// REF - masonry ////////
     const masonryWrapper = React.useRef<any>();
@@ -244,7 +230,7 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
     //////// STATES - viewer's notice statistics ////////
     const [viewersNoticeStatistics, setViewersNoticeStatistics] = React.useState<number>(0);
 
-    React.useEffect(() => { if ('authenticated' === status) { updateNoticeStatistics(); } }, [status]);
+    React.useEffect(() => { if ('' === processStates.viewerId) { updateNoticeStatistics(); } }, [processStates.viewerId]);
 
     const updateNoticeStatistics = async () => {
         const resp = await fetch(`/api/notice/statistics`);
@@ -480,7 +466,6 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
     const handleClosePopUpMenu = () => {
         setPopUpMenuStates({ ...popUpMenuStates, anchorEl: null });
     };
-
 
     return (
         <>

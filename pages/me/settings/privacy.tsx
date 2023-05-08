@@ -17,21 +17,19 @@ import Checkbox from '@mui/material/Checkbox';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import CircularProgress from '@mui/material/CircularProgress';
 
-
+import { ResponsiveCard } from '../../../ui/Styled';
 import Navbar from '../../../ui/Navbar';
 import Copyright from '../../../ui/Copyright';
 import Terms from '../../../ui/Terms';
 
 import { LangConfigs, TPreferenceStates } from '../../../lib/types';
 import { restoreFromLocalStorage } from '../../../lib/utils/general';
-import { ResponsiveCard } from '../../../ui/Styled';
 
 const storageName0 = 'PreferenceStates';
 const restorePreferenceStatesFromCache = restoreFromLocalStorage(storageName0);
 
 const defaultLang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
-
     alertContent: {
         tw: '出錯了，刷新頁面以重新獲取數據',
         cn: '出错了，刷新页面以重新获取数据',
@@ -115,13 +113,15 @@ const langConfigs: LangConfigs = {
 const PravicySettings = () => {
 
     const router = useRouter();
-    const { data: session } = useSession({ required: true, onUnauthenticated() { signIn(); } });
+    const { data: session, status } = useSession({ required: true, onUnauthenticated() { signIn(); } });
 
     React.useEffect(() => {
-        const viewerSession: any = { ...session };
-        setProcessStates({ ...processStates, memberId: viewerSession?.user?.id });
-        restorePreferenceStatesFromCache(setPreferenceStates);
-    }, [session]);
+        if ('authenticated' === status) {
+            const viewerSession: any = { ...session };
+            setProcessStates({ ...processStates, memberId: viewerSession?.user?.id ?? '' });
+            restorePreferenceStatesFromCache(setPreferenceStates);
+        }
+    }, [status]);
 
     //////// STATES - preference ////////
     const [preferenceStates, setPreferenceStates] = React.useState<TPreferenceStates>({
@@ -170,11 +170,7 @@ const PravicySettings = () => {
     });
 
     //////// Init states ////////
-    React.useEffect(() => {
-        if (undefined !== processStates.memberId && '' !== processStates.memberId) {
-            fetchPrivacySettings();
-        }
-    }, [processStates.memberId]);
+    React.useEffect(() => { if ('' !== processStates.memberId) { fetchPrivacySettings(); } }, [processStates.memberId]);
 
     //////// STATES - previous settings ////////
     const [privacySettingsStates, setPrivacySettingsStates] = React.useState<TPrivacySettingsStates>({
@@ -296,12 +292,13 @@ const PravicySettings = () => {
 
                 {/* middle column */}
                 <Grid item xs={12} sm={8} md={6} lg={6} xl={4}>
-                    <ResponsiveCard sx={{ p: { xs: 1, sm: 2, md: 4, }, minHeight: { xs: 0, sm: 500 } }}>
+                    <ResponsiveCard sx={{ p: { xs: 1, sm: 2, md: 4 }, minHeight: { xs: 0, sm: 500 } }}>
 
                         {/* 'backward' button */}
                         <Box>
                             <Button color='inherit' onClick={onBackwardClick}>
                                 <ArrowBackIosIcon fontSize={'small'} sx={{ color: 'grey' }} />
+                                {'authenticated' !== status && <CircularProgress size={20} />}
                             </Button>
                         </Box>
 

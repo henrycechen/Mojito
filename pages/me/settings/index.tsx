@@ -78,8 +78,6 @@ const Settings = () => {
     const { data: session } = useSession({ required: true, onUnauthenticated() { signIn(); } });
 
     React.useEffect(() => {
-        const viewerSession: any = { ...session };
-        setProcessStates({ ...processStates, memberId: viewerSession?.user?.id });
         restorePreferenceStatesFromCache(setPreferenceStates);
     }, [session]);
 
@@ -90,13 +88,11 @@ const Settings = () => {
     });
 
     type TProcessStates = {
-        memberId: string,
         languageSettingMenuAnchorEl: null | HTMLElement;
     };
 
     //////// STATES - process ////////
     const [processStates, setProcessStates] = React.useState<TProcessStates>({
-        memberId: '',
         languageSettingMenuAnchorEl: null
     });
 

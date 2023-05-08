@@ -99,9 +99,9 @@ export default function NavBar(props: TNavBarProps) {
     React.useEffect(() => {
         if ('authenticated' === status) {
             const viewerSession: any = { ...session };
-            setProcessStates({ ...processStates, memberId: viewerSession?.user?.id, });
+            setProcessStates({ ...processStates, memberId: viewerSession?.user?.id ?? '', });
         }
-    }, [session]);
+    }, [status]);
 
 
     const handleOpenMemberMenu = (event: React.MouseEvent<HTMLElement>) => { setProcessStates({ ...processStates, menuAnchorEl: event.currentTarget }); };

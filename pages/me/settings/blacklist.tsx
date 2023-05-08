@@ -1,88 +1,28 @@
 import * as React from 'react';
-import { NextPageContext } from 'next';
+import { signIn, useSession, } from 'next-auth/react';
+import { useRouter } from 'next/router';
 
+import Alert from '@mui/material/Alert';
 import Avatar from '@mui/material/Avatar';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Grid from '@mui/material/Grid';
 import Stack from '@mui/material/Stack';
-import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 
-import { signIn, signOut, useSession, } from 'next-auth/react';
-
-import SvgIcon from '@mui/material/SvgIcon';
-
-import FormControl from '@mui/material/FormControl';
 import IconButton from '@mui/material/IconButton';
-
-import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
+import CircularProgress from '@mui/material/CircularProgress';
 
-import { Alert, Menu } from '@mui/material';
-
-
-import Accordion from '@mui/material/Accordion';
-import AccordionSummary from '@mui/material/AccordionSummary';
-import AccordionDetails from '@mui/material/AccordionDetails';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-
-import Masonry from '@mui/lab/Masonry';
-
-import dayjs, { Dayjs } from 'dayjs';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { MobileDatePicker } from '@mui/x-date-pickers/MobileDatePicker';
-
-import FormControlLabel from '@mui/material/FormControlLabel';
-import InputAdornment from '@mui/material/InputAdornment';
-import OutlinedInput from '@mui/material/OutlinedInput';
-import Paper from '@mui/material/Paper';
-import Select, { SelectChangeEvent } from '@mui/material/Select';
-
-import Divider from '@mui/material/Divider';
-import Container from '@mui/material/Container';
-import MenuList from '@mui/material/MenuList';
-import MenuItem from '@mui/material/MenuItem';
-import ListItemText from '@mui/material/ListItemText';
-import ListItemIcon from '@mui/material/ListItemIcon';
-
-
-import { useRouter } from 'next/router';
+import { IMemberInfo } from '../../../lib/interfaces/member';
+import { LangConfigs, TPreferenceStates } from '../../../lib/types';
+import { timeToString, restoreFromLocalStorage } from '../../../lib/utils/general';
+import { provideAvatarImageUrl, getNicknameBrief } from '../../../lib/utils/for/member';
+import { ResponsiveCard, TextButton } from '../../../ui/Styled';
 
 import Navbar from '../../../ui/Navbar';
-
-import { IMemberInfo, IConciseMemberStatistics, IRestrictedMemberComprehensive } from '../../../lib/interfaces/member';
-import { IConcisePostComprehensive } from '../../../lib/interfaces/post';
-import { INoticeInfoWithMemberInfo } from '../../../lib/interfaces/notification';
-import { IChannelInfoStates, IChannelInfoDictionary } from '../../../lib/interfaces/channel';
-
-import { TBrowsingHelper, LangConfigs, TPreferenceStates } from '../../../lib/types';
-
-import { timeToString, getContentBrief, updateLocalStorage, provideLocalStorage, restoreFromLocalStorage, logWithDate } from '../../../lib/utils/general';
-import { verifyId, verifyNoticeId, verifyPassword } from '../../../lib/utils/verify';
-import { provideAvatarImageUrl, getNicknameBrief, fakeConciseMemberInfo, fakeConciseMemberStatistics, fakeRestrictedMemberInfo } from '../../../lib/utils/for/member';
-import { noticeIdToUrl, noticeInfoToString } from '../../../lib/utils/for/notification';
-
-import { CentralizedBox, ResponsiveCard, StyledSwitch, TextButton } from '../../../ui/Styled';
-
-import FormGroup from '@mui/material/FormGroup';
-import Switch from '@mui/material/Switch';
-import Checkbox from '@mui/material/Checkbox';
-import Link from '@mui/material/Link';
-
-import DoneIcon from '@mui/icons-material/Done';
-
-import axios, { AxiosError, AxiosResponse } from 'axios';
 import Copyright from '../../../ui/Copyright';
 import Terms from '../../../ui/Terms';
-import Table from '@mui/material/Table/Table';
-import TableHead from '@mui/material/TableHead';
-import TableRow from '@mui/material/TableRow';
-import TableCell from '@mui/material/TableCell';
-
-import { createTheme, responsiveFontSizes, styled, ThemeProvider } from '@mui/material/styles';
-import { provideCoverImageUrl } from '../../../lib/utils/for/post';
 
 const storageName0 = 'PreferenceStates';
 const restorePreferenceStatesFromCache = restoreFromLocalStorage(storageName0);
@@ -110,13 +50,15 @@ const langConfigs: LangConfigs = {
 const Blacklist = () => {
 
     const router = useRouter();
-    const { data: session } = useSession({ required: true, onUnauthenticated() { signIn(); } });
+    const { data: session, status } = useSession({ required: true, onUnauthenticated() { signIn(); } });
 
     React.useEffect(() => {
-        const viewerSession: any = { ...session };
-        setProcessStates({ ...processStates, memberId: viewerSession?.user?.id });
-        restorePreferenceStatesFromCache(setPreferenceStates);
-    }, [session]);
+        if ('authenticated' === status) {
+            const viewerSession: any = { ...session };
+            setProcessStates({ ...processStates, memberId: viewerSession?.user?.id });
+            restorePreferenceStatesFromCache(setPreferenceStates);
+        }
+    }, [status]);
 
     //////// STATES - preference ////////
     const [preferenceStates, setPreferenceStates] = React.useState<TPreferenceStates>({
@@ -127,20 +69,23 @@ const Blacklist = () => {
     type TProcessStates = {
         memberId: string;
         displayAlert: boolean;
+        displayProgress: boolean;
     };
 
     //////// STATES - process ////////
     const [processStates, setProcessStates] = React.useState<TProcessStates>({
         memberId: '',
         displayAlert: false,
+        displayProgress: true
     });
 
     //////// STATES - blocked member info arr ////////
     const [blockedMemberInfoArr, setBlockedMemberInfoArr] = React.useState<IMemberInfo[]>([]);
 
     React.useEffect(() => {
-        if (undefined !== processStates.memberId && '' !== processStates.memberId) {
+        if ('' !== processStates.memberId) {
             getBlockedMemberInfoArray();
+            setProcessStates({ ...processStates, displayProgress: false });
         }
     }, [processStates.memberId]);
 
@@ -194,16 +139,17 @@ const Blacklist = () => {
 
                 {/* middle column */}
                 <Grid item xs={12} sm={8} md={6} lg={6} xl={4}>
-                    <ResponsiveCard sx={{ p: { xs: 1, sm: 2, md: 4, lg: 6 }, minHeight: { xs: 0, sm: 500 } }}>
+                    <ResponsiveCard sx={{ p: { xs: 1, sm: 2, md: 4 }, minHeight: { xs: 0, sm: 500 } }}>
 
 
                         {/* 'backward' button */}
                         <Box>
                             <Button color='inherit' onClick={onBackwardClick}>
                                 <ArrowBackIosIcon fontSize={'small'} sx={{ color: 'grey' }} />
+                                {('authenticated' !== status || processStates.displayProgress) && <CircularProgress size={20} />}
                             </Button>
                         </Box>
-                        
+
                         {/* space */}
                         <Box pt={1}></Box>
 
@@ -213,7 +159,7 @@ const Blacklist = () => {
                         </Box>
 
                         {/* component stack - member info */}
-                        <Stack spacing={2} sx={{ px: 1 }}>
+                        <Stack spacing={2} px={{ xs: 1, sm: 2, md: 4 }}>
                             <Box mt={{ xs: 0, sm: 0 }}></Box>
                             {0 !== blockedMemberInfoArr.length && blockedMemberInfoArr.map(info =>
 

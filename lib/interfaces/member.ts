@@ -1,14 +1,41 @@
-// Interfaces for Member Class v0.1.1
-
+/**
+ * Registration Info
+ * -     providerId: string // "MojitoMemberSystem" | "GitHubOAuth" | ...
+ * -     emailAddress: string
+ * -     registeredTimeBySecond: number
+ * -     verifiedTimeBySecond: number
+ * 
+ * Member Info
+ * -     memberId: string // 10 characters, UPPERCASE
+ * -     nickname: string
+ * -     lastNicknameUpdatedTimeBySecond: number
+ * -     briefIntro: string
+ * -     lastBriefIntroUpdatedTimeBySecond: number
+ * -     gender: number // -1 | 0 | 1
+ * -     lastGenderUpdatedTimeBySecond: number
+ * -     birthdayBySecond: number
+ * -     lastBirthdayUpdatedTimeBySecond: number
+ * -     lastSettingUpdatedTimeBySecond: number
+ * 
+ * Management
+ * -     status: number
+ * -     allowPosting: boolean
+ * -     lastUploadImageRequestTimeBySecond: number
+ * -     allowCommenting: boolean
+ * -     allowKeepingBrowsingHistory: boolean
+ * -     allowVisitingFollowedMembers: boolean
+ * -     allowVisitingSavedPosts: boolean
+ * -     hidePostsAndCommentsOfBlockedMember: boolean
+ * 
+ * Last update: 08/05/2023 v0.1.1
+ */
 export interface IMemberComprehensive {
-    memberId: string; // 10 characters, UPPERCASE
-
-    //// info ////
     providerId: string; // "MojitoMemberSystem" | "GitHubOAuth" | ...
-    registeredTimeBySecond: number; // Math.floor(new Date().getTime() / 1000)
-    verifiedTimeBySecond: number;
     emailAddress: string;
-
+    registeredTimeBySecond: number;
+    verifiedTimeBySecond: number;
+    
+    memberId: string; // 10 characters, UPPERCASE
     nickname: string;
     lastNicknameUpdatedTimeBySecond: number;
     briefIntro: string;
@@ -19,38 +46,79 @@ export interface IMemberComprehensive {
     lastBirthdayUpdatedTimeBySecond: number;
     lastSettingUpdatedTimeBySecond: number;
 
-    //// management ////
     status: number;
     allowPosting: boolean;
     lastUploadImageRequestTimeBySecond: number;
     allowCommenting: boolean;
-
     allowKeepingBrowsingHistory: boolean;
     allowVisitingFollowedMembers: boolean;
     allowVisitingSavedPosts: boolean;
     hidePostsAndCommentsOfBlockedMember: boolean;
 }
 
-// *registration process specialized
+/**
+ * *Registration process specialized*
+ * 
+ * Registration Info
+ * -     providerId: string // "MojitoMemberSystem" | "GitHubOAuth" | ...
+ * -     emailAddress: string;
+ * -     registeredTimeBySecond: number
+ * 
+ * Member Info
+ * -     memberId: string // 10 characters, UPPERCASE
+ * -     nickname: string;
+ * 
+ * Management
+ * -     status: number; // email address not verified
+ * -     allowPosting: boolean;
+ * -     allowCommenting: boolean;
+ * 
+ * Last update: 08/05/2023 v0.1.1
+ */
 export interface IMinimumMemberComprehensive {
-    memberId: string; // 10 characters, UPPERCASE
     providerId: string; // "MojitoMemberSystem" | "GitHubOAuth" | ...
-    registeredTimeBySecond: number; // Math.floor(new Date().getTime() / 1000)
     emailAddress: string;
+    registeredTimeBySecond: number; // Math.floor(new Date().getTime() / 1000)
+    memberId: string; // 10 characters, UPPERCASE
     nickname: string;
     status: number; // email address not verified
     allowPosting: boolean;
     allowCommenting: boolean;
 }
 
+/**
+ * Registration Info
+ * -     providerId: string // "MojitoMemberSystem" | "GitHubOAuth" | ...
+ * -     registeredTimeBySecond: number // Math.floor(new Date().getTime() / 1000)
+ * -     verifiedTimeBySecond: number
+ * 
+ * Member Info
+ * -     memberId: string
+ * -     emailAddress: string
+ * -     nickname: string
+ * -     briefIntro: string
+ * -     gender: number
+ * -     birthdayBySecond: number
+ * 
+ * Management
+ * -     status: number
+ * -     allowPosting: boolean
+ * -     allowCommenting: boolean
+ * -     allowKeepingBrowsingHistory: boolean
+ * -     allowVisitingFollowedMembers: boolean
+ * -     allowVisitingSavedPosts: boolean
+ * -     hidePostsAndCommentsOfBlockedMember: boolean
+ * 
+ * Last update: 08/05/2023 v0.1.1
+ */
 export interface IRestrictedMemberComprehensive {
-    memberId: string;
-
     providerId: string; // "MojitoMemberSystem" | "GitHubOAuth" | ...
+    emailAddress: string;
     registeredTimeBySecond: number; // Math.floor(new Date().getTime() / 1000)
     verifiedTimeBySecond: number;
-    emailAddress: string;
-
+    
+    // Info
+    memberId: string;
     nickname: string;
     briefIntro: string;
     gender: number;
@@ -66,12 +134,13 @@ export interface IRestrictedMemberComprehensive {
 }
 
 /**
- * @property memberId: string;
- * @property nickname: string;
- * @property briefIntro: string;
- * @property createdTimeBySecond: number;
+ * -     memberId: string
+ * -     nickname: string
+ * -     briefIntro: string
+ * -     createdTimeBySecond: number
+ * 
+ * Last update: 08/05/2023 v0.1.1
  */
-
 export interface IMemberInfo {
     memberId: string;
     nickname: string;
@@ -79,10 +148,62 @@ export interface IMemberInfo {
     createdTimeBySecond: number;
 }
 
+/**
+ * -     memberId: string;
+ * 
+ * Creation
+ * -     totalCreationsCount: number // info page required
+ * -     totalCreationHitCount: number
+ * -     totalCreationEditCount: number
+ * -     totalCreationDeleteCount: number
+ * -     totalCreationLikedCount: number // info page required
+ * -     totalCreationUndoLikedCount: number
+ * -     totalCreationDislikedCount: number
+ * -     totalCreationUndoDislikedCount: number
+ * -     totalCreationSavedCount: number // info page required
+ * -     totalCreationUndoSavedCount: number
+ * 
+ * Attitude
+ * -     totalLikeCount: number
+ * -     totalUndoLikeCount: number
+ * -     totalDislikeCount: number
+ * -     totalUndoDislikeCount: number
+ * 
+ * Comment
+ * -     totalCommentCount: number
+ * -     totalCommentEditCount: number
+ * -     totalCommentDeleteCount: number
+ * -     totalCommentLikedCount: number
+ * -     totalCommentUndoLikedCount: number
+ * -     totalCommentDislikedCount: number
+ * -     totalCommentUndoDislikedCount: number
+ * 
+ * Post
+ * -     totalSavedCount: number
+ * -     totalUndoSavedCount: number
+ * 
+ * On other members
+ * -     totalFollowingCount: number
+ * -     totalUndoFollowingCount: number
+ * -     totalBlockingCount: number
+ * -     totalUndoBlockingCount: number
+ * 
+ * By other members
+ * -     totalFollowedByCount: number // info page required
+ * -     totalUndoFollowedByCount: number
+ * -     totalBlockedByCount: number
+ * -     totalUndoBlockedByCount: number
+ * 
+ * Affair
+ * -     totalAffairOfCreationCount: number
+ * -     totalAffairOfCommentCount: number
+ * 
+ * Last update: 08/05/2023 v0.1.1
+ */
 export interface IMemberStatistics {
     memberId: string;
 
-    // creation
+    // Creation
     totalCreationsCount: number; // info page required
     totalCreationHitCount: number;
     totalCreationEditCount: number;
@@ -94,13 +215,13 @@ export interface IMemberStatistics {
     totalCreationSavedCount: number; // info page required
     totalCreationUndoSavedCount: number;
 
-    // attitude
+    // Attitude
     totalLikeCount: number;
     totalUndoLikeCount: number;
     totalDislikeCount: number;
     totalUndoDislikeCount: number;
 
-    // comment
+    // Comment
     totalCommentCount: number;
     totalCommentEditCount: number;
     totalCommentDeleteCount: number;
@@ -109,27 +230,37 @@ export interface IMemberStatistics {
     totalCommentDislikedCount: number;
     totalCommentUndoDislikedCount: number;
 
-    // post
+    // Post
     totalSavedCount: number;
     totalUndoSavedCount: number;
 
-    // on other members
+    // On other members
     totalFollowingCount: number;
     totalUndoFollowingCount: number;
     totalBlockingCount: number;
     totalUndoBlockingCount: number;
 
-    // by other members
+    // By other members
     totalFollowedByCount: number; // info page required
     totalUndoFollowedByCount: number;
     totalBlockedByCount: number;
     totalUndoBlockedByCount: number;
 
-    // affair
+    // Affair
     totalAffairOfCreationCount: number;
     totalAffairOfCommentCount: number;
 }
 
+/**
+ * -     memberId: string
+ * -     totalCreationsCount: number
+ * -     totalCreationHitCount: number
+ * -     totalFollowedByCount: number
+ * -     totalCreationLikedCount: number
+ * -     totalCreationSavedCount: number
+ * 
+ * Last update: 08/05/2023 v0.1.1
+ */
 export interface IConciseMemberStatistics {
     memberId: string;
     totalCreationsCount: number;
@@ -139,6 +270,15 @@ export interface IConciseMemberStatistics {
     totalCreationSavedCount: number;
 }
 
+/**
+ * -     memberId: string
+ * -     category: 'error' | 'success'
+ * -     providerId: string // LoginProviderId, e.g., 'MojitoMemberSystem'
+ * -     timestamp: string // new Date().toISOString()
+ * -     message: string // short message, e.g., 'Attempted to login while email address not verified.'
+ * 
+ * Last update: 08/05/2023 v0.1.1
+ */
 export interface ILoginJournal {
     memberId: string;
     category: 'error' | 'success';

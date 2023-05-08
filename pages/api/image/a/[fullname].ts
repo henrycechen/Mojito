@@ -3,7 +3,7 @@ import AzureBlobClient from '../../../../modules/AzureBlobClient';
 
 import { response405, response500 } from '../../../../lib/utils/general';
 
-/** GetImageByFullname v0.1.1 FIXME: test mode
+/** GetImageByFullname v0.1.1
  * 
  * Last update: 24/02/2023
  * 
@@ -13,7 +13,7 @@ import { response405, response500 } from '../../../../lib/utils/general';
  * - fullname: string (query)
  */
 
-const fname = GetImageByFullname.name;
+const fnn = GetImageByFullname.name;
 
 export default async function GetImageByFullname(req: NextApiRequest, res: NextApiResponse) {
     const { method } = req;
@@ -21,7 +21,6 @@ export default async function GetImageByFullname(req: NextApiRequest, res: NextA
         response405(req, res);
         return;
     }
-
 
     const { fullname } = req.query;
     const contianerClient = AzureBlobClient('image');

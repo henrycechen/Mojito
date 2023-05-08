@@ -16,7 +16,7 @@ import { IChannelStatistics } from '../../../../lib/interfaces/channel';
 import { ITopicComprehensive } from '../../../../lib/interfaces/topic';
 import { getTimeBySecond } from '../../../../lib/utils/create';
 
-const fname = GetRestrictedPostComprehensiveById.name;
+const fname = `${GetRestrictedPostComprehensiveById.name} (API)`;
 
 /** GetRestrictedPostComprehensiveById v0.1.1
  * 
@@ -29,65 +29,6 @@ const fname = GetRestrictedPostComprehensiveById.name;
  */
 
 export default async function GetRestrictedPostComprehensiveById(req: NextApiRequest, res: NextApiResponse) {
-
-    res.send({
-        "postId": "P4CD624HHS",
-        "memberId": "M1234XXXX",
-        "createdTimeBySecond": 1678679403,
-        "title": "MX5-RE-RE",
-        "imageFullnamesArr": [
-            // "P4CD624HHS_DLBVJIQ1T.jpeg",
-            // "P4CD624HHS_6NR6EKKW11.jpeg",
-            // "P4CD624HHS_226CDUSEQK.jpeg",
-            // "P4CD624HHS_1BEEE1FJR8.jpeg",
-            // "P4CD624HHS_342QM85WET.jpeg",
-            // "P4CD624HHS_VG9OMAVRL.jpeg"
-        ],
-        "paragraphsArr": [
-            "I am selling with regret (in fact I don't have one)\n",
-            "I am selling with regret (in fact I don't have one)\n",
-            "I am selling with regret (in fact I don't have one)\n",
-            "@县长马邦德",
-        ],
-        "cuedMemberInfoArr": [
-            {
-                memberId: 'M1234ABCD',
-                nickname: '县长马邦德',
-                briefIntro: 'xxx',
-                createdTimeBySecond: 0
-            }
-        ],
-        "channelId": "automobile",
-        "topicInfoArr": [
-            {
-                topicId: '5ZGo5p2w5Lym',
-                content: '周杰伦',
-                // channelId: 'chat',
-                // totalHitCount: 1024,
-                // totalPostCount: 126
-            },
-            {
-                topicId: '6K+05aW95LiN5ZOt',
-                content: '说好不哭',
-                // channelId: 'chat',
-                // totalHitCount: 624,
-                // totalPostCount: 75
-            },
-        ],
-        "pinnedCommentId": null,
-        "status": 200,
-        "allowEditing": true,
-        "allowCommenting": true,
-        "totalHitCount": 0,
-        "totalLikedCount": 0,
-        "totalDislikedCount": 0,
-        "totalCommentCount": 0,
-        "totalSavedCount": 0,
-        "editedTimeBySecond": null
-
-    });
-    return;
-
 
     const { method } = req;
     if ('GET' !== method) {
