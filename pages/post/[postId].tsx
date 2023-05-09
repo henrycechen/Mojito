@@ -334,6 +334,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
         totalFollowedByCount: number;
         // Post statistics
         totalLikedCount: number;
+        totalDislikedCount: number;
         totalSavedCount: number;
         totalCommentCount: number;
     };
@@ -343,7 +344,8 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
         totalCreationsCount: 0,
         totalCreationLikedCount: 0,
         totalFollowedByCount: 0,
-        totalLikedCount: postComprehensive_ss.totalLikedCount - postComprehensive_ss.totalDislikedCount,
+        totalLikedCount: postComprehensive_ss.totalLikedCount,
+        totalDislikedCount: postComprehensive_ss.totalDislikedCount,
         totalSavedCount: postComprehensive_ss.totalSavedCount,
         totalCommentCount: postComprehensive_ss.totalCommentCount,
     });
@@ -827,29 +829,32 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
             return;
         }
 
-        let stateUpdate = 0;
-        let dictionaryUpdate = 0;
+        let behaviourStateUpdate = 0;
+        let dictionaryStateUpdate = 0;
 
-        if (behaviourStates.attitudeOnComment[commentId] === attitude) {
-            stateUpdate = 0;
-            dictionaryUpdate = 0 - attitude;
+        const prevAttitude = behaviourStates.attitudeOnComment[commentId] ?? 0;
+
+        // Revoke e.g., -1 => 0 (-1 === -1)
+        if (prevAttitude === attitude) {
+            behaviourStateUpdate = 0;
+            dictionaryStateUpdate = 0 - attitude;
         }
-
-        else if (1 === Math.abs(behaviourStates.attitudeOnComment[commentId])) {
-            stateUpdate = attitude;
-            dictionaryUpdate = attitude * 2;
+        // Reverse e.g., 1 => -1 (0 > 1 * -1)
+        else if (0 > prevAttitude * attitude) {
+            behaviourStateUpdate = attitude;
+            dictionaryStateUpdate = attitude * 2;
         }
-
+        // Initiate e.g., 0 => 1
         else {
-            stateUpdate = attitude;
-            dictionaryUpdate = attitude;
+            behaviourStateUpdate = attitude;
+            dictionaryStateUpdate = attitude;
         }
 
         setBehaviourStates({
             ...behaviourStates,
             attitudeOnComment: {
                 ...behaviourStates.attitudeOnComment,
-                [commentId]: stateUpdate
+                [commentId]: behaviourStateUpdate
             }
         });
 
@@ -857,7 +862,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
             ...restrictedCommentComprehensiveDict,
             [commentId]: {
                 ...restrictedCommentComprehensiveDict[commentId],
-                totalLikedCount: restrictedCommentComprehensiveDict[commentId].totalLikedCount + dictionaryUpdate
+                totalLikedCount: restrictedCommentComprehensiveDict[commentId].totalLikedCount + dictionaryStateUpdate,
             }
         });
 
@@ -866,8 +871,9 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ attitude })
         });
+
         if (200 !== resp.status) {
-            console.error(`Attemp to express attitude on comment (comment id: ${commentId})`);
+            console.error(`Attemp to express attitude on a comment (comment id: ${commentId})`);
         }
     };
 
@@ -923,45 +929,60 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
 
     const [restrictedSubcommentComprehensiveDict, setRestrictedSubcommentComprehensiveDict] = React.useState<TRestrictedSubcommentComprehensiveDict>({});
 
-    const handleExpressAttitudeOnSubcomment = (parentId: string, commentId: string, attitude: number) => (event: React.MouseEvent<any>) => {
-        const prev = restrictedSubcommentComprehensiveDict[parentId]; // previous STATES of subcomments of the given parent id
-        if (behaviourStates.attitudeOnComment[commentId] === attitude) {
-            setBehaviourStates({ ...behaviourStates, attitudeOnComment: { ...behaviourStates.attitudeOnComment, [commentId]: 0 } });
-            setRestrictedSubcommentComprehensiveDict({
-                ...restrictedSubcommentComprehensiveDict,
-                [parentId]: {
-                    ...prev,
-                    [commentId]: {
-                        ...prev[commentId],
-                        totalLikedCount: prev[commentId].totalLikedCount - attitude
-                    }
+    const handleExpressAttitudeOnSubcomment = async (parentId: string, commentId: string, attitude: number) => {
+        if ('authenticated' !== status) {
+            router.push(`/signin`);
+            return;
+        }
+
+        let behaviourStateUpdate = 0;
+        let dictionaryStateUpdate = 0;
+
+        const prevAttitude = behaviourStates.attitudeOnComment[commentId] ?? 0;
+
+        // Revoke e.g., -1 => 0 (-1 === -1)
+        if (prevAttitude === attitude) {
+            behaviourStateUpdate = 0;
+            dictionaryStateUpdate = 0 - attitude;
+        }
+        // Reverse e.g., 1 => -1 (0 > 1 * -1)
+        else if (0 > prevAttitude * attitude) {
+            behaviourStateUpdate = attitude;
+            dictionaryStateUpdate = attitude * 2;
+        }
+        // Initiate e.g., 0 => 1
+        else {
+            behaviourStateUpdate = attitude;
+            dictionaryStateUpdate = attitude;
+        }
+
+        setBehaviourStates({
+            ...behaviourStates,
+            attitudeOnComment: {
+                ...behaviourStates.attitudeOnComment,
+                [commentId]: behaviourStateUpdate
+            }
+        });
+
+        setRestrictedSubcommentComprehensiveDict({
+            ...restrictedSubcommentComprehensiveDict,
+            [parentId]: {
+                ...restrictedSubcommentComprehensiveDict[parentId],
+                [commentId]: {
+                    ...restrictedSubcommentComprehensiveDict[parentId][commentId],
+                    totalLikedCount: restrictedSubcommentComprehensiveDict[parentId][commentId].totalLikedCount + dictionaryStateUpdate,
                 }
-            });
-        } else if (1 === Math.abs(behaviourStates.attitudeOnComment[commentId])) {
-            setBehaviourStates({ ...behaviourStates, attitudeOnComment: { ...behaviourStates.attitudeOnComment, [commentId]: attitude } });
-            setRestrictedSubcommentComprehensiveDict({
-                ...restrictedSubcommentComprehensiveDict,
-                [parentId]: {
-                    ...prev,
-                    [commentId]: {
-                        ...prev[commentId],
-                        totalLikedCount: prev[commentId].totalLikedCount + attitude * 2
-                    }
-                }
-            });
-        } else {
-            setBehaviourStates({ ...behaviourStates, attitudeOnComment: { ...behaviourStates.attitudeOnComment, [commentId]: attitude } });
-            setRestrictedSubcommentComprehensiveDict({
-                ...restrictedSubcommentComprehensiveDict,
-                [parentId]: {
-                    ...prev,
-                    [commentId]: {
-                        ...prev[commentId],
-                        ...prev[commentId],
-                        totalLikedCount: prev[commentId].totalLikedCount + attitude
-                    }
-                }
-            });
+            }
+        });
+
+        const resp = await fetch(`/api/attitude/on/${commentId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ attitude })
+        });
+
+        if (200 !== resp.status) {
+            console.error(`Attemp to express attitude on a subcomment (subcomment id: ${commentId})`);
         }
     };
 
@@ -1087,7 +1108,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
                         {/* middle card-stack */}
                         <Stack maxWidth={800} spacing={{ xs: 1, sm: 2 }}>
 
-                            {/* the post */}
+                            {/* *post */}
                             <ResponsiveCard sx={{ padding: { sm: 4 }, boxShadow: { sm: 1 } }}>
 
                                 {/* post-title: desktop style */}
@@ -1128,9 +1149,11 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
                                         <Grid item flexGrow={1}></Grid>
 
                                         {/* follow button */}
-                                        <Grid item>
-                                            <Chip label={behaviourStates.followed ? langConfigs.followed[preferenceStates.lang] : langConfigs.follow[preferenceStates.lang]} sx={{ paddingX: 1 }} color={behaviourStates.followed ? 'default' : 'primary'} onClick={async () => { await handleFollowOrUndoFollow(); }} />
-                                        </Grid>
+                                        {viewerInfoStates.memberId !== authorId &&
+                                            <Grid item>
+                                                <Chip label={behaviourStates.followed ? langConfigs.followed[preferenceStates.lang] : langConfigs.follow[preferenceStates.lang]} sx={{ paddingX: 1 }} color={behaviourStates.followed ? 'default' : 'primary'} onClick={async () => { await handleFollowOrUndoFollow(); }} />
+                                            </Grid>
+                                        }
                                     </Grid>
                                 </Stack>
 
@@ -1173,7 +1196,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
                                         <IconButton aria-label='like' onClick={async () => { await handleExpressAttitudeOnPost(1); }}>
                                             <ThumbUpIcon color={1 === behaviourStates.attitudeOnPost ? 'primary' : 'inherit'} fontSize='small' />
                                         </IconButton>
-                                        <Typography variant='body2' sx={{ marginTop: 1 }}>{combinedStatisticsState.totalLikedCount + behaviourStates.attitudeOnPost}</Typography>
+                                        <Typography variant='body2' sx={{ marginTop: 1 }}>{combinedStatisticsState.totalLikedCount - combinedStatisticsState.totalDislikedCount + behaviourStates.attitudeOnPost}</Typography>
                                     </Grid>
 
                                     {/* dislike */}
@@ -1213,7 +1236,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
                             {/* **comments */}
                             {Object.keys(restrictedCommentComprehensiveDict).length !== 0 &&
                                 Object.keys(restrictedCommentComprehensiveDict).map(commentId => {
-                                    const { memberId: commentAuthorId, nickname: commentAuthorNickname, createdTimeBySecond, content, cuedMemberInfoArr, totalLikedCount } = restrictedCommentComprehensiveDict[commentId];
+                                    const { memberId: commentAuthorId, nickname: commentAuthorNickname, createdTimeBySecond, content, cuedMemberInfoArr, totalLikedCount: commentTotalLikedCount, totalDislikedCount: commentTotalDislikedCount } = restrictedCommentComprehensiveDict[commentId];
                                     return (
                                         <Box key={commentId}>
                                             <Divider sx={{ display: { xs: 'block', sm: 'none' } }} />
@@ -1247,7 +1270,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
                                                         <IconButton aria-label='like' onClick={async () => { await handleExpressAttitudeOnComment(commentId, 1); }}>
                                                             <ThumbUpIcon color={1 === behaviourStates.attitudeOnComment[commentId] ? 'primary' : 'inherit'} fontSize='small' />
                                                         </IconButton>
-                                                        <Typography variant='body2' sx={{ marginTop: 1 }}>{totalLikedCount}</Typography>
+                                                        <Typography variant='body2' sx={{ marginTop: 1 }}>{commentTotalLikedCount - commentTotalDislikedCount}</Typography>
                                                     </Grid>
 
                                                     {/* dislike */}
@@ -1274,8 +1297,6 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
                                                     </Grid>}
                                                 </Grid>
 
-
-
                                                 {/* ***subcomments */}
                                                 <Box sx={{ display: 0 !== restrictedCommentComprehensiveDict[commentId].totalSubcommentCount ? 'block' : 'none' }}>
 
@@ -1285,7 +1306,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
                                                     {/* subcomment stack (conditional rendering)*/}
                                                     <Stack id={`subcomment-stack-${commentId}`} spacing={1} marginTop={{ xs: 1.5, sm: 2 }} paddingLeft={3} sx={{ display: restrictedCommentComprehensiveDict[commentId].isExpended ? 'block' : 'none' }}>
                                                         {restrictedSubcommentComprehensiveDict.hasOwnProperty(commentId) && Object.keys(restrictedSubcommentComprehensiveDict[commentId]).map(subcommentId => {
-                                                            const { memberId: subcommentAuthorId, nickname: subcommentAuthorNickname, createdTimeBySecond, content, cuedMemberInfoArr, totalLikedCount } = restrictedSubcommentComprehensiveDict[commentId][subcommentId];
+                                                            const { memberId: subcommentAuthorId, nickname: subcommentAuthorNickname, createdTimeBySecond, content, cuedMemberInfoArr, totalLikedCount, totalDislikedCount } = restrictedSubcommentComprehensiveDict[commentId][subcommentId];
                                                             return (
                                                                 <Box key={subcommentId}>
                                                                     {/* member info */}
@@ -1315,15 +1336,15 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
 
                                                                         {/* like */}
                                                                         <Grid item sx={{ display: 'flex', flexDirection: 'row' }}>
-                                                                            <IconButton aria-label='like' onClick={handleExpressAttitudeOnSubcomment(commentId, subcommentId, 1)}>
+                                                                            <IconButton aria-label='like' onClick={async () => { await handleExpressAttitudeOnSubcomment(commentId, subcommentId, 1); }}>
                                                                                 <ThumbUpIcon color={1 === behaviourStates.attitudeOnComment[subcommentId] ? 'primary' : 'inherit'} fontSize='small' />
                                                                             </IconButton>
-                                                                            <Typography variant='body2' sx={{ marginTop: 1 }}>{totalLikedCount}</Typography>
+                                                                            <Typography variant='body2' sx={{ marginTop: 1 }}>{totalLikedCount - totalDislikedCount}</Typography>
                                                                         </Grid>
 
                                                                         {/* dislike */}
                                                                         <Grid item sx={{ ml: 1 }}>
-                                                                            <IconButton aria-label='dislike' onClick={handleExpressAttitudeOnSubcomment(commentId, subcommentId, -1)}>
+                                                                            <IconButton aria-label='dislike' onClick={async () => { await handleExpressAttitudeOnSubcomment(commentId, subcommentId, -1); }}>
                                                                                 <ThumbDownIcon color={-1 === behaviourStates.attitudeOnComment[subcommentId] ? 'error' : 'inherit'} fontSize='small' />
                                                                             </IconButton>
                                                                         </Grid>
@@ -1380,21 +1401,20 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
                                     <Grid item flexGrow={1}>
                                         <Avatar src={provideAvatarImageUrl(authorId, domain)} sx={{ width: 64, height: 64, bgcolor: 'grey' }}>{authorInfo_ss.nickname?.charAt(0).toUpperCase()}</Avatar>
                                     </Grid>
+
                                     {/* 'follow' button */}
                                     <Grid item sx={{ mt: 2 }} >
                                         {viewerInfoStates.memberId !== authorId &&
                                             <Tooltip title={behaviourStates.followed ? langConfigs.undoFollow[preferenceStates.lang] : langConfigs.follow[preferenceStates.lang]}>
                                                 <Button
                                                     variant='contained'
-                                                    sx={{
-                                                        color: behaviourStates.followed ? 'inherit' : 'info',
-                                                        borderRadius: 4,
-                                                    }}
+                                                    sx={{ color: behaviourStates.followed ? 'inherit' : 'info', borderRadius: 4, }}
                                                     onClick={async () => { await handleFollowOrUndoFollow(); }}
                                                 >
                                                     {behaviourStates.followed ? langConfigs.followed[preferenceStates.lang] : langConfigs.follow[preferenceStates.lang]}
                                                 </Button>
-                                            </Tooltip>}
+                                            </Tooltip>
+                                        }
                                     </Grid>
                                 </Grid>
 

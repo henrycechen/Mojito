@@ -97,26 +97,7 @@ const langConfigs: LangConfigs = {
         cn: '最新',
         en: 'Newest'
     },
-    totalCreationsCount: {
-        tw: '創作',
-        cn: '创作',
-        en: 'Creations'
-    },
-    totalFollowedByCount: {
-        tw: '訂閲',
-        cn: '粉丝',
-        en: 'Followers'
-    },
-    totalCreationSavedCount: {
-        tw: '收藏',
-        cn: '收藏',
-        en: 'Saves'
-    },
-    totalCreationLikedCount: {
-        tw: '喜歡',
-        cn: '点赞',
-        en: 'Likes'
-    },
+
     unreadReplyNotice: {
         tw: `條未讀消息`,
         cn: `条未读提醒`,
@@ -128,13 +109,13 @@ const langConfigs: LangConfigs = {
         en: 'Trending topics'
     },
     todaysTrendingPosts: {
-        tw: '今日熱門',
-        cn: '今日热门',
+        tw: '今日熱門文章',
+        cn: '今日热门文章',
         en: 'Trending posts today'
     },
     thisWeeksTrendingPosts: {
-        tw: '本周熱門',
-        cn: '本周热门',
+        tw: '本周熱門文章',
+        cn: '本周热门文章',
         en: 'Trending posts this week'
     },
     totalHitCount: {

@@ -79,8 +79,8 @@ const langConfigs: LangConfigs = {
     },
 
     allowVisitingFollowedMembers: {
-        tw: '允許他人查看您的訂閲',
-        cn: '允许他人查看您的订阅',
+        tw: '允許他人查看您關注的用戶',
+        cn: '允许他人查看您关注的用户',
         en: 'Allow other members visiting your followed members'
     },
     allowVisitingSavedPosts: {

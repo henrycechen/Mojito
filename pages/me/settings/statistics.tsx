@@ -88,12 +88,12 @@ const langConfigs: LangConfigs = {
         en: 'Member statistics'
     },
     totalCreationsCount: {
-        tw: '創作',
+        tw: '創作數',
         cn: '发布',
         en: 'Total creations'
     },
     totalCreationHitCount: {
-        tw: '觀看',
+        tw: '閲讀量',
         cn: '浏览',
         en: 'Total creation viewed'
     },
@@ -108,7 +108,7 @@ const langConfigs: LangConfigs = {
         en: 'Total creation saved'
     },
     totalFollowedByCount: {
-        tw: '訂閲',
+        tw: '關注數',
         cn: '粉丝',
         en: 'Followers'
     },
