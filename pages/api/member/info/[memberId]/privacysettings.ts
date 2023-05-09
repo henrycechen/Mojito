@@ -14,15 +14,15 @@ import { verifyId } from '../../../../../lib/utils/verify';
 
 const fnn = UpdatePrivacySettings.name;
 
-/** UpdatePrivacySettings v0.1.2
- * 
- * Last update: 03/05/2023
- * 
+/** 
  * This interface ONLY accepts PUT requests
  * 
  * Info required for PUT requests
- * - token: JWT
- * - setting: string (body, stringified json, TPrivacySettingsStates)
+ * -     token: JWT
+ * -     setting: string (body, stringified json, TPrivacySettingsStates)
+ * 
+ * Last update:
+ * - 03/05/2023 v0.1.2
 */
 
 

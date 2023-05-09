@@ -376,7 +376,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
     React.useEffect(() => { updateCreationArr(); }, []);
 
     const updateCreationArr = async () => {
-        const resp = await fetch(`/api/creation/s/of/${authorId}`);
+        const resp = await fetch(`/api/post/s/of/member/${authorId}`);
         if (200 === resp.status) {
             try {
                 const arr = await resp.json();

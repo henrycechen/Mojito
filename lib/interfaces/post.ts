@@ -205,6 +205,7 @@ export interface IRestrictedPostComprehensive {
  * -     totalCommentCount: number
  * -     totalHitCount: number
  * -     totalLikedCount: number
+ * -     totalDislikedCount: number
  * 
  * *`hasImages` is a unique property only exists in **IConcisePostComprehensive** comparing to its siblings.
  * It's used to tell generate the post cards with image cover or the title-only ones.
@@ -214,12 +215,13 @@ export interface IRestrictedPostComprehensive {
 export interface IConcisePostComprehensive {
     postId: string; // 10 characters, UPPERCASE, also used as coverImageFullname (e.g., P12345ABCDE.png)
     memberId: string;
-    nickname: string;
+    nickname?: string;
     createdTimeBySecond: number; // created time of this document (post est.)
     title: string;
     channelId: string;
-    hasImages: boolean; // [?] 0 === imageFullnamesArr.length
+    hasImages: boolean; // [?] 0 !== imageFullnamesArr.length
     totalCommentCount: number;
     totalHitCount: number; // viewed times accumulator
     totalLikedCount: number;
+    totalDislikedCount:number;
 }

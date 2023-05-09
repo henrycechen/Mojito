@@ -18,16 +18,16 @@ import { createNoticeId, getTimeBySecond } from '../../../lib/utils/create';
 
 const ffn = `${SaveOrUndoSavePostById.name} (API)`;
 
-/** SaveOrUndoSavePostById
- * 
+/**
  * This interface accepts GET and POST method
  * 
  * Info required for POST request
- * - token: JWT
- * - postId: string (query, member id)
+ * -     token: JWT
+ * -     postId: string (query, member id)
  * 
- * Last update: 24/02/2023 v0.1.1
- * Last update: 08/05/2023 v0.1.2
+ * Last update: 
+ * - 24/02/2023 v0.1.1
+ * - 08/05/2023 v0.1.2
  */
 
 export default async function SaveOrUndoSavePostById(req: NextApiRequest, res: NextApiResponse) {
@@ -176,6 +176,7 @@ export default async function SaveOrUndoSavePostById(req: NextApiRequest, res: N
                 rowKey: postId,
                 Nickname: authorName,
                 Title: title,
+                ChannelId: channelId,
                 CreatedTimeBySecond: getTimeBySecond(),
                 HasImages: false,
                 IsActive: true

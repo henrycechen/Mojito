@@ -3,38 +3,38 @@ import { getToken } from 'next-auth/jwt';
 import { RestError } from '@azure/data-tables';
 import { MongoError } from 'mongodb';
 
-import AzureTableClient from '../../../../../modules/AzureTableClient';
-import AtlasDatabaseClient from "../../../../../modules/AtlasDatabaseClient";
+import AzureTableClient from '../../../../modules/AzureTableClient';
+import AtlasDatabaseClient from "../../../../modules/AtlasDatabaseClient";
 
-import { verifyId } from '../../../../../lib/utils/verify';
-import { response405, response500, logWithDate } from '../../../../../lib/utils/general';
-import { IMemberComprehensive, IMemberStatistics } from '../../../../../lib/interfaces/member';
-import { IPostComprehensive } from '../../../../../lib/interfaces/post';
-import { IMemberMemberMapping, IMemberPostMapping, ITopicPostMapping } from '../../../../../lib/interfaces/mapping';
-import { IChannelStatistics } from '../../../../../lib/interfaces/channel';
-import { ITopicComprehensive } from '../../../../../lib/interfaces/topic';
-import { getTopicInfoArrayFromRequestBody, createTopicComprehensive } from '../../../../../lib/utils/for/topic';
-import { getCuedMemberInfoArrayFromRequestBody, getParagraphsArrayFromRequestBody, provideEditedPostInfo, providePostComprehensiveUpdate } from '../../../../../lib/utils/for/post';
-import { INoticeInfo, INotificationStatistics } from '../../../../../lib/interfaces/notification';
-import { createNoticeId, getTimeBySecond } from '../../../../../lib/utils/create';
-import { getNicknameFromToken } from '../../../../../lib/utils/for/member';
+import { verifyId } from '../../../../lib/utils/verify';
+import { response405, response500, logWithDate } from '../../../../lib/utils/general';
+import { IMemberComprehensive, IMemberStatistics } from '../../../../lib/interfaces/member';
+import { IPostComprehensive } from '../../../../lib/interfaces/post';
+import { IMemberMemberMapping, IMemberPostMapping, ITopicPostMapping } from '../../../../lib/interfaces/mapping';
+import { IChannelStatistics } from '../../../../lib/interfaces/channel';
+import { ITopicComprehensive } from '../../../../lib/interfaces/topic';
+import { getTopicInfoArrayFromRequestBody, createTopicComprehensive } from '../../../../lib/utils/for/topic';
+import { getCuedMemberInfoArrayFromRequestBody, getParagraphsArrayFromRequestBody, provideEditedPostInfo, providePostComprehensiveUpdate } from '../../../../lib/utils/for/post';
+import { INoticeInfo, INotificationStatistics } from '../../../../lib/interfaces/notification';
+import { createNoticeId, getTimeBySecond } from '../../../../lib/utils/create';
+import { getNicknameFromToken } from '../../../../lib/utils/for/member';
 
-const fname = UpdateOrDeleteCreationById.name;
+const fname = `${UpdateOrDeleteCreationById.name} (API)`;
 
-/** UpdateOrDeleteCreationById v0.1.2
- * 
+/** 
  * This interface accepts PUT and DELETE requests
  * 
  * Info required for PUT requrests
- * - token: JWT
- * - postId: string (query)
+ * -     token: JWT
+ * -     postId: string (query)
  * 
  * Info required for DELETE requests
- * - token: JWT
- * - postId: string (query)
+ * -     token: JWT
+ * -     postId: string (query)
  * 
- * Last update: 24/02/2023 v0.1.1
- * Last update: 08/05/2023 v0.1.2 Fix issue communicating with atlas db
+ * Last update: 
+ * - 24/02/2023 v0.1.1
+ * - 08/05/2023 v0.1.2 Fix issue communicating with atlas db
 */
 
 export default async function UpdateOrDeleteCreationById(req: NextApiRequest, res: NextApiResponse) {
@@ -125,6 +125,7 @@ export default async function UpdateOrDeleteCreationById(req: NextApiRequest, re
                 rowKey: postId,
                 Nickname: nickname, // [!] nickname is not supplied in this case
                 Title: title,
+                ChannelId: channelId,
                 HasImages: false,
                 CreatedTimeBySecond: 0,
                 IsActive: false

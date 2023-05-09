@@ -531,17 +531,6 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
         setBrowsingHelper({ ...browsingHelper, memorizeViewPortPositionY: undefined });
     };
 
-    // Disabled since 24/02/2023)
-    // const handleSwitchChange = () => {
-    //     let states: TProcessStates = { ...processStates, selectedHotPosts: !processStates.selectedHotPosts };
-    //     // #1 update process states
-    //     setProcessStates(states);
-    //     // #2 update process states cache
-    //     updateProcessStatesCache(states);
-    //     // #3 reset helper
-    //     setBrowsingHelper({ ...browsingHelper, memorizeViewPortPositionY: undefined });
-    // };
-
     //////// STATES - (masonry) post info array ////////
     const [masonryPostInfoArr, setMasonryPostInfoArr] = React.useState<IConcisePostComprehensive[]>([]);
 
@@ -551,7 +540,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
         let url = '';
 
         if ('mycreations' === processStates.selectedCategory) {
-            url = `/api/creation/s/of/${authorId}`;
+            url = `/api/post/s/of/member/${authorId}`;
         }
 
         if ('savedposts' === processStates.selectedCategory) {

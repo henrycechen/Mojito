@@ -741,7 +741,7 @@ const CreatePost = ({ restrictedPostComprehensive_ss, channelInfoDict_ss, redire
                 hasImages: imagesArr.length !== 0
             };
 
-            const respInit = await fetch(`/api/creation/id/${postId}`, {
+            const respInit = await fetch(`/api/creation/${postId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(post)
@@ -942,7 +942,7 @@ const CreatePost = ({ restrictedPostComprehensive_ss, channelInfoDict_ss, redire
         }
 
         // #4 Update image fullnames array
-        const respUpdate = await fetch(`/api/creation/id/${postId}/updateimagefullnamesarray`, {
+        const respUpdate = await fetch(`/api/creation/${postId}/updateimagefullnamesarray`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -987,7 +987,7 @@ const CreatePost = ({ restrictedPostComprehensive_ss, channelInfoDict_ss, redire
     });
 
     const handleDeletePost = async () => {
-        await fetch(`/api/creation/id/${postInfoStates.postId}`, { method: 'DELETE' });
+        await fetch(`/api/creation/${postInfoStates.postId}`, { method: 'DELETE' });
         // Jump to member info page (author's post layout)
         router.push(`/me/id/${authorInfoStates.memberId}`);
     };

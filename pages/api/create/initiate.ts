@@ -151,6 +151,7 @@ export default async function InitiatePost(req: NextApiRequest, res: NextApiResp
             rowKey: postId,
             Nickname: nickname,
             Title: title,
+            ChannelId: channelId,
             CreatedTimeBySecond: now,
             HasImages: hasImages,
             IsActive: true

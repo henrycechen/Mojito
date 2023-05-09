@@ -18,14 +18,14 @@ import { getTimeBySecond } from '../../../../lib/utils/create';
 
 const fname = `${GetRestrictedPostComprehensiveById.name} (API)`;
 
-/** GetRestrictedPostComprehensiveById v0.1.1
- * 
- * Last update: 24/02/2023
- * 
+/**
  * This interface ONLY accepts GET method  ( PUT/DELETE moved to /api/creation )
  * 
  * Info required for GET method
- * - token: JWT (optional)
+ * -     token: JWT (optional)
+ * 
+ * Last update:
+ * - 04/02/2023 v0.1.1
  */
 
 export default async function GetRestrictedPostComprehensiveById(req: NextApiRequest, res: NextApiResponse) {
@@ -68,7 +68,7 @@ export default async function GetRestrictedPostComprehensiveById(req: NextApiReq
         //// Response 200 ////
         res.status(200).send(getRestrictedFromPostComprehensive(postComprehensiveQueryResult));
 
-        const { memberId: authorId } = postComprehensiveQueryResult;
+        const { memberId: authorId, channelId } = postComprehensiveQueryResult;
 
         let viewerId = '';
         let viewerIsMemberButNotAuthor = false;
@@ -96,6 +96,7 @@ export default async function GetRestrictedPostComprehensiveById(req: NextApiReq
                     rowKey: postId,
                     Nickname: '',
                     Title: title,
+                    ChannelId: channelId,
                     CreatedTimeBySecond: getTimeBySecond(),
                     HasImages: false,
                     IsActive: true
@@ -129,7 +130,6 @@ export default async function GetRestrictedPostComprehensiveById(req: NextApiReq
         }
 
         //// Update totalHitCount (of IChannelStatistics) in [C] channelStatistics ////
-        const { channelId } = postComprehensiveQueryResult;
         const channelStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IChannelStatistics>('channel');
         const channelStatisticsUpdateResult = await channelStatisticsCollectionClient.updateOne({ channelId }, {
             $inc: {

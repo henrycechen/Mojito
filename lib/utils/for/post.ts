@@ -1,5 +1,5 @@
 import { IMemberInfo } from '../../interfaces/member';
-import { IEditedPostComprehensive, IPostComprehensive, IRestrictedPostComprehensive } from '../../interfaces/post';
+import { IConcisePostComprehensive, IEditedPostComprehensive, IPostComprehensive, IRestrictedPostComprehensive } from '../../interfaces/post';
 import { ITopicInfo } from '../../interfaces/topic';
 import { getRandomHexStr, getTimeBySecond } from '../create';
 import { verifyUrl } from '../verify';
@@ -164,6 +164,22 @@ export function getRestrictedFromPostComprehensive(postComprehensive: IPostCompr
         }
     }
     return restricted;
+}
+
+export function getConciseFromPostComprehensive(postComprehensive: IPostComprehensive): IConcisePostComprehensive {
+    return {
+        postId: postComprehensive.postId,
+        memberId: postComprehensive.memberId,
+        createdTimeBySecond: postComprehensive.createdTimeBySecond,
+        title: postComprehensive.title,
+        channelId: postComprehensive.channelId,
+        hasImages: 0 !== postComprehensive.imageFullnamesArr.length,
+        totalHitCount: postComprehensive.totalHitCount,
+        totalLikedCount: postComprehensive.totalLikedCount,
+        totalDislikedCount: postComprehensive.totalDislikedCount,
+        totalCommentCount: postComprehensive.totalCommentCount,
+
+    };
 }
 
 export function fakeRestrictedPostComprehensive(): IRestrictedPostComprehensive {
