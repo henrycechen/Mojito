@@ -20,6 +20,7 @@ export interface IMemberMemberMapping {
 /**
  * -     partitionKey: string // member id
  * -     rowKey: string // post id, also used as cover image fullname (e.g., P12345ABCDE.png)
+ * -     AuthorId: string;
  * -     Nickname: string
  * -     Title: string
  * -     ChannelId: string
@@ -34,6 +35,7 @@ export interface IMemberMemberMapping {
 export interface IMemberPostMapping {
     partitionKey: string; // member id
     rowKey: string; // post id, also used as cover image fullname (e.g., P12345ABCDE.png)
+    AuthorId: string;
     Nickname: string;
     Title: string;
     ChannelId: string;

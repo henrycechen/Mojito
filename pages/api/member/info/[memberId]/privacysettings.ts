@@ -115,7 +115,11 @@ export default async function UpdatePrivacySettings(req: NextApiRequest, res: Ne
             const historyQuery = browsingHistoryMappingTableClient.listEntities<IMemberPostMapping>({ queryOptions: { filter: `PartitionKey eq '${memberId}' and IsActive eq true` } });
             let result = await historyQuery.next();
             while (!result.done) {
-                await browsingHistoryMappingTableClient.updateEntity({ partitionKey: memberId, rowKey: result.value.rowKey, IsActive: false }, 'Merge');
+                await browsingHistoryMappingTableClient.updateEntity({
+                    partitionKey: memberId,
+                    rowKey: result.value.rowKey,
+                    IsActive: false
+                }, 'Merge');
             }
         }
         return;

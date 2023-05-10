@@ -28,38 +28,7 @@ const fname = GetMembersFollowedByMe.name;
  * - arr: IConciseMemberInfo[]
 */
 
-const bb5 = [
-    {
-        memberId: 'M1234ABCD',
-        nickname: '县长马邦德',
-        briefIntro: '我来鹅城。。。',
-        createdTimeBySecond: 1673485211
-
-    },
-    {
-        memberId: 'M4567EFGH',
-        nickname: '小学生张三',
-        briefIntro: '我是一个小学生，喜欢玩游戏和看动画片。',
-        createdTimeBySecond: 1673485222
-    },
-    {
-        memberId: 'M2345MNOP',
-        nickname: '游戏达人李四',
-        briefIntro: '我是一名游戏开发者，制作了许多受欢迎的游戏。',
-        createdTimeBySecond: 1673485244
-    },
-    {
-        memberId: 'M0123UVWX',
-        nickname: '健身达人张三',
-        briefIntro: '我是一名健身教练，已经帮助许多人成功塑形。',
-        createdTimeBySecond: 1673485266
-    },
-];
-
 export default async function GetMembersFollowedByMe(req: NextApiRequest, res: NextApiResponse) {
-
-    res.send(bb5);
-    return;
 
     const { method } = req;
     if ('GET' !== method) {

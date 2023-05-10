@@ -16,10 +16,10 @@ import { IChannelStatistics } from '../../../../lib/interfaces/channel';
 import { ITopicComprehensive } from '../../../../lib/interfaces/topic';
 import { getTimeBySecond } from '../../../../lib/utils/create';
 
-const fname = `${GetRestrictedPostComprehensiveById.name} (API)`;
+const fnn = `${GetRestrictedPostComprehensiveById.name} (API)`;
 
 /**
- * This interface ONLY accepts GET method  ( PUT/DELETE moved to /api/creation )
+ * This interface ONLY accepts GET method ( PUT/DELETE moved to /api/creation )
  * 
  * Info required for GET method
  * -     token: JWT (optional)
@@ -94,7 +94,8 @@ export default async function GetRestrictedPostComprehensiveById(req: NextApiReq
                 await historyMappingTableClient.upsertEntity<IMemberPostMapping>({
                     partitionKey: viewerId,
                     rowKey: postId,
-                    Nickname: '',
+                    AuthorId: postComprehensiveQueryResult.memberId,
+                    Nickname: postComprehensiveQueryResult.nickname,
                     Title: title,
                     ChannelId: channelId,
                     CreatedTimeBySecond: getTimeBySecond(),
@@ -116,7 +117,7 @@ export default async function GetRestrictedPostComprehensiveById(req: NextApiReq
                 }
             });
             if (!memberStatisticsUpdateResult.acknowledged) {
-                logWithDate(`Failed to update totalCreationHitCount (of IMemberStatistics, member id: ${authorId}) in [C] memberStatistics`, fname);
+                logWithDate(`Failed to update totalCreationHitCount (of IMemberStatistics, member id: ${authorId}) in [C] memberStatistics`, fnn);
             }
         }
 
@@ -126,7 +127,7 @@ export default async function GetRestrictedPostComprehensiveById(req: NextApiReq
             $inc: { ...hitCountUpdate }
         });
         if (!postComprehensiveUpdateResult.acknowledged) {
-            logWithDate(`Failed to update totalHitCount/totalMemberHitCount (of IPostComprehensive, post id: ${postId}) in [C] postComprehensive`, fname);
+            logWithDate(`Failed to update totalHitCount/totalMemberHitCount (of IPostComprehensive, post id: ${postId}) in [C] postComprehensive`, fnn);
         }
 
         //// Update totalHitCount (of IChannelStatistics) in [C] channelStatistics ////
@@ -137,7 +138,7 @@ export default async function GetRestrictedPostComprehensiveById(req: NextApiReq
             }
         });
         if (!channelStatisticsUpdateResult.acknowledged) {
-            logWithDate(`Failed to totalHitCount (of IChannelStatistics, channel id: ${channelId}) in [C] channelStatistics`, fname);
+            logWithDate(`Failed to totalHitCount (of IChannelStatistics, channel id: ${channelId}) in [C] channelStatistics`, fnn);
         }
 
         //// (Cond.) Update totalHitCount (of ITopicComprehensive) in [C] topicComprehensive ////
@@ -151,7 +152,7 @@ export default async function GetRestrictedPostComprehensiveById(req: NextApiReq
                     }
                 });
                 if (!topicComprehensiveUpdateResult.acknowledged) {
-                    logWithDate(`Failed to update totalHitCount (of ITopicStatistics, topic id:${t.topicId}, post id: ${postId}) in [C] topicStatistics`, fname);
+                    logWithDate(`Failed to update totalHitCount (of ITopicStatistics, topic id:${t.topicId}, post id: ${postId}) in [C] topicStatistics`, fnn);
                 }
             }
         }
@@ -173,7 +174,7 @@ export default async function GetRestrictedPostComprehensiveById(req: NextApiReq
         if (!res.headersSent) {
             response500(res, msg);
         }
-        logWithDate(msg, fname, e);
+        logWithDate(msg, fnn, e);
         await atlasDbClient.close();
         return;
     }

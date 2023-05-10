@@ -109,6 +109,7 @@ export default async function InitiatePost(req: NextApiRequest, res: NextApiResp
             // info
             postId,
             memberId,
+            nickname,
             createdTimeBySecond: now,
             title,
             imageFullnamesArr: [], // [!] not required on initiate
@@ -149,6 +150,7 @@ export default async function InitiatePost(req: NextApiRequest, res: NextApiResp
         await historyMappingTableClient.upsertEntity<IMemberPostMapping>({
             partitionKey: memberId,
             rowKey: postId,
+            AuthorId: memberId,
             Nickname: nickname,
             Title: title,
             ChannelId: channelId,

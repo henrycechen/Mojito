@@ -21,9 +21,9 @@ export function cuedMemberInfoDictionaryToArray(dict: { [memberId: string]: IMem
 
 export function provideCoverImageUrl(postId: string, domain: string, forceBrowserUpdate = false): string {
     if (forceBrowserUpdate) {
-        return `${domain}/api/coverimage/a/${postId}.png?variant=${getRandomHexStr()}`;
+        return `${domain}/api/coverimage/a/${postId}.jpeg?variant=${getRandomHexStr()}`;
     } else {
-        return `${domain}/api/coverimage/a/${postId}.png`;
+        return `${domain}/api/coverimage/a/${postId}.jpeg`;
     }
 }
 
@@ -66,6 +66,7 @@ export function getCuedMemberInfoArrayFromRequestBody(requestBody: any): IMember
 }
 
 type PostComprehensiveUpdate = {
+    nickname: string;
     title: string;
     imageFullNamesArr: string[];
     paragraphsArr: string[];
@@ -81,8 +82,9 @@ type PostComprehensiveUpdate = {
     totalUndoDislikedCount: 0;
 };
 
-export function providePostComprehensiveUpdate(title: string, hasImages: boolean, paragraphsArr: string[], cuedMemberInfoArr: IMemberInfo[], channelId: string, topicInfoArr: ITopicInfo[]): PostComprehensiveUpdate {
+export function providePostComprehensiveUpdate(nickname: string, title: string, hasImages: boolean, paragraphsArr: string[], cuedMemberInfoArr: IMemberInfo[], channelId: string, topicInfoArr: ITopicInfo[]): PostComprehensiveUpdate {
     const updated: PostComprehensiveUpdate = {
+        nickname,
         title,
         imageFullNamesArr: [],
         paragraphsArr,
@@ -100,9 +102,10 @@ export function providePostComprehensiveUpdate(title: string, hasImages: boolean
     return updated;
 }
 
-export function provideEditedPostInfo(postComprehensive: IPostComprehensive): IEditedPostComprehensive {
+export function provideEditedPostInfo(postComprehensive: IPostComprehensive, editedTimeBySecond: number): IEditedPostComprehensive {
     return {
-        editedTimeBySecond: getTimeBySecond(),
+        editedTimeBySecond,
+        nicknameBeforeEdit: postComprehensive.nickname,
         titleBeforeEdit: postComprehensive.title,
         imageFullnamesArrBeforeEdit: [...postComprehensive.imageFullnamesArr],
         paragraphsArrBeforeEdit: [...postComprehensive.paragraphsArr],
@@ -170,6 +173,7 @@ export function getConciseFromPostComprehensive(postComprehensive: IPostComprehe
     return {
         postId: postComprehensive.postId,
         memberId: postComprehensive.memberId,
+        nickname: postComprehensive.nickname,
         createdTimeBySecond: postComprehensive.createdTimeBySecond,
         title: postComprehensive.title,
         channelId: postComprehensive.channelId,

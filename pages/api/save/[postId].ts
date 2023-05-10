@@ -174,6 +174,7 @@ export default async function SaveOrUndoSavePostById(req: NextApiRequest, res: N
             await savedMappingTableClient.upsertEntity<IMemberPostMapping>({
                 partitionKey: memberId,
                 rowKey: postId,
+                AuthorId: authorId,
                 Nickname: authorName,
                 Title: title,
                 ChannelId: channelId,

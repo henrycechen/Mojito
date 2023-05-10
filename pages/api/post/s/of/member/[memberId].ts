@@ -57,10 +57,6 @@ export default async function GetPostsByMemberId(req: NextApiRequest, res: NextA
             }
         }
 
-
-
-
-
         res.status(200).send(arr);
         await atlasDbClient.close();
     } catch (e: any) {

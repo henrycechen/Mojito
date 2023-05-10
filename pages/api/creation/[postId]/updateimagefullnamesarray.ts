@@ -19,18 +19,18 @@ import { verifyId } from '../../../../lib/utils/verify';
 import { IMemberMemberMapping } from '../../../../lib/interfaces/mapping';
 
 const domain = process.env.NEXT_PUBLIC_APP_DOMAIN;
-const fname = UpdateImageFullnamesArray.name;
+const ffn = `${UpdateImageFullnamesArray.name} (API)`;
 
-/** CreatePost v0.1.1
- * 
- * Last update: 
- * 
+/**
  * This interface ONLY accepts PUT method
  * 
  * Post info required
- * - token: JWT
- * - title
- * - channelId
+ * -     token: JWT
+ * -     title
+ * -     channelId
+ * 
+ * Last update:
+ * - 10/05/2023 v0.1.1
  */
 
 export default async function UpdateImageFullnamesArray(req: NextApiRequest, res: NextApiResponse) {
@@ -60,7 +60,6 @@ export default async function UpdateImageFullnamesArray(req: NextApiRequest, res
         res.status(400).send('Invalid image fullnames array');
         return;
     }
-
 
     //// Declare DB client ////
     const atlasDbClient = AtlasDatabaseClient();
@@ -145,7 +144,7 @@ export default async function UpdateImageFullnamesArray(req: NextApiRequest, res
                     // #4 update cue (of INotificationStatistics) (of cued member) in [C] notificationStatistics
                     const notificationStatisticsUpdateResult = await notificationStatisticsCollectionClient.updateOne({ memberId: cuedId }, { $inc: { cue: 1 } });
                     if (!notificationStatisticsUpdateResult.acknowledged) {
-                        logWithDate(`Document (IPostComprehensive, post id: ${postId}) inserted in [C] postComprehensive successfully but failed to update cue (of INotificationStatistics, member id: ${cuedId}) in [C] notificationStatistics`, fname);
+                        logWithDate(`Document (IPostComprehensive, post id: ${postId}) inserted in [C] postComprehensive successfully but failed to update cue (of INotificationStatistics, member id: ${cuedId}) in [C] notificationStatistics`, ffn);
                     }
                 }
             }
@@ -168,7 +167,7 @@ export default async function UpdateImageFullnamesArray(req: NextApiRequest, res
         if (!res.headersSent) {
             response500(res, msg);
         }
-        logWithDate(msg, fname, e);
+        logWithDate(msg, ffn, e);
         await atlasDbClient.close();
         return;
     }

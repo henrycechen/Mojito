@@ -1470,9 +1470,9 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
                                 <Box>
                                     <Typography>{authorInfo_ss.nickname} {langConfigs.hotPostRecommend[preferenceStates.lang]}</Typography>
                                 </Box>
-                                <Stack mt={2} spacing={{ md: 2, lg: 1 }}>
 
-                                    {/* posts */}
+                                {/* posts */}
+                                <Stack mt={2} spacing={{ md: 2, lg: 1 }}>
                                     {0 !== creationInfoArr.length && creationInfoArr.map(p =>
                                         <TextButton key={getRandomHexStr()} sx={{ color: 'inherit', display: 'flex', flexDirection: 'row', justifyContent: 'space-between' }}>
 
@@ -1501,6 +1501,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
                                         </TextButton>
                                     )}
                                 </Stack>
+
                             </ResponsiveCard>
                         </Stack>
                     </Grid>

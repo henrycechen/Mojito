@@ -561,6 +561,22 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
                         })}
                     </Stack>
 
+                    {/* empty alert */}
+                    {0 === masonryPostInfoArr.length &&
+                        <Box minHeight={200} mt={10}>
+                            {/* 'mycreations' | 'savedposts' | 'browsinghistory' */}
+                            {'mycreations' === processStates.selectedCategory && <Typography color={'text.secondary'} align={'center'}>
+                                {authorId === processStates.viewerId ? langConfigs.noCreationsRecord[preferenceStates.lang] : langConfigs.authorNoCreationsRecord[preferenceStates.lang]}
+                            </Typography>}
+                            {'savedposts' === processStates.selectedCategory && <Typography color={'text.secondary'} align={'center'}>
+                                {authorId === processStates.viewerId ? langConfigs.noSavedPostsRecord[preferenceStates.lang] : langConfigs.authorNoSavedPostsRecord[preferenceStates.lang]}
+                            </Typography>}
+                            {'browsinghistory' === processStates.selectedCategory && <Typography color={'text.secondary'} align={'center'}>
+                                {langConfigs.noBrowsingHistoryRecord[preferenceStates.lang]}
+                            </Typography>}
+                        </Box>
+                    }
+
                     {/* mansoy */}
                     <Box ml={1} ref={masonryWrapper}>
                         <Masonry columns={{ xs: 2, sm: 3, md: 2, lg: 3, xl: 3 }}>

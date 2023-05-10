@@ -3,11 +3,11 @@ import { getToken } from 'next-auth/jwt';
 import { RestError } from '@azure/data-tables';
 import { MongoError } from 'mongodb';
 
-import AzureTableClient from '../../../../../../modules/AzureTableClient';
-import AtlasDatabaseClient from "../../../../../../modules/AtlasDatabaseClient";
-import { logWithDate, response405, response500 } from '../../../../../../lib/utils/general';
-import { IMemberComprehensive } from '../../../../../../lib/interfaces/member';
-import { createId, createTopicId } from '../../../../../../lib/utils/create';
+import AzureTableClient from '../../../../../modules/AzureTableClient';
+import AtlasDatabaseClient from "../../../../../modules/AtlasDatabaseClient";
+import { logWithDate, response405, response500 } from '../../../../../lib/utils/general';
+import { IMemberComprehensive } from '../../../../../lib/interfaces/member';
+import { createId, createTopicId } from '../../../../../lib/utils/create';
 
 const fname = GetTopicsByChannelId.name;
 

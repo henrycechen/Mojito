@@ -4,7 +4,7 @@ import { RestError } from '@azure/data-tables';
 import AzureTableClient from '../../../../modules/AzureTableClient';
 import { response405, response500, logWithDate } from '../../../../lib/utils/general';
 
-const fname = GetChannelIdSequence.name;
+const fnn = GetChannelIdSequence.name;
 
 /** GetChannelIdSequence v0.1.1
  * 
@@ -47,7 +47,7 @@ export default async function GetChannelIdSequence(req: NextApiRequest, res: Nex
         if (!res.headersSent) {
             response500(res, msg);
         }
-        logWithDate(msg, fname, e);
+        logWithDate(msg, fnn, e);
         return;
     }
 }

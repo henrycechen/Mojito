@@ -7,13 +7,14 @@ import AzureTableClient from '../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from "../../../../modules/AtlasDatabaseClient";
 
 import { IMemberComprehensive } from '../../../../lib/interfaces/member';
-import { IPostComprehensive, IRestrictedPostComprehensive, } from '../../../../lib/interfaces/post';
 import { logWithDate, response405, response500 } from '../../../../lib/utils/general';
-import { getRestrictedFromPostComprehensive } from '../../../../lib/utils/for/post';
+import { IConcisePostComprehensive } from '../../../../lib/interfaces/post';
+import { IMemberPostMapping } from '../../../../lib/interfaces/mapping';
+import { verifyId } from '../../../../lib/utils/verify';
 
 const fnn = `${GetOrDeleteBrowsingHistory.name} (API)`;
 
-/** FIXME:FIXME:FIXME:FIXME:FIXME:FIXME:FIXME:FIXME:FIXME:FIXME:FIXME:
+/**
  * This interface accepts GET and DELETE requests
  * 
  * Info required for GET requests
@@ -21,25 +22,22 @@ const fnn = `${GetOrDeleteBrowsingHistory.name} (API)`;
  * -     quantity: number (query string, optional, maximum 20)
  * -     positionId: string (query string, the last post id of the last request, optional)
  * 
- * Info will be returned
- * -     restrictedComprehensiveArr: IRestrictedPostComprehensive[]
+ * Info will be returned for GET requests
+ * -     arr: IConcisePostComprehensive[]
+ * 
+ * Info required for DELETE requets
+ * -     token: JWT
+ * -     postId: string
  * 
  * Last update:
- * - 21/02/2023
+ * - 21/02/2023 v0.1.1
+ * - 10/05/2023 v0.1.2
 */
 
 export default async function GetOrDeleteBrowsingHistory(req: NextApiRequest, res: NextApiResponse) {
     const { method } = req;
 
-    if ('GET' !== method) {
-        res.send([]);
-    } else {
-        res.send('ok');
-    }
-
-    return;
-
-    if ('GET' !== method) {
+    if (!['GET', 'DELETE'].includes(method ?? '')) {
         response405(req, res);
         return;
     }
@@ -69,34 +67,60 @@ export default async function GetOrDeleteBrowsingHistory(req: NextApiRequest, re
             await atlasDbClient.close();
             return;
         }
+
+        await atlasDbClient.close();
         const historyMappingTableClient = AzureTableClient('HistoryMapping');
-        const historyMappingQuery = historyMappingTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${memberId}' and IsActive eq true` } });
-        //// [!] attemp to reterieve entity makes the probability of causing RestError ////
-        let quantity: number;
-        if ('string' === typeof req.query?.quantity) {
-            quantity = parseInt(req.query.quantity);
-        } else {
-            quantity = 20;
+
+        if ('DELETE' === method) {
+            //// Verify post id ////
+            const { isValid, category, id: postId } = verifyId(req.query?.postId);
+            if (!(isValid && 'post' === category)) {
+                res.status(400).send('Invalid post id');
+                return;
+            }
+
+            await historyMappingTableClient.updateEntity({
+                partitionKey: memberId,
+                rowKey: postId,
+                IsActive: false
+            }, 'Merge');
+
+            res.status(200).send('Delete browsing history success');
+
         }
-        if (20 < quantity) {
-            quantity = 20;
+
+        //// Fulfill GET requests ////
+
+        let str = `PartitionKey eq '${memberId}' and IsActive eq true`;
+
+        const { channelId } = req.query;
+        if ('string' === typeof channelId && '' !== channelId && 'all' !== channelId) {
+            str += ` and ChannelId eq '${channelId}'`;
         }
-        let postIdArr = [];
+
+        let arr: IConcisePostComprehensive[] = [];
+        const historyMappingQuery = historyMappingTableClient.listEntities<IMemberPostMapping>({ queryOptions: { filter: str } });
+
+        // [!] attemp to reterieve entity makes the probability of causing RestError
         let historyMappingQueryResult = await historyMappingQuery.next();
-        while ((historyMappingQueryResult.value && postIdArr.length < quantity)) {
-            postIdArr.push(historyMappingQueryResult.value?.RowKey);
+        while (historyMappingQueryResult.value) {
+            arr.push({
+                postId: historyMappingQueryResult.value.rowKey,
+                memberId: historyMappingQueryResult.value.AuthorId,
+                nickname: historyMappingQueryResult.value.Nickname ?? '',
+                createdTimeBySecond: historyMappingQueryResult.value.CreatedTimeBySecond,
+                title: historyMappingQueryResult.value.Title,
+                channelId: historyMappingQueryResult.value.ChannelId,
+                hasImages: historyMappingQueryResult.value.HasImages,
+                totalCommentCount: 0,
+                totalHitCount: 0,
+                totalLikedCount: 0,
+                totalDislikedCount: 0
+            });
             historyMappingQueryResult = await historyMappingQuery.next();
         }
-        let restrictedComprehensiveArr: IRestrictedPostComprehensive[] = [];
-        const postComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IPostComprehensive>('post');
-        for await (const postId of postIdArr) {
-            const postComprehensiveQueryResult = await postComprehensiveCollectionClient.findOne({ postId });
-            if (null !== postComprehensiveQueryResult) {
-                restrictedComprehensiveArr.push(getRestrictedFromPostComprehensive(postComprehensiveQueryResult));
-            }
-        }
-        res.status(200).send(restrictedComprehensiveArr);
-        await atlasDbClient.close();
+
+        res.status(200).send(arr);
         return;
     } catch (e: any) {
         let msg;
@@ -130,11 +154,7 @@ export default async function GetOrDeleteBrowsingHistory(req: NextApiRequest, re
 // const { sub: memberId } = token;
 
 // // Verify post id
-// const { isValid, category, id: postId } = verifyId(req.query?.postId);
-// if (!(isValid && 'post' === category)) {
-//     res.status(400).send('Invalid post id');
-//     return;
-// }
+
 
 // //// Declare DB client ////
 // const atlasDbClient = AtlasDatabaseClient();
@@ -155,11 +175,3 @@ export default async function GetOrDeleteBrowsingHistory(req: NextApiRequest, re
 //     }
 //     await atlasDbClient.close();
 
-//     //// Update (delete) record (of IMemberPostMapping) in [RL] HistoryMapping ////
-//     const noticeTableClient = AzureTableClient('HistoryMapping');
-//     await noticeTableClient.updateEntity({
-//         partitionKey: memberId,
-//         rowKey: postId,
-//         IsActive: false
-//     }, 'Merge');
-//     res.status(200).send('Delete browsing history success');

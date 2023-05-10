@@ -5,6 +5,7 @@ import { ITopicInfo } from './topic';
  * Info
  * -     postId: string; // 10 characters, UPPERCASE, also used as coverImageFullname (e.g., P12345ABCDE.png)
  * -     memberId: string;
+ * -     nickname: string; // initial nickname used to create this post
  * -     createdTimeBySecond: number; // created time of this document (post est.)
  * 
  * Content
@@ -54,6 +55,7 @@ export interface IPostComprehensive {
     // Info
     postId: string; // 10 characters, UPPERCASE, also used as coverImageFullname (e.g., P12345ABCDE.png)
     memberId: string;
+    nickname: string;
     createdTimeBySecond: number; // created time of this document (post est.)
 
     // Content
@@ -92,7 +94,7 @@ export interface IPostComprehensive {
 
     // Affair
     totalAffairCount: number;
-    
+
     // Edit Info
     totalEditCount: number;
     edited: IEditedPostComprehensive[];
@@ -101,6 +103,7 @@ export interface IPostComprehensive {
 /**
  * Info
  * -     editedTimeBySecond: number
+ * -     nicknameBeforeEdit: string
  * -     titleBeforeEdit: string
  * -     imageFullnamesArrBeforeEdit: string[]
  * -     paragraphsArrBeforeEdit: string[]
@@ -119,6 +122,8 @@ export interface IPostComprehensive {
  */
 export interface IEditedPostComprehensive {
     editedTimeBySecond: number;
+
+    nicknameBeforeEdit: string;
 
     titleBeforeEdit: string;
     imageFullnamesArrBeforeEdit: string[];
@@ -193,9 +198,8 @@ export interface IRestrictedPostComprehensive {
  * 
  * Info
  * -     postId: string
- * -     postId: string
  * -     memberId: string
- * -     nickname: string
+ * -     nickname?: string
  * -     createdTimeBySecond: number
  * -     title: string
  * -     channelId: string
@@ -223,5 +227,5 @@ export interface IConcisePostComprehensive {
     totalCommentCount: number;
     totalHitCount: number; // viewed times accumulator
     totalLikedCount: number;
-    totalDislikedCount:number;
+    totalDislikedCount: number;
 }

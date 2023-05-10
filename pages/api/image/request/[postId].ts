@@ -15,18 +15,18 @@ import { verifyId } from '../../../../lib/utils/verify';
 const appSecret = process.env.APP_AES_SECRET ?? '';
 const fname = RequestImageUpload.name;
 
-/** RequestImageUpload v0.1.1
- * 
- * Last update: 3/3/2023
- * 
+/**
  * This interface ONLY accepts GET requests
  * 
  * Info required for GET requests
- * - token: JWT
- * - postId: string (query string)
+ * -     token: JWT
+ * -     postId: string (query string)
  * 
  * Info will be returned for GET requests
- * - requestInfo: string
+ * -     requestInfo: string
+ * 
+ * Last update:
+ * - 3/3/2023 v0.1.1
  */
 
 export default async function RequestImageUpload(req: NextApiRequest, res: NextApiResponse) {

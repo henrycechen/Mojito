@@ -427,7 +427,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
     //////// STATES - memberInfo ////////
     const [memberInfoStates, setMemberInfoStates] = React.useState<TMemberInfoStates>({
-        avatarImageUrl: provideAvatarImageUrl(authorId, domain, true),
+        avatarImageUrl: provideAvatarImageUrl(authorId, domain),
         nickname: memberComprehensive_ss.nickname,
         briefIntro: memberComprehensive_ss.briefIntro,
         gender: memberComprehensive_ss.gender,
@@ -442,7 +442,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
     type TProcessStates = {
         viewerId: string;
-        selectedCategory: 'mycreations' | 'savedposts' | 'browsinghistory';
+        selectedCategory: 'creations' | 'savedposts' | 'browsinghistory';
         selectedHotPosts: boolean;
         selectedChannelId: string;
         memorizeChannelBarPositionX: number | undefined;
@@ -454,7 +454,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
     //////// STATES - process ////////
     const [processStates, setProcessStates] = React.useState<TProcessStates>({
         viewerId: '',
-        selectedCategory: 'mycreations', // 'mycreations' | 'savedposts' | 'browsinghistory'
+        selectedCategory: 'creations', // 'creations' | 'savedposts' | 'browsinghistory'
         selectedHotPosts: false, // default
         selectedChannelId: 'all', // default
         memorizeChannelBarPositionX: undefined,
@@ -473,7 +473,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
     //////////////////////////////////////// POST LAYOUT ////////////////////////////////////////
 
-    const handleSelectPostCategory = (categoryId: 'mycreations' | 'savedposts' | 'browsinghistory') => (event: React.MouseEvent<HTMLButtonElement> | React.SyntheticEvent) => {
+    const handleSelectPostCategory = (categoryId: 'creations' | 'savedposts' | 'browsinghistory') => (event: React.MouseEvent<HTMLButtonElement> | React.SyntheticEvent) => {
         let states: TProcessStates = { ...processStates, selectedCategory: categoryId };
         // #1 update process states
         setProcessStates(states);
@@ -539,8 +539,8 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
     const updatePostsArr = async () => {
         let url = '';
 
-        if ('mycreations' === processStates.selectedCategory) {
-            url = `/api/post/s/of/member/${authorId}`;
+        if ('creations' === processStates.selectedCategory) {
+            url = `/api/member/creations/${authorId}`;
         }
 
         if ('savedposts' === processStates.selectedCategory) {
@@ -548,7 +548,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
         }
 
         if ('browsinghistory' === processStates.selectedCategory) {
-            url = `/api/member/browsinghistory/${authorId}`;
+            url = `/api/member/browsinghistory`;
         }
 
         const resp = await fetch(`${url}?channelId=${processStates.selectedChannelId}&sort=${processStates.selectedHotPosts ? 'hot' : 'new'}`);
@@ -604,7 +604,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
     // Handle click on bottom-right icon button
     const handleMultiProposeButtonClick = async (categoryId: string, postId: string) => {
         // edit post 
-        if ('mycreations' === categoryId) {
+        if ('creations' === categoryId) {
             router.push(`/me/editpost/${postId}`);
             return;
         }
@@ -1043,7 +1043,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
             <Navbar lang={preferenceStates.lang} />
 
-            {/* //// first layer - member info //// */}
+            {/* layer - member info */}
             <Grid container >
 
                 {/* placeholder - left */}
@@ -1099,10 +1099,10 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
                         {/* statistics - creations */}
                         <Box pt={{ xs: 0, sm: 1 / 2 }} sx={{ display: 'flex', flexDirection: 'row' }}>
-                            {0 === memberStatistics_ss.totalFollowedByCount && <>
+                            {0 === memberStatistics_ss.totalCreationsCount && <>
                                 <Typography fontSize={{ md: 17 }} color={'text.disabled'}>{langConfigs.noCreations[preferenceStates.lang]}</Typography>
                             </>}
-                            {0 !== memberStatistics_ss.totalFollowedByCount && <>
+                            {0 !== memberStatistics_ss.totalCreationsCount && <>
                                 <Typography fontSize={{ md: 17 }} color={'text.disabled'}>{langConfigs.authorsTotalCreationsP1[preferenceStates.lang]}</Typography>
                                 <Typography fontSize={{ md: 17 }} fontWeight={700} color={'grey.700'} >{memberStatistics_ss.totalCreationsCount}</Typography>
                                 <Typography fontSize={{ md: 17 }} color={'text.disabled'}>{langConfigs.authorsTotalCreationsP2[preferenceStates.lang]}</Typography>
@@ -1134,22 +1134,22 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                 <Grid item xs={0} sm={1} md={2} lg={3} xl={3}></Grid>
             </Grid>
 
-            {/* //// second layer - post layout */}
+            {/* layer - post layout */}
             <Grid container >
 
-                {/* //// placeholder left //// */}
+                {/* placeholder */}
                 <Grid item xs={0} sm={1} md={2} lg={2} xl={1}></Grid>
 
-                {/* //// left column //// */}
+                {/* //// left column (menu for desktop mode) //// */}
                 <Grid item xs={0} sm={0} md={2} lg={2} xl={2} sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'right' }}>
                     <Stack spacing={0} sx={{ pr: 1, display: { xs: 'none', sm: 'none', md: 'block' } }} >
 
-                        {/* my posts / saved posts / browsing history switch */}
+                        {/* category list */}
                         <ResponsiveCard sx={{ padding: 1 }}>
                             <MenuList>
 
                                 {/* creations */}
-                                <MenuItem onClick={handleSelectPostCategory('mycreations')} selected={'mycreations' === processStates.selectedCategory}>
+                                <MenuItem onClick={handleSelectPostCategory('creations')} selected={'creations' === processStates.selectedCategory}>
                                     <ListItemIcon ><CreateIcon /></ListItemIcon>
                                     <ListItemText>
                                         <Typography>{authorId === processStates.viewerId ? langConfigs.myCreations[preferenceStates.lang] : langConfigs.authorsCreations[preferenceStates.lang]}</Typography>
@@ -1176,7 +1176,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                             </MenuList>
                         </ResponsiveCard>
 
-                        {/* the channel menu (desktop mode) */}
+                        {/* channel list */}
                         <ResponsiveCard sx={{ padding: 1 }}>
                             <MenuList>
                                 {/* the 'all' menu item */}
@@ -1212,14 +1212,14 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                     </Stack>
                 </Grid>
 
-                {/* //// right column //// */}
+                {/* right column (menu for mobile mode + post masonry) */}
                 <Grid item xs={12} sm={10} md={6} lg={6} xl={7}>
 
-                    {/* channel bar (mobile mode) */}
+                    {/* channel bar */}
                     <Stack id={'channel-bar'} direction={'row'} spacing={1} sx={{ display: { sm: 'flex', md: 'none' }, padding: 1, overflow: 'auto' }}>
 
                         {/* creations button */}
-                        <Button variant={'mycreations' === processStates.selectedCategory ? 'contained' : 'outlined'} size='small' sx={{ minWidth: 'max-content' }} onClick={handleSelectPostCategory('mycreations')}>
+                        <Button variant={'creations' === processStates.selectedCategory ? 'contained' : 'outlined'} size='small' sx={{ minWidth: 'max-content' }} onClick={handleSelectPostCategory('creations')}>
                             <Typography variant='body2'>{authorId === processStates.viewerId ? langConfigs.myCreations[preferenceStates.lang] : langConfigs.authorsCreations[preferenceStates.lang]}</Typography>
                         </Button>
 
@@ -1261,10 +1261,11 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                         )}
                     </Stack>
 
+                    {/* empty alert */}
                     {0 === masonryPostInfoArr.length &&
                         <Box minHeight={200} mt={10}>
-                            {/* 'mycreations' | 'savedposts' | 'browsinghistory' */}
-                            {'mycreations' === processStates.selectedCategory && <Typography color={'text.secondary'} align={'center'}>
+                            {/* 'creations' | 'savedposts' | 'browsinghistory' */}
+                            {'creations' === processStates.selectedCategory && <Typography color={'text.secondary'} align={'center'}>
                                 {authorId === processStates.viewerId ? langConfigs.noCreationsRecord[preferenceStates.lang] : langConfigs.authorNoCreationsRecord[preferenceStates.lang]}
                             </Typography>}
                             {'savedposts' === processStates.selectedCategory && <Typography color={'text.secondary'} align={'center'}>
@@ -1326,7 +1327,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                                                 {/* member behaviour / placeholder */}
                                                 {('authenticated' === status && authorId === processStates.viewerId) && <Grid item>
                                                     <IconButton sx={{ mt: 1 }} onClick={async () => { await handleMultiProposeButtonClick(processStates.selectedCategory, info.postId); }}>
-                                                        {'mycreations' === processStates.selectedCategory && <CreateIcon color={'inherit'} sx={{ fontSize: { xs: 20, sm: 24 } }} />}
+                                                        {'creations' === processStates.selectedCategory && <CreateIcon color={'inherit'} sx={{ fontSize: { xs: 20, sm: 24 } }} />}
                                                         {'savedposts' === processStates.selectedCategory && <StarIcon color={undoSavedPostArr.includes(info.postId) ? 'inherit' : 'warning'} sx={{ fontSize: { xs: 20, sm: 24 } }} />}
                                                         {'browsinghistory' === processStates.selectedCategory && <DeleteIcon color={'inherit'} sx={{ fontSize: { xs: 20, sm: 24 } }} />}
                                                     </IconButton>
@@ -1356,10 +1357,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                 onOpen={handleToggleEditor(true)}
                 swipeAreaWidth={50}
                 disableSwipeToOpen={false}
-                ModalProps={{
-                    keepMounted: true,
-                }}
-
+                ModalProps={{ keepMounted: true }}
             >
                 <Box sx={{ px: { xs: 2, sm: 2, md: 4 }, pt: { xs: 2, sm: 2, md: 4 }, height: '100%', overflow: 'auto', backgroundColor: theme.palette.mode === 'light' ? '#fff' : grey[800], }}>
 
@@ -1462,7 +1460,6 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
             </SwipeableDrawer>
 
         </>
-
     );
 };
 

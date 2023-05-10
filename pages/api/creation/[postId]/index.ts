@@ -19,7 +19,7 @@ import { INoticeInfo, INotificationStatistics } from '../../../../lib/interfaces
 import { createNoticeId, getTimeBySecond } from '../../../../lib/utils/create';
 import { getNicknameFromToken } from '../../../../lib/utils/for/member';
 
-const fname = `${UpdateOrDeleteCreationById.name} (API)`;
+const fnn = `${UpdateOrDeleteCreationById.name} (API)`;
 
 /** 
  * This interface accepts PUT and DELETE requests
@@ -116,18 +116,13 @@ export default async function UpdateOrDeleteCreationById(req: NextApiRequest, re
         //////// DELETE | delete a creation ////////
         if ('DELETE' === method) {
 
-            const { title, channelId, topicInfoArr } = postComprehensiveQueryResult;
+            const { channelId, topicInfoArr } = postComprehensiveQueryResult;
 
             //// Update record (of IMemberPostMapping) in [RL] CreationsMapping
             const mappingTableClient = AzureTableClient('CreationsMapping');
-            await mappingTableClient.upsertEntity<IMemberPostMapping>({
+            await mappingTableClient.upsertEntity({
                 partitionKey: memberId,
                 rowKey: postId,
-                Nickname: nickname, // [!] nickname is not supplied in this case
-                Title: title,
-                ChannelId: channelId,
-                HasImages: false,
-                CreatedTimeBySecond: 0,
                 IsActive: false
             }, 'Merge');
 
@@ -145,14 +140,14 @@ export default async function UpdateOrDeleteCreationById(req: NextApiRequest, re
             const memberStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IMemberStatistics>('member');
             const memberStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId: authorId }, { $inc: { totalCreationDeleteCount: 1 } });
             if (!memberStatisticsUpdateResult.acknowledged) {
-                logWithDate(`Document (IPostComprehensive, post id: ${postId}) updated (deleted, status -1) in [C] postComprehensive successfully but failed to update totalCreationDeleteCount (of IMemberStatistics, member id: ${authorId}) in [C] memberStatistics`, fname);
+                logWithDate(`Document (IPostComprehensive, post id: ${postId}) updated (deleted, status -1) in [C] postComprehensive successfully but failed to update totalCreationDeleteCount (of IMemberStatistics, member id: ${authorId}) in [C] memberStatistics`, fnn);
             }
 
             //// Update totalPostDeleteCount (of IChannelStatistics) in [C] channelStatistics ////
             const channelStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IChannelStatistics>('channel');
             const channelStatisticsUpdateResult = await channelStatisticsCollectionClient.updateOne({ channelId }, { $inc: { totalPostDeleteCount: 1 } });
             if (!channelStatisticsUpdateResult.acknowledged) {
-                logWithDate(`Document (IPostComprehensive, post id: ${postId}) updated (deleted, status -1) in [C] postComprehensive successfully but failed to update totalPostDeleteCount (of IChannelStatistics, channel id: ${channelId}) in [C] channelStatistics`, fname);
+                logWithDate(`Document (IPostComprehensive, post id: ${postId}) updated (deleted, status -1) in [C] postComprehensive successfully but failed to update totalPostDeleteCount (of IChannelStatistics, channel id: ${channelId}) in [C] channelStatistics`, fnn);
             }
 
             //// (Cond.) Update totalPostDeleteCount (of ITopicComprehensive) [C] topicComprehensive ////
@@ -164,13 +159,13 @@ export default async function UpdateOrDeleteCreationById(req: NextApiRequest, re
                     //// Update totalPostDeleteCount (of ITopicComprehensive) in [C] topicComprehensive ////
                     const topicComprehensiveUpdateResult = await topicComprehensiveCollectionClient.updateOne({ topicId: t.topicId }, { $inc: { totalPostDeleteCount: 1 } });
                     if (!topicComprehensiveUpdateResult.acknowledged) {
-                        logWithDate(`Document (IPostComprehensive, post id: ${postId}) updated (deleted, status -1) in [C] postComprehensive successfully but failed to update totalPostDeleteCount (of ITopicComprehensive, topic id: ${t.topicId}) in [C] topicComprehensive`, fname);
+                        logWithDate(`Document (IPostComprehensive, post id: ${postId}) updated (deleted, status -1) in [C] postComprehensive successfully but failed to update totalPostDeleteCount (of ITopicComprehensive, topic id: ${t.topicId}) in [C] topicComprehensive`, fnn);
                     }
 
                     //// Update status (of ITopicPostMapping) in [C] topicPostMapping ////
                     const topicPostMappingInsertResult = await topicPostMappingCollectionClient.updateOne({ topicId: t.topicId, postId }, { $set: { status: -1 } });
                     if (!topicPostMappingInsertResult.acknowledged) {
-                        logWithDate(`Document (IPostComprehensive, post id: ${postId}) updated (deleted, status -1) in [C] postComprehensive successfully but failed to update document (of ITopicPostMapping, topic id: ${t.topicId}, status -1) in [C] topicPostMapping`, fname);
+                        logWithDate(`Document (IPostComprehensive, post id: ${postId}) updated (deleted, status -1) in [C] postComprehensive successfully but failed to update document (of ITopicPostMapping, topic id: ${t.topicId}, status -1) in [C] topicPostMapping`, fnn);
                     }
                 }
             }
@@ -233,6 +228,7 @@ export default async function UpdateOrDeleteCreationById(req: NextApiRequest, re
         const postComprehensiveUpdateResult = await postComprehensiveCollectionClient.updateOne({ postId }, {
             $set:
                 providePostComprehensiveUpdate(
+                    nickname,
                     title,
                     hasImages,
                     getParagraphsArrayFromRequestBody(req.body),
@@ -244,7 +240,7 @@ export default async function UpdateOrDeleteCreationById(req: NextApiRequest, re
                 totalEditCount: 1
             },
             $push: {
-                edited: provideEditedPostInfo(postComprehensiveQueryResult)
+                edited: provideEditedPostInfo(postComprehensiveQueryResult, now)
             }
         });
         if (!postComprehensiveUpdateResult.acknowledged) {
@@ -254,12 +250,26 @@ export default async function UpdateOrDeleteCreationById(req: NextApiRequest, re
         //// Response 200 for PUT requests ////
         res.status(200).send(postId);
 
+        //// Update mapping ////
+        const historyMappingTableClient = AzureTableClient('CreationsMapping');
+        await historyMappingTableClient.upsertEntity<IMemberPostMapping>({
+            partitionKey: memberId,
+            rowKey: postId,
+            AuthorId: memberId,
+            Nickname: nickname,
+            Title: title,
+            ChannelId: channelId,
+            CreatedTimeBySecond: now,
+            HasImages: hasImages,
+            IsActive: true
+        }, 'Replace');
+
         //// Update statistics ////
         // #1 update totalCreationEditCount (of IMemberStatistics) in [C] memberStatistics
         const memberStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IMemberStatistics>('member');
         const memberStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId: authorId }, { $inc: { totalCreationEditCount: 1 } });
         if (!memberStatisticsUpdateResult.acknowledged) {
-            logWithDate(`Document (IPostComprehensive, post id: ${postId}) updated in [C] postComprehensive successfully but failed to update totalCreationEditCount (of IMemberStatistics, member id: ${authorId}) in [C] memberStatistics`, fname);
+            logWithDate(`Document (IPostComprehensive, post id: ${postId}) updated in [C] postComprehensive successfully but failed to update totalCreationEditCount (of IMemberStatistics, member id: ${authorId}) in [C] memberStatistics`, fnn);
         }
 
         // #2 (cond.) update totalPostCount (ITopicComprehensive) in [C] topicComprehensive
@@ -297,7 +307,7 @@ export default async function UpdateOrDeleteCreationById(req: NextApiRequest, re
                         // [!] topic not found, create new topic
                         const topicComprehensiveUpsertResult = await topicComprehensiveCollectionClient.updateOne({ topicId: t }, { $set: createTopicComprehensive(t.topicId, t.content, channelId) }, { upsert: true });
                         if (!topicComprehensiveUpsertResult.acknowledged) {
-                            logWithDate(`Document (IPostComprehensive, post id: ${postId}) updated in [C] postComprehensive successfully but failed to upsert a new topic (document of ITopicComprehensive, topic id: ${t}) in [C] topicComprehensive`, fname);
+                            logWithDate(`Document (IPostComprehensive, post id: ${postId}) updated in [C] postComprehensive successfully but failed to upsert a new topic (document of ITopicComprehensive, topic id: ${t}) in [C] topicComprehensive`, fnn);
                         }
                     }
                     // Update mapping
@@ -314,7 +324,7 @@ export default async function UpdateOrDeleteCreationById(req: NextApiRequest, re
                     }, { upsert: true }
                     );
                     if (!topicPostMappingInsertResult.acknowledged) {
-                        logWithDate(`Document (ITopicPostMapping, post id: ${postId}) inserted in [C] postComprehensive successfully but failed to insert document (of ITopicPostMapping, topic id: ${t}) in [C] topicPostMapping`, fname);
+                        logWithDate(`Document (ITopicPostMapping, post id: ${postId}) inserted in [C] postComprehensive successfully but failed to insert document (of ITopicPostMapping, topic id: ${t}) in [C] topicPostMapping`, fnn);
                     }
                 }
             }
@@ -347,7 +357,7 @@ export default async function UpdateOrDeleteCreationById(req: NextApiRequest, re
                         rowKey: createNoticeId('cue', memberId, postId), // combined id
                         Category: 'cue',
                         InitiateId: memberId,
-                        Nickname: getNicknameFromToken(token),
+                        Nickname: nickname,
                         // PostId: postId,
                         PostTitle: title,
                         CommentBrief: '', // [!] comment brief is not supplied in this case
@@ -356,7 +366,7 @@ export default async function UpdateOrDeleteCreationById(req: NextApiRequest, re
                     // #4 update cue (of INotificationStatistics) (of cued member) in [C] notificationStatistics
                     const notificationStatisticsUpdateResult = await notificationStatisticsCollectionClient.updateOne({ memberId: cuedId }, { $inc: { cue: 1 } });
                     if (!notificationStatisticsUpdateResult.acknowledged) {
-                        logWithDate(`Document (IPostComprehensive, post id: ${postId}) inserted in [C] postComprehensive successfully but failed to update cue (of INotificationStatistics, member id: ${cuedId}) in [C] notificationStatistics`, fname);
+                        logWithDate(`Document (IPostComprehensive, post id: ${postId}) inserted in [C] postComprehensive successfully but failed to update cue (of INotificationStatistics, member id: ${cuedId}) in [C] notificationStatistics`, fnn);
                     }
                 }
             }
@@ -376,7 +386,7 @@ export default async function UpdateOrDeleteCreationById(req: NextApiRequest, re
         if (!res.headersSent) {
             response500(res, msg);
         }
-        logWithDate(msg, fname, e);
+        logWithDate(msg, fnn, e);
         await atlasDbClient.close();
         return;
     }
