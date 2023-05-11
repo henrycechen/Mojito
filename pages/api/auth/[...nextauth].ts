@@ -9,10 +9,11 @@ import { User } from 'next-auth';
 import AzureTableClient from '../../../modules/AzureTableClient';
 import AtlasDatabaseClient from '../../../modules/AtlasDatabaseClient';
 import AzureEmailCommunicationClient from '../../../modules/AzureEmailCommunicationClient';
+import { EmailMessage } from '@azure/communication-email';
 import { RestError } from '@azure/storage-blob';
 import { MongoError } from 'mongodb';
 
-import { LangConfigs, TVerifyEmailAddressRequestInfo, TEmailMessage } from '../../../lib/types';
+import { LangConfigs, TVerifyEmailAddressRequestInfo } from '../../../lib/types';
 import { composeVerifyEmailAddressEmailContent } from '../../../lib/email';
 import AzureBlobClient from '../../../modules/AzureBlobClient';
 import Jimp from 'jimp';
@@ -26,11 +27,11 @@ type TLoginRequestInfo = {
     recaptchaResponse: any;
     emailAddress: any;
     password: any;
-}
+};
 
 type TProviderIdMapping = {
-    [key: string]: string
-}
+    [key: string]: string;
+};
 
 interface IMemberUser extends User {
     id: string;
@@ -47,7 +48,7 @@ export const loginProviderIdMapping: TProviderIdMapping = {
     // instagram
     // twitter
     // facebook
-}
+};
 
 const domain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? '';
 const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
@@ -57,7 +58,7 @@ const langConfigs: LangConfigs = {
         cn: '验证您的 Mojito 账户',
         en: 'Verify your Mojito Member'
     }
-}
+};
 
 export default NextAuth({
     session: {
@@ -254,18 +255,18 @@ export default NextAuth({
                     await atlasDbClient.close();
                     // #A3 send email
                     const info: TVerifyEmailAddressRequestInfo = { emailAddress, providerId, verifyEmailAddressToken };
-                    const emailMessage: TEmailMessage = {
-                        sender: '<donotreply@mojito.co.nz>',
+                    const emailMessage: EmailMessage = {
+                        senderAddress: '<donotreply@mojito.co.nz>',
                         content: {
                             subject: langConfigs.emailSubject[lang],
                             html: composeVerifyEmailAddressEmailContent(domain, Buffer.from(JSON.stringify(info)).toString('base64'), lang)
                         },
                         recipients: {
-                            to: [{ email: emailAddress }]
+                            to: [{ address: emailAddress }]
                         }
-                    }
+                    };
                     const mailClient = AzureEmailCommunicationClient();
-                    await mailClient.send(emailMessage);
+                    await mailClient.beginSend(emailMessage);
                     return `/signin?error=EmailAddressVerificationRequired&providerId=${providerId}&emailAddressB64=${Buffer.from(emailAddress ?? '').toString('base64')}`;
                 } else {
                     //// (Situation B) [!] login credential record is found ////
@@ -333,7 +334,7 @@ export default NextAuth({
             return session;
         }
     }
-})
+});
 
 async function verifyLoginCredentials(credentials: TLoginRequestInfo): Promise<IMemberUser | null> {
     //// Verify environment variables ////
@@ -368,13 +369,13 @@ async function verifyLoginCredentials(credentials: TLoginRequestInfo): Promise<I
         return {
             id: memberId,
             email: emailAddress
-        }
+        };
     } catch (e: any) {
         let msg: string;
         if (e instanceof ReferenceError) {
             msg = `${environmentVariable} not found.`;
         } else if (e instanceof RestError) {
-            msg = `Attempt to communicate with azure table storage.`
+            msg = `Attempt to communicate with azure table storage.`;
         } else {
             msg = `Uncategorized.`;
         }

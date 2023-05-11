@@ -219,8 +219,8 @@ const langConfigs: LangConfigs = {
 
 //// get multiple info server-side ////
 export async function getServerSideProps(context: NextPageContext): Promise<{ props: TPostPageProps; }> {
-    const { postId } = context.query;
-    const { isValid, category } = verifyId(postId);
+    const { postId: id } = context.query;
+    const { isValid, category, id: postId } = verifyId(id);
 
     // Verify post id
     if (!(isValid && 'post' === category)) {
@@ -313,19 +313,19 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
         mode: 'light'
     });
 
-    //////// STATES - swipper (dimensions) ////////
-    // Logic:
-    // swiperWrapperHeight is designed for adjust Box (swiperslide wrapper) height
-    // Initial value set to 1 leads to Box-height having been set to 100% on initializing
-    // If there is ultra-high photo in the swiperslide array
-    // Then adujust all the Box-height to the swiper (top-level) wrapper height
-    // Which makes all the photo aligned center (horizontally)
-    const [swiperWrapperHeight, setSwiperWrapperHeight] = React.useState(1);
+    // //////// STATES - swipper (dimensions) //////// [!] Deprecated
+    // // Logic:
+    // // swiperWrapperHeight is designed for adjust Box (swiperslide wrapper) height
+    // // Initial value set to 1 leads to Box-height having been set to 100% on initializing
+    // // If there is ultra-high photo in the swiperslide array
+    // // Then adujust all the Box-height to the swiper (top-level) wrapper height
+    // // Which makes all the photo aligned center (horizontally)
+    // const [swiperWrapperHeight, setSwiperWrapperHeight] = React.useState(1);
 
-    React.useEffect(() => {
-        const wrapper: HTMLElement | null = document.getElementById('image-swiper-wrapper');
-        setSwiperWrapperHeight(wrapper?.offsetHeight ?? 1);
-    }, []);
+    // React.useEffect(() => {
+    //     const wrapper: HTMLElement | null = document.getElementById('swiper-wrapper');
+    //     setSwiperWrapperHeight(wrapper?.offsetHeight ?? 1);
+    // }, []);
 
     type TCombinedStatistics = {
         // Member statistics
@@ -604,6 +604,10 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
 
     const handleClickOnAuthorNickname = (event: React.MouseEvent<any>) => {
         router.push(`/me/id/${authorId}`);
+    };
+
+    const handleClickOnPostCard = (postId: string) => (event: React.MouseEvent<any>) => {
+        router.push(`/post/${postId}`);
     };
 
     const handleBlock = async (memberId: string) => {
@@ -1158,13 +1162,13 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
                                 </Stack>
 
                                 {/* image list (conditional rendering)*/}
-                                {true && <Box id='image-swiper-wrapper' mt={{ xs: 1.5, sm: 2 }} >
+                                {true && <Box id='swiper-wrapper' mt={{ xs: 1.5, sm: 2 }} >
                                     <Swiper modules={[Pagination]} pagination={true} >
                                         {0 !== postComprehensive_ss.imageFullnamesArr.length && postComprehensive_ss.imageFullnamesArr.map(fullname =>
                                             <SwiperSlide key={getRandomHexStr()} onClick={handleBackdropOpen(fullname)}>
                                                 {/* swiper slide wrapper */}
-                                                <Box sx={{ display: 'flex', justifyContent: 'center', alignContent: 'center', height: swiperWrapperHeight }} >
-                                                    <Box component={'img'} src={provideImageUrl(fullname, domain)} maxWidth={1} maxHeight={500} sx={{ objectFit: 'contain' }}></Box>
+                                                <Box sx={{ display: 'flex', justifyContent: 'center', alignContent: 'center', height: 1 }} >
+                                                    <Box component={'img'} src={provideImageUrl(fullname, domain)} maxHeight={500} sx={{ objectFit: 'contain' }}></Box>
                                                 </Box>
                                             </SwiperSlide>
                                         )}
@@ -1430,13 +1434,13 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
                                     {makeBriefIntro(authorInfo_ss.briefIntro)}
                                 </Box>
 
-                                {/* statistics - follow */}
+                                {/* follow */}
                                 <Box pt={4} sx={{ display: 'flex', flexDirection: 'row' }}>
                                     <Typography fontWeight={700}>{combinedStatisticsState.totalFollowedByCount + (behaviourStates.followed ? 1 : 0)}</Typography>
                                     <Typography color={'text.disabled'}>{langConfigs.authorsTotalFollowing[preferenceStates.lang]}</Typography>
                                 </Box>
 
-                                {/* statistics - like */}
+                                {/* like */}
                                 <Box sx={{ display: 'flex', flexDirection: 'row', }}>
                                     <Typography color={'text.disabled'}> {langConfigs.authorsTotalLikesP1[preferenceStates.lang]}</Typography>
                                     <Typography fontWeight={700}>{(combinedStatisticsState.totalCreationLikedCount + behaviourStates.attitudeOnPost > 0) ? combinedStatisticsState.totalCreationLikedCount + behaviourStates.attitudeOnPost : 0}</Typography>
@@ -1467,14 +1471,12 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
                             <ResponsiveCard sx={{ padding: 3 }}>
 
                                 {/* title */}
-                                <Box>
-                                    <Typography>{authorInfo_ss.nickname} {langConfigs.hotPostRecommend[preferenceStates.lang]}</Typography>
-                                </Box>
+                                <Typography>{authorInfo_ss.nickname} {langConfigs.hotPostRecommend[preferenceStates.lang]}</Typography>
 
                                 {/* posts */}
                                 <Stack mt={2} spacing={{ md: 2, lg: 1 }}>
                                     {0 !== creationInfoArr.length && creationInfoArr.map(p =>
-                                        <TextButton key={getRandomHexStr()} sx={{ color: 'inherit', display: 'flex', flexDirection: 'row', justifyContent: 'space-between' }}>
+                                        postId !== p.postId && <TextButton key={getRandomHexStr()} sx={{ color: 'inherit', display: 'flex', flexDirection: 'row', justifyContent: 'space-between' }} onClick={handleClickOnPostCard(p.postId)}>
 
                                             {/* title & statistics */}
                                             <Box pr={1}>
@@ -1482,7 +1484,6 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
 
                                                 {/* post info & statistics */}
                                                 <Box sx={{ display: 'flex', flexDirection: 'row' }} alignItems={'center'}>
-                                                    {/* <Typography mr={1} variant='body2' color={'text.disabled'} alignItems={'center'}>{channelInfoDict_ss[p.channelId].name[preferenceStates.lang]}</Typography> */}
 
                                                     {/* comment count icon */}
                                                     <ForumIcon fontSize={'small'} sx={{ color: 'text.disabled' }} />
@@ -1491,6 +1492,10 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
                                                     {/* hit count icon */}
                                                     <BarChartIcon fontSize='small' sx={{ color: 'text.disabled' }} />
                                                     <Typography variant='body2' color={'text.disabled'} alignItems={'center'}>{p.totalHitCount}</Typography>
+                                                </Box>
+                                                <Box>
+                                                    {/* <Typography mr={1} variant='body2' color={'text.disabled'} alignItems={'center'}>{channelInfo_ss.name}</Typography> */}
+
                                                 </Box>
                                             </Box>
 

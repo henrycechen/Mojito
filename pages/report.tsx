@@ -56,9 +56,9 @@ const langConfigs: LangConfigs = {
         en: 'Reference ID'
     },
     referenceContent: {
-        tw: '内容文本',
-        cn: '内容文本',
-        en: 'Reference content'
+        tw: '評論內容或文章標題',
+        cn: '评论内容或文章标题',
+        en: 'Reference content or title'
     },
     selectCategory: {
         tw: '請選擇類目',
@@ -259,7 +259,6 @@ const Affair = () => {
         }
     };
 
-    // Handle email address input
     const handleTextFieldChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         setAffairInfoStates({ ...affairInfoStates, additionalInfo: event.target.value });
     };
@@ -286,6 +285,7 @@ const Affair = () => {
                 nickname: affairInfoStates.nickname,
                 referenceId: affairInfoStates.referenceId,
                 referenceContent: affairInfoStates.referenceContent,
+                category: affairInfoStates.category,
                 additionalInfo: affairInfoStates.additionalInfo
             })
         });

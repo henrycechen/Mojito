@@ -6,14 +6,15 @@ import CryptoJS from 'crypto-js';
 import AzureTableClient from '../../../../modules/AzureTableClient';
 import AzureEmailCommunicationClient from '../../../../modules/AzureEmailCommunicationClient';
 import AtlasDatabaseClient from '../../../../modules/AtlasDatabaseClient';
+import { EmailMessage } from '@azure/communication-email';
 
-import { LangConfigs, TEmailMessage, TVerifyEmailAddressRequestInfo } from '../../../../lib/types';
+import { LangConfigs, TVerifyEmailAddressRequestInfo } from '../../../../lib/types';
 import { composeVerifyEmailAddressEmailContent } from '../../../../lib/email';
 import { loginProviderIdMapping } from '../../auth/[...nextauth]';
 import { logWithDate, response405, response500 } from '../../../../lib/utils/general';
 import { verifyEnvironmentVariable, verifyRecaptchaResponse } from '../../../../lib/utils/verify';
 import { IMemberComprehensive } from '../../../../lib/interfaces/member';
-import { getRandomHexStr } from '../../../../lib/utils/create';
+import { getRandomHexStr, getTimeBySecond } from '../../../../lib/utils/create';
 import { ILoginCredentials, IVerifyEmailAddressCredentials } from '../../../../lib/interfaces/credentials';
 
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
@@ -26,7 +27,7 @@ const langConfigs: LangConfigs = {
         cn: '验证您的 Mojito 账户',
         en: 'Verify your Mojito Member'
     }
-}
+};
 
 const fname = RequestVerificationEmail.name;
 
@@ -150,18 +151,18 @@ export default async function RequestVerificationEmail(req: NextApiRequest, res:
 
         //// Send email ////
         const info: TVerifyEmailAddressRequestInfo = { emailAddress, providerId, verifyEmailAddressToken };
-        const emailMessage: TEmailMessage = {
-            sender: '<donotreply@mojito.co.nz>',
+        const emailMessage: EmailMessage = {
+            senderAddress: '<donotreply@mojito.co.nz>',
             content: {
                 subject: langConfigs.emailSubject[lang],
                 html: composeVerifyEmailAddressEmailContent(domain, Buffer.from(JSON.stringify(info)).toString('base64'), lang)
             },
             recipients: {
-                to: [{ email: emailAddress }]
+                to: [{ address: emailAddress }]
             }
-        }
+        };
         const mailClient = AzureEmailCommunicationClient();
-        await mailClient.send(emailMessage);
+        await mailClient.beginSend(emailMessage);
         return;
     } catch (e: any) {
         let msg;

@@ -1,3 +1,5 @@
+import { HtmlEmailContent,EmailRecipients } from '@azure/communication-email';
+
 export type LangConfigs = {
     [key: string]: any;
 };
@@ -16,22 +18,6 @@ export type TBrowsingHelper = {
 export type TPreferenceStates = {
     lang: string;
     mode: 'light' | 'dark';
-};
-
-type EmailRecipient = {
-    email: string;
-};
-
-export type TEmailMessage = {
-    sender: '<donotreply@mojito.co.nz>';
-    content: {
-        subject: string;
-        plainText?: string;
-        html?: string;
-    },
-    recipients: {
-        to: [EmailRecipient];
-    };
 };
 
 export type TVerifyEmailAddressRequestInfo = {

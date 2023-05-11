@@ -1,54 +1,99 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { getToken } from 'next-auth/jwt'
-import { RestError } from '@azure/data-tables';
 import { MongoError } from 'mongodb';
 
-import AzureTableClient from '../../../modules/AzureTableClient';
 import AtlasDatabaseClient from "../../../modules/AtlasDatabaseClient";
 
-
 import { response405, response500, logWithDate } from '../../../lib/utils/general';
-import { IMemberInfo, IRestrictedMemberComprehensive } from '../../../lib/interfaces/member';
+import { IMemberComprehensive } from '../../../lib/interfaces/member';
+import { verifyId } from '../../../lib/utils/verify';
 
+const fnn = `${GetEntityInfoById.name} (API)`;
 
-const fname = GetAffairInfoById.name;
-
-type TAffairInfo = {
-    memberId: string;
-    nickname: string;
-    referenceId: string;
-    referenceContent: string; // post title or comment content
-}
-const bbx: TAffairInfo = {
-    memberId: 'M1234ABCD',
-    nickname: '县长马邦德',
-    referenceId: 'C12345ANCDEX',
-    referenceContent: '您认为不当或违反社区规范的内容'
-}
-
-/** GetAffairInfoById v0.1.1
- * 
- * Last update: 28/02/2023
- * 
+/**
  * This interface ONLY accepts GET requests
  * 
- * Info required for ONLY requests
- * recaptchaResponse: string (query string)
- * memberId: string (query string)
- * referenceId: string (query string)
+ * Info required for GET requests
+ * -     recaptchaResponse: string (query string)
+ * -     memberId: string (query string)
+ * -     referenceId: string (query string)
+ * 
+ * Info will be returned
+ * -    memberId: string
+ * -    nickname: string
+ * -    referenceId: string
+ * -    referenceContent: string
+ * 
+ * Last update:
+ * - 11/05/2023 v0.1.1
 */
 
-
-export default async function GetAffairInfoById(req: NextApiRequest, res: NextApiResponse) {
+export default async function GetEntityInfoById(req: NextApiRequest, res: NextApiResponse) {
     const { method } = req;
     if ('GET' !== method) {
         response405(req, res);
         return;
     }
-    res.send(bbx);
-    return;
 
+    const { memberId: referenceMemberId, referenceId: referenceEntityId } = req.query;
 
+    //// Verify member id ////
+    const { isValid: isValidMemberId, category: c0, id: memberId } = verifyId(referenceMemberId);
+    if (!(isValidMemberId && 'member' === c0)) {
+        res.status(400).send('Invalid member id');
+        return;
+    }
 
-    
+    //// Verify comment id ////
+    const { isValid: isValidEntityId, category: c1, id: entityId } = verifyId(referenceEntityId);
+    if (!(isValidEntityId && ['post', 'comment', 'subcomment'].includes(c1))) {
+        res.status(400).send('Invalid reference id');
+        return;
+    }
+
+    //// Declare DB client ////
+    const atlasDbClient = AtlasDatabaseClient();
+    try {
+        await atlasDbClient.connect();
+
+        const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
+        const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne({ memberId }, { projection: { _id: 0, nickname: 1 } });
+        if (null === memberComprehensiveQueryResult) {
+            res.status(404).send('Member not found');
+            await atlasDbClient.close();
+            return;
+        }
+
+        const entityComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<any>('post' === c1 ? 'post' : 'comment');
+        const query: any = {};
+        query['post' === c1 ? 'postId' : 'commentId'] = entityId;
+        const entityComprehensiveQueryResult = await entityComprehensiveCollectionClient.findOne(query);
+        if (null === entityComprehensiveQueryResult) {
+            res.status(404).send('Entity not found');
+            await atlasDbClient.close();
+            return;
+        }
+        
+        res.status(200).send({
+            memberId,
+            nickname: memberComprehensiveQueryResult.nickname,
+            referenceId: referenceEntityId,
+            referenceContent: 'post' === c1 ? entityComprehensiveQueryResult.title : entityComprehensiveQueryResult.content
+        });
+        
+        await atlasDbClient.close();
+        return;
+    } catch (e: any) {
+        let msg;
+        if (e instanceof MongoError) {
+            msg = `Attempt to communicate with atlas mongodb.`;
+        } else {
+            msg = `Uncategorized. ${e?.msg}`;
+        }
+        if (!res.headersSent) {
+            response500(res, msg);
+        }
+        logWithDate(msg, fnn, e);
+        await atlasDbClient.close();
+        return;
+    }
 }

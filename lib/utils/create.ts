@@ -8,9 +8,9 @@
 //  IDs
 //  - Member id : 8 ~ 9 characters, UPPERCASE, begin with 'M'
 //  - Notice id : UPPERCASE, begin with 'N'
-//  - Topic id : Base64 string of topic name, begin with 'T'
-//  - Comment id : 12 ~ 13 characters, UPPERCASE, comment begin with 'C', subcomment begin with 'D'
 //  - Post id : 10 ~ 11 characters, UPPERCASE, begin with 'P'
+//  - Comment/Subcomment id : 12 ~ 13 characters, UPPERCASE, comment begin with 'C', subcomment begin with 'D'
+//  - Affair id : 12 ~ 13 characters, UPPERCASE, begin with 'R'
 //
 //  Names
 //  - Image filename : 10 characters, lowercase
@@ -19,13 +19,14 @@
 //  - Verify email address token: 8 characters Hex, UPPERCASE
 //  - Reset password token: 8 characters Hex, UPPERCASE
 //
-export function createId(catergory: 'member' | 'notice' | 'comment' | 'subcomment' | 'post'): string {
+export function createId(catergory: 'member' | 'notice' | 'post' | 'comment' | 'subcomment' | 'affair'): string {
     switch (catergory) {
         case 'member': return 'M' + Math.floor(Math.random() * Math.pow(10, 11)).toString(35).toUpperCase();
         case 'notice': return 'N' + Math.floor(Math.random() * Math.pow(10, 8)).toString(35).toUpperCase();
+        case 'post': return 'P' + Math.floor(Math.random() * Math.pow(10, 14)).toString(35).toUpperCase();
         case 'comment': return 'C' + Math.floor(Math.random() * Math.pow(10, 8)).toString(35).toUpperCase() + Math.floor(Math.random() * Math.pow(10, 9)).toString(35).toUpperCase();
         case 'subcomment': return 'D' + Math.floor(Math.random() * Math.pow(10, 8)).toString(35).toUpperCase() + Math.floor(Math.random() * Math.pow(10, 9)).toString(35).toUpperCase();
-        case 'post': return 'P' + Math.floor(Math.random() * Math.pow(10, 14)).toString(35).toUpperCase();
+        case 'affair': return 'R' + Math.floor(Math.random() * Math.pow(10, 8)).toString(35).toUpperCase() + Math.floor(Math.random() * Math.pow(10, 9)).toString(35).toUpperCase();
     }
 }
 

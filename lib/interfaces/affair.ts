@@ -15,11 +15,12 @@ export interface IAffairComprehensive {
     affairId: string;
 
     defendantId: string; // member id
+    defendantName?: string;
     referenceId: string; // post or comment id
     referenceContent: string;
     category: number; // 1 ~ 7
 
-    additionalInfo: string;
+    additionalInfo?: string;
 
     createdTimeBySecond: number; // created time of this document
     status: number;
