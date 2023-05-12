@@ -104,7 +104,7 @@ export default async function ReportMisbehaviour(req: NextApiRequest, res: NextA
         }
 
         //// Response 200 ////
-        res.status(200).send('Verification email sent');
+        res.status(200).send('Affair logged');
 
         await atlasDbClient.close();
         return;

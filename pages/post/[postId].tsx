@@ -376,13 +376,13 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
     React.useEffect(() => { updateCreationArr(); }, []);
 
     const updateCreationArr = async () => {
-        const resp = await fetch(`/api/post/s/of/member/${authorId}`);
+        const resp = await fetch(`/api/member/creations/${authorId}`);
         if (200 === resp.status) {
             try {
                 const arr = await resp.json();
                 setCreationInfoArr([...arr]);
             } catch (e) {
-                console.error(`Attempt to GET hot posts (creations) of post author (member id: ${authorId}). ${e}`);
+                console.error(`Attempt to GET new posts (creations) of post author (member id: ${authorId}). ${e}`);
             }
         }
     };

@@ -30,10 +30,6 @@ export function createId(catergory: 'member' | 'notice' | 'post' | 'comment' | '
     }
 }
 
-export function createTopicId(name: string): string {
-    return `T${Buffer.from(name).toString('base64')}`;
-}
-
 export function createNoticeId(category: 'cue' | 'reply' | 'like' | 'pin' | 'save' | 'follow', initiateId: string, postId = '', commentId = ''): string {
     switch (category) {
         case 'cue': return `NC-${initiateId}${'' === postId ? '' : `-${postId}`}${'' === commentId ? '' : `-${commentId}`}`;
