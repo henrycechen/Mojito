@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 
 const fnn = `${PostRankingOf24HoursHottest.name} (API)`;
+
 /**
  * 
  * Last update:
@@ -8,6 +9,5 @@ const fnn = `${PostRankingOf24HoursHottest.name} (API)`;
  */
 
 export default async function PostRankingOf24HoursHottest(req: NextApiRequest, res: NextApiResponse) {
-
     res.send([]);
 }

@@ -4,7 +4,7 @@ import { RestError } from '@azure/data-tables';
 import { MongoError } from 'mongodb';
 
 import AzureTableClient from '../../../../modules/AzureTableClient';
-import AtlasDatabaseClient from "../../../../modules/AtlasDatabaseClient";
+import AtlasDatabaseClient from '../../../../modules/AtlasDatabaseClient';
 
 import { IMemberMemberMapping } from '../../../../lib/interfaces/mapping';
 import { IMemberComprehensive, IMemberInfo } from '../../../../lib/interfaces/member';

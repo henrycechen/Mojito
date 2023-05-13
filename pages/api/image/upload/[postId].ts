@@ -23,17 +23,16 @@ export const config = {
 const appSecret = process.env.APP_AES_SECRET ?? '';
 const fname = `${ImageUpload.name} (API)`;
 
-/** ImageUpload v0.1.1
- * 
- * Last update: 3/3/2023
- * 
+/**
  * This interface ONLY accepts POST requests
  * 
  * Info required for POST requests
- * - token: JWT
- * - requestInfo (token): string (query)
- * - file: formdata
+ * -     token: JWT
+ * -     requestInfo (token): string (query)
+ * -     file: formdata
  * 
+ * Last update:
+ * - 03/03/2023 v0.1.1
  */
 
 export default async function ImageUpload(req: NextApiRequest, res: NextApiResponse) {

@@ -26,7 +26,6 @@ const fnn = `${UpdateNickname.name} (API)`;
  * - 29/04/2023 v0.1.1
 */
 
-
 export default async function UpdateNickname(req: NextApiRequest, res: NextApiResponse) {
     const { method } = req;
     if ('PUT' !== method) {

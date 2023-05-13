@@ -1,10 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { getToken } from 'next-auth/jwt';
 import { MongoError } from 'mongodb';
 
-import AtlasDatabaseClient from "../../../../../../../modules/AtlasDatabaseClient";
-import { logWithDate, response405, response500 } from '../../../../../../../lib/utils/general';
-import { IMemberComprehensive } from '../../../../../../../lib/interfaces/member';
+import AtlasDatabaseClient from '../../../../modules/AtlasDatabaseClient';
+
+import { logWithDate, response405, response500 } from '../../../../lib/utils/general';
+import { IMemberComprehensive } from '../../../../lib/interfaces/member';
 
 const fnn = `${QueryMemberByNicknameBase64Fragment.name} (API)`;
 

@@ -18,11 +18,11 @@ import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import Alert from '@mui/material/Alert';
 import CircularProgress from '@mui/material/CircularProgress';
 
-import ReCAPTCHA from "react-google-recaptcha";
+import ReCAPTCHA from 'react-google-recaptcha';
 
 import { useRouter } from 'next/router';
 import { LangConfigs } from '../../lib/types';
-import { verifyPassword } from '../../lib/utils';
+import { verifyPassword } from '../../lib/utils/verify';
 
 import Copyright from '../../ui/Copyright';
 import BackToHomeButtonGroup from '../../ui/BackToHomeButtonGroup';
@@ -107,13 +107,13 @@ const langConfigs: LangConfigs = {
         cn: '新密码设置失败😥请稍后重试或者联系我们的管理员',
         en: 'Failed to set new password😥 Please try again later or contact our Webmaster'
     }
-}
+};
 
 const ResetPassword = () => {
     let recaptcha: any;
     const router = useRouter();
     const { requestInfo } = router.query;
-    
+
     // Decalre process states
     const [processStates, setProcessStates] = React.useState({
         /**
@@ -133,7 +133,7 @@ const ResetPassword = () => {
     });
 
     // Handle process states change
-    React.useEffect(() => { post() }, [processStates.recaptchaResponse]);
+    React.useEffect(() => { post(); }, [processStates.recaptchaResponse]);
     const post = async () => {
         if ('tokencheck' === processStates.componentOnDisplay && '' === processStates.recaptchaResponse) {
             recaptcha?.execute();
@@ -149,7 +149,7 @@ const ResetPassword = () => {
             if (200 === resp.status) {
                 recaptcha?.reset();
                 const { emailAddress, resetPasswordToken } = await resp.json();
-                setProcessStates({ ...processStates, componentOnDisplay: 'resetpasswordform', emailAddress, resetPasswordToken })
+                setProcessStates({ ...processStates, componentOnDisplay: 'resetpasswordform', emailAddress, resetPasswordToken });
             } else {
                 // console.log(await resp.text());
                 setProcessStates({ ...processStates, componentOnDisplay: 'resetpasswordresult', resultContent: langConfigs.tokenError[lang] });
@@ -163,16 +163,16 @@ const ResetPassword = () => {
                     resetPasswordToken: processStates.resetPasswordToken,
                     password: passwordStates.password
                 })
-            })
+            });
             if (200 === resp.status) {
-                setProcessStates({ ...processStates, componentOnDisplay: 'resetpasswordresult', displayCircularProgress: false, resultContent: langConfigs.goodResult[lang] })
+                setProcessStates({ ...processStates, componentOnDisplay: 'resetpasswordresult', displayCircularProgress: false, resultContent: langConfigs.goodResult[lang] });
             } else if ([403, 404].includes(resp.status)) {
                 setProcessStates({ ...processStates, componentOnDisplay: 'resetpasswordresult', displayCircularProgress: false, resultContent: langConfigs.tokenExpired[lang] });
             } else {
-                setProcessStates({ ...processStates, componentOnDisplay: 'resetpasswordresult', displayCircularProgress: false, resultContent: langConfigs.badResult[lang] })
+                setProcessStates({ ...processStates, componentOnDisplay: 'resetpasswordresult', displayCircularProgress: false, resultContent: langConfigs.badResult[lang] });
             }
         }
-    }
+    };
 
     // Declare password states
     const [passwordStates, setPasswordStates] = React.useState({
@@ -186,8 +186,8 @@ const ResetPassword = () => {
         setPasswordStates({ ...passwordStates, [prop]: event.target.value });
     };
     const handleShowPassword = () => {
-        setPasswordStates({ ...passwordStates, showpassword: !passwordStates.showpassword })
-    }
+        setPasswordStates({ ...passwordStates, showpassword: !passwordStates.showpassword });
+    };
     const handleMouseDownPassword = (event: React.MouseEvent<HTMLButtonElement>) => {
         event.preventDefault();
     };
@@ -196,29 +196,29 @@ const ResetPassword = () => {
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         if (passwordStates.password !== passwordStates.repeatpassword) {
-            setProcessStates({ ...processStates, errorContent: langConfigs.passwordNotMatchError[lang], displayError: true })
+            setProcessStates({ ...processStates, errorContent: langConfigs.passwordNotMatchError[lang], displayError: true });
             return;
         } else {
-            setProcessStates({ ...processStates, displayError: false })
+            setProcessStates({ ...processStates, displayError: false });
         }
         if (!verifyPassword(passwordStates.password)) {
-            setProcessStates({ ...processStates, errorContent: langConfigs.passwordNotSatisfiedError[lang], displayError: true })
+            setProcessStates({ ...processStates, errorContent: langConfigs.passwordNotSatisfiedError[lang], displayError: true });
             return;
         } else {
-            setProcessStates({ ...processStates, displayError: false })
+            setProcessStates({ ...processStates, displayError: false });
         }
         setProcessStates({ ...processStates, displayCircularProgress: true });
         recaptcha?.execute();
-    }
+    };
 
     // Handle ReCAPTCHA challenge
     const handleRecaptchaChange = (value: any) => {
         if (!!value) {
-            setProcessStates({ ...processStates, recaptchaResponse: value })
+            setProcessStates({ ...processStates, recaptchaResponse: value });
         } else {
-            setProcessStates({ ...processStates })
+            setProcessStates({ ...processStates });
         }
-    }
+    };
 
     return (
         <>
@@ -235,12 +235,12 @@ const ResetPassword = () => {
                 {/* resetpasswordform */}
                 <Stack sx={{ mt: '5rem', display: 'resetpasswordform' === processStates.componentOnDisplay ? 'block' : 'none' }}>
                     <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-                        <Link href="/">
+                        <Link href='/'>
                             {/* TODO: avatar src should be member's avatar url */}
                             <Avatar src={`${domain}/favicon.ico`} sx={{ width: 56, height: 56 }} />
                         </Link>
                     </Box>
-                    <Typography component="h1" variant="h5" sx={{ textAlign: 'center', mt: 2 }}>
+                    <Typography component='h1' variant='h5' sx={{ textAlign: 'center', mt: 2 }}>
                         {langConfigs.resetPassword[lang]}
                     </Typography>
                     <Stack component={'form'} spacing={2} sx={{ mt: 4 }} onSubmit={handleSubmit} >
@@ -260,12 +260,12 @@ const ResetPassword = () => {
                                 value={passwordStates.password}
                                 onChange={handleChange('password')}
                                 endAdornment={
-                                    <InputAdornment position="end">
+                                    <InputAdornment position='end'>
                                         <IconButton
-                                            aria-label="toggle password visibility"
+                                            aria-label='toggle password visibility'
                                             onClick={handleShowPassword}
                                             onMouseDown={handleMouseDownPassword}
-                                            edge="end"
+                                            edge='end'
                                         >
                                             {passwordStates.showpassword ? <VisibilityIcon /> : <VisibilityOffIcon />}
                                         </IconButton>
@@ -283,12 +283,12 @@ const ResetPassword = () => {
                                 value={passwordStates.repeatpassword}
                                 onChange={handleChange('repeatpassword')}
                                 endAdornment={
-                                    <InputAdornment position="end">
+                                    <InputAdornment position='end'>
                                         <IconButton
-                                            aria-label="toggle password visibility"
+                                            aria-label='toggle password visibility'
                                             onClick={handleShowPassword}
                                             onMouseDown={handleMouseDownPassword}
-                                            edge="end"
+                                            edge='end'
                                         >
                                             {passwordStates.showpassword ? <VisibilityIcon /> : <VisibilityOffIcon />}
                                         </IconButton>
@@ -316,7 +316,7 @@ const ResetPassword = () => {
                 onChange={handleRecaptchaChange}
             />
         </>
-    )
-}
+    );
+};
 
 export default ResetPassword;

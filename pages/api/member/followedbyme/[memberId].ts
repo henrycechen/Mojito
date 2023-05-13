@@ -3,7 +3,7 @@ import { getToken } from 'next-auth/jwt';
 import { RestError } from '@azure/data-tables';
 import { MongoError } from 'mongodb';
 
-import AtlasDatabaseClient from "../../../../modules/AtlasDatabaseClient";
+import AtlasDatabaseClient from '../../../../modules/AtlasDatabaseClient';
 import { logWithDate, response405, response500 } from '../../../../lib/utils/general';
 import { verifyId } from '../../../../lib/utils/verify';
 import { IMemberInfo, IMemberComprehensive } from '../../../../lib/interfaces/member';

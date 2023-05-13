@@ -1,10 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { RestError } from '@azure/data-tables';
-import { getToken } from "next-auth/jwt";
+import { getToken } from 'next-auth/jwt';
 import { MongoError } from 'mongodb';
 
 import AzureTableClient from '../../../modules/AzureTableClient';
-import AtlasDatabaseClient from "../../../modules/AtlasDatabaseClient";
+import AtlasDatabaseClient from '../../../modules/AtlasDatabaseClient';
 
 import { IMemberMemberMapping, IMemberPostMapping } from '../../../lib/interfaces/mapping';
 import { logWithDate, response405, response500 } from '../../../lib/utils/general';

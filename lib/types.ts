@@ -1,5 +1,3 @@
-import { HtmlEmailContent,EmailRecipients } from '@azure/communication-email';
-
 export type LangConfigs = {
     [key: string]: any;
 };

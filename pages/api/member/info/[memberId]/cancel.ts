@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { MongoError } from 'mongodb';
 import { getToken } from 'next-auth/jwt';
 
-import AtlasDatabaseClient from "../../../../../modules/AtlasDatabaseClient";
+import AtlasDatabaseClient from '../../../../../modules/AtlasDatabaseClient';
 
 import { IMemberComprehensive } from '../../../../../lib/interfaces/member';
 import { response405, response500, logWithDate } from '../../../../../lib/utils/general';

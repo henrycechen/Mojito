@@ -18,13 +18,13 @@ const fnn = `${ReportMisbehaviour.name} (API)`;
  * This interface ONLY accepts POST requests
  * 
  * Info required for POST requests
- * - recaptchaResponse: string (query)
- * - memberId: string (body)
- * - nickname: string (body)
- * - referenceId: string (body)
- * - referenceContent: string (body)
- * - category: number (body)
- * - additionalInfo: string (body)
+ * -     recaptchaResponse: string (query)
+ * -     memberId: string (body)
+ * -     nickname: string (body)
+ * -     referenceId: string (body)
+ * -     referenceContent: string (body)
+ * -     category: number (body)
+ * -     additionalInfo: string (body)
  * 
  * Last update:
  * - 28/02/2023 v0.1.1

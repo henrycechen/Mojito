@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 
-
 const fnn = `${PostRankingOf7DaysHottest.name} (API)`;
+
 /**
  * 
  * Last update:

@@ -40,6 +40,7 @@ const fnn = `${SignUp.name} (API)`;
  * Last update:
  * - 21/02/2023 v0.1.1
  */
+
 export default async function SignUp(req: NextApiRequest, res: NextApiResponse) {
     const { method } = req;
     if ('POST' !== method) {

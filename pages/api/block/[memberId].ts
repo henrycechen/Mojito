@@ -18,8 +18,8 @@ const fnn = `${BlockOrUndoBlockMemberById.name} (API)`;
  * This interface ONLY accepts POST requests
  * 
  * Info required for POST requests
- * - token: JWT
- * - id: string (query, member id)
+ * -     token: JWT
+ * -     id: string (query, member id)
  * 
  * Last update:
  * - 21/02/2023 v0.1.1

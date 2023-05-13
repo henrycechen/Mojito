@@ -11,7 +11,7 @@ import Typography from '@mui/material/Typography';
 import Alert from '@mui/material/Alert';
 import CircularProgress from '@mui/material/CircularProgress';
 
-import ReCAPTCHA from "react-google-recaptcha";
+import ReCAPTCHA from 'react-google-recaptcha';
 
 import { LangConfigs } from '../../lib/types';
 import { verifyEmailAddress } from '../../lib/utils/verify';
@@ -166,11 +166,11 @@ const Forgot = () => {
                 {/* resetpasswordrequestform */}
                 <Stack sx={{ mt: '5rem', display: 'resetpasswordrequestform' === processStates.componentOnDisplay ? 'block' : 'none' }}>
                     <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-                        <Link href="/">
+                        <Link href='/'>
                             <Avatar src={`${domain}/favicon.ico`} sx={{ width: 56, height: 56 }} />
                         </Link>
                     </Box>
-                    <Typography component="h1" variant="h5" sx={{ mt: 2, textAlign: 'center' }}>
+                    <Typography component='h1' variant='h5' sx={{ mt: 2, textAlign: 'center' }}>
                         {langConfigs.pleaseEnterEmailAddress[lang]}
                     </Typography>
                     <Stack component={'form'} spacing={2} sx={{ mt: 4 }} onSubmit={handleSubmit} >

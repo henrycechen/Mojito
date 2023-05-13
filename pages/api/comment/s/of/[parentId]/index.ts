@@ -2,13 +2,14 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { MongoError } from 'mongodb';
 
 import AtlasDatabaseClient from '../../../../../../modules/AtlasDatabaseClient';
+
 import { logWithDate, response405, response500 } from '../../../../../../lib/utils/general';
 import { verifyId } from '../../../../../../lib/utils/verify';
 import { IPostComprehensive } from '../../../../../../lib/interfaces/post';
 import { ICommentComprehensive } from '../../../../../../lib/interfaces/comment';
 import { getRestrictedFromCommentComprehensive } from '../../../../../../lib/utils/for/comment';
 
-const ffn = GetCommentsByParentId.name;
+const ffn = `${GetCommentsByParentId.name} (API)`;
 
 /**
  * This interface only accepts GET requests
@@ -79,6 +80,7 @@ export default async function GetCommentsByParentId(req: NextApiRequest, res: Ne
 
         //// Response 200 ////
         res.status(200).send(comments);
+        
         await atlasDbClient.close();
         return;
     } catch (e: any) {

@@ -129,7 +129,7 @@ export default async function VerifyEmailAddressToken(req: NextApiRequest, res: 
             $set: {
                 //// info ////
                 verifiedTimeBySecond: getTimeBySecond(),
-                gender: -1, // "keep as secret"
+                gender: -1, // 'keep as secret'
                 //// management ////
                 status: 200,
                 allowPosting: true,

@@ -196,7 +196,10 @@ export default async function FollowOrUndoFollowMemberById(req: NextApiRequest, 
             CreatedTimeBySecond: getTimeBySecond(),
             IsActive: !isFollowed
         }, 'Replace');
+
+        //// Response 200 ////
         res.status(200).send(`${isFollowed ? 'Undo follow' : 'Follow'} success`);
+        return;
     } catch (e: any) {
         let msg;
         if (e instanceof RestError) {

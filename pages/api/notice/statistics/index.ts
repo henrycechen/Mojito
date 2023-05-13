@@ -12,7 +12,6 @@ const fnn = `${GetOrUpdateNotificationStatistics.name} (API)`;
 
 /** GetOrUpdateNotificationStatistics
  * 
- * 
  * This interface accepts GET and PUT requests
  * 
  * Info required for GET requests

@@ -53,5 +53,4 @@ export default async function GetImageByFullname(req: NextApiRequest, res: NextA
         logWithDate(msg, fnn, e);
         return;
     }
-
 }

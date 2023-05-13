@@ -2,16 +2,13 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { RestError } from '@azure/data-tables';
 import { MongoError } from 'mongodb';
 
-import AtlasDatabaseClient from "../../../../../modules/AtlasDatabaseClient";
-
+import AtlasDatabaseClient from '../../../../../modules/AtlasDatabaseClient';
 
 import { IMemberComprehensive } from '../../../../../lib/interfaces/member';
 import { response405, response500, logWithDate } from '../../../../../lib/utils/general';
 import { verifyId } from '../../../../../lib/utils/verify';
 
-
 const fnn = `${GetMemberInfoById.name} (API)`;
-
 
 /**
  * This interface ONLY accepts GET requests

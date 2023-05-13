@@ -43,7 +43,6 @@ const fnn = `${GetOrPostAttitudeOnPostOrCommentById.name} (API)`;
  * Other 4 situations will only go through 1 'if' block, which is not affecting the performance much,
  * Hence the current solution.
  * 
- * 
  * Last update:
  * - 26/02/2023 v0.1.1
  * - 09/05/2023 v0.1.2
