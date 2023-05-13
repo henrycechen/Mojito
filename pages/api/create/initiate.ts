@@ -20,18 +20,17 @@ import { IMemberMemberMapping, IMemberPostMapping, ITopicPostMapping } from '../
 
 const ffn = `${InitiatePost.name} (API)`;
 
-/** InitiatePost
- * 
+/**
  * This interface ONLY accepts POST method
  * 
  * Post info required
- * - token: JWT
- * - title: string (body)
- * - paragraphsArr: string[] (body)
- * - cuedMemberInfoArr: IConciseMemberInfo[] (body)
- * - channelId: string (body)
- * - topicIdsArr: string[] (body)
- * - hasImages: boolean (body)
+ * -     token: JWT
+ * -     title: string (body)
+ * -     paragraphsArr: string[] (body)
+ * -     cuedMemberInfoArr: IConciseMemberInfo[] (body)
+ * -     channelId: string (body)
+ * -     topicIdsArr: string[] (body)
+ * -     hasImages: boolean (body)
  * 
  * Last update: 3/3/2023 v0.1.1
  */

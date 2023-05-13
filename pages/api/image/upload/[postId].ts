@@ -21,7 +21,7 @@ export const config = {
 };
 
 const appSecret = process.env.APP_AES_SECRET ?? '';
-const fname = ImageUpload.name;
+const fname = `${ImageUpload.name} (API)`;
 
 /** ImageUpload v0.1.1
  * 

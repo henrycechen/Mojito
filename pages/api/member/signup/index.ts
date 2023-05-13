@@ -27,19 +27,18 @@ const langConfigs: LangConfigs = {
         cn: '验证您的 Mojito 账户',
         en: 'Verify your Mojito Member'
     }
-}
+};
 
-const fname = SignUp.name;
+const fnn = `${SignUp.name} (API)`;
 
-/** SignUp v0.1.1
- * 
- * Last update: 21/02/2023
- * 
+/** 
  * This interface ONLY accepts POST requests
  * 
  * Info required for POST requests
- * - token: JWT
+ * -     token: JWT
  * 
+ * Last update:
+ * - 21/02/2023 v0.1.1
  */
 export default async function SignUp(req: NextApiRequest, res: NextApiResponse) {
     const { method } = req;
@@ -53,7 +52,7 @@ export default async function SignUp(req: NextApiRequest, res: NextApiResponse) 
     if (!!environmentVariable) {
         const msg = `${environmentVariable} not found`;
         response500(res, msg);
-        logWithDate(msg, fname);
+        logWithDate(msg, fnn);
         return;
     }
 
@@ -139,7 +138,7 @@ export default async function SignUp(req: NextApiRequest, res: NextApiResponse) 
         if (!memberComprehensiveQueryResult.acknowledged) {
             const msg = 'Attempt to insert document (IMemberComprehensive) in [C] memberComprehensive';
             response500(res, msg);
-            logWithDate(msg, fname);
+            logWithDate(msg, fnn);
             return;
         }
 
@@ -165,7 +164,7 @@ export default async function SignUp(req: NextApiRequest, res: NextApiResponse) 
             recipients: {
                 to: [{ address: emailAddress }]
             }
-        }
+        };
         const mailClient = AzureEmailCommunicationClient();
         await mailClient.beginSend(emailMessage);
 
@@ -184,7 +183,7 @@ export default async function SignUp(req: NextApiRequest, res: NextApiResponse) 
         if (!res.headersSent) {
             response500(res, msg);
         }
-        logWithDate(msg, fname, e);
+        logWithDate(msg, fnn, e);
         await atlasDbClient.close();
         return;
     }

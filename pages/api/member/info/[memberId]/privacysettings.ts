@@ -12,7 +12,7 @@ import { response405, response500, logWithDate, } from '../../../../../lib/utils
 import { getTimeBySecond } from '../../../../../lib/utils/create';
 import { verifyId } from '../../../../../lib/utils/verify';
 
-const fnn = UpdatePrivacySettings.name;
+const fnn = `${UpdatePrivacySettings.name} (API)`;
 
 /** 
  * This interface ONLY accepts PUT requests
@@ -24,7 +24,6 @@ const fnn = UpdatePrivacySettings.name;
  * Last update:
  * - 03/05/2023 v0.1.2
 */
-
 
 export default async function UpdatePrivacySettings(req: NextApiRequest, res: NextApiResponse) {
 
@@ -40,17 +39,16 @@ export default async function UpdatePrivacySettings(req: NextApiRequest, res: Ne
         res.status(401).send('Unauthorized');
         return;
     }
-    const { sub: tokenId } = token;
-
+    
     //// Verify member id ////
     const { isValid, category, id: memberId } = verifyId(req.query?.memberId);
-
     if (!(isValid && 'member' === category)) {
         res.status(400).send('Invalid member id');
         return;
     }
-
+    
     //// Match the member id in token and the one in request ////
+    const { sub: tokenId } = token;
     if (tokenId !== memberId) {
         res.status(400).send('Requested member id and identity not matched');
         return;
@@ -108,6 +106,8 @@ export default async function UpdatePrivacySettings(req: NextApiRequest, res: Ne
         }
 
         await atlasDbClient.close();
+
+        //// Response 200 ////
         res.status(200).send('Privacy settings updated');
 
         if (!settings.allowKeepingBrowsingHistory) {

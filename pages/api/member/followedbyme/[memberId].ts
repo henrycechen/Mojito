@@ -10,22 +10,22 @@ import { IMemberInfo, IMemberComprehensive } from '../../../../lib/interfaces/me
 import AzureTableClient from '../../../../modules/AzureTableClient';
 import { IMemberMemberMapping } from '../../../../lib/interfaces/mapping';
 
-const fname = GetMembersFollowedByMe.name;
+const fnn = `${GetMembersFollowedByMe.name} (API)`;
 
 //////// Find out who am I following ////////
 
-/** GetMyFollowingMembersById v0.1.3 FIXME: test mode
- * 
- * Last update 23/02/2023
- *  
+/**
  * This interface only accepts GET requests
  * 
  * Info required for GET requests
- * - token: JWT (optional)
- * - memberId: string (query)
+ * -     token: JWT (optional)
+ * -     memberId: string (query)
  * 
  * Info will be returned
- * - arr: IConciseMemberInfo[]
+ * -     arr: IConciseMemberInfo[]
+ * 
+ * Last update:
+ * - 23/02/2023 v0.1.3
 */
 
 export default async function GetMembersFollowedByMe(req: NextApiRequest, res: NextApiResponse) {
@@ -88,6 +88,7 @@ export default async function GetMembersFollowedByMe(req: NextApiRequest, res: N
             }
         }
 
+        //// Response 200 ////
         res.status(200).send(arr);
         return;
     } catch (e: any) {
@@ -102,7 +103,7 @@ export default async function GetMembersFollowedByMe(req: NextApiRequest, res: N
         if (!res.headersSent) {
             response500(res, msg);
         }
-        logWithDate(msg, fname, e);
+        logWithDate(msg, fnn, e);
         await atlasDbClient.close();
         return;
     }

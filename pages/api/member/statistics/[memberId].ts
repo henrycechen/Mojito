@@ -8,16 +8,19 @@ import { IConciseMemberStatistics, IMemberComprehensive, IMemberStatistics } fro
 import { response405, response500, logWithDate } from '../../../../lib/utils/general';
 import { verifyId } from '../../../../lib/utils/verify';
 
-const fnn = GetConciseMemberStatisticsById.name;
+const fnn = `${GetConciseMemberStatisticsById.name} (API)`;
 
-/** GetMemberStatisticsById v0.1.2
- * 
- * Last update: 29/04/2023
- * 
+/**
  * This interface ONLY accepts GET requests
  * 
  * Info required for GET requests
- * - memberId: string (query, member id)
+ * -     memberId: string (query, member id)
+ * 
+ * Info will be returned
+ * -     obj: IConciseMemberStatistics
+ * 
+ * Last update:
+ * - 29/04/2023 v0.1.2
 */
 
 export default async function GetConciseMemberStatisticsById(req: NextApiRequest, res: NextApiResponse) {
@@ -43,7 +46,7 @@ export default async function GetConciseMemberStatisticsById(req: NextApiRequest
         //// Verify member status ////
         const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
         const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne({ memberId }, { projection: { _id: 0, status: 1 } });
-        
+
         if (null === memberComprehensiveQueryResult) {
             throw new Error(`Attempt to GET member statistics but have no document (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
         }
@@ -70,15 +73,11 @@ export default async function GetConciseMemberStatisticsById(req: NextApiRequest
                 _id: 0,
                 totalCreationsCount: 1,
                 totalCreationDeleteCount: 1,
-
                 totalCreationHitCount: 1,
-
                 totalFollowedByCount: 1,
                 totalUndoFollowedByCount: 1,
-
                 totalCreationSavedCount: 1,
                 totalCreationUndoSavedCount: 1,
-
                 totalCreationLikedCount: 1,
                 totalCreationUndoLikedCount: 1,
             }
@@ -143,7 +142,10 @@ export default async function GetConciseMemberStatisticsById(req: NextApiRequest
             statistics.totalCreationLikedCount = memberStatisticsQueryResult.totalCreationLikedCount - memberStatisticsQueryResult.totalCreationUndoLikedCount;
         }
 
-        res.send(statistics);
+        //// Response 200 ////
+        res.status(200).send(statistics);
+
+        await atlasDbClient.close();
         return;
     } catch (e: any) {
         let msg;

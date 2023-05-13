@@ -1,19 +1,20 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { RestError } from '@azure/storage-blob';
 
 import AzureBlobClient from '../../../../modules/AzureBlobClient';
 
-import { response405, response500 } from '../../../../lib/utils/general';
+import { logWithDate, response405, response500 } from '../../../../lib/utils/general';
 
-
-/** GetAvatarImageByFullName v0.1.2
- *  
- * Last update 28/04/2023
- * 
+/**
  * This interface ONLY accepts GET requests
  * 
  * No info required for this API
+ * 
+ * Last update:
+ * - 28/04/2023 v0.1.2
  */
-const fnn = GetAvatarImageByFullName.name;
+
+const fnn = `${GetAvatarImageByFullName.name} (API)`;
 
 export default async function GetAvatarImageByFullName(req: NextApiRequest, res: NextApiResponse) {
     const { method } = req;
@@ -28,7 +29,7 @@ export default async function GetAvatarImageByFullName(req: NextApiRequest, res:
         res.status(404).send('Avatar image not found');
         return;
     }
-    
+
     try {
         const imageBlobClient = contianerClient.getBlobClient(fullname);
         if (await imageBlobClient.exists()) {
@@ -38,8 +39,18 @@ export default async function GetAvatarImageByFullName(req: NextApiRequest, res:
         } else {
             res.status(404).send('Image not found');
         }
-    } catch (e) {
+    } catch (e: any) {
+        let msg;
+        if (e instanceof RestError) {
+            msg = `Attempt to communicate with azure blob storage.`;
+        } else {
+            msg = `Uncategorized. ${e?.msg}`;
+        }
+        if (!res.headersSent) {
+            response500(res, msg);
+        }
         response500(res, `${fnn}: Attempt to retrieve blob (avatar image, full name: ${fullname}) from Azure blob storage. ${e}`);
+        logWithDate(msg, fnn, e);
         return;
     }
 }

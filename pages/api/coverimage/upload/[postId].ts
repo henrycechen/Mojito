@@ -19,20 +19,20 @@ export const config = {
         bodyParser: false
     }
 };
-const appSecret = process.env.APP_AES_SECRET ?? '';
-const fname = `${CoverImageUpload.name} (API)`;
 
-/** CoverImageUpload v0.1.1
- * 
- * Last update: 3/3/2023
- * 
+const appSecret = process.env.APP_AES_SECRET ?? '';
+const fnn = `${CoverImageUpload.name} (API)`;
+
+/**
  * This interface ONLY accepts POST requests
  * 
  * Info required for POST requests
- * - token: JWT
- * - requestInfo (token): string (query)
- * - file: formdata
+ * -     token: JWT
+ * -     requestInfo (token): string (query)
+ * -     file: formdata
  * 
+ * Last update:
+ * - 3/3/2023 v0.1.1
  */
 
 export default async function CoverImageUpload(req: NextApiRequest, res: NextApiResponse) {
@@ -112,7 +112,7 @@ export default async function CoverImageUpload(req: NextApiRequest, res: NextApi
         //// Response 200 ////
         res.status(200).send(reply);
         return;
-
+        
     } catch (e: any) {
         let msg;
         if (e instanceof RestError) {
@@ -125,7 +125,7 @@ export default async function CoverImageUpload(req: NextApiRequest, res: NextApi
         if (!res.headersSent) {
             response500(res, msg);
         }
-        logWithDate(msg, fname, e);
+        logWithDate(msg, fnn, e);
         await atlasDbClient.close();
         return;
     }

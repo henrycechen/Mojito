@@ -3,13 +3,12 @@ import { getToken } from 'next-auth/jwt';
 import { RestError } from '@azure/storage-blob';
 import { MongoError } from 'mongodb';
 
+import AtlasDatabaseClient from '../../../../../modules/AtlasDatabaseClient';
+
 import { logWithDate, response405, response500 } from '../../../../../lib/utils/general';
 import { verifyId } from '../../../../../lib/utils/verify';
 import { IMemberComprehensive } from '../../../../../lib/interfaces/member';
-import { INicknameRegistry } from '../../../../../lib/interfaces/registry';
-
-import AtlasDatabaseClient from '../../../../../modules/AtlasDatabaseClient';
-import AzureTableClient from '../../../../../modules/AzureTableClient';
+import { getTimeBySecond } from '../../../../../lib/utils/create';
 
 const fname = UpdateGender.name;
 
@@ -33,85 +32,88 @@ export default async function UpdateGender(req: NextApiRequest, res: NextApiResp
         return;
     }
 
-    //// Verify identity ////
-    const token = await getToken({ req });
-    if (!(token && token?.sub)) {
-        res.status(401).send('Unauthorized');
-        return;
-    }
-    const { sub: tokenId } = token;
+    res.status(404);
+    return;
 
-    //// Verify member id ////
-    const { isValid, category, id: memberId } = verifyId(req.query?.memberId);
+    // //// Verify identity ////
+    // const token = await getToken({ req });
+    // if (!(token && token?.sub)) {
+    //     res.status(401).send('Unauthorized');
+    //     return;
+    // }
+    // const { sub: tokenId } = token;
 
-    if (!(isValid && 'member' === category)) {
-        res.status(400).send('Invalid member id');
-        return;
-    }
+    // //// Verify member id ////
+    // const { isValid, category, id: memberId } = verifyId(req.query?.memberId);
 
-    //// Match the member id in token and the one in request ////
-    if (tokenId !== memberId) {
-        res.status(400).send('Requested member id and identity not matched');
-        return;
-    }
+    // if (!(isValid && 'member' === category)) {
+    //     res.status(400).send('Invalid member id');
+    //     return;
+    // }
 
-    //// Declare DB client ////
-    const atlasDbClient = AtlasDatabaseClient();
-    try {
-        await atlasDbClient.connect();
+    // //// Match the member id in token and the one in request ////
+    // if (tokenId !== memberId) {
+    //     res.status(400).send('Requested member id and identity not matched');
+    //     return;
+    // }
 
-        //// Verify member status ////
-        const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
-        const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne({ memberId }, { projection: { _id: 0, status: 1 } });
-        if (null === memberComprehensiveQueryResult) {
-            throw new Error(`Member attempt to update (PUT) gender but have no document (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
-        }
+    // //// Declare DB client ////
+    // const atlasDbClient = AtlasDatabaseClient();
+    // try {
+    //     await atlasDbClient.connect();
 
-        const { status: memberStatus } = memberComprehensiveQueryResult;
-        if (0 > memberStatus) {
-            res.status(403).send('Method not allowed due to member suspended or deactivated');
-            await atlasDbClient.close();
-            return;
-        }
+    //     //// Verify member status ////
+    //     const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
+    //     const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne({ memberId }, { projection: { _id: 0, status: 1 } });
+    //     if (null === memberComprehensiveQueryResult) {
+    //         throw new Error(`Member attempt to update (PUT) gender but have no document (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
+    //     }
 
-        //// Verify gender ////
-        const { gender } = req.body;
-        if (!('number' === typeof gender && [-1, 0, 1].includes(gender))) {
-            // TODO: Place nickname examination method here
-            res.status(400).send('Invalid gender code');
-            return;
-        }
+    //     const { status: memberStatus } = memberComprehensiveQueryResult;
+    //     if (0 > memberStatus) {
+    //         res.status(403).send('Method not allowed due to member suspended or deactivated');
+    //         await atlasDbClient.close();
+    //         return;
+    //     }
 
-        //// Update properties (of IMemberComprehensive) in [C] memberComprehensive ////
-        const memberComprehensiveUpdateResult = await memberComprehensiveCollectionClient.updateOne({ memberId }, {
-            $set: {
-                gender,
-                lastGenderUpdatedTimeBySecond: getTimeBySecond()
-            }
-        })
+    //     //// Verify gender ////
+    //     const { gender } = req.body;
+    //     if (!('number' === typeof gender && [-1, 0, 1].includes(gender))) {
+    //         // TODO: Place nickname examination method here
+    //         res.status(400).send('Invalid gender code');
+    //         return;
+    //     }
 
-        if (!memberComprehensiveUpdateResult.acknowledged) {
-            logWithDate(`Failed to update gender, lastGenderUpdatedTimeBySecond (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`, fname);
-            res.status(500).send(`Attempt to update gender`);
-            return;
-        }
+    //     //// Update properties (of IMemberComprehensive) in [C] memberComprehensive ////
+    //     const memberComprehensiveUpdateResult = await memberComprehensiveCollectionClient.updateOne({ memberId }, {
+    //         $set: {
+    //             gender,
+    //             lastGenderUpdatedTimeBySecond: getTimeBySecond()
+    //         }
+    //     })
 
-        res.status(200).send('Gender updated');
-        await atlasDbClient.close();
-    } catch (e: any) {
-        let msg;
-        if (e instanceof RestError) {
-            msg = `Attempt to communicate with azure table storage.`;
-        } else if (e instanceof MongoError) {
-            msg = `Attempt to communicate with atlas mongodb.`;
-        } else {
-            msg = `Uncategorized. ${e?.msg}`;
-        }
-        if (!res.headersSent) {
-            response500(res, msg);
-        }
-        logWithDate(msg, fname, e);
-        await atlasDbClient.close();
-        return;
-    }
+    //     if (!memberComprehensiveUpdateResult.acknowledged) {
+    //         logWithDate(`Failed to update gender, lastGenderUpdatedTimeBySecond (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`, fname);
+    //         res.status(500).send(`Attempt to update gender`);
+    //         return;
+    //     }
+
+    //     res.status(200).send('Gender updated');
+    //     await atlasDbClient.close();
+    // } catch (e: any) {
+    //     let msg;
+    //     if (e instanceof RestError) {
+    //         msg = `Attempt to communicate with azure table storage.`;
+    //     } else if (e instanceof MongoError) {
+    //         msg = `Attempt to communicate with atlas mongodb.`;
+    //     } else {
+    //         msg = `Uncategorized. ${e?.msg}`;
+    //     }
+    //     if (!res.headersSent) {
+    //         response500(res, msg);
+    //     }
+    //     logWithDate(msg, fname, e);
+    //     await atlasDbClient.close();
+    //     return;
+    // }
 }

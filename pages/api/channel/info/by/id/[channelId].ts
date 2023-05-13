@@ -5,15 +5,14 @@ import AzureTableClient from '../../../../../../modules/AzureTableClient';
 import { logWithDate, response405, response500 } from '../../../../../../lib/utils/general';
 const fname = GetChannelInfoById.name;
 
-/** GetChannelInfoById v0.1.1
- * 
- * Last update: 21/02/2023
- * 
+/**
  * This interface ONLY accepts GET requests
  * 
  * Info required for GET requests
- * - channelId: string (query, member id)
+ * -     channelId: string (query, member id)
  * 
+ * Last update:
+ * - 21/02/2023 v0.1.1
  */
 
 export default async function GetChannelInfoById(req: NextApiRequest, res: NextApiResponse) {
@@ -24,11 +23,13 @@ export default async function GetChannelInfoById(req: NextApiRequest, res: NextA
     }
     try {
         const { channelId } = req.query;
+        
         // #1 verify channelId
         if (!('string' === typeof channelId && '' !== channelId)) {
             res.status(400).send('Improper channel id');
             return;
         }
+
         // #2 look up channelId from [Table] ChannelInfo
         const channelInfoTableClient = AzureTableClient('ChannelInfo');
         const channelInfoQuery = channelInfoTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq 'Info' and RowKey eq '${channelId}'` } });
@@ -39,8 +40,10 @@ export default async function GetChannelInfoById(req: NextApiRequest, res: NextA
             return;
         }
         const { TW, CN, EN, SvgIconPath: svgIconPath } = channelInfoQueryResult.value;
+
         // #3 response with channel info
         res.status(200).send({ id: channelId, name: { tw: TW, cn: CN, en: EN }, svgIconPath });
+        return;
     } catch (e: any) {
 
         let msg;

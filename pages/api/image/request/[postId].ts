@@ -13,7 +13,7 @@ import { IPostComprehensive } from '../../../../lib/interfaces/post';
 import { verifyId } from '../../../../lib/utils/verify';
 
 const appSecret = process.env.APP_AES_SECRET ?? '';
-const fname = RequestImageUpload.name;
+const fname = `${RequestImageUpload.name} (API)`;
 
 /**
  * This interface ONLY accepts GET requests
@@ -118,6 +118,8 @@ export default async function RequestImageUpload(req: NextApiRequest, res: NextA
 
         //// Encrypt token (request info) ////
         const tkn = Buffer.from(CryptoJS.AES.encrypt(JSON.stringify(info), appSecret).toString()).toString('base64');
+
+        //// Response 200 ////
         res.status(200).send(tkn);
 
         await atlasDbClient.close();

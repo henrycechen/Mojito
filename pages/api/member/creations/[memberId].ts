@@ -22,6 +22,7 @@ const fnn = `${GetCreationsByMemberId.name} (API)`;
  * 
  * Info will be returned
  * -     arr: IConcisePostComprehensive[]
+ * 
  * Last update: 
  * - 21/02/2023 v0.1.1
  * - 09/05/2023 v0.1.2
@@ -74,6 +75,7 @@ export default async function GetCreationsByMemberId(req: NextApiRequest, res: N
             creationsMappingQueryResult = await creationsMappingQuery.next();
         }
 
+        //// Response 200 ////
         res.status(200).send(arr);
         return;
     } catch (e: any) {

@@ -17,19 +17,17 @@ import { ITopicComprehensive } from '../../../../../lib/interfaces/topic';
 import { INoticeInfo, INotificationStatistics } from '../../../../../lib/interfaces/notification';
 import { createCommentComprehensive } from '../../../../../lib/utils/for/comment';
 
-
 const ffn = `${CreateCommentOnParentById.name} (API)`;
 
-/** CreateCommentOnParentById
- * 
+/**
  * This interface accepts POST requests
  * 
  * Info required for POST requests
- * - token: JWT (cookie)
- * - parentId: string (query)
- * - postId: string (body)
- * - content: string (body)
- * - cuedMemberInfoArr: IConciseMemberInfo[] (body, optional)
+ * -     token: JWT (cookie)
+ * -     parentId: string (query)
+ * -     postId: string (body)
+ * -     content: string (body)
+ * -     cuedMemberInfoArr: IConciseMemberInfo[] (body, optional)
  * 
  * Last update: 21/02/2023 v0.1.1
  * Last update: 08/05/2023 v0.1.2
@@ -142,6 +140,8 @@ export default async function CreateCommentOnParentById(req: NextApiRequest, res
         if (!commentComprehensiveInsertResult.acknowledged) {
             throw new Error(`Failed to insert document (of ICommentComprehensive, member id: ${memberId}, parent id: ${parentId}, post id: ${postId}) in [C] commentComprehensive`);
         }
+
+        //// Response 200 ////
         res.status(200).send(commentId);
 
         //// Update statistics ////

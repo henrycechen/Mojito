@@ -4,16 +4,15 @@ import { RestError } from '@azure/data-tables';
 import AzureTableClient from '../../../../modules/AzureTableClient';
 import { response405, response500, logWithDate } from '../../../../lib/utils/general';
 
-const fnn = GetChannelIdSequence.name;
+const fnn = `${GetChannelIdSequence.name} (API)`;
 
-/** GetChannelIdSequence v0.1.1
- * 
- * Last update: 21/02/2023
- * 
+/** 
  * This interface ONLY accepts GET requests
  * 
  * No info required for GET requests
  * 
+ * Last update:
+ * - 21/02/2023 v0.1.1
  */
 
 export default async function GetChannelIdSequence(req: NextApiRequest, res: NextApiResponse) {
@@ -32,9 +31,10 @@ export default async function GetChannelIdSequence(req: NextApiRequest, res: Nex
             response500(res, 'No records of channel id array');
             return;
         }
-        const { IdArrayValue } = ChannelIdArrayQueryResult.value
+        const { IdArrayValue } = ChannelIdArrayQueryResult.value;
         // #2 response with channel id array (stringified string)
         res.status(200).send(IdArrayValue);
+        return;
     } catch (e: any) {
         let msg: string;
         if (e instanceof SyntaxError) {

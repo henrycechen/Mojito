@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { MongoError } from 'mongodb';
 
 import AtlasDatabaseClient from "../../../modules/AtlasDatabaseClient";
+
 import { logWithDate, response405, response500 } from '../../../lib/utils/general';
 import { ITopicComprehensive } from '../../../lib/interfaces/topic';
 

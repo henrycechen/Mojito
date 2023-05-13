@@ -37,6 +37,7 @@ export interface IMemberComprehensive {
     
     memberId: string; // 10 characters, UPPERCASE
     nickname: string;
+    nicknameBase64: string;
     lastNicknameUpdatedTimeBySecond: number;
     briefIntro: string;
     lastBriefIntroUpdatedTimeBySecond: number;

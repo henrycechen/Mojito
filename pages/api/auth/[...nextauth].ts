@@ -150,7 +150,8 @@ export default NextAuth({
                         message: 'Login.'
                     });
                     await atlasDbClient.close();
-                    // FIXME: update: 14/02/2023 exclude name & image from the JWT, manually retrieve nickname & avatar image every time
+                    // Update: 14/02/2023: exclude name & image from the JWT, manually retrieve nickname & avatar image every time
+                    // Update: 13/05/2023: avatar images are now provided by API via the memberId
                     // #4 complete session (jwt) info 
                     // const { nickname: name, avatarImageUrl: image } = memberComprehensiveQueryResult;
                     // user.name = name;

@@ -7,7 +7,7 @@ import AzureTableClient from '../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from "../../../../modules/AtlasDatabaseClient";
 
 import { response405, response500, logWithDate, getContentBrief } from '../../../../lib/utils/general';
-import { verifyId, verifyRecaptchaResponse } from '../../../../lib/utils/verify';
+import { verifyId } from '../../../../lib/utils/verify';
 import { ICommentComprehensive } from '../../../../lib/interfaces/comment';
 import { getRestrictedFromCommentComprehensive, provideCommentComprehensiveUpdate } from '../../../../lib/utils/for/comment';
 import { IMemberComprehensive, IMemberStatistics } from '../../../../lib/interfaces/member';
@@ -19,7 +19,6 @@ import { getNicknameFromToken } from '../../../../lib/utils/for/member';
 import { IChannelStatistics } from '../../../../lib/interfaces/channel';
 import { ITopicComprehensive } from '../../../../lib/interfaces/topic';
 
-const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
 const fnn = `${GetRestrictedCommentComprehensiveById.name} (API)`;
 
 /**
@@ -61,6 +60,7 @@ export default async function GetRestrictedCommentComprehensiveById(req: NextApi
         res.status(400).send('Invalid comment id');
         return;
     }
+
     //// Declare DB client ////
     const atlasDbClient = AtlasDatabaseClient();
     try {
@@ -72,18 +72,22 @@ export default async function GetRestrictedCommentComprehensiveById(req: NextApi
             await atlasDbClient.close();
             return;
         }
+
         //// GET | comment info ////
         if ('GET' === method) {
             res.status(200).send(getRestrictedFromCommentComprehensive(commentComprehensiveQueryResult));
             await atlasDbClient.close();
             return;
         }
+
         const token = await getToken({ req });
+
         //// Verify identity ////
         if (!(token && token?.sub)) {
             res.status(400).send('Invalid identity');
             return;
         }
+
         //// Verify permission ////
         const { sub: memberId } = token;
         const { memberId: authorId } = commentComprehensiveQueryResult;
@@ -91,6 +95,7 @@ export default async function GetRestrictedCommentComprehensiveById(req: NextApi
             res.status(403).send('Identity lack permissions');
             return;
         }
+
         //// Verify member status ////
         const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
         const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne({ memberId: authorId });
@@ -119,6 +124,7 @@ export default async function GetRestrictedCommentComprehensiveById(req: NextApi
                 res.status(400).send('Improper or blank content');
                 return;
             }
+
             // #2.1 look up document (of IPostComprehensive) in [C] postComprehensive
             const postComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IPostComprehensive>('post');
             const postComprehensiveQueryResult = await postComprehensiveCollectionClient.findOne({ postId });
@@ -127,6 +133,7 @@ export default async function GetRestrictedCommentComprehensiveById(req: NextApi
                 await atlasDbClient.close();
                 return;
             }
+
             // #2.2 verify post status (of IPostComprehensive)
             const { status: postStatus } = postComprehensiveQueryResult;
             if (0 > postStatus) {
@@ -134,8 +141,10 @@ export default async function GetRestrictedCommentComprehensiveById(req: NextApi
                 await atlasDbClient.close();
                 return;
             }
+
             //// Status all good ////
             const cuedMemberInfoArr = getCuedMemberInfoArrayFromRequestBody(req.body);
+
             // #3 update document (of ICommentComprehensive) in [C] commentComprehensive
             const commentComprehensiveInsertResult = await commentComprehensiveCollectionClient.updateOne(
                 { commentId },
@@ -144,8 +153,10 @@ export default async function GetRestrictedCommentComprehensiveById(req: NextApi
             if (!commentComprehensiveInsertResult.acknowledged) {
                 throw new Error(`Failed to update document (of ICommentComprehensive, comment id: ${commentId}, post id: ${postId}) in [C] commentComprehensive`);
             }
+
             //// Response 200 ////
             res.status(200).send('Edit comment success');
+
             //// Update statistics ////
             // #4 update totalCommentEditCount (of IMemberStatistics) in [C] memberStatistics
             const memberStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IMemberStatistics>('member');
@@ -157,6 +168,7 @@ export default async function GetRestrictedCommentComprehensiveById(req: NextApi
             if (!memberStatisticsUpdateResult.acknowledged) {
                 logWithDate(`Document (ICommentComprehensive, comment id: ${commentId}) was updated in [C] commentComprehensive successfully but failed to update totalCommentEditCount (of IMemberStatistics, member id: ${authorId}) in [C] memberStatistics`, fnn);
             }
+
             //// Handle notice.cue (cond.) ////
             // #5.1 verify cued member ids array
             if (cuedMemberInfoArr.length !== 0) {
@@ -204,7 +216,10 @@ export default async function GetRestrictedCommentComprehensiveById(req: NextApi
             if (!commentComprehensiveDeleteResult.acknowledged) {
                 throw new Error(`Failed to update status (-1, of ICommentComprehensive, comment id: ${commentId}) in [C] commentComprehensive`);
             }
+
+            //// Response 200 ////
             res.status(200).send('Delete comment success');
+
             //// Update statistics ////
             // #2.1 update totalCommentDeleteCount (of IMemberStatistics) in [C] memberStatistics
             const memberStatisticsCollectionClient = atlasDbClient.db('statistics').collection<ICommentComprehensive>('member');
@@ -212,6 +227,7 @@ export default async function GetRestrictedCommentComprehensiveById(req: NextApi
             if (!memberStatisticsUpdateResult.acknowledged) {
                 logWithDate(`Document (ICommentComprehensive, comment id: ${commentId}) updated (deleted, status -1) in [C] commentComprehensive successfully but failed to update totalCommentDeleteCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`, fnn);
             }
+
             // #2.2 (cond.) update totalSubcommentDeleteCount in [C] commentComprehensive (parent comment)
             if ('C' === commentId.slice(0, 1)) {
                 const { parentId } = commentComprehensiveQueryResult;
@@ -220,6 +236,7 @@ export default async function GetRestrictedCommentComprehensiveById(req: NextApi
                     logWithDate(`Document (ICommentComprehensive, comment id: ${commentId}) updated (deleted, status -1) in [C] commentComprehensive successfully but failed to update totalSubcommentDeleteCount (of ICommentComprehensive, comment id: ${parentId}) in [C] commentComprehensive`, fnn);
                 }
             }
+
             // #2.3 update totalCommentDeleteCount (of IPostComprehensive) in [C] postComprehensive
             const { postId } = commentComprehensiveQueryResult;
             const postComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IPostComprehensive>('post');
@@ -227,6 +244,7 @@ export default async function GetRestrictedCommentComprehensiveById(req: NextApi
             if (!postComprehensiveUpdateResult.ok) {
                 logWithDate(`Document (ICommentComprehensive, comment id: ${commentId}) updated (deleted, status -1) in [C] commentComprehensive successfully but failed to update totalCommentDeleteCount (of IPostComprehensive, post id: ${postId}) in [C] postComprehensive`, fnn);
             }
+
             // #2.4 update totalCommentDeleteCount (of IChannelStatistics) in [C] channelStatistics
             const channelId = postComprehensiveUpdateResult.value?.channelId;
             const channelStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IChannelStatistics>('channel');
@@ -234,6 +252,7 @@ export default async function GetRestrictedCommentComprehensiveById(req: NextApi
             if (!channelStatisticsUpdateResult.acknowledged) {
                 logWithDate(`Document (ICommentComprehensive, comment id: ${commentId}) updated (deleted, status -1) in [C] commentComprehensive successfully but failed to update totalCommentDeleteCount (of IChannelStatistics, channel id: ${channelId}) in [C] channelStatistics`, fnn);
             }
+
             // #2.5 (cond.) update totalCommentDeleteCount (of ITopicComprehensive) [C] topicComprehensive
             const topicIdsArr = postComprehensiveUpdateResult.value?.topicInfoArr;
             if (Array.isArray(topicIdsArr) && topicIdsArr.length !== 0) {

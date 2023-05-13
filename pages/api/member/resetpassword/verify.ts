@@ -4,17 +4,17 @@ import { logWithDate, response405, response500 } from '../../../../lib/utils/gen
 import { verifyEnvironmentVariable, verifyRecaptchaResponse } from '../../../../lib/utils/verify';
 
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
-const fname = VerifyToken.name;
+const fnn = `${VerifyToken.name} (API)`;
 
-/** VerifyToken v0.1.1
- * 
- * Last update: 16/02/2023
- * 
+/**
  * This interface ONLY accepts POST method
  * 
  * Info required for POST request
- * - requestInfo: string, stringified { emailAddress, resetPasswordToken, expireDate }
- * - recaptchaResponse: string
+ * -     requestInfo: string, stringified { emailAddress, resetPasswordToken, expireDate }
+ * -     recaptchaResponse: string
+ * 
+ * Last update:
+ * - 16/02/2023 v0.1.1
  */
 
 export default async function VerifyToken(req: NextApiRequest, res: NextApiResponse) {
@@ -23,13 +23,13 @@ export default async function VerifyToken(req: NextApiRequest, res: NextApiRespo
         response405(req, res);
         return;
     }
-    
+
     //// Verify environment variables ////
     const environmentVariable = verifyEnvironmentVariable({ recaptchaServerSecret });
     if (!!environmentVariable) {
         const msg = `${environmentVariable} not found`;
         response500(res, msg);
-        logWithDate(msg, fname);
+        logWithDate(msg, fnn);
         return;
     }
     try {
@@ -66,8 +66,10 @@ export default async function VerifyToken(req: NextApiRequest, res: NextApiRespo
             return;
         }
 
-        //// Verification pass ////
+        //// Verification pass, response 200 ////
         res.status(200).send({ emailAddress, resetPasswordToken });
+
+        return;
     } catch (e: any) {
         let msg: string;
         if (e instanceof SyntaxError) {
@@ -81,7 +83,7 @@ export default async function VerifyToken(req: NextApiRequest, res: NextApiRespo
         if (!res.headersSent) {
             response500(res, msg);
         }
-        logWithDate(msg, fname, e);
+        logWithDate(msg, fnn, e);
         return;
     }
 }

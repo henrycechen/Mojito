@@ -29,18 +29,18 @@ const langConfigs: LangConfigs = {
     }
 };
 
-const fname = RequestVerificationEmail.name;
+const fnn = `${RequestVerificationEmail.name} (API)`;
 
-/** RequestVerificationEmail v0.1.1
- * 
- * Last update: 
- * 
+/** 
  * This interface ONLY accepts POST requests
  * 
  * Info required for POST requests
- * - recaptchaResponse: string (query)
- * - providerId: string (body)
- * - emailAddressB64: string (body)
+ * -     recaptchaResponse: string (query)
+ * -     providerId: string (body)
+ * -     emailAddressB64: string (body)
+ * 
+ * Last update: 
+ * - 13/05/2023 v0.1.1
  */
 
 export default async function RequestVerificationEmail(req: NextApiRequest, res: NextApiResponse) {
@@ -56,7 +56,7 @@ export default async function RequestVerificationEmail(req: NextApiRequest, res:
     if (!!environmentVariable) {
         const msg = `${environmentVariable} not found`;
         response500(res, msg);
-        logWithDate(msg, fname);
+        logWithDate(msg, fnn);
         return;
     }
 
@@ -124,7 +124,7 @@ export default async function RequestVerificationEmail(req: NextApiRequest, res:
             //// [!] document (of IMemberComprehensive) not found ////
             const msg = 'Member management (document of IMemberComprehensive) not found in [C] memberComprehensive';
             response500(res, msg);
-            logWithDate(msg, fname);
+            logWithDate(msg, fnn);
             return;
         }
 
@@ -176,7 +176,7 @@ export default async function RequestVerificationEmail(req: NextApiRequest, res:
         if (!res.headersSent) {
             response500(res, msg);
         }
-        logWithDate(msg, fname, e);
+        logWithDate(msg, fnn, e);
         await atlasDbClient.close();
         return;
     }

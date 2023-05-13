@@ -1,12 +1,12 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { getToken } from 'next-auth/jwt';
 import { MongoError } from 'mongodb';
 
 import AtlasDatabaseClient from "../../../modules/AtlasDatabaseClient";
+
 import { logWithDate, response405, response500 } from '../../../lib/utils/general';
 import { ITopicComprehensive } from '../../../lib/interfaces/topic';
 
-const fname = QueryTopicByIdFragment.name;
+const fnn = `${QueryTopicByIdFragment.name} (API)`;
 
 /** 
  * This interface ONLY accepts GET requests
@@ -32,7 +32,7 @@ export default async function QueryTopicByIdFragment(req: NextApiRequest, res: N
 
     //// Verify notice category ////
     if (!('string' === typeof fragment && new RegExp(/^[-A-Za-z0-9+/]*={0,3}$/).test(fragment))) {
-        res.status(400).send('Invalid topic id fragment string');
+        res.status(400).send('Invalid topic id (fragment) string');
         return;
     }
 
@@ -41,11 +41,8 @@ export default async function QueryTopicByIdFragment(req: NextApiRequest, res: N
     try {
         const pattern = new RegExp(fragment, 'i');
         const conditions = [{ status: { $gt: 0 } }, { topicId: { $regex: pattern } }];
-
-
         const pipeline = [
             // { $search: { text: { path: 'topicId', query: fragment } } },
-            // { $match: { status: { $gt: 0 } } },
             { $match: { $and: conditions } },
             { $limit: 5 },
             { $sort: { totalHitCount: 1 } },
@@ -60,6 +57,7 @@ export default async function QueryTopicByIdFragment(req: NextApiRequest, res: N
                 }
             }
         ];
+
         const topicComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<ITopicComprehensive>('topic');
         const topicComprehensiveQuery = topicComprehensiveCollectionClient.aggregate(pipeline);
 
@@ -78,7 +76,7 @@ export default async function QueryTopicByIdFragment(req: NextApiRequest, res: N
         if (!res.headersSent) {
             response500(res, msg);
         }
-        logWithDate(msg, fname, e);
+        logWithDate(msg, fnn, e);
         await atlasDbClient.close();
         return;
     }

@@ -24,20 +24,20 @@ const langConfigs: LangConfigs = {
         cn: '重置您的賬戶密碼',
         en: 'Reset your account password'
     }
-}
+};
 
-const fname = RequestResetPassword.name;
+const fnn = `${RequestResetPassword.name} (API)`;
 
-/** RequestResetPassword v0.1.2
- * 
- * Last update: 21/02/2023
- * 
+/**
  * This interface ONLY accepts POST method
  * 
  * Info required for POST request
- * - emailAddressHash: string
- * - resetPasswordToken: string
- * - password: string
+ * -     emailAddressHash: string
+ * -     resetPasswordToken: string
+ * -     password: string
+ * 
+ * Last update:
+ * - 21/02/2023 v0.1.2
  */
 
 export default async function RequestResetPassword(req: NextApiRequest, res: NextApiResponse) {
@@ -90,7 +90,7 @@ export default async function RequestResetPassword(req: NextApiRequest, res: Nex
             emailAddress,
             resetPasswordToken: resetPasswordToken,
             expireDateBySecond: getTimeBySecond() + 54000 // set valid time for 15 minutes // Updated v0.1.2
-        }
+        };
 
         //// Upsert entity (IResetPasswordCredentials) in [RL] Credentials ////
         credentialsTableClient.upsertEntity<IResetPasswordCredentials>({ partitionKey: emailAddressHash, rowKey: 'ResetPassword', ResetPasswordToken: resetPasswordToken, CreateTimeBySecond: getTimeBySecond() }, 'Replace');
@@ -105,7 +105,7 @@ export default async function RequestResetPassword(req: NextApiRequest, res: Nex
             recipients: {
                 to: [{ address: emailAddress }]
             }
-        }
+        };
         const mailClient = AzureEmailCommunicationClient();
         await mailClient.beginSend(emailMessage);
 
@@ -124,7 +124,7 @@ export default async function RequestResetPassword(req: NextApiRequest, res: Nex
         if (!res.headersSent) {
             response500(res, msg);
         }
-        logWithDate(msg, fname, e);
+        logWithDate(msg, fnn, e);
         return;
     }
 }

@@ -9,8 +9,6 @@ import AtlasDatabaseClient from "../../../../modules/AtlasDatabaseClient";
 import { IMemberComprehensive } from '../../../../lib/interfaces/member';
 import { IConcisePostComprehensive } from '../../../../lib/interfaces/post';
 import { logWithDate, response405, response500 } from '../../../../lib/utils/general';
-import { getRestrictedFromPostComprehensive } from '../../../../lib/utils/for/post';
-import { createId, getRandomHexStr } from '../../../../lib/utils/create';
 import { verifyId } from '../../../../lib/utils/verify';
 import { IMemberPostMapping } from '../../../../lib/interfaces/mapping';
 
@@ -30,7 +28,6 @@ const fnn = `${GetOrUndoSaveSavedPosts.name} (API)`;
  * - 24/02/2023 v0.1.1
  * - 10/05/2023 v0.1.2
 */
-
 
 export default async function GetOrUndoSaveSavedPosts(req: NextApiRequest, res: NextApiResponse) {
 
@@ -97,9 +94,9 @@ export default async function GetOrUndoSaveSavedPosts(req: NextApiRequest, res: 
 
         await atlasDbClient.close();
         
-        let str = `PartitionKey eq '${memberId}' and IsActive eq true`;
-        
         const { channelId } = req.query;
+
+        let str = `PartitionKey eq '${memberId}' and IsActive eq true`;
         if ('string' === typeof channelId && '' !== channelId && 'all' !== channelId) {
             str += ` and ChannelId eq '${channelId}'`;
         }
@@ -126,7 +123,9 @@ export default async function GetOrUndoSaveSavedPosts(req: NextApiRequest, res: 
             savedMappingQueryResult = await savedMappingQuery.next();
         }
 
+        //// Response 200 ////
         res.status(200).send(arr);
+        
         return;
     } catch (e: any) {
         let msg;

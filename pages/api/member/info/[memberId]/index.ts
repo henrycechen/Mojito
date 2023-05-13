@@ -1,29 +1,27 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { getToken } from 'next-auth/jwt';
 import { RestError } from '@azure/data-tables';
 import { MongoError } from 'mongodb';
 
-import AzureTableClient from '../../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from "../../../../../modules/AtlasDatabaseClient";
 
 
-import { IMemberComprehensive, IMemberInfo, IRestrictedMemberComprehensive } from '../../../../../lib/interfaces/member';
+import { IMemberComprehensive } from '../../../../../lib/interfaces/member';
 import { response405, response500, logWithDate } from '../../../../../lib/utils/general';
 import { verifyId } from '../../../../../lib/utils/verify';
 
 
-const fnn = GetMemberInfoById.name;
+const fnn = `${GetMemberInfoById.name} (API)`;
 
 
-/** GetMemberInfoById v0.1.2
- * 
- * Last update: 28/04/2023
- * 
+/**
  * This interface ONLY accepts GET requests
  * 
  * Info required for ONLY requests
- * token: JWT
- * id: string (query, member id)
+ * -     token: JWT
+ * -     id: string (query, member id)
+ * 
+ * Last update:
+ * - 28/04/2023 v0.1.2
 */
 
 export default async function GetMemberInfoById(req: NextApiRequest, res: NextApiResponse) {
@@ -43,7 +41,6 @@ export default async function GetMemberInfoById(req: NextApiRequest, res: NextAp
 
     //// Declare DB client ////
     const atlasDbClient = AtlasDatabaseClient();
-
     try {
         await atlasDbClient.connect();
 
@@ -85,7 +82,9 @@ export default async function GetMemberInfoById(req: NextApiRequest, res: NextAp
             return;
         }
 
+        //// Response 200 ////
         res.status(200).send(memberComprehensiveQueryResult);
+        
         await atlasDbClient.close();
         return;
     } catch (e: any) {

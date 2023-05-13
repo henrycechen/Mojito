@@ -1,26 +1,24 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { getToken } from 'next-auth/jwt'
+import { getToken } from 'next-auth/jwt';
 import { MongoError } from 'mongodb';
 
 import AtlasDatabaseClient from "../../../../../../../modules/AtlasDatabaseClient";
 import { logWithDate, response405, response500 } from '../../../../../../../lib/utils/general';
 import { IMemberComprehensive } from '../../../../../../../lib/interfaces/member';
 
-const fname = QueryMemberByNicknameBase64.name;
+const fnn = `${QueryMemberByNicknameBase64Fragment.name} (API)`;
 
-/** QueryMemberByNicknameBase64 v0.1.1
- * 
- * Last update: 21/02/2023
- * 
+/**
  * This interface ONLY accepts GET requests
  * 
  * Info required for GET requests
+ * -     fragment: string (query)
  * 
- * recaptchaResponse: string (query string)
- * str: string (query)
+ * Last update:
+ * - 21/02/2023 v0.1.1
 */
 
-export default async function QueryMemberByNicknameBase64(req: NextApiRequest, res: NextApiResponse) {
+export default async function QueryMemberByNicknameBase64Fragment(req: NextApiRequest, res: NextApiResponse) {
 
     const { method } = req;
     if ('GET' !== method) {
@@ -28,33 +26,31 @@ export default async function QueryMemberByNicknameBase64(req: NextApiRequest, r
         return;
     }
 
-    const str = req.query?.str;
+    const { fragment } = req.query;
     //// Verify notice category ////
-    if (!('string' === typeof str && new RegExp(/^[-A-Za-z0-9+/]*={0,3}$/).test(str))) {
-        res.status(400).send('Invalid base64 string');
+    if (!('string' === typeof fragment && new RegExp(/^[-A-Za-z0-9+/]*={0,3}$/).test(fragment))) {
+        res.status(400).send('Invalid nickname (fragment) string');
         return;
     }
     //// Declare DB client ////
     const atlasDbClient = AtlasDatabaseClient();
     try {
-        //// Verify member status ////
+        const pattern = new RegExp(fragment, 'i');
+        const conditions = [{ status: { $gt: 0 } }, { nicknameBase64: { $regex: pattern } }];
+        const pipeline = [
+            { $match: { $and: conditions } },
+            { $limit: 5 },
+            { $project: { _id: 0, memberId: 1, nickname: 1 } }
+        ];
+
         const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
-        const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.aggregate([
-            {
-                $match: { status: { $gt: 0 } }
-            },
-            {
-                $search: { text: { path: 'nicknameBase64', query: str } }
-            },
-            {
-                $limit: 10
-            },
-            {
-                $project: { _id: 0, memberId: 1, nickname: 1, avatarImageUrl: 1 }
-            }
-        ])
-        res.status(200).send(memberComprehensiveQueryResult);
-        await atlasDbClient.close()
+        const memberComprehensiveQuery = memberComprehensiveCollectionClient.aggregate(pipeline);
+
+        //// Response 200 ////
+        res.status(200).send(await memberComprehensiveQuery.toArray());
+
+        await atlasDbClient.close();
+        return;
     } catch (e: any) {
         let msg;
         if (e instanceof MongoError) {
@@ -65,7 +61,7 @@ export default async function QueryMemberByNicknameBase64(req: NextApiRequest, r
         if (!res.headersSent) {
             response500(res, msg);
         }
-        logWithDate(msg, fname, e);
+        logWithDate(msg, fnn, e);
         await atlasDbClient.close();
         return;
     }

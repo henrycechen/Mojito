@@ -17,7 +17,6 @@ import { getTopicInfoArrayFromRequestBody, createTopicComprehensive } from '../.
 import { getCuedMemberInfoArrayFromRequestBody, getParagraphsArrayFromRequestBody, provideEditedPostInfo, providePostComprehensiveUpdate } from '../../../../lib/utils/for/post';
 import { INoticeInfo, INotificationStatistics } from '../../../../lib/interfaces/notification';
 import { createNoticeId, getTimeBySecond } from '../../../../lib/utils/create';
-import { getNicknameFromToken } from '../../../../lib/utils/for/member';
 
 const fnn = `${UpdateOrDeleteCreationById.name} (API)`;
 
@@ -53,7 +52,7 @@ export default async function UpdateOrDeleteCreationById(req: NextApiRequest, re
     }
     const { sub: memberId } = token;
 
-    // Verify post id ////
+    //// Verify post id ////
     const { isValid, category, id: postId } = verifyId(req.query?.postId);
     if (!(isValid && 'post' === category)) {
         res.status(400).send('Invalid post id');

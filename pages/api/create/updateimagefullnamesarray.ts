@@ -15,18 +15,18 @@ import { getNicknameFromToken } from '../../../lib/utils/for/member';
 import { verifyId } from '../../../lib/utils/verify';
 import { IMemberMemberMapping } from '../../../lib/interfaces/mapping';
 
-const fname = UpdateImageFullnamesArray.name;
+const fnn = `${UpdateImageFullnamesArray.name} (API)`;
 
-/** UpdateImageFullnamesArray v0.1.1
- * 
- * Last update: 4/3/2023
- * 
+/**
  * This interface ONLY accepts PUT method
  * 
  * Post info required
- * - token: JWT
- * - postId: string (body)
- * - imageFullnamesArr: string[] (body)
+ * -     token: JWT
+ * -     postId: string (body)
+ * -     imageFullnamesArr: string[] (body)
+ * 
+ * Last update:
+ * - 04/03/2023 v0.1.1
  */
 
 export default async function UpdateImageFullnamesArray(req: NextApiRequest, res: NextApiResponse) {
@@ -141,12 +141,12 @@ export default async function UpdateImageFullnamesArray(req: NextApiRequest, res
                     // #4 update cue (of INotificationStatistics) (of cued member) in [C] notificationStatistics
                     const notificationStatisticsUpdateResult = await notificationStatisticsCollectionClient.updateOne({ memberId: cuedId }, { $inc: { cue: 1 } });
                     if (!notificationStatisticsUpdateResult.acknowledged) {
-                        logWithDate(`Document (IPostComprehensive, post id: ${postId}) inserted in [C] postComprehensive successfully but failed to update cue (of INotificationStatistics, member id: ${cuedId}) in [C] notificationStatistics`, fname);
+                        logWithDate(`Document (IPostComprehensive, post id: ${postId}) inserted in [C] postComprehensive successfully but failed to update cue (of INotificationStatistics, member id: ${cuedId}) in [C] notificationStatistics`, fnn);
                     }
                 }
             }
         }
-        
+
         await atlasDbClient.close();
         return;
     } catch (e: any) {
@@ -164,7 +164,7 @@ export default async function UpdateImageFullnamesArray(req: NextApiRequest, res
         if (!res.headersSent) {
             response500(res, msg);
         }
-        logWithDate(msg, fname, e);
+        logWithDate(msg, fnn, e);
         await atlasDbClient.close();
         return;
     }

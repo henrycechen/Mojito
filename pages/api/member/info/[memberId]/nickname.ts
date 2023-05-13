@@ -13,17 +13,17 @@ import { response405, response500, logWithDate } from '../../../../../lib/utils/
 import { getTimeBySecond } from '../../../../../lib/utils/create';
 import { verifyId } from '../../../../../lib/utils/verify';
 
-const fnn = UpdateNickname.name;
+const fnn = `${UpdateNickname.name} (API)`;
 
-/** UpdateNickname v0.1.1
- * 
- * Last update: 29/04/2023
- * 
+/**
  * This interface ONLY accepts PUT requests
  * 
  * Info required for PUT requests
  * - token: JWT
  * - alternativeName: string (body, length < 15)
+ * 
+ * Last update:
+ * - 29/04/2023 v0.1.1
 */
 
 
@@ -40,17 +40,16 @@ export default async function UpdateNickname(req: NextApiRequest, res: NextApiRe
         res.status(401).send('Unauthorized');
         return;
     }
-    const { sub: tokenId } = token;
-
+    
     //// Verify member id ////
     const { isValid, category, id: memberId } = verifyId(req.query?.memberId);
-
     if (!(isValid && 'member' === category)) {
         res.status(400).send('Invalid member id');
         return;
     }
-
+    
     //// Match the member id in token and the one in request ////
+    const { sub: tokenId } = token;
     if (tokenId !== memberId) {
         res.status(400).send('Requested member id and identity not matched');
         return;
@@ -126,6 +125,7 @@ export default async function UpdateNickname(req: NextApiRequest, res: NextApiRe
         const memberComprehensiveUpdateResult = await memberComprehensiveCollectionClient.updateOne({ memberId }, {
             $set: {
                 nickname: alternativeName,
+                nicknameBase64: nameB64,
                 lastNicknameUpdatedTimeBySecond: getTimeBySecond()
             }
         });
@@ -136,7 +136,9 @@ export default async function UpdateNickname(req: NextApiRequest, res: NextApiRe
             return;
         }
 
+        //// Response 200 ////
         res.status(200).send('Nickname updated');
+
         await atlasDbClient.close();
         return;
     } catch (e: any) {

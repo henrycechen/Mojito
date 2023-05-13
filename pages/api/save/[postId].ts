@@ -248,6 +248,7 @@ export default async function SaveOrUndoSavePostById(req: NextApiRequest, res: N
                 }
             }
         }
+        
         await atlasDbClient.close();
         return;
     }

@@ -10,16 +10,15 @@ import { getRestrictedFromCommentComprehensive } from '../../../../../../lib/uti
 
 const ffn = GetCommentsByParentId.name;
 
-/** GetCommentsByParentId v0.1.2
- * 
+/**
  * This interface only accepts GET requests
  * 
  * Info requried for GET requests
- * - parentId: string (post / comment id)
+ * -     parentId: string (post / comment id)
  * 
  * Info will be returned for GET requests
- * - commentsArray: IRestrictedCommentComprehensive[] (for query with 'post' id category)
- * - subcommentsArray: IRestrictedCommentComprehensive[] (for query with 'comment' id category)
+ * -     commentsArray: IRestrictedCommentComprehensive[] (for query with 'post' id category)
+ * -     subcommentsArray: IRestrictedCommentComprehensive[] (for query with 'comment' id category)
  * 
  * Last update: 21/02/2023 v0.1.1
  * Last update: 08/05/2023 v0.1.2 Fix issue communicating with atlas db
@@ -77,6 +76,8 @@ export default async function GetCommentsByParentId(req: NextApiRequest, res: Ne
                 comments.push(getRestrictedFromCommentComprehensive(commentComprehensiveQueryResult));
             }
         }
+
+        //// Response 200 ////
         res.status(200).send(comments);
         await atlasDbClient.close();
         return;

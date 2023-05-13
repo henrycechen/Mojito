@@ -16,18 +16,18 @@ import { verifyId, verifyPassword } from '../../../../../lib/utils/verify';
 import { IMojitoMemberSystemLoginCredentials } from '../../../../../lib/interfaces/credentials';
 
 const salt = process.env.APP_PASSWORD_SALT ?? '';
-const fname = UpdatePassword.name;
+const fnn = `${UpdatePassword.name} (API)`;
 
-/** UpdatePassword v0.1.1
- * 
- * Last update: 16/02/2023
- * 
+/**
  * This interface ONLY accepts PUT requests
  * 
  * Info required for PUT requests
- * - token: JWT
- * - currentPassword: string (body)
- * - newPassword: string (body)
+ * -     token: JWT
+ * -     currentPassword: string (body)
+ * -     newPassword: string (body)
+ * 
+ * Last update:
+ * - 16/02/2023 v0.1.1
 */
 
 export default async function UpdatePassword(req: NextApiRequest, res: NextApiResponse) {
@@ -43,17 +43,16 @@ export default async function UpdatePassword(req: NextApiRequest, res: NextApiRe
         res.status(401).send('Unauthorized');
         return;
     }
-    const { sub: tokenId } = token;
-
+    
     //// Verify member id ////
     const { isValid, category, id: memberId } = verifyId(req.query?.memberId);
-
     if (!(isValid && 'member' === category)) {
         res.status(400).send('Invalid member id');
         return;
     }
-
+    
     //// Match the member id in token and the one in request ////
+    const { sub: tokenId } = token;
     if (tokenId !== memberId) {
         res.status(400).send('Requested member id and identity not matched');
         return;
@@ -133,7 +132,7 @@ export default async function UpdatePassword(req: NextApiRequest, res: NextApiRe
         })
 
         if (!memberComprehensiveUpdateResult.acknowledged) {
-            logWithDate(`Failed to update lastPasswordUpdatedTimeBySecond (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`, fname);
+            logWithDate(`Failed to update lastPasswordUpdatedTimeBySecond (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`, fnn);
             return;
         }
 
@@ -161,7 +160,7 @@ export default async function UpdatePassword(req: NextApiRequest, res: NextApiRe
         if (!res.headersSent) {
             response500(res, msg);
         }
-        logWithDate(msg, fname, e);
+        logWithDate(msg, fnn, e);
         await atlasDbClient.close();
         return;
     }

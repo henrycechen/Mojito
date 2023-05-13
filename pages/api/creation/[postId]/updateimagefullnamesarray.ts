@@ -6,19 +6,14 @@ import { getToken } from 'next-auth/jwt';
 import AzureTableClient from '../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from '../../../../modules/AtlasDatabaseClient';
 import { logWithDate, response405, response500 } from '../../../../lib/utils/general';
-import { createId, createNoticeId, getRandomIdStr, getTimeBySecond } from '../../../../lib/utils/create';
-import { IMemberComprehensive, IMemberStatistics } from '../../../../lib/interfaces/member';
-import { getTopicInfoArrayFromRequestBody, createTopicComprehensive } from '../../../../lib/utils/for/topic';
-import { getCuedMemberInfoArrayFromRequestBody, getImageFullnamesArrayFromRequestBody, getParagraphsArrayFromRequestBody } from '../../../../lib/utils/for/post';
+import { createNoticeId, getTimeBySecond } from '../../../../lib/utils/create';
+import { IMemberComprehensive } from '../../../../lib/interfaces/member';
 import { IPostComprehensive } from '../../../../lib/interfaces/post';
-import { IChannelStatistics } from '../../../../lib/interfaces/channel';
-import { ITopicComprehensive } from '../../../../lib/interfaces/topic';
 import { INoticeInfo, INotificationStatistics } from '../../../../lib/interfaces/notification';
 import { getNicknameFromToken } from '../../../../lib/utils/for/member';
 import { verifyId } from '../../../../lib/utils/verify';
 import { IMemberMemberMapping } from '../../../../lib/interfaces/mapping';
 
-const domain = process.env.NEXT_PUBLIC_APP_DOMAIN;
 const ffn = `${UpdateImageFullnamesArray.name} (API)`;
 
 /**
@@ -26,8 +21,8 @@ const ffn = `${UpdateImageFullnamesArray.name} (API)`;
  * 
  * Post info required
  * -     token: JWT
- * -     title
- * -     channelId
+ * -     postId: string (body)
+ * -     imageFullnamesArr: string[] (body)
  * 
  * Last update:
  * - 10/05/2023 v0.1.1
@@ -66,6 +61,7 @@ export default async function UpdateImageFullnamesArray(req: NextApiRequest, res
     try {
         await atlasDbClient.connect();
 
+        //// Verify member status ////
         const { sub: memberId } = token;
         const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
         const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne<IMemberComprehensive>({ memberId });

@@ -71,6 +71,7 @@ export default async function GetOrDeleteBrowsingHistory(req: NextApiRequest, re
         await atlasDbClient.close();
         const historyMappingTableClient = AzureTableClient('HistoryMapping');
 
+        //// DELETE ////
         if ('DELETE' === method) {
             //// Verify post id ////
             const { isValid, category, id: postId } = verifyId(req.query?.postId);
@@ -85,12 +86,12 @@ export default async function GetOrDeleteBrowsingHistory(req: NextApiRequest, re
                 IsActive: false
             }, 'Merge');
 
+            //// Response 200 ////
             res.status(200).send('Delete browsing history success');
-
+            return;
         }
 
-        //// Fulfill GET requests ////
-
+        //// GET ////
         let str = `PartitionKey eq '${memberId}' and IsActive eq true`;
 
         const { channelId } = req.query;
@@ -120,6 +121,7 @@ export default async function GetOrDeleteBrowsingHistory(req: NextApiRequest, re
             historyMappingQueryResult = await historyMappingQuery.next();
         }
 
+        //// Response 200 ////
         res.status(200).send(arr);
         return;
     } catch (e: any) {

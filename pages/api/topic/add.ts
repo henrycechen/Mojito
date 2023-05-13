@@ -6,7 +6,7 @@ import { logWithDate, response405, response500 } from '../../../lib/utils/genera
 import { ITopicComprehensive } from '../../../lib/interfaces/topic';
 import { getTimeBySecond } from '../../../lib/utils/create';
 
-const fname = Test_AddTopicByIdFragment.name;
+const fnn = Test_AddTopicByIdFragment.name;
 
 /** 
  * This interface ONLY accepts GET requests
@@ -71,7 +71,7 @@ export default async function Test_AddTopicByIdFragment(req: NextApiRequest, res
         if (!res.headersSent) {
             response500(res, msg);
         }
-        logWithDate(msg, fname, e);
+        logWithDate(msg, fnn, e);
         await atlasDbClient.close();
         return;
     }

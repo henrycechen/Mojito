@@ -23,7 +23,7 @@ const fnn = `${BlockOrUndoBlockMemberById.name} (API)`;
  * 
  * Last update:
  * - 21/02/2023 v0.1.1
- * - 
+ * - 13/05/2023 v0.1.2
 */
 
 export default async function BlockOrUndoBlockMemberById(req: NextApiRequest, res: NextApiResponse) {

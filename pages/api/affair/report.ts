@@ -4,7 +4,6 @@ import { MongoError } from 'mongodb';
 
 import AtlasDatabaseClient from '../../../modules/AtlasDatabaseClient';
 
-import { LangConfigs} from '../../../lib/types';
 import { logWithDate, response405, response500 } from '../../../lib/utils/general';
 import { verifyEnvironmentVariable, verifyRecaptchaResponse } from '../../../lib/utils/verify';
 
@@ -13,7 +12,7 @@ import { createId, getTimeBySecond } from '../../../lib/utils/create';
 import { verifyId } from '../../../lib/utils/verify';
 
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
-const fnn = ReportMisbehaviour.name;
+const fnn = `${ReportMisbehaviour.name} (API)`;
 
 /**
  * This interface ONLY accepts POST requests
@@ -82,6 +81,7 @@ export default async function ReportMisbehaviour(req: NextApiRequest, res: NextA
     //// Declare DB client ////
     const atlasDbClient = AtlasDatabaseClient();
     try {
+        await atlasDbClient.connect();
         const { nickname, referenceContent, category, additionalInfo } = req.body;
 
         const affairComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IAffairComprehensive>('affair');

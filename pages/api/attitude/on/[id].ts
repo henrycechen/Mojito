@@ -35,13 +35,14 @@ const fnn = `${GetOrPostAttitudeOnPostOrCommentById.name} (API)`;
  * -     id: string (query, post or comment id)
  * -     attitude: number (body)
  * 
- * Concern about performance: 26/02/2023 (program updated)
+ * Concern about performance: 26/02/2023 (update: 09/05/2023: program updated)
  * 
- * There're 4 big 'if' blocks to fulfill the do/undo requests.
+ * [!] Deprecated & updated. There're 4 big 'if' blocks to fulfill the do/undo requests.
  * Always abstract the 4 blocks into a smaller 'if/else' block.
  * But there're only 2 (in 6) situations that will go through 2 'if' blocks.
  * Other 4 situations will only go through 1 'if' block, which is not affecting the performance much,
  * Hence the current solution.
+ * 
  * 
  * Last update:
  * - 26/02/2023 v0.1.1

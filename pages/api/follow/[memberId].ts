@@ -14,25 +14,23 @@ import { IMemberComprehensive, IMemberStatistics } from '../../../lib/interfaces
 import { createNoticeId, getTimeBySecond } from '../../../lib/utils/create';
 import { getNicknameFromToken } from '../../../lib/utils/for/member';
 
-const ffn = FollowOrUndoFollowMemberById.name;
+const ffn = `${FollowOrUndoFollowMemberById.name} (API)`;
 
-/** FollowOrUndoFollowMemberById v0.1.2
- * 
- * Last update: 21/02/2023 v0.1.1
- * Last update: 08/05/2023 v0.1.2
- * 
- * This interface accepts GET and POST requests
- * 
+/**
  * Info required for GET requests
- * - token: JWT
+ * -      token: JWT
  * 
  * Info will be returned for GET requests
- * - isFollowed: boolean
+ * -     isFollowed: boolean
  * 
  * 
  * Info required for POST requests
- * token: JWT
- * id: string (query, member id)
+ * -     token: JWT
+ * -      id: string (query, member id)
+ * 
+ * Last update:
+ * - 21/02/2023 v0.1.1
+ * - 08/05/2023 v0.1.2
 */
 
 export default async function FollowOrUndoFollowMemberById(req: NextApiRequest, res: NextApiResponse) {
@@ -49,14 +47,16 @@ export default async function FollowOrUndoFollowMemberById(req: NextApiRequest, 
         res.status(400).send('Invalid identity');
         return;
     }
-    const { sub: memberId } = token;
-
+    
     //// Verify member id ////
     const { isValid, category, id: objectId } = verifyId(req.query?.memberId);
     if (!(isValid && 'member' === category)) {
         res.status(400).send('Invalid member id');
         return;
     }
+
+    //// Match member ids ////
+    const { sub: memberId } = token;
     if ('POST' === method && memberId === objectId) {
         res.status(400).send('Unable to follow yourself');
         return;
