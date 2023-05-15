@@ -1,6 +1,6 @@
 {
   "name": "janice",
-  "version": "0.1.1",
+  "version": "v0.2.7",
   "private": true,
   "scripts": {
     "dev": "next dev -p 80",
