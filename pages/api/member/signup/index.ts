@@ -12,7 +12,7 @@ import { ILoginCredentials, IMojitoMemberSystemLoginCredentials, IVerifyEmailAdd
 import { LangConfigs, TVerifyEmailAddressRequestInfo } from '../../../../lib/types';
 import { logWithDate, response405, response500 } from '../../../../lib/utils/general';
 import { verifyEmailAddress, verifyEnvironmentVariable, verifyRecaptchaResponse } from '../../../../lib/utils/verify';
-import { getRandomHexStr, getRandomIdStr, getTimeBySecond } from '../../../../lib/utils/create';
+import { createId, getRandomHexStr, getRandomIdStr, getTimeBySecond } from '../../../../lib/utils/create';
 import { ILoginJournal, IMinimumMemberComprehensive } from '../../../../lib/interfaces/member';
 import { composeVerifyEmailAddressEmailContent } from '../../../../lib/email';
 
@@ -102,7 +102,7 @@ export default async function SignUp(req: NextApiRequest, res: NextApiResponse) 
         }
 
         //// Create a new member id////
-        const memberId = getRandomIdStr(true);
+        const memberId = createId('member');
         const providerId = 'MojitoMemberSystem';
 
         //// Upsert entity (of ILoginCredentials) in [RL] Credentials
