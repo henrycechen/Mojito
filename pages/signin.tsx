@@ -323,10 +323,8 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
 
     // Decalre signIn credential states
     const [signInCredentialStates, setSignInCredentialStates] = React.useState({
-        // emailAddress: '',
-        emailAddress: 'henrycechen@gmail.com', //////// TODO: test ////////
-        // password: '',
-        password: '123@abcD', //////// TODO: test ////////
+        emailAddress: '',
+        password: '',
         showpassword: false
     });
 
