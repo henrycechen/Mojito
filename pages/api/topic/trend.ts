@@ -33,7 +33,7 @@ export default async function GetTopicsByHits(req: NextApiRequest, res: NextApiR
     try {
 
         const { channelId } = req.query;
-        const conditions = [{ status: { $gt: 0 } }, ('string' === typeof channelId && '' !== channelId) ? { channelId: channelId } : {}];
+        const conditions = [{ status: { $gt: 0 } }, ('string' === typeof channelId && !['', 'all'].includes(channelId)) ? { channelId: channelId } : {}];
         const pipeline = [
             { $match: { $and: conditions } },
             { $limit: 10 },

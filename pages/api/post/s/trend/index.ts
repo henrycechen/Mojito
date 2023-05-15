@@ -37,7 +37,7 @@ export default async function PostsOf24HoursHot(req: NextApiRequest, res: NextAp
     try {
 
         const { channelId } = req.query;
-        const conditions = [{ status: { $gt: 0 }, createdTimeBySecond: { $gt: getTimeBySecond() - 24 * 60 * 60 } }, ('string' === typeof channelId &&  !['', 'all'].includes(channelId)) ? { channelId: channelId } : {}];
+        const conditions = [{ status: { $gt: 0 } }, ('string' === typeof channelId && !['', 'all'].includes(channelId)) ? { channelId: channelId } : {}];
         const pipeline = [
             { $match: { $and: conditions } },
             { $limit: 30 },

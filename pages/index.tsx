@@ -98,6 +98,12 @@ const langConfigs: LangConfigs = {
         en: 'Newest'
     },
 
+    noPosts: {
+        tw: '還沒有作者在該頻道發佈過文章',
+        cn: '还没有作者在该频道发布过文章',
+        en: 'No articles in this channel'
+    },
+
     unreadReplyNotice: {
         tw: `條未讀消息`,
         cn: `条未读提醒`,
@@ -140,7 +146,6 @@ export async function getServerSideProps(context: NextPageContext): Promise<{ pr
     let channelInfoDict_ss: IChannelInfoDictionary;
 
     const resp = await fetch(`${domain}/api/channel/info/dictionary`);
-    console.log(resp.status);
 
     try {
         if (200 !== resp.status) {
@@ -298,12 +303,12 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
     React.useEffect(() => { updatePostsArr(); }, [processStates.selectedChannelId, processStates.selectedHotPosts]);
 
     const updatePostsArr = async () => {
-        const resp = await fetch(`/api/post/s/of${processStates.selectedHotPosts ? '/trend/24h' : '/new'}?channelId=${processStates.selectedChannelId}`);
+        const resp = await fetch(`/api/post/s/${processStates.selectedHotPosts ? 'trend' : 'new'}?channelId=${processStates.selectedChannelId}`);
         if (200 === resp.status) {
             try {
                 setMasonryPostInfoArr(await resp.json());
             } catch (e) {
-                console.log(`Attempt to GET posts of ${processStates.selectedHotPosts ? '24 hours hot' : 'new'}. ${e}`);
+                console.log(`Attempt to GET posts of ${processStates.selectedHotPosts ? 'trend' : 'new'}. ${e}`);
             }
         }
     };
@@ -366,9 +371,9 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
         let a0: IConciseTopicComprehensive[] = [];
         let a1: IConcisePostComprehensive[] = [];
         let a2: IConcisePostComprehensive[] = [];
-        const resp0 = await fetch(`/api/topic/s/of/trend`);
-        const resp1 = await fetch(`/api/post/s/of/trend/24h?channelId=all`);
-        const resp2 = await fetch(`/api/post/s/of/trend/7d?channelId=all`);
+        const resp0 = await fetch(`/api/topic/trend`);
+        const resp1 = await fetch(`/api/post/s/trend/24h`);
+        const resp2 = await fetch(`/api/post/s/trend/7d`);
         try {
             if (200 !== resp0.status) {
                 throw new Error(`Attempt to GET topic info array of trending`);
@@ -564,16 +569,9 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
                     {/* empty alert */}
                     {0 === masonryPostInfoArr.length &&
                         <Box minHeight={200} mt={10}>
-                            {/* 'mycreations' | 'savedposts' | 'browsinghistory' */}
-                            {'mycreations' === processStates.selectedCategory && <Typography color={'text.secondary'} align={'center'}>
-                                {authorId === processStates.viewerId ? langConfigs.noCreationsRecord[preferenceStates.lang] : langConfigs.authorNoCreationsRecord[preferenceStates.lang]}
-                            </Typography>}
-                            {'savedposts' === processStates.selectedCategory && <Typography color={'text.secondary'} align={'center'}>
-                                {authorId === processStates.viewerId ? langConfigs.noSavedPostsRecord[preferenceStates.lang] : langConfigs.authorNoSavedPostsRecord[preferenceStates.lang]}
-                            </Typography>}
-                            {'browsinghistory' === processStates.selectedCategory && <Typography color={'text.secondary'} align={'center'}>
-                                {langConfigs.noBrowsingHistoryRecord[preferenceStates.lang]}
-                            </Typography>}
+                            <Typography color={'text.secondary'} align={'center'}>
+                                {langConfigs.noPosts[preferenceStates.lang]}
+                            </Typography>
                         </Box>
                     }
 
@@ -589,8 +587,7 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
                                             {/* image */}
                                             <Box
                                                 component={'img'}
-                                                src={p.imageUrlsArr[0]} // FIXME:FIXME:FIXME:FIXME:FIXME:FIXME:FIXME:FIXME:FIXME:FIXME:FIXME:FIXME:FIXME:
-                                                // src={provideCoverImageUrl(post.postId, domain)} FIXME:FIXME:FIXME:FIXME:FIXME:FIXME:
+                                                src={provideCoverImageUrl(p.postId, domain)}
                                                 sx={{ maxWidth: { xs: width / 2, sm: 400 }, height: 'auto', borderTopLeftRadius: 4, borderTopRightRadius: 4 }}
                                                 onClick={handleClickOnPost(p.postId)}
                                             ></Box>
@@ -619,7 +616,7 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
                                                     {/* member behaviour / placeholder */}
                                                     {/* FIXME:FIXME:FIXME:FIXME:FIXME:FIXME:FIXME:FIXME:FIXME: */}
                                                     {processStates.viewerId !== popUpMenuStates.memberId && <Grid item >
-                                                        <IconButton onClick={handleOpenPopUpMenu(p.memberId, p.nickname, p.postId)}><MoreVertIcon /></IconButton>
+                                                        <IconButton onClick={handleOpenPopUpMenu(p.memberId, p.nickname ?? '', p.postId)}><MoreVertIcon /></IconButton>
                                                     </Grid>}
                                                 </Grid>
                                             </Box>
