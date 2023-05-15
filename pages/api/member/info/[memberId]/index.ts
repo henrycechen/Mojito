@@ -69,7 +69,9 @@ export default async function GetMemberInfoById(req: NextApiRequest, res: NextAp
         });
 
         if (null === memberComprehensiveQueryResult) {
-            throw new Error(`Attempt to GET member statistics but have no document (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
+            res.status(404).send('Member not found');
+            await atlasDbClient.close();
+            return;
         }
 
         const { status: memberStatus } = memberComprehensiveQueryResult;
