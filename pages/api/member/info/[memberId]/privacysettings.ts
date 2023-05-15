@@ -3,28 +3,27 @@ import { getToken } from 'next-auth/jwt';
 import { RestError } from '@azure/storage-blob';
 import { MongoError } from 'mongodb';
 
-import { logWithDate, response405, response500, } from '../../../../../lib/utils/general';
-import { IMemberComprehensive } from '../../../../../lib/interfaces/member';
-import { INicknameRegistry } from '../../../../../lib/interfaces/registry';
-
 import AtlasDatabaseClient from '../../../../../modules/AtlasDatabaseClient';
 import AzureTableClient from '../../../../../modules/AzureTableClient';
-import { verifyId } from '../../../../../lib/utils/verify';
+
+import { IMemberComprehensive } from '../../../../../lib/interfaces/member';
 import { IMemberPostMapping } from '../../../../../lib/interfaces/mapping';
+import { response405, response500, logWithDate, } from '../../../../../lib/utils/general';
+import { getTimeBySecond } from '../../../../../lib/utils/create';
+import { verifyId } from '../../../../../lib/utils/verify';
 
-const fname = UpdatePrivacySettings.name;
+const fnn = `${UpdatePrivacySettings.name} (API)`;
 
-/** UpdatePrivacySettings v0.1.1
- * 
- * Last update: 19/02/2023
- * 
+/** 
  * This interface ONLY accepts PUT requests
  * 
  * Info required for PUT requests
- * - token: JWT
- * - setting: string (body, stringified json, TPrivacySettingsStates)
+ * -     token: JWT
+ * -     setting: string (body, stringified json, TPrivacySettingsStates)
+ * 
+ * Last update:
+ * - 03/05/2023 v0.1.2
 */
-
 
 export default async function UpdatePrivacySettings(req: NextApiRequest, res: NextApiResponse) {
 
@@ -40,17 +39,16 @@ export default async function UpdatePrivacySettings(req: NextApiRequest, res: Ne
         res.status(401).send('Unauthorized');
         return;
     }
-    const { sub: tokenId } = token;
-
+    
     //// Verify member id ////
     const { isValid, category, id: memberId } = verifyId(req.query?.memberId);
-
     if (!(isValid && 'member' === category)) {
         res.status(400).send('Invalid member id');
         return;
     }
-
+    
     //// Match the member id in token and the one in request ////
+    const { sub: tokenId } = token;
     if (tokenId !== memberId) {
         res.status(400).send('Requested member id and identity not matched');
         return;
@@ -99,15 +97,17 @@ export default async function UpdatePrivacySettings(req: NextApiRequest, res: Ne
                 hidePostsAndCommentsOfBlockedMember: settings.hidePostsAndCommentsOfBlockedMember,
                 lastSettingsUpdatedTimeBySecond: getTimeBySecond()
             }
-        })
+        });
 
         if (!memberComprehensiveUpdateResult.acknowledged) {
-            logWithDate(`Failed to update allowKeepingBrowsingHistory, allowVisitingSavedPosts, hidePostsAndCommentsOfBlockedMember, lastSettingUpdatedTimeBySecond (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`, fname);
+            logWithDate(`Failed to update allowKeepingBrowsingHistory, allowVisitingSavedPosts, hidePostsAndCommentsOfBlockedMember, lastSettingUpdatedTimeBySecond (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`, fnn);
             res.status(500).send(`Attempt to update privacy settings`);
             return;
         }
 
         await atlasDbClient.close();
+
+        //// Response 200 ////
         res.status(200).send('Privacy settings updated');
 
         if (!settings.allowKeepingBrowsingHistory) {
@@ -115,7 +115,11 @@ export default async function UpdatePrivacySettings(req: NextApiRequest, res: Ne
             const historyQuery = browsingHistoryMappingTableClient.listEntities<IMemberPostMapping>({ queryOptions: { filter: `PartitionKey eq '${memberId}' and IsActive eq true` } });
             let result = await historyQuery.next();
             while (!result.done) {
-                await browsingHistoryMappingTableClient.updateEntity({ partitionKey: memberId, rowKey: result.value.rowKey, IsActive: false }, 'Merge');
+                await browsingHistoryMappingTableClient.updateEntity({
+                    partitionKey: memberId,
+                    rowKey: result.value.rowKey,
+                    IsActive: false
+                }, 'Merge');
             }
         }
         return;
@@ -131,7 +135,7 @@ export default async function UpdatePrivacySettings(req: NextApiRequest, res: Ne
         if (!res.headersSent) {
             response500(res, msg);
         }
-        logWithDate(msg, fname, e);
+        logWithDate(msg, fnn, e);
         await atlasDbClient.close();
         return;
     }

@@ -73,18 +73,18 @@ const domain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? '';
 const defaultLang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
     title: {
-        tw: '编辑主題帖',
-        cn: '编辑主题帖',
+        tw: '编辑文章',
+        cn: '编辑文章',
         en: 'Edit post'
     },
     delete: {
-        tw: '刪除帖',
-        cn: '删除帖',
+        tw: '刪除文章',
+        cn: '删除文章',
         en: 'Delete post'
     },
     deletePost: {
-        tw: '您確認要刪除本帖嗎？',
-        cn: '您确认要删除本帖吗？',
+        tw: '您確認要刪除本文嗎？',
+        cn: '您确认要删除本文吗？',
         en: 'Are you sure you want to delete this post?'
     },
     confirmDelete: {
@@ -138,8 +138,8 @@ const langConfigs: LangConfigs = {
         en: 'You have not followed any member'
     },
     posts: {
-        tw: '篇帖子',
-        cn: '篇帖子',
+        tw: '篇文章',
+        cn: '篇文章',
         en: 'Posts'
     },
     query: {
@@ -173,48 +173,48 @@ const langConfigs: LangConfigs = {
         en: 'Publish'
     },
     savingPost: {
-        tw: '正在保存主題貼😉請勿關閉或離開頁面',
-        cn: '正在保存主题贴😉请勿关闭或离开页面',
+        tw: '正在保存文章😉請勿關閉或離開頁面',
+        cn: '正在保存文章😉请勿关闭或离开页面',
         en: 'Saving post😉 Please do not close or leave this page'
     },
     initateSuccess: {
-        tw: '主題帖保存成功😄正在製作封面相片並上傳',
-        cn: '主题帖保存成功😄正在制作封面图片并上传',
+        tw: '文章保存成功😄正在製作封面相片並上傳',
+        cn: '文章保存成功😄正在制作封面图片并上传',
         en: 'Post content saved😄 Creating and uploading cover image'
     },
     uploadingImages: {
-        tw: '封面相片上傳成功😉正在上傳主題貼相片',
-        cn: '封面图片上传成功😉正在上传主题贴图片',
+        tw: '封面相片上傳成功😉正在上傳文章相片',
+        cn: '封面图片上传成功😉正在上传文章图片',
         en: 'Cover image uploaded😉 Uploading other images'
     },
     imagesUploadSuccess: {
-        tw: '相片上傳完成😄正在跳轉到主題帖頁面',
-        cn: '图片上传完成😄正在跳转到主题帖页面',
+        tw: '相片上傳完成😄正在跳轉到文章頁面',
+        cn: '图片上传完成😄正在跳转到文章页面',
         en: 'Photo upload complete😄 Publishing your post'
     },
     imagesUploadFailed: {
-        tw: '相片上傳失敗😟請嘗試重新發布主題帖',
-        cn: '图片上传失败😟请尝试重新发布主题帖',
+        tw: '相片上傳失敗😟請嘗試重新發布文章',
+        cn: '图片上传失败😟请尝试重新发布文章',
         en: 'Photo upload failed😟 Please try to re-publish your post'
     },
     postPublishSuccess: {
-        tw: '主題貼發布成功😄正在跳轉到頁面',
-        cn: '主题贴发布成功😄正在跳转到页面',
+        tw: '文章發布成功😄正在跳轉到頁面',
+        cn: '文章发布成功😄正在跳转到页面',
         en: 'Publishing succeeded😄 Redirecting'
     },
     postPublishFailed: {
-        tw: '主題帖發布失敗😟請嘗試重新發布主題帖',
-        cn: '主题帖发布失败😟请尝试重新发布主题帖',
+        tw: '文章發布失敗😟請嘗試重新發布',
+        cn: '文章发布失败😟请尝试重新发布',
         en: 'Publishing failed😟 Please try to re-publish your post'
     },
     noPermissionAlert0: {
-        tw: '您的賬號被限制因而不能编辑新主題帖',
-        cn: '您的账户被限制因而不能编辑新主题帖',
+        tw: '您的賬號被限制因而不能编辑新文章',
+        cn: '您的账户被限制因而不能编辑新文章',
         en: 'Unable to edit post due to restricted member'
     },
     noPermissionAlert1: {
-        tw: '这篇主题帖被限制因而不能被编辑',
-        cn: '这篇主题帖被限制因而不能被编辑',
+        tw: '这篇文章被限制因而不能被编辑',
+        cn: '这篇文章被限制因而不能被编辑',
         en: 'Unable to edit post due to restricted status'
     },
 
@@ -274,7 +274,7 @@ export async function getServerSideProps(context: NextPageContext): Promise<{ pr
 
 const CreatePost = ({ restrictedPostComprehensive_ss, channelInfoDict_ss, redirect404, redirect500 }: TCreatePostPageProps) => {
     const router = useRouter();
-    const { data: session } = useSession({ required: true, onUnauthenticated() { signIn(); } });
+    const { data: session, status } = useSession({ required: true, onUnauthenticated() { signIn(); } });
 
     React.useEffect(() => {
         if (redirect404) {
@@ -289,14 +289,14 @@ const CreatePost = ({ restrictedPostComprehensive_ss, channelInfoDict_ss, redire
     }, [router]);
 
     //////// INFO - author ////////
-    let authorId = '';
     React.useEffect(() => {
-
-        const authorSession: any = { ...session };
-        authorId = authorSession?.user?.id;
-        restorePreferenceStatesFromCache(setPreferenceStates);
-        verifyPermissions(authorId);
-    }, [session]);
+        if ('authenticated' === status) {
+            const authorSession: any = { ...session };
+            verifyPermissions(authorSession?.user?.id ?? '');
+            setAuthorInfoStates({ ...authorInfoStates, memberId: authorSession?.user?.id ?? '' });
+            restorePreferenceStatesFromCache(setPreferenceStates);
+        }
+    }, [status]);
 
     const verifyPermissions = async (memberId: string) => {
         //// Verify post status ////
@@ -459,19 +459,21 @@ const CreatePost = ({ restrictedPostComprehensive_ss, channelInfoDict_ss, redire
     //////////////////////////////////////// MEMBER INFO ////////////////////////////////////////
 
     type TAuthorInfo = {
+        memberId: string,
         followedMemberInfoArr: IMemberInfo[];
     };
 
     //////// STATE - author info ////////
     const [authorInfoStates, setAuthorInfoStates] = React.useState<TAuthorInfo>({
+        memberId: '',
         followedMemberInfoArr: []
     });
 
-    React.useEffect(() => { updateAuthorInfoStates(); }, []);
+    React.useEffect(() => { if ('' === authorInfoStates.memberId) { updateAuthorInfoStates(); } }, [authorInfoStates.memberId]);
 
     const updateAuthorInfoStates = async () => {
         // get followed member info
-        const resp = await fetch(`/api/member/followedbyme/${authorId}`);
+        const resp = await fetch(`/api/member/followedbyme/${authorInfoStates.memberId}`);
         if (200 === resp.status) {
             try {
                 const memberInfoArr = await resp.json();
@@ -480,10 +482,10 @@ const CreatePost = ({ restrictedPostComprehensive_ss, channelInfoDict_ss, redire
                     setProcessStates({ ...processStates, displayNoFollowedMemberAlert: true });
                 }
             } catch (e) {
-                console.log(`Attempt to parese followed member info array (JSON string) from response. ${e}`);
+                console.error(`Attempt to parese followed member info array (JSON string) from response of updateAuthorInfoStates request. ${e}`);
             }
         } else {
-            console.log(`Attempt to GET following restricted member info array.`);
+            console.error(`Attempt to GET following restricted member info array.`);
         }
     };
 
@@ -739,7 +741,7 @@ const CreatePost = ({ restrictedPostComprehensive_ss, channelInfoDict_ss, redire
                 hasImages: imagesArr.length !== 0
             };
 
-            const respInit = await fetch(`/api/creation/id/${postId}`, {
+            const respInit = await fetch(`/api/creation/${postId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(post)
@@ -940,7 +942,7 @@ const CreatePost = ({ restrictedPostComprehensive_ss, channelInfoDict_ss, redire
         }
 
         // #4 Update image fullnames array
-        const respUpdate = await fetch(`/api/creation/id/${postId}/updateimagefullnamesarray`, {
+        const respUpdate = await fetch(`/api/creation/${postId}/updateimagefullnamesarray`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -985,9 +987,9 @@ const CreatePost = ({ restrictedPostComprehensive_ss, channelInfoDict_ss, redire
     });
 
     const handleDeletePost = async () => {
-        await fetch(`/api/creation/id/${postInfoStates.postId}`, { method: 'DELETE' });
+        await fetch(`/api/creation/${postInfoStates.postId}`, { method: 'DELETE' });
         // Jump to member info page (author's post layout)
-        router.push(`/me/id/${authorId}`);
+        router.push(`/me/id/${authorInfoStates.memberId}`);
     };
 
     const handleDeleteSaverOpen = () => {
@@ -999,7 +1001,7 @@ const CreatePost = ({ restrictedPostComprehensive_ss, channelInfoDict_ss, redire
 
     return (
         <>
-            <Navbar />
+            <Navbar lang={preferenceStates.lang} />
 
             {/* post editor */}
             <Box sx={{ display: 'flex', justifyContent: 'center' }}>

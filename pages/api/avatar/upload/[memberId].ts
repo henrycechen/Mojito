@@ -20,17 +20,17 @@ export const config = {
     }
 };
 
-const fname = AvatarImageUpload.name;
+const fnn = `${AvatarImageUpload.name} (API)`;
 
-/** AvatarImageUpload v0.1.2 FIXME: need to move the image processing to the client-side
- * 
- * Last update: 15/02/2023
- * 
+/**
  * This interface ONLY accepts POST requests
  * 
  * Info required for POST requests
  * - token: JWT
  * - file: image file (form)
+ * 
+ * Last update:
+ * - 15/02/2023 v0.1.2
 */
 
 export default async function AvatarImageUpload(req: NextApiRequest, res: NextApiResponse) {
@@ -64,6 +64,8 @@ export default async function AvatarImageUpload(req: NextApiRequest, res: NextAp
     //// Declare DB client ////
     const atlasDbClient = AtlasDatabaseClient();
     try {
+        await atlasDbClient.connect();
+
         //// Verify member status ////
         const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
         const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne({ memberId }, { projection: { _id: 0, status: 1 } });
@@ -85,10 +87,11 @@ export default async function AvatarImageUpload(req: NextApiRequest, res: NextAp
             $set: { lastAvatarImageUpdatedTimeBySecond: getTimeBySecond() }
         });
         if (!memberComprehensiveUpdateResult.acknowledged) {
-            logWithDate(`Failed to update lastAvatarImageUpdatedTimeBySecond (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`, fname);
+            logWithDate(`Failed to update lastAvatarImageUpdatedTimeBySecond (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`, fnn);
         }
         //// Response 200 ////
         res.status(200).end();
+
         await atlasDbClient.close();
         return;
     } catch (e: any) {
@@ -103,7 +106,7 @@ export default async function AvatarImageUpload(req: NextApiRequest, res: NextAp
         if (!res.headersSent) {
             response500(res, msg);
         }
-        logWithDate(msg, fname, e);
+        logWithDate(msg, fnn, e);
         await atlasDbClient.close();
         return;
     }

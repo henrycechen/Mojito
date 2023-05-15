@@ -1,71 +1,87 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { getToken } from 'next-auth/jwt';
 import { RestError } from '@azure/data-tables';
 import { MongoError } from 'mongodb';
 
-import AzureTableClient from '../../../../../modules/AzureTableClient';
-import AtlasDatabaseClient from "../../../../../modules/AtlasDatabaseClient";
+import AtlasDatabaseClient from '../../../../../modules/AtlasDatabaseClient';
 
-
+import { IMemberComprehensive } from '../../../../../lib/interfaces/member';
 import { response405, response500, logWithDate } from '../../../../../lib/utils/general';
-import { IMemberInfo, IRestrictedMemberComprehensive } from '../../../../../lib/interfaces/member';
+import { verifyId } from '../../../../../lib/utils/verify';
 
+const fnn = `${GetMemberInfoById.name} (API)`;
 
-const fname = GetMemberInfoById.name;
-
-
-/** GetMemberInfoById v0.1.1
- * 
- * Last update: 21/02/2023
- * 
+/**
  * This interface ONLY accepts GET requests
  * 
  * Info required for ONLY requests
- * token: JWT
- * id: string (query, member id)
+ * -     token: JWT
+ * -     id: string (query, member id)
+ * 
+ * Last update:
+ * - 28/04/2023 v0.1.2
 */
 
 export default async function GetMemberInfoById(req: NextApiRequest, res: NextApiResponse) {
+
     const { method } = req;
-    if (!['GET', 'POST'].includes(method ?? '')) {
+    if ('GET' !== method) {
         response405(req, res);
         return;
     }
 
-    // GET | info
-
-
+    //// Verify member id ////
+    const { isValid, category, id: memberId } = verifyId(req.query?.memberId);
+    if (!(isValid && 'member' === category)) {
+        res.status(400).send('Invalid member id');
+        return;
+    }
 
     //// Declare DB client ////
     const atlasDbClient = AtlasDatabaseClient();
     try {
+        await atlasDbClient.connect();
 
-        const info: IRestrictedMemberComprehensive = {
-            memberId: 'M1234XXXX',
-            providerId: "MojitoMemberSystem",
-            registeredTimeBySecond: 1671484182,
-            verifiedTimeBySecond: 1671593378,
+        //// Verify member status ////
+        const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
+        const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne({ memberId }, {
+            projection: {
+                _id: 0,
+                memberId: 1,
 
-            nickname: '店小二WebMaster',
-            briefIntro: `專業的臺灣書評媒體
-            \n提供原生報導，文化觀察，人物採訪與國內外重大出版消息
-            \nLife is an openbook.  
-            \n打開來讀，有人陪你,換日線。台灣高雄人。二十歲後流浪到台北工作七年後回高雄定居至今。\n從事接案工作十餘年。大多數時間從事的事都跟書和出版社有關。`,
-            gender: -1,
-            birthdayBySecond: 840344435,
+                providerId: 1,
+                registeredTimeBySecond: 1,
+                verifiedTimeBySecond: 1,
+                emailAddress: 1,
 
-            status: 200,
-            allowPosting: true,
-            allowCommenting: true,
-            allowKeepingBrowsingHistory: true,
-            allowVisitingFollowedMembers: true,
-            allowVisitingSavedPosts: true,
-            hidePostsAndCommentsOfBlockedMember: false,
-        };
+                nickname: 1,
+                briefIntro: 1,
+                gender: 1,
+                birthdayBySecond: 1,
 
-        res.send(info);
+                status: 1,
+                allowPosting: 1,
+                allowCommenting: 1,
+                allowKeepingBrowsingHistory: 1,
+                allowVisitingFollowedMembers: 1,
+                allowVisitingSavedPosts: 1,
+                hidePostsAndCommentsOfBlockedMember: 1,
+            }
+        });
 
+        if (null === memberComprehensiveQueryResult) {
+            throw new Error(`Attempt to GET member statistics but have no document (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
+        }
 
+        const { status: memberStatus } = memberComprehensiveQueryResult;
+        if (0 > memberStatus) {
+            res.status(403).send('Method not allowed due to member suspended or deactivated');
+            await atlasDbClient.close();
+            return;
+        }
+
+        //// Response 200 ////
+        res.status(200).send(memberComprehensiveQueryResult);
+        
         await atlasDbClient.close();
         return;
     } catch (e: any) {
@@ -80,7 +96,7 @@ export default async function GetMemberInfoById(req: NextApiRequest, res: NextAp
         if (!res.headersSent) {
             response500(res, msg);
         }
-        logWithDate(msg, fname, e);
+        logWithDate(msg, fnn, e);
         await atlasDbClient.close();
         return;
     }

@@ -3,8 +3,10 @@ import { getRandomHexStr } from '../create';
 
 // Utils for Member Class v0.1.1
 
-export function provideAvatarImageUrl(memberId: string, domain: string, forceBrowserUpdate = false): string {
-    if (forceBrowserUpdate) {
+export function provideAvatarImageUrl(memberId: any, domain: string, forceUpdateImageCache = false): string {
+    if ('string' !== typeof memberId) {
+        return ``;
+    } else if (forceUpdateImageCache) {
         return `${domain}/api/avatar/a/${memberId}.png?variant=${getRandomHexStr()}`;
     } else {
         return `${domain}/api/avatar/a/${memberId}.png`;
@@ -35,10 +37,10 @@ export function provideMemberInfoPageUrl(memberId: string, domain: string): stri
     return `${domain}/me/id/${memberId}`;
 }
 
-export function provideCuedMemberInfoArray(cuedMemberInfoDictionary: { [memberId: string]: IMemberInfo }): IMemberInfo[] {
+export function provideCuedMemberInfoArray(cuedMemberInfoDictionary: { [memberId: string]: IMemberInfo; }): IMemberInfo[] {
     const memberIdArr = Object.keys(cuedMemberInfoDictionary);
     if (0 === memberIdArr.length) {
-        return []
+        return [];
     }
     return memberIdArr.map(memberId => cuedMemberInfoDictionary[memberId]);
 }
@@ -50,6 +52,7 @@ export function fakeRestrictedMemberInfo(): IRestrictedMemberComprehensive {
         providerId: '',
         registeredTimeBySecond: 1676332800, // Date Tue Feb 14 2023 13:00:00 GMT+1300 (New Zealand Daylight Time)
         verifiedTimeBySecond: 1676332900,
+        emailAddress: '',
 
         nickname: '',
         briefIntro: '',
@@ -63,7 +66,7 @@ export function fakeRestrictedMemberInfo(): IRestrictedMemberComprehensive {
         allowVisitingSavedPosts: false,
         allowKeepingBrowsingHistory: false,
         hidePostsAndCommentsOfBlockedMember: false
-    }
+    };
 }
 
 export function fakeConciseMemberInfo(): IMemberInfo {
@@ -72,7 +75,7 @@ export function fakeConciseMemberInfo(): IMemberInfo {
         nickname: '',
         briefIntro: '',
         createdTimeBySecond: 1671484182
-    }
+    };
 }
 
 export function fakeConciseMemberStatistics(): IConciseMemberStatistics {
@@ -83,5 +86,5 @@ export function fakeConciseMemberStatistics(): IConciseMemberStatistics {
         totalFollowedByCount: 0,
         totalCreationSavedCount: 0,
         totalCreationLikedCount: 0
-    }
+    };
 }

@@ -1,21 +1,29 @@
-/** Interfaces for Attitude Class v0.1.1
+/**
+ * -     memberId: string
+ * -     postId: string // divided by post id
+ * -     attitude: number // -1 | 0 | 1
+ * -     commentAttitudeMapping: { [key: string]: number }
  * 
- * Last update 16/02/2023
+ * Last update: 08/05/2023 v0.1.1
  */
-
-// [C] attitudeComprehensive
 export interface IAttitudeComprehensive {
     memberId: string;
     postId: string; // divided by post id
     attitude: number; // -1 | 0 | 1
     commentAttitudeMapping: {
-        [key: string]: number
+        [key: string]: number;
     };
 }
 
+/**
+ * -     attitude: number // -1 | 0 | 1
+ * -     commentAttitudeMapping: { [key: string]: number }
+ * 
+ * Last update: 08/05/2023 v0.1.1
+ */
 export interface IAttitudeMapping {
     attitude: number; // -1 | 0 | 1
     commentAttitudeMapping: {
-        [key: string]: number
+        [key: string]: number;
     };
 }

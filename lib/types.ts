@@ -18,22 +18,6 @@ export type TPreferenceStates = {
     mode: 'light' | 'dark';
 };
 
-type EmailRecipient = {
-    email: string;
-};
-
-export type TEmailMessage = {
-    sender: '<donotreply@mojito.co.nz>';
-    content: {
-        subject: string;
-        plainText?: string;
-        html?: string;
-    },
-    recipients: {
-        to: [EmailRecipient];
-    };
-};
-
 export type TVerifyEmailAddressRequestInfo = {
     emailAddress: string;
     providerId: string;

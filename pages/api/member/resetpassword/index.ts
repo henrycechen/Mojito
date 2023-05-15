@@ -14,18 +14,18 @@ import { getTimeBySecond } from '../../../../lib/utils/create';
 
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
 const salt = process.env.APP_PASSWORD_SALT ?? '';
-const fname = ResetPassword.name;
+const fnn = `${ResetPassword.name} (API)`;
 
-/** ResetPassword v0.1.1
- * 
- * Last update: 21/02/2023
- * 
+/**
  * This interface ONLY accepts POST method
  * 
  * Info required for POST request
- * - emailAddressHash: string
- * - resetPasswordToken: string
- * - password: string
+ * -     emailAddressHash: string
+ * -     resetPasswordToken: string
+ * -     password: string
+ * 
+ * Last update:
+ * - 21/02/2023 v0.1.1
  */
 
 export default async function ResetPassword(req: NextApiRequest, res: NextApiResponse) {
@@ -40,7 +40,7 @@ export default async function ResetPassword(req: NextApiRequest, res: NextApiRes
     if (!!environmentVariable) {
         const msg = `${environmentVariable} not found`;
         response500(res, msg);
-        logWithDate(msg, fname);
+        logWithDate(msg, fnn);
         return;
     }
 
@@ -114,6 +114,8 @@ export default async function ResetPassword(req: NextApiRequest, res: NextApiRes
             MemberId: memberId,
             LastUpdatedTimeBySecond: getTimeBySecond()
         }, 'Merge');
+
+        //// Response 200 ////
         res.status(200).send('Password reset');
 
         // #5 write journal (ILoginJournal) in [C] loginJournal
@@ -144,7 +146,7 @@ export default async function ResetPassword(req: NextApiRequest, res: NextApiRes
         if (!res.headersSent) {
             response500(res, msg);
         }
-        logWithDate(msg, fname, e);
+        logWithDate(msg, fnn, e);
         await atlasDbClient.close();
         return;
     }

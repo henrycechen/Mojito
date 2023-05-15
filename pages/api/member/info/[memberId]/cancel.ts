@@ -1,23 +1,23 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { MongoError } from 'mongodb';
-import { getToken } from 'next-auth/jwt'
+import { getToken } from 'next-auth/jwt';
 
-import AtlasDatabaseClient from "../../../../../modules/AtlasDatabaseClient";
+import AtlasDatabaseClient from '../../../../../modules/AtlasDatabaseClient';
 
 import { IMemberComprehensive } from '../../../../../lib/interfaces/member';
 import { response405, response500, logWithDate } from '../../../../../lib/utils/general';
 import { verifyId } from '../../../../../lib/utils/verify';
 
-const fname = CancelMembership.name;
+const fnn = `${CancelMembership.name} (API)`;
 
-/** CancelMembership v0.1.1
- * 
- * Last update: 19/02/2023
- *  
+/**
  * This interface ONLY accepts DELETE requests
  * 
  * Info required for DELETE requests
- * token: JWT
+ * -     token: JWT
+ * 
+ * Last update:
+ * - 19/02/2023 v0.1.1
 */
 
 export default async function CancelMembership(req: NextApiRequest, res: NextApiResponse) {
@@ -35,17 +35,15 @@ export default async function CancelMembership(req: NextApiRequest, res: NextApi
         return;
     }
 
-    const { sub: tokenId } = token;
-
     //// Verify member id ////
     const { isValid, category, id: memberId } = verifyId(req.query?.memberId);
-
     if (!(isValid && 'member' === category)) {
         res.status(400).send('Invalid member id');
         return;
     }
-
+    
     //// Match the member id in token and the one in request ////
+    const { sub: tokenId } = token;
     if (tokenId !== memberId) {
         res.status(400).send('Requested member id and identity not matched');
         return;
@@ -54,7 +52,6 @@ export default async function CancelMembership(req: NextApiRequest, res: NextApi
     //// Declare DB client ////
     const atlasDbClient = AtlasDatabaseClient();
     try {
-
         await atlasDbClient.connect();
 
         //// Verify member status ////
@@ -76,7 +73,9 @@ export default async function CancelMembership(req: NextApiRequest, res: NextApi
             res.status(500).send('Cancel insuccess');
         }
 
+        //// Response 200 ////
         res.status(200).send('Cancel success');
+
         await atlasDbClient.close();
         return;
     } catch (e: any) {
@@ -89,7 +88,7 @@ export default async function CancelMembership(req: NextApiRequest, res: NextApi
         if (!res.headersSent) {
             response500(res, msg);
         }
-        logWithDate(msg, fname, e);
+        logWithDate(msg, fnn, e);
         await atlasDbClient.close();
         return;
     }

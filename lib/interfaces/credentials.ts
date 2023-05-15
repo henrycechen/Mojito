@@ -1,8 +1,12 @@
-/** Interfaces for Credentials Class v0.1.1
+/**
+ * -     partitionKey: string // email address sh1 hash
+ * -     rowKey: string // login provider id
+ * -     MemberId: string
+ * -     PasswordHash: string
+ * -     LastUpdatedTimeBySecond: number
  * 
- * Last update 16/02/2023
+ * Last update: 08/05/2023 v0.1.1
  */
-
 export interface ILoginCredentials {
     partitionKey: string; // email address sh1 hash
     rowKey: string; // login provider id
@@ -11,6 +15,15 @@ export interface ILoginCredentials {
     LastUpdatedTimeBySecond: number;
 }
 
+/**
+ * -     partitionKey: string // email address sh1 hash
+ * -     rowKey: 'MojitoMemberSystem' // login provider id
+ * -     MemberId: string
+ * -     PasswordHash: string
+ * -     LastUpdatedTimeBySecond: number
+ * 
+ * Last update: 08/05/2023 v0.1.1
+ */
 export interface IMojitoMemberSystemLoginCredentials {
     partitionKey: string; // email address sh1 hash
     rowKey: 'MojitoMemberSystem'; // login provider id
@@ -19,6 +32,14 @@ export interface IMojitoMemberSystemLoginCredentials {
     LastUpdatedTimeBySecond: number;
 }
 
+/**
+ * -     partitionKey: string // email address sh1 hash
+ * -     rowKey: 'VerifyEmailAddress'
+ * -     VerifyEmailAddressToken: string
+ * -     CreatedTimeBySecond: number
+ * 
+ * Last update: 08/05/2023 v0.1.1
+ */
 export interface IVerifyEmailAddressCredentials {
     partitionKey: string; // email address sh1 hash
     rowKey: 'VerifyEmailAddress';
@@ -26,9 +47,17 @@ export interface IVerifyEmailAddressCredentials {
     CreatedTimeBySecond: number;
 }
 
+/**
+ * -     partitionKey: string // email address sh1 hash
+ * -     rowKey: 'ResetPassword'
+ * -     ResetPasswordToken: string
+ * -     CreateTimeBySecond: number
+ * 
+ * Last update: 08/05/2023 v0.1.1
+ */
 export interface IResetPasswordCredentials {
     partitionKey: string; // email address sh1 hash
     rowKey: 'ResetPassword';
     ResetPasswordToken: string;
-    CreateTimeBySecond: number; // Math.floor(new Date().getTime() / 1000)
+    CreateTimeBySecond: number;
 }

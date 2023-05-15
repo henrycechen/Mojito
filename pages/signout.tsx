@@ -11,7 +11,7 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
 
-import { signIn, signOut, getProviders, getSession, getCsrfToken, useSession } from 'next-auth/react'
+import { signIn, signOut, getProviders, getSession, getCsrfToken, useSession } from 'next-auth/react';
 import { LangConfigs, TSignInCredentialStates } from '../lib/types';
 
 
@@ -25,6 +25,7 @@ import Alert from '@mui/material/Alert';
 import AlertTitle from '@mui/material/AlertTitle';
 
 import { NextPageContext } from 'next/types';
+import { provideAvatarImageUrl } from '../lib/utils/for/member';
 
 export async function getServerSideProps(context: NextPageContext) {
     return {
@@ -32,11 +33,10 @@ export async function getServerSideProps(context: NextPageContext) {
             providers: await getProviders(),
             csrfToken: await getCsrfToken(context),
         }
-    }
+    };
 }
-/**
- * Language settings
- */
+
+const domain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? '';
 const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfig: LangConfigs = {
     appSignout: {
@@ -50,29 +50,37 @@ const langConfig: LangConfigs = {
         en: 'Sign out'
     }
 
-}
+};
 
 const SignOut = () => {
-    /**
-     * Handle session
-     */
-    const { data: session, status } = useSession();
-    const router = useRouter();
-    // React.useEffect(() => { if (!session) router.push('/') }, []);
-    console.log(session?.user);
 
+    const router = useRouter();
+
+    const { data: session } = useSession();
+
+    const [memberInfoStates, setMemberInfoStates] = React.useState({
+        memberId: ''
+    });
+
+    React.useEffect(() => {
+        if (!session) {
+            router.push('/');
+        } else {
+            const userSession: any = { ...session };
+            setMemberInfoStates({ memberId: userSession?.user?.id ?? '' });
+        }
+    }, []);
 
     const handleSubmit = (event: React.FormEvent) => {
         event.preventDefault();
         signOut();
-    }
+    };
 
     return (
         <Container component='main' maxWidth='xs'>
             <Stack sx={{ mt: '10rem' }}>
                 <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-                    {/* FIXME: replace with user avatar url */}
-                    <Avatar src='./favicon.ico' sx={{ width: 56, height: 56 }} />
+                    <Avatar src={provideAvatarImageUrl(memberInfoStates.memberId, domain)} sx={{ width: 56, height: 56 }} />
                 </Box>
                 <Typography variant="h5" sx={{ textAlign: 'center', mt: 2 }}>
                     {langConfig.appSignout[lang]}
@@ -85,7 +93,7 @@ const SignOut = () => {
             </Stack>
             <Copyright sx={{ mt: 16, mb: 4 }} />
         </Container>
-    )
-}
+    );
+};
 
 export default SignOut;

@@ -5,44 +5,47 @@ import CryptoJS from 'crypto-js';
 
 import AzureTableClient from '../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from '../../../../modules/AtlasDatabaseClient';
+
 import { logWithDate, response405, response500 } from '../../../../lib/utils/general';
 import { verifyEmailAddress, verifyEnvironmentVariable, verifyRecaptchaResponse } from '../../../../lib/utils/verify';
 import { ILoginJournal, IMemberComprehensive, IMemberStatistics } from '../../../../lib/interfaces/member';
 import { INotificationStatistics } from '../../../../lib/interfaces/notification';
 import { getTimeBySecond } from '../../../../lib/utils/create';
 
-
 const recaptchaServerSecret = process.env.INVISIABLE_RECAPTCHA_SECRET_KEY ?? '';
-const fname = VerifyEmailAddressToken.name;
+const fnn = `${VerifyEmailAddressToken.name} (API)`;
 
-
-/** VerifyEmailAddressToken v0.1.3
- * 
- * Last update: 23/02/2023
- * 
+/**
  * This interface ONLY accepts POST requests
  * 
  * Info required for POST requests
- * - recaptchaResponse: string (query)
- * - requestInfo: {emailAddress, providerId, verifyEmailAddressToken} (body)
+ * -     recaptchaResponse: string (query)
+ * -     requestInfo: {emailAddress, providerId, verifyEmailAddressToken} (body)
+ * 
+ * Last update:
+ * - 23/02/2023 v0.1.3
  */
+
 export default async function VerifyEmailAddressToken(req: NextApiRequest, res: NextApiResponse) {
     const { method } = req;
     if ('POST' !== method) {
         response405(req, res);
         return;
     }
-    const environmentVariable = verifyEnvironmentVariable({ recaptchaServerSecret });
+
     //// Verify environment variables ////
+    const environmentVariable = verifyEnvironmentVariable({ recaptchaServerSecret });
     if (!!environmentVariable) {
         const msg = `${environmentVariable} not found`;
         response500(res, msg);
         logWithDate(msg,);
         return;
     }
+
     //// Declare DB client ////
     const atlasDbClient = AtlasDatabaseClient();
     try {
+
         const { recaptchaResponse } = req.query;
         // #1 verify if requested by human
         const { status: recaptchaStatus, message } = await verifyRecaptchaResponse(recaptchaServerSecret, recaptchaResponse);
@@ -126,7 +129,7 @@ export default async function VerifyEmailAddressToken(req: NextApiRequest, res: 
             $set: {
                 //// info ////
                 verifiedTimeBySecond: getTimeBySecond(),
-                gender: -1, // "keep as secret"
+                gender: -1, // 'keep as secret'
                 //// management ////
                 status: 200,
                 allowPosting: true,
@@ -187,7 +190,7 @@ export default async function VerifyEmailAddressToken(req: NextApiRequest, res: 
             totalUndoBlockedByCount: 0
         });
         if (!memberStatisticsCollectionInsertResult.acknowledged) {
-            logWithDate(`Attempt to insert document (IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`, fname); // v0.1.3
+            logWithDate(`Attempt to insert document (IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`, fnn); // v0.1.3
         }
         // #7 insert a new document (INotificationStatistics) in [C] notificationStatistics
         const notificationStatisticsCollectionClient = atlasDbClient.db('statistics').collection<INotificationStatistics>('notification');
@@ -201,8 +204,9 @@ export default async function VerifyEmailAddressToken(req: NextApiRequest, res: 
             follow: 0,
         });
         if (!notificationCollectionInsertResult.acknowledged) {
-            logWithDate(`Attempt to insert document (of INotificationStatistics, member id: ${memberId}) in [C] notificationStatistics`, fname); // v0.1.3
+            logWithDate(`Attempt to insert document (of INotificationStatistics, member id: ${memberId}) in [C] notificationStatistics`, fnn); // v0.1.3
         }
+        //// Response 200 ////
         res.status(200).send('Email address verified');
         // #8 write journal (ILoginJournal) in [C] loginJournal
         const loginJournalCollectionClient = atlasDbClient.db('journal').collection<ILoginJournal>('login');
@@ -213,7 +217,9 @@ export default async function VerifyEmailAddressToken(req: NextApiRequest, res: 
             timestamp: new Date().toISOString(),
             message: 'Email address verified.'
         });
+
         await atlasDbClient.close();
+        return;
     } catch (e: any) {
         let msg: string;
         if (e instanceof SyntaxError) {
@@ -231,7 +237,7 @@ export default async function VerifyEmailAddressToken(req: NextApiRequest, res: 
         if (!res.headersSent) {
             response500(res, msg);
         }
-        logWithDate(msg, fname, e);
+        logWithDate(msg, fnn, e);
         await atlasDbClient.close();
         return;
     }

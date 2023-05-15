@@ -24,6 +24,7 @@ export function verifyId(id: any): { isValid: boolean; category: string; id: str
         return { isValid: false, category: '', id: '' };
     }
     const ref = `${id}`.toUpperCase();
+    
     const cat = ref.slice(0, 1);
     if (!(new RegExp(/[CDMNP]/).test(cat))) {
         return { isValid: false, category: '', id: '' };

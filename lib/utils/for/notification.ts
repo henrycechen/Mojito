@@ -37,52 +37,52 @@ export function noticeInfoToString(info: INoticeInfoWithMemberInfo, lang: string
         }
     }
     if ('cue' === category) {
-        // - WebMaster在帖子“...”的评论“...”中提到了您
-        // - WebMaster在帖子“...”中提到了您
+        // - WebMaster在文章“...”的评论“...”中提到了您
+        // - WebMaster在文章“...”中提到了您
         if ('comment' === entity) {
             switch (_lang) {
-                case 'tw': return `在帖子 “${info.postTitle}” 的評論“${info.commentBrief}” 中提及了您`;
-                case 'cn': return `在帖子 “${info.postTitle}” 的评论“${info.commentBrief}” 中提到了您`;
+                case 'tw': return `在文章 “${info.postTitle}” 的評論“${info.commentBrief}” 中提及了您`;
+                case 'cn': return `在文章 “${info.postTitle}” 的评论“${info.commentBrief}” 中提到了您`;
                 case 'en': return `Mentioned you in comment "${info.commentBrief}" in "${info.postTitle}"`;
             }
         } else {
             switch (_lang) {
-                case 'tw': return `在帖子“${info.postTitle}”中提及了您`;
-                case 'cn': return `在帖子“${info.postTitle}”中提到了您`;
+                case 'tw': return `在文章“${info.postTitle}”中提及了您`;
+                case 'cn': return `在文章“${info.postTitle}”中提到了您`;
                 case 'en': return `Mentioned you in post "${info.postTitle}"`;
             }
         }
     }
     if ('reply' === category) {
-        // - WebMaster在帖子“...”中回复了您的评论“...”
-        // - WebMaster回复了您的帖子“...”
+        // - WebMaster在文章“...”中回复了您的评论“...”
+        // - WebMaster回复了您的文章“...”
         if ('comment' === entity) {
             switch (_lang) {
-                case 'tw': return `在帖子 “${info.postTitle}” 中回復了您的評論 “${info.commentBrief}”`;
-                case 'cn': return `在帖子 “${info.postTitle}” 中回复了您的评论 “${info.commentBrief}”`;
+                case 'tw': return `在文章 “${info.postTitle}” 中回復了您的評論 “${info.commentBrief}”`;
+                case 'cn': return `在文章 “${info.postTitle}” 中回复了您的评论 “${info.commentBrief}”`;
                 case 'en': return `Replied your comment "${info.commentBrief}" in "${info.postTitle}"`;
             }
         } else {
             switch (_lang) {
-                case 'tw': return `回复了您的帖子 “${info.postTitle}”`;
-                case 'cn': return `回复了您的帖子 “${info.postTitle}”`;
+                case 'tw': return `回复了您的文章 “${info.postTitle}”`;
+                case 'cn': return `回复了您的文章 “${info.postTitle}”`;
                 case 'en': return `Replied your post "${info.postTitle}"`;
             }
         }
     }
     if ('like' === category) {
         // - WebMaster喜欢了您在“...”中发表的评论“...”
-        // - WebMaster喜欢了您的帖子“...”
+        // - WebMaster喜欢了您的文章“...”
         if ('comment' === entity) {
             switch (_lang) {
-                case 'tw': return `喜歡了您在帖子 “${info.postTitle}” 中發表的評論 “${info.commentBrief}”`;
-                case 'cn': return `赞了您在帖子 “${info.postTitle}” 中发布的评论 “${info.commentBrief}”`;
+                case 'tw': return `喜歡了您在文章 “${info.postTitle}” 中發表的評論 “${info.commentBrief}”`;
+                case 'cn': return `赞了您在文章 “${info.postTitle}” 中发布的评论 “${info.commentBrief}”`;
                 case 'en': return `Liked your comment "${info.commentBrief}" in "${info.postTitle}"`;
             }
         } else {
             switch (_lang) {
-                case 'tw': return `喜歡了您的帖子 “${info.postTitle}”`;
-                case 'cn': return `赞了您在的帖子 “${info.postTitle}”`;
+                case 'tw': return `喜歡了您的文章 “${info.postTitle}”`;
+                case 'cn': return `赞了您在的文章 “${info.postTitle}”`;
                 case 'en': return `Liked your post "${info.postTitle}"`;
             }
         }
@@ -98,8 +98,8 @@ export function noticeInfoToString(info: INoticeInfoWithMemberInfo, lang: string
     if ('save' === category) {
         // - WebMaster收藏了“...”
         switch (_lang) {
-            case 'tw': return `收藏了您的帖子 “${info.postTitle}”`;
-            case 'cn': return `收藏了您的帖子 “${info.postTitle}”`;
+            case 'tw': return `收藏了您的文章 “${info.postTitle}”`;
+            case 'cn': return `收藏了您的文章 “${info.postTitle}”`;
             case 'en': return `Saved your post "${info.postTitle}"`;
         }
     }

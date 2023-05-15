@@ -3,34 +3,29 @@ import { RestError } from '@azure/data-tables';
 import { MongoError } from 'mongodb';
 import { getToken } from 'next-auth/jwt';
 
-import AzureTableClient from '../../../../../modules/AzureTableClient';
-import AtlasDatabaseClient from '../../../../../modules/AtlasDatabaseClient';
-import { logWithDate, response405, response500 } from '../../../../../lib/utils/general';
-import { createId, createNoticeId, getRandomIdStr, getTimeBySecond } from '../../../../../lib/utils/create';
-import { IMemberComprehensive, IMemberStatistics } from '../../../../../lib/interfaces/member';
-import { getTopicInfoArrayFromRequestBody, createTopicComprehensive } from '../../../../../lib/utils/for/topic';
-import { getCuedMemberInfoArrayFromRequestBody, getImageFullnamesArrayFromRequestBody, getParagraphsArrayFromRequestBody } from '../../../../../lib/utils/for/post';
-import { IPostComprehensive } from '../../../../../lib/interfaces/post';
-import { IChannelStatistics } from '../../../../../lib/interfaces/channel';
-import { ITopicComprehensive } from '../../../../../lib/interfaces/topic';
-import { INoticeInfo, INotificationStatistics } from '../../../../../lib/interfaces/notification';
-import { getNicknameFromToken } from '../../../../../lib/utils/for/member';
-import { verifyId } from '../../../../../lib/utils/verify';
-import { IMemberMemberMapping } from '../../../../../lib/interfaces/mapping';
+import AzureTableClient from '../../../../modules/AzureTableClient';
+import AtlasDatabaseClient from '../../../../modules/AtlasDatabaseClient';
+import { logWithDate, response405, response500 } from '../../../../lib/utils/general';
+import { createNoticeId, getTimeBySecond } from '../../../../lib/utils/create';
+import { IMemberComprehensive } from '../../../../lib/interfaces/member';
+import { IPostComprehensive } from '../../../../lib/interfaces/post';
+import { INoticeInfo, INotificationStatistics } from '../../../../lib/interfaces/notification';
+import { getNicknameFromToken } from '../../../../lib/utils/for/member';
+import { verifyId } from '../../../../lib/utils/verify';
+import { IMemberMemberMapping } from '../../../../lib/interfaces/mapping';
 
-const domain = process.env.NEXT_PUBLIC_APP_DOMAIN;
-const fname = UpdateImageFullnamesArray.name;
+const ffn = `${UpdateImageFullnamesArray.name} (API)`;
 
-/** CreatePost v0.1.1
- * 
- * Last update: 
- * 
+/**
  * This interface ONLY accepts PUT method
  * 
  * Post info required
- * - token: JWT
- * - title
- * - channelId
+ * -     token: JWT
+ * -     postId: string (body)
+ * -     imageFullnamesArr: string[] (body)
+ * 
+ * Last update:
+ * - 10/05/2023 v0.1.1
  */
 
 export default async function UpdateImageFullnamesArray(req: NextApiRequest, res: NextApiResponse) {
@@ -61,12 +56,12 @@ export default async function UpdateImageFullnamesArray(req: NextApiRequest, res
         return;
     }
 
-
     //// Declare DB client ////
     const atlasDbClient = AtlasDatabaseClient();
     try {
         await atlasDbClient.connect();
 
+        //// Verify member status ////
         const { sub: memberId } = token;
         const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
         const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne<IMemberComprehensive>({ memberId });
@@ -145,7 +140,7 @@ export default async function UpdateImageFullnamesArray(req: NextApiRequest, res
                     // #4 update cue (of INotificationStatistics) (of cued member) in [C] notificationStatistics
                     const notificationStatisticsUpdateResult = await notificationStatisticsCollectionClient.updateOne({ memberId: cuedId }, { $inc: { cue: 1 } });
                     if (!notificationStatisticsUpdateResult.acknowledged) {
-                        logWithDate(`Document (IPostComprehensive, post id: ${postId}) inserted in [C] postComprehensive successfully but failed to update cue (of INotificationStatistics, member id: ${cuedId}) in [C] notificationStatistics`, fname);
+                        logWithDate(`Document (IPostComprehensive, post id: ${postId}) inserted in [C] postComprehensive successfully but failed to update cue (of INotificationStatistics, member id: ${cuedId}) in [C] notificationStatistics`, ffn);
                     }
                 }
             }
@@ -168,7 +163,7 @@ export default async function UpdateImageFullnamesArray(req: NextApiRequest, res
         if (!res.headersSent) {
             response500(res, msg);
         }
-        logWithDate(msg, fname, e);
+        logWithDate(msg, ffn, e);
         await atlasDbClient.close();
         return;
     }

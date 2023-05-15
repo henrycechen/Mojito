@@ -1,34 +1,32 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { getToken } from 'next-auth/jwt'
+import { getToken } from 'next-auth/jwt';
 import { RestError } from '@azure/data-tables';
 import { MongoError } from 'mongodb';
 
-import AtlasDatabaseClient from "../../../../modules/AtlasDatabaseClient";
+import AtlasDatabaseClient from '../../../../modules/AtlasDatabaseClient';
+import AzureTableClient from '../../../../modules/AzureTableClient';
+
 import { logWithDate, response405, response500 } from '../../../../lib/utils/general';
 import { verifyId } from '../../../../lib/utils/verify';
-import AzureTableClient from '../../../../modules/AzureTableClient';
 import { IMemberMemberMapping } from '../../../../lib/interfaces/mapping';
 import { IMemberInfo, IMemberComprehensive } from '../../../../lib/interfaces/member';
 
-const fname = GetMembersFollowingMe.name;
+const fnn = `${GetMembersFollowingMe.name} (API)`;
 
 //////// Find out who is following me ////////
 
-/** GetFollowingMembersById v0.1.2 FIXME: test mode
- * 
- * Last update 22/02/2023
- * 
+/**
  * Info required for GET requests
- * - memberId: string
+ * -     memberId: string
  * 
  * Info will be returned
- * - arr: IConciseMemberInfo[]
+ * -     arr: IConciseMemberInfo[]
+ * 
+ * Last update：
+ * - 22/02/2023 v0.1.2
 */
 
 export default async function GetMembersFollowingMe(req: NextApiRequest, res: NextApiResponse) {
-
-    res.send([]);
-    return;
 
     const { method } = req;
     if ('GET' !== method) {
@@ -89,11 +87,13 @@ export default async function GetMembersFollowingMe(req: NextApiRequest, res: Ne
                 nickname: followingMemberMappingQueryResult.value.Nickname,
                 briefIntro: followingMemberMappingQueryResult.value.BriefIntro,
                 createdTimeBySecond: followingMemberMappingQueryResult.value.CreatedTimeBySecond,
-            })
+            });
             followingMemberMappingQueryResult = await followingMemberMappingQuery.next();
         }
-        res.status(200).send(arr);
 
+        //// Response 200 ////
+        res.status(200).send(arr);
+        return;
     } catch (e: any) {
         let msg;
         if (e instanceof RestError) {
@@ -106,7 +106,7 @@ export default async function GetMembersFollowingMe(req: NextApiRequest, res: Ne
         if (!res.headersSent) {
             response500(res, msg);
         }
-        logWithDate(msg, fname, e);
+        logWithDate(msg, fnn, e);
         await atlasDbClient.close();
         return;
     }

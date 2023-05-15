@@ -3,96 +3,32 @@ import { getToken } from 'next-auth/jwt';
 import { RestError } from '@azure/data-tables';
 import { MongoError } from 'mongodb';
 
-import AtlasDatabaseClient from "../../../../modules/AtlasDatabaseClient";
+import AtlasDatabaseClient from '../../../../modules/AtlasDatabaseClient';
 import { logWithDate, response405, response500 } from '../../../../lib/utils/general';
 import { verifyId } from '../../../../lib/utils/verify';
 import { IMemberInfo, IMemberComprehensive } from '../../../../lib/interfaces/member';
 import AzureTableClient from '../../../../modules/AzureTableClient';
 import { IMemberMemberMapping } from '../../../../lib/interfaces/mapping';
 
-const fname = GetMembersFollowedByMe.name;
+const fnn = `${GetMembersFollowedByMe.name} (API)`;
 
 //////// Find out who am I following ////////
 
-/** GetMyFollowingMembersById v0.1.3 FIXME: test mode
- * 
- * Last update 23/02/2023
- *  
+/**
  * This interface only accepts GET requests
  * 
  * Info required for GET requests
- * - token: JWT (optional)
- * - memberId: string (query)
+ * -     token: JWT (optional)
+ * -     memberId: string (query)
  * 
  * Info will be returned
- * - arr: IConciseMemberInfo[]
+ * -     arr: IConciseMemberInfo[]
+ * 
+ * Last update:
+ * - 23/02/2023 v0.1.3
 */
 
-const bb5 = [
-    {
-        memberId: 'M1234ABCD',
-        nickname: '县长马邦德',
-        briefIntro: '我来鹅城。。。',
-        createdTimeBySecond: 1673485211
-
-    },
-    {
-        memberId: 'M1234ABCE',
-        nickname: '林北',
-        briefIntro: '我刚里供。',
-        createdTimeBySecond: 1673485211
-
-    },
-    {
-        "memberId": "M2345EFGH",
-        "nickname": "小小巨人",
-        "briefIntro": "小小巨人已经来了，大家快来欢迎！",
-        "createdTimeBySecond": 1673495211
-    },
-    {
-        "memberId": "M3456IJKL",
-        "nickname": "游戏达人",
-        "briefIntro": "一起玩游戏，放松身心！",
-        "createdTimeBySecond": 1673505211
-    },
-    {
-        "memberId": "M4567MNOP",
-        "nickname": "电影迷",
-        "briefIntro": "电影万岁！",
-        "createdTimeBySecond": 1673515211
-    },
-    {
-        memberId: 'M4567EFGH',
-        nickname: '小学生张三',
-        briefIntro: '我是一个小学生，喜欢玩游戏和看动画片。',
-        createdTimeBySecond: 1673485222
-    },
-    {
-        memberId: 'M8901IJKL',
-        nickname: '爱旅行的小姐姐',
-        briefIntro: '我喜欢旅行，已经去过20个国家了。',
-        createdTimeBySecond: 1673485233
-    },
-    {
-        memberId: 'M2345MNOP',
-        nickname: '游戏达人李四',
-        briefIntro: '我是一名游戏开发者，制作了许多受欢迎的游戏。',
-        createdTimeBySecond: 1673485244
-    },
-    {
-        memberId: 'M0123UVWX',
-        nickname: '健身达人张三',
-        briefIntro: '我是一名健身教练，已经帮助许多人成功塑形。',
-        createdTimeBySecond: 1673485266
-    },
-
-
-];
-
 export default async function GetMembersFollowedByMe(req: NextApiRequest, res: NextApiResponse) {
-
-    res.send(bb5);
-    return;
 
     const { method } = req;
     if ('GET' !== method) {
@@ -152,6 +88,7 @@ export default async function GetMembersFollowedByMe(req: NextApiRequest, res: N
             }
         }
 
+        //// Response 200 ////
         res.status(200).send(arr);
         return;
     } catch (e: any) {
@@ -166,7 +103,7 @@ export default async function GetMembersFollowedByMe(req: NextApiRequest, res: N
         if (!res.headersSent) {
             response500(res, msg);
         }
-        logWithDate(msg, fname, e);
+        logWithDate(msg, fnn, e);
         await atlasDbClient.close();
         return;
     }

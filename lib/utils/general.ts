@@ -109,5 +109,8 @@ export function response500(response: NextApiResponse, msg: string) {
 
 // Log
 export function logWithDate(msg: string, origin = '', e: any = {}) {
-    console.log(`[${new Date().toISOString()}] ${'' === origin ? 'Unknown origin: ' : `${origin}: `} ${msg} ${e?.stack}`);
+    const date = new Date()
+    console.log('Slog');
+    console.log(`Date:\t${date.toISOString()} (${date.toString()})\nOrigin:\t${'' === origin ? 'Unknown origin' : origin}\nMsg:\t${msg}`);
+    console.error(`Estack:\t${e?.stack}`);
 }

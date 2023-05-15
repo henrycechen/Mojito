@@ -11,27 +11,26 @@ import { response405, response500, logWithDate, } from '../../../lib/utils/gener
 import { IMemberMemberMapping } from '../../../lib/interfaces/mapping';
 import { INoticeInfo, INotificationStatistics } from '../../../lib/interfaces/notification';
 import { IMemberComprehensive, IMemberStatistics } from '../../../lib/interfaces/member';
-import { createNoticeId } from '../../../lib/utils/create';
+import { createNoticeId, getTimeBySecond } from '../../../lib/utils/create';
 import { getNicknameFromToken } from '../../../lib/utils/for/member';
 
-const fname = FollowOrUndoFollowMemberById.name;
+const ffn = `${FollowOrUndoFollowMemberById.name} (API)`;
 
-/** FollowOrUndoFollowMemberById v0.1.1
- * 
- * Last update: 21/02/2023
- * 
- * This interface accepts GET and POST requests
- * 
+/**
  * Info required for GET requests
- * - token: JWT
+ * -      token: JWT
  * 
  * Info will be returned for GET requests
- * - isFollowed: boolean
+ * -     isFollowed: boolean
  * 
  * 
  * Info required for POST requests
- * token: JWT
- * id: string (query, member id)
+ * -     token: JWT
+ * -      id: string (query, member id)
+ * 
+ * Last update:
+ * - 21/02/2023 v0.1.1
+ * - 08/05/2023 v0.1.2
 */
 
 export default async function FollowOrUndoFollowMemberById(req: NextApiRequest, res: NextApiResponse) {
@@ -48,14 +47,16 @@ export default async function FollowOrUndoFollowMemberById(req: NextApiRequest, 
         res.status(400).send('Invalid identity');
         return;
     }
-    const { sub: memberId } = token;
-
+    
     //// Verify member id ////
     const { isValid, category, id: objectId } = verifyId(req.query?.memberId);
     if (!(isValid && 'member' === category)) {
         res.status(400).send('Invalid member id');
         return;
     }
+
+    //// Match member ids ////
+    const { sub: memberId } = token;
     if ('POST' === method && memberId === objectId) {
         res.status(400).send('Unable to follow yourself');
         return;
@@ -124,13 +125,13 @@ export default async function FollowOrUndoFollowMemberById(req: NextApiRequest, 
             const memberStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IMemberStatistics>('member');
             const memberStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId }, { $inc: { totalUndoFollowingCount: 1 } });
             if (!memberStatisticsUpdateResult.acknowledged) {
-                logWithDate(`Failed to update totalUndoFollowingCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`, fname);
+                logWithDate(`Failed to update totalUndoFollowingCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`, ffn);
             }
 
             // #2A.3 update totalUndoFollowedByCount (of IMemberStatistics) in [C] memberStatistics
             const memberFollowedStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId: objectId }, { $inc: { totalUndoFollowedByCount: 1 } });
             if (!memberFollowedStatisticsUpdateResult.acknowledged) {
-                logWithDate(`Failed to update totalUndoFollowedByCount (of IMemberStatistics, member id: ${objectId}) in [C] memberStatistics`, fname);
+                logWithDate(`Failed to update totalUndoFollowedByCount (of IMemberStatistics, member id: ${objectId}) in [C] memberStatistics`, ffn);
             }
         } else {
             // Case [Do follow]
@@ -148,12 +149,12 @@ export default async function FollowOrUndoFollowMemberById(req: NextApiRequest, 
             const memberStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IMemberStatistics>('member');
             const memberStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId }, { $inc: { totalFollowingCount: 1 } });
             if (!memberStatisticsUpdateResult.acknowledged) {
-                logWithDate(`Failed to update totalFollowingCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`, fname);
+                logWithDate(`Failed to update totalFollowingCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`, ffn);
             }
             // #2B.2 update totalFollowedByCount (of IMemberStatistics) in [C] memberStatistics
             const memberFollowedStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId: objectId }, { $inc: { totalFollowedByCount: 1 } });
             if (!memberFollowedStatisticsUpdateResult.acknowledged) {
-                logWithDate(`Failed to update totalFollowedByCount (of IMemberStatistics, member id: ${objectId}) in [C] memberStatistics`, fname);
+                logWithDate(`Failed to update totalFollowedByCount (of IMemberStatistics, member id: ${objectId}) in [C] memberStatistics`, ffn);
             }
 
             //// Handle notice.follow (cond.) ////
@@ -173,13 +174,13 @@ export default async function FollowOrUndoFollowMemberById(req: NextApiRequest, 
                     PostTitle: '', // [!] post title is not supplied in this case
                     CommentBrief: '', // [!] comment brief is not supplied in this case
                     CreatedTimeBySecond: getTimeBySecond(),
-                    IsActive: true
+                    // IsActive: true
                 }, 'Replace');
                 // #2B.5 update follow (of INotificationStatistics, of the member having been followed by) in [C] notificationStatistics
                 const notificationStatisticsCollectionClient = atlasDbClient.db('statistics').collection<INotificationStatistics>('notification');
                 const notificationStatisticsUpdateResult = await notificationStatisticsCollectionClient.updateOne({ memberId: objectId }, { $inc: { follow: 1 } });
                 if (!notificationStatisticsUpdateResult.acknowledged) {
-                    logWithDate(`Failed to update follow (of INotificationStatistics, member id: ${objectId}) in [C] notificationStatistics`, fname);
+                    logWithDate(`Failed to update follow (of INotificationStatistics, member id: ${objectId}) in [C] notificationStatistics`, ffn);
                 }
             }
         }
@@ -195,7 +196,10 @@ export default async function FollowOrUndoFollowMemberById(req: NextApiRequest, 
             CreatedTimeBySecond: getTimeBySecond(),
             IsActive: !isFollowed
         }, 'Replace');
+
+        //// Response 200 ////
         res.status(200).send(`${isFollowed ? 'Undo follow' : 'Follow'} success`);
+        return;
     } catch (e: any) {
         let msg;
         if (e instanceof RestError) {
@@ -208,7 +212,7 @@ export default async function FollowOrUndoFollowMemberById(req: NextApiRequest, 
         if (!res.headersSent) {
             response500(res, msg);
         }
-        logWithDate(msg, fname, e);
+        logWithDate(msg, ffn, e);
         await atlasDbClient.close();
         return;
     }

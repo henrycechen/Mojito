@@ -1,15 +1,8 @@
-import type { NextApiRequest, NextApiResponse } from 'next';
-import { IAttitudeComprehensive, IAttitudeMapping } from '../../interfaces/attitude';
-import { IChannelInfo } from '../../interfaces/channel';
-import { ICommentComprehensive, IRestrictedCommentComprehensive } from '../../interfaces/comment';
-import { IMemberInfo, IConciseMemberStatistics } from '../../interfaces/member';
-import { INoticeInfoWithMemberInfo } from '../../interfaces/notification';
-import { IEditedPostComprehensive, IPostComprehensive, IRestrictedPostComprehensive } from '../../interfaces/post';
-import { ITopicComprehensive, ITopicInfo } from '../../interfaces/topic';
-import { getRandomHexStr } from '../create';
-import { verifyNoticeId, verifyUrl } from '../verify';
-
-// Post
+import { IMemberInfo } from '../../interfaces/member';
+import { IConcisePostComprehensive, IEditedPostComprehensive, IPostComprehensive, IRestrictedPostComprehensive } from '../../interfaces/post';
+import { ITopicInfo } from '../../interfaces/topic';
+import { getRandomHexStr, getTimeBySecond } from '../create';
+import { verifyUrl } from '../verify';
 
 export function contentToParagraphsArray(content: string): string[] {
     if ('' === content) {
@@ -28,9 +21,9 @@ export function cuedMemberInfoDictionaryToArray(dict: { [memberId: string]: IMem
 
 export function provideCoverImageUrl(postId: string, domain: string, forceBrowserUpdate = false): string {
     if (forceBrowserUpdate) {
-        return `${domain}/api/coverimage/a/${postId}.png?variant=${getRandomHexStr()}`;
+        return `${domain}/api/coverimage/a/${postId}.jpeg?variant=${getRandomHexStr()}`;
     } else {
-        return `${domain}/api/coverimage/a/${postId}.png`;
+        return `${domain}/api/coverimage/a/${postId}.jpeg`;
     }
 }
 
@@ -73,6 +66,7 @@ export function getCuedMemberInfoArrayFromRequestBody(requestBody: any): IMember
 }
 
 type PostComprehensiveUpdate = {
+    nickname: string;
     title: string;
     imageFullNamesArr: string[];
     paragraphsArr: string[];
@@ -88,8 +82,9 @@ type PostComprehensiveUpdate = {
     totalUndoDislikedCount: 0;
 };
 
-export function providePostComprehensiveUpdate(title: string, hasImages: boolean, paragraphsArr: string[], cuedMemberInfoArr: IMemberInfo[], channelId: string, topicInfoArr: ITopicInfo[]): PostComprehensiveUpdate {
+export function providePostComprehensiveUpdate(nickname: string, title: string, hasImages: boolean, paragraphsArr: string[], cuedMemberInfoArr: IMemberInfo[], channelId: string, topicInfoArr: ITopicInfo[]): PostComprehensiveUpdate {
     const updated: PostComprehensiveUpdate = {
+        nickname,
         title,
         imageFullNamesArr: [],
         paragraphsArr,
@@ -107,9 +102,10 @@ export function providePostComprehensiveUpdate(title: string, hasImages: boolean
     return updated;
 }
 
-export function provideEditedPostInfo(postComprehensive: IPostComprehensive): IEditedPostComprehensive {
+export function provideEditedPostInfo(postComprehensive: IPostComprehensive, editedTimeBySecond: number): IEditedPostComprehensive {
     return {
-        editedTimeBySecond: new Date().getTime(),
+        editedTimeBySecond,
+        nicknameBeforeEdit: postComprehensive.nickname,
         titleBeforeEdit: postComprehensive.title,
         imageFullnamesArrBeforeEdit: [...postComprehensive.imageFullnamesArr],
         paragraphsArrBeforeEdit: [...postComprehensive.paragraphsArr],
@@ -171,6 +167,23 @@ export function getRestrictedFromPostComprehensive(postComprehensive: IPostCompr
         }
     }
     return restricted;
+}
+
+export function getConciseFromPostComprehensive(postComprehensive: IPostComprehensive): IConcisePostComprehensive {
+    return {
+        postId: postComprehensive.postId,
+        memberId: postComprehensive.memberId,
+        nickname: postComprehensive.nickname,
+        createdTimeBySecond: postComprehensive.createdTimeBySecond,
+        title: postComprehensive.title,
+        channelId: postComprehensive.channelId,
+        hasImages: 0 !== postComprehensive.imageFullnamesArr.length,
+        totalHitCount: postComprehensive.totalHitCount,
+        totalLikedCount: postComprehensive.totalLikedCount,
+        totalDislikedCount: postComprehensive.totalDislikedCount,
+        totalCommentCount: postComprehensive.totalCommentCount,
+
+    };
 }
 
 export function fakeRestrictedPostComprehensive(): IRestrictedPostComprehensive {

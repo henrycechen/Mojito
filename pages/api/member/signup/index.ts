@@ -6,12 +6,13 @@ import CryptoJS from 'crypto-js';
 import AzureTableClient from '../../../../modules/AzureTableClient';
 import AzureEmailCommunicationClient from '../../../../modules/AzureEmailCommunicationClient';
 import AtlasDatabaseClient from '../../../../modules/AtlasDatabaseClient';
+import { EmailMessage } from '@azure/communication-email';
 
 import { ILoginCredentials, IMojitoMemberSystemLoginCredentials, IVerifyEmailAddressCredentials } from '../../../../lib/interfaces/credentials';
-import { TEmailMessage, LangConfigs, TVerifyEmailAddressRequestInfo } from '../../../../lib/types';
+import { LangConfigs, TVerifyEmailAddressRequestInfo } from '../../../../lib/types';
 import { logWithDate, response405, response500 } from '../../../../lib/utils/general';
 import { verifyEmailAddress, verifyEnvironmentVariable, verifyRecaptchaResponse } from '../../../../lib/utils/verify';
-import { getRandomHexStr, getRandomIdStr } from '../../../../lib/utils/create';
+import { getRandomHexStr, getRandomIdStr, getTimeBySecond } from '../../../../lib/utils/create';
 import { ILoginJournal, IMinimumMemberComprehensive } from '../../../../lib/interfaces/member';
 import { composeVerifyEmailAddressEmailContent } from '../../../../lib/email';
 
@@ -26,20 +27,20 @@ const langConfigs: LangConfigs = {
         cn: '验证您的 Mojito 账户',
         en: 'Verify your Mojito Member'
     }
-}
+};
 
-const fname = SignUp.name;
+const fnn = `${SignUp.name} (API)`;
 
-/** SignUp v0.1.1
- * 
- * Last update: 21/02/2023
- * 
+/** 
  * This interface ONLY accepts POST requests
  * 
  * Info required for POST requests
- * - token: JWT
+ * -     token: JWT
  * 
+ * Last update:
+ * - 21/02/2023 v0.1.1
  */
+
 export default async function SignUp(req: NextApiRequest, res: NextApiResponse) {
     const { method } = req;
     if ('POST' !== method) {
@@ -52,7 +53,7 @@ export default async function SignUp(req: NextApiRequest, res: NextApiResponse) 
     if (!!environmentVariable) {
         const msg = `${environmentVariable} not found`;
         response500(res, msg);
-        logWithDate(msg, fname);
+        logWithDate(msg, fnn);
         return;
     }
 
@@ -138,7 +139,7 @@ export default async function SignUp(req: NextApiRequest, res: NextApiResponse) 
         if (!memberComprehensiveQueryResult.acknowledged) {
             const msg = 'Attempt to insert document (IMemberComprehensive) in [C] memberComprehensive';
             response500(res, msg);
-            logWithDate(msg, fname);
+            logWithDate(msg, fnn);
             return;
         }
 
@@ -155,18 +156,18 @@ export default async function SignUp(req: NextApiRequest, res: NextApiResponse) 
 
         //// Componse and send email ////
         const info: TVerifyEmailAddressRequestInfo = { emailAddress, providerId, verifyEmailAddressToken };
-        const emailMessage: TEmailMessage = {
-            sender: '<donotreply@mojito.co.nz>',
+        const emailMessage: EmailMessage = {
+            senderAddress: '<donotreply@mojito.co.nz>',
             content: {
                 subject: langConfigs.emailSubject[lang],
                 html: composeVerifyEmailAddressEmailContent(domain, Buffer.from(JSON.stringify(info)).toString('base64'), lang)
             },
             recipients: {
-                to: [{ email: emailAddress }]
+                to: [{ address: emailAddress }]
             }
-        }
+        };
         const mailClient = AzureEmailCommunicationClient();
-        await mailClient.send(emailMessage);
+        await mailClient.beginSend(emailMessage);
 
         //// Response 200 ////
         res.status(200).send('Member established, email sent');
@@ -183,7 +184,7 @@ export default async function SignUp(req: NextApiRequest, res: NextApiResponse) 
         if (!res.headersSent) {
             response500(res, msg);
         }
-        logWithDate(msg, fname, e);
+        logWithDate(msg, fnn, e);
         await atlasDbClient.close();
         return;
     }

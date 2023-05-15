@@ -9,7 +9,6 @@ import Button from '@mui/material/Button';
 import Grid from '@mui/material/Grid';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import { createTheme, responsiveFontSizes, ThemeProvider } from '@mui/material/styles';
 
 import AlternateEmailIcon from '@mui/icons-material/AlternateEmail';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
@@ -62,19 +61,6 @@ const langConfigs: LangConfigs = {
         en: 'No records of notification'
     },
 };
-
-let theme = createTheme({
-    typography: {
-        body2: {
-            fontSize: 14, // Default font size
-            '@media (min-width:600px)': { // Font size when screen width is >= 600px
-                fontSize: 16,
-            },
-        }
-    }
-});
-
-theme = responsiveFontSizes(theme);
 
 const Message = () => {
 
@@ -149,11 +135,7 @@ const Message = () => {
     };
 
     //////////////////////////////////////// BEHAVIOURS ////////////////////////////////////////
-    React.useEffect(() => {
-        if ('authenticated' === status) {
-            updateNoticeArray();
-        }
-    }, [processStates.selectedCategory]);
+    React.useEffect(() => { if ('authenticated' === status) { updateNoticeArray(); } }, [processStates.selectedCategory]);
 
     const updateNoticeArray = async () => {
         const resp = await fetch(`/api/notice/of/${processStates.selectedCategory}`);
@@ -189,15 +171,17 @@ const Message = () => {
 
     //////////////////////////////////////// JSX COMPONENT ////////////////////////////////////////
     return (
-        <ThemeProvider theme={theme}>
-            <Navbar />
+        <>
+
+            <Navbar lang={preferenceStates.lang} />
+
             <Grid container mt={{ xs: 1, sm: 10 }}>
 
                 {/* left column (placeholder) */}
-                <Grid item xs={0} sm={2} md={3} lg={3}></Grid>
+                <Grid item xs={0} sm={2} md={3} lg={3} xl={4}></Grid>
 
                 {/* middle column */}
-                <Grid item xs={12} sm={8} md={6} lg={6}>
+                <Grid item xs={12} sm={8} md={6} lg={6} xl={4}>
                     <ResponsiveCard sx={{ pt: { xs: 0, sm: 2 } }}>
                         <Stack>
 
@@ -208,7 +192,7 @@ const Message = () => {
                                 <Button sx={{ color: 'like' === processStates.selectedCategory ? 'primary' : 'grey.600' }} onClick={handleSelectNoticeCategory('like')}>
                                     <Box>
                                         <CentralizedBox sx={{ p: 1 }}><ThumbUpIcon /></CentralizedBox>
-                                        <Typography variant={'body2'} textAlign={'center'}>{langConfigs.liked[preferenceStates.lang]}{0 === processStates.noticeStatistics.like ? '' : `+${processStates.noticeStatistics.like}`}</Typography>
+                                        <Typography variant={'body1'} textAlign={'center'}>{langConfigs.liked[preferenceStates.lang]}{0 === processStates.noticeStatistics.like ? '' : `+${processStates.noticeStatistics.like}`}</Typography>
                                     </Box>
                                 </Button>
 
@@ -216,7 +200,7 @@ const Message = () => {
                                 <Button sx={{ color: 'save' === processStates.selectedCategory ? 'primary' : 'grey.600' }} onClick={handleSelectNoticeCategory('save')}>
                                     <Box>
                                         <CentralizedBox sx={{ p: 1 }}><StarIcon /></CentralizedBox>
-                                        <Typography variant={'body2'} textAlign={'center'}>{langConfigs.saved[preferenceStates.lang]}{0 === processStates.noticeStatistics.save ? '' : `+${processStates.noticeStatistics.save}`}</Typography>
+                                        <Typography variant={'body1'} textAlign={'center'}>{langConfigs.saved[preferenceStates.lang]}{0 === processStates.noticeStatistics.save ? '' : `+${processStates.noticeStatistics.save}`}</Typography>
                                     </Box>
                                 </Button>
 
@@ -224,7 +208,7 @@ const Message = () => {
                                 <Button sx={{ color: 'reply' === processStates.selectedCategory ? 'primary' : 'grey.600' }} onClick={handleSelectNoticeCategory('reply')}>
                                     <Box>
                                         <CentralizedBox sx={{ p: 1 }}><ChatBubbleIcon /></CentralizedBox>
-                                        <Typography variant={'body2'} textAlign={'center'}>{langConfigs.replied[preferenceStates.lang]}{0 === processStates.noticeStatistics.reply ? '' : `+${processStates.noticeStatistics.reply}`}</Typography>
+                                        <Typography variant={'body1'} textAlign={'center'}>{langConfigs.replied[preferenceStates.lang]}{0 === processStates.noticeStatistics.reply ? '' : `+${processStates.noticeStatistics.reply}`}</Typography>
                                     </Box>
                                 </Button>
 
@@ -232,7 +216,7 @@ const Message = () => {
                                 <Button sx={{ color: 'cue' === processStates.selectedCategory ? 'primary' : 'grey.600' }} onClick={handleSelectNoticeCategory('cue')}>
                                     <Box>
                                         <CentralizedBox sx={{ p: 1 }}><AlternateEmailIcon /></CentralizedBox>
-                                        <Typography variant={'body2'} textAlign={'center'}>{langConfigs.cued[preferenceStates.lang]}{0 === processStates.noticeStatistics.cue ? '' : `+${processStates.noticeStatistics.cue}`}</Typography>
+                                        <Typography variant={'body1'} textAlign={'center'}>{langConfigs.cued[preferenceStates.lang]}{0 === processStates.noticeStatistics.cue ? '' : `+${processStates.noticeStatistics.cue}`}</Typography>
                                     </Box>
                                 </Button>
                             </Box>
@@ -252,10 +236,10 @@ const Message = () => {
                                                 <Box ml={1}>
 
                                                     {/* nickname */}
-                                                    <Typography align={'left'} variant={'body2'}>{getNicknameBrief(info.nickname)}</Typography>
+                                                    <Typography fontSize={{ xs: 14, sm: 16 }} align={'left'}>{getNicknameBrief(info.nickname)}</Typography>
 
                                                     {/* created time */}
-                                                    <Typography fontSize={{ xs: 12 }} align={'left'}>{timeToString(info.createdTimeBySecond, preferenceStates.lang)}</Typography>
+                                                    <Typography variant={'body2'} align={'left'}>{timeToString(info.createdTimeBySecond, preferenceStates.lang)}</Typography>
                                                 </Box>
                                             </Box>
                                         </Button>
@@ -263,7 +247,7 @@ const Message = () => {
                                         {/* notice info */}
                                         <TextButton color={'inherit'} sx={{ p: 1 }} onClick={handleClickOnNoticeInfo(info.noticeId)}>
                                             <Box sx={{ maxWidth: { xs: 170, sm: 190, md: 240 } }}>
-                                                <Typography variant={'body2'} align={'right'}>{noticeInfoToString(info, preferenceStates.lang)}</Typography>
+                                                <Typography fontSize={{ xs: 14, sm: 16 }} align={'right'}>{noticeInfoToString(info, preferenceStates.lang)}</Typography>
                                             </Box>
                                         </TextButton>
                                     </Box>
@@ -282,13 +266,13 @@ const Message = () => {
                 </Grid>
 
                 {/* right column (placeholder) */}
-                <Grid item xs={0} sm={2} md={3} lg={3}></Grid>
+                <Grid item xs={0} sm={2} md={3} lg={3} xl={4}></Grid>
             </Grid >
 
             <Copyright sx={{ mt: 16 }} lang={preferenceStates.lang} />
             <Terms sx={{ mb: 8 }} lang={preferenceStates.lang} />
 
-        </ThemeProvider>
+        </>
     );
 };
 

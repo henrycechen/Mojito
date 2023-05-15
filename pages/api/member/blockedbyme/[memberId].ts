@@ -1,53 +1,31 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { getToken } from 'next-auth/jwt'
+import { getToken } from 'next-auth/jwt';
 import { RestError } from '@azure/data-tables';
 import { MongoError } from 'mongodb';
 
 import AzureTableClient from '../../../../modules/AzureTableClient';
-import AtlasDatabaseClient from "../../../../modules/AtlasDatabaseClient";
+import AtlasDatabaseClient from '../../../../modules/AtlasDatabaseClient';
 
 import { IMemberMemberMapping } from '../../../../lib/interfaces/mapping';
 import { IMemberComprehensive, IMemberInfo } from '../../../../lib/interfaces/member';
 import { logWithDate, response405, response500 } from '../../../../lib/utils/general';
 import { verifyId } from '../../../../lib/utils/verify';
 
-const fname = GetMembersBlockedByMe.name;
+const fnn = `${GetMembersBlockedByMe.name} (API)`;
 
 //////// Find out who I have blocked ////////
 
-/** GetMembersBlockedByMyself v0.1.2 FIXME: test mode
- * 
- * Last update: 21/02/2023
- * 
+/**
  * This interface ONLY accepts GET requests
  * 
  * Info required for GET requests
- * - memberId: string
+ * -      memberId: string
  * 
+ * Last update:
+ * - 21/02/2023 v0.1.2
 */
 
-const bb1 = [
-    {
-        memberId: 'M3380ACMB',
-        nickname: '測試一下名字',
-        createdTimeBySecond: 1675795871,
-    },
-    {
-        memberId: 'M3380ACMM',
-        nickname: '測試一下名字最長可以有多長',
-        createdTimeBySecond: 1675645871,
-    },
-    {
-        memberId: 'M3380ACMD',
-        nickname: '測試一下名字nggg可以有多長',
-        createdTimeBySecond: 1675145871,
-    }
-]
-
 export default async function GetMembersBlockedByMe(req: NextApiRequest, res: NextApiResponse) {
-
-    res.send(bb1);
-    return;
 
     const { method } = req;
     if ('GET' !== method) {
@@ -109,7 +87,7 @@ export default async function GetMembersBlockedByMe(req: NextApiRequest, res: Ne
                 nickname: blockingMemberMappingQueryResult.value.Nickname,
                 briefIntro: '', // [!] brief intro is not supplied in this case
                 createdTimeBySecond: blockingMemberMappingQueryResult.value.CreatedTimeBySecond,
-            })
+            });
             blockingMemberMappingQueryResult = await blockingMemberMappingQuery.next();
         }
         res.status(200).send(arr);
@@ -126,7 +104,7 @@ export default async function GetMembersBlockedByMe(req: NextApiRequest, res: Ne
         if (!res.headersSent) {
             response500(res, msg);
         }
-        logWithDate(msg, fname, e);
+        logWithDate(msg, fnn, e);
         await atlasDbClient.close();
         return;
     }

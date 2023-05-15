@@ -4,24 +4,24 @@ import { RestError } from '@azure/storage-blob';
 import { MongoError } from 'mongodb';
 
 import { IMemberComprehensive } from '../../../../../lib/interfaces/member';
-import { INicknameRegistry } from '../../../../../lib/interfaces/registry';
 
 import AtlasDatabaseClient from '../../../../../modules/AtlasDatabaseClient';
-import AzureTableClient from '../../../../../modules/AzureTableClient';
+
 import { logWithDate, response405, response500 } from '../../../../../lib/utils/general';
+import { getTimeBySecond } from '../../../../../lib/utils/create';
 import { verifyId } from '../../../../../lib/utils/verify';
 
-const fname = UpdateBriefIntro.name;
+const fnn = `${UpdateBriefIntro.name} (API)`;
 
-/** UpdateBriefIntro v0.1.1
- * 
- * Last update: 21/02/2023
- * 
+/**
  * This interface ONLY accepts PUT requests
  * 
  * Info required for PUT requests
- * - token: JWT
- * - alternativeIntro: string (body, length < 21)
+ * -     token: JWT
+ * -     alternativeIntro: string (body, length < 150)
+ * 
+ * Last update:
+ * - 21/02/2023 v0.1.1
 */
 
 export default async function UpdateBriefIntro(req: NextApiRequest, res: NextApiResponse) {
@@ -38,17 +38,16 @@ export default async function UpdateBriefIntro(req: NextApiRequest, res: NextApi
         res.status(401).send('Unauthorized');
         return;
     }
-    const { sub: tokenId } = token;
-
+    
     //// Verify member id ////
     const { isValid, category, id: memberId } = verifyId(req.query?.memberId);
-
     if (!(isValid && 'member' === category)) {
         res.status(400).send('Invalid member id');
         return;
     }
-
+    
     //// Match the member id in token and the one in request ////
+    const { sub: tokenId } = token;
     if (tokenId !== memberId) {
         res.status(400).send('Requested member id and identity not matched');
         return;
@@ -74,12 +73,15 @@ export default async function UpdateBriefIntro(req: NextApiRequest, res: NextApi
         }
 
         //// Verify alternative intro ////
-        const { alternativeIntro } = req.body;
-        if (!('string' === typeof alternativeIntro && 21 > alternativeIntro.length)) {
+        const { alternativeIntro: desiredIntro } = req.body;
+        if (!('string' === typeof desiredIntro && 150 > desiredIntro.length)) {
             // TODO: place content (of brief intro) examination method here
-            res.status(422).send('Alternative name exceeds length limit or has been occupied');
+
+            res.status(422).send('Alternative name exceeds length limit or contains illegal content');
             return;
         }
+
+        const alternativeIntro = desiredIntro.trim();
 
         //// Update properties (of IMemberComprehensive) in [C] memberComprehensive ////
         const memberComprehensiveUpdateResult = await memberComprehensiveCollectionClient.updateOne({ memberId }, {
@@ -87,15 +89,17 @@ export default async function UpdateBriefIntro(req: NextApiRequest, res: NextApi
                 briefIntro: alternativeIntro,
                 lastBriefIntroUpdatedTimeBySecond: getTimeBySecond()
             }
-        })
+        });
 
         if (!memberComprehensiveUpdateResult.acknowledged) {
-            logWithDate(`Failed to update briefIntro, lastBriefIntroUpdatedTimeBySecond (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`, fname);
+            logWithDate(`Failed to update briefIntro, lastBriefIntroUpdatedTimeBySecond (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`, fnn);
             res.status(500).send(`Attempt to update brief intro`);
             return;
         }
 
+        //// Response 200 ////
         res.status(200).send('Brief intro updated');
+
         await atlasDbClient.close();
         return;
     } catch (e: any) {
@@ -110,7 +114,7 @@ export default async function UpdateBriefIntro(req: NextApiRequest, res: NextApi
         if (!res.headersSent) {
             response500(res, msg);
         }
-        logWithDate(msg, fname, e);
+        logWithDate(msg, fnn, e);
         await atlasDbClient.close();
         return;
     }

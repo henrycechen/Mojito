@@ -1,37 +1,63 @@
-/** Interfaces for Channel Class v0.1.1
+/**
+ * -     channelId: string
+ * -     name: { [lang: string]: string; }
+ * -     svgIconPath?: string
  * 
- * Last update 16/02/2023
+ * Last update: 08/05/2023 v0.1.1
  */
-
-
-export type IChannelInfo = {
+export interface IChannelInfo {
     channelId: string;
     name: {
         [lang: string]: string;
     };
     svgIconPath?: string;
-}
+};
 
-export type IChannelInfoStates = {
+/**
+ * -     channelIdSequence: string[]
+ * 
+ * Last update: 08/05/2023 v0.1.1
+ */
+export interface IChannelInfoStates {
     channelIdSequence: string[];
-}
+};
 
-export type IChannelInfoDictionary = {
-    [channelId: string]: IChannelInfo
-}
+/**
+ * -     [channelId: string]: IChannelInfo
+ * 
+ * Last update: 08/05/2023 v0.1.1
+ */
+export interface IChannelInfoDictionary {
+    [channelId: string]: IChannelInfo;
+};
 
+/**
+ * Info
+ * -     channelId: string; // pre-defined channel id
+ * -     createdTime: number;
 
-// [C] channelStatistics
+ * Statistics
+ * -     totalHitCount: number;
+ * -     totalTopicCount: number;
+ * -     totalPostCount: number;
+ * -     totalPostDeleteCount: number;
+ * -     totalLikedCount: number;
+ * -     totalUndoLikedCount: number;
+ * -     totalCommentCount: number; // subcomment included
+ * -     totalCommentDeleteCount: number;
+ * -     totalSavedCount: number;
+ * -     totalUnavedCount: number;
+ * 
+ * Last update: 08/05/2023 v0.1.1
+ */
 export interface IChannelStatistics {
-    //// info ////
+    // Info
     channelId: string; // pre-defined channel id
     createdTime: number;
 
-    //// total statistics ////
+    // Statistics
     totalHitCount: number;
-
     totalTopicCount: number;
-
     totalPostCount: number;
     totalPostDeleteCount: number;
 
@@ -40,7 +66,7 @@ export interface IChannelStatistics {
 
     totalCommentCount: number; // subcomment included
     totalCommentDeleteCount: number;
-    
+
     totalSavedCount: number;
     totalUnavedCount: number;
 }

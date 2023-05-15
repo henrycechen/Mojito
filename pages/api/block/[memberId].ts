@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { getToken } from 'next-auth/jwt'
+import { getToken } from 'next-auth/jwt';
 import { RestError } from '@azure/data-tables';
 import { MongoError } from 'mongodb';
 
@@ -12,18 +12,18 @@ import { response405, response500, logWithDate } from '../../../lib/utils/genera
 import { verifyId } from '../../../lib/utils/verify';
 import { getTimeBySecond } from '../../../lib/utils/create';
 
-const fname = BlockOrUndoBlockMemberById.name;
+const fnn = `${BlockOrUndoBlockMemberById.name} (API)`;
 
-/** BlockOrUndoBlockMemberById v0.1.2 FIXME: test mode
- * 
- * Last update: 21/02/2023
- * 
+/**
  * This interface ONLY accepts POST requests
  * 
  * Info required for POST requests
- * - token: JWT
- * - id: string (query, member id)
+ * -     token: JWT
+ * -     id: string (query, member id)
  * 
+ * Last update:
+ * - 21/02/2023 v0.1.1
+ * - 13/05/2023 v0.1.2
 */
 
 export default async function BlockOrUndoBlockMemberById(req: NextApiRequest, res: NextApiResponse) {
@@ -33,9 +33,6 @@ export default async function BlockOrUndoBlockMemberById(req: NextApiRequest, re
         response405(req, res);
         return;
     }
-
-    res.send('ok')
-    return;
 
     //// Verify identity ////
     const token = await getToken({ req });
@@ -65,7 +62,7 @@ export default async function BlockOrUndoBlockMemberById(req: NextApiRequest, re
         const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
         const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne({ memberId }, { projection: { _id: 0, status: 1 } });
         if (null === memberComprehensiveQueryResult) {
-            throw new Error(`${fname}: Member attempt to block or undo block on a member but have no document (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
+            throw new Error(`${fnn}: Member attempt to block or undo block on a member but have no document (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
         }
         const { status: memberStatus } = memberComprehensiveQueryResult;
         if (0 > memberStatus) {
@@ -111,12 +108,12 @@ export default async function BlockOrUndoBlockMemberById(req: NextApiRequest, re
             const memberStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IMemberStatistics>('member');
             const memberStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId }, { $inc: { totalUndoBlockingCount: 1 } });
             if (!memberStatisticsUpdateResult.acknowledged) {
-                logWithDate(`Failed to update totalUndoBlockingCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`, fname);
+                logWithDate(`Failed to update totalUndoBlockingCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`, fnn);
             }
             // #2A.3 update totalUndoBlockedByCount (of IMemberStatistics) in [C] memberStatistics
             const memberBlockedStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId: objectId }, { $inc: { totalUndoBlockedByCount: 1 } });
             if (!memberBlockedStatisticsUpdateResult.acknowledged) {
-                logWithDate(`Failed to update totalUndoBlockedByCount (of IMemberStatistics, member id: ${objectId}) in [C] memberStatistics`, fname);
+                logWithDate(`Failed to update totalUndoBlockedByCount (of IMemberStatistics, member id: ${objectId}) in [C] memberStatistics`, fnn);
             }
         } else {
             // Case [Do block]
@@ -133,12 +130,12 @@ export default async function BlockOrUndoBlockMemberById(req: NextApiRequest, re
             const memberStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IMemberStatistics>('member');
             const memberStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId }, { $inc: { totalBlockingCount: 1 } });
             if (!memberStatisticsUpdateResult.acknowledged) {
-                logWithDate(`Failed to update totalBlockingCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`, fname);
+                logWithDate(`Failed to update totalBlockingCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`, fnn);
             }
             // #B2.3 update totalBlockedByCount (of IMemberStatistics) in [C] memberStatistics
             const memberBlockedStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId: objectId }, { $inc: { totalBlockedByCount: 1 } });
             if (!memberBlockedStatisticsUpdateResult.acknowledged) {
-                logWithDate(`Failed to update totalBlockedByCount (of IMemberStatistics, member id: ${objectId}) in [C] memberStatistics`, fname);
+                logWithDate(`Failed to update totalBlockedByCount (of IMemberStatistics, member id: ${objectId}) in [C] memberStatistics`, fnn);
             }
         }
         await atlasDbClient.close();
@@ -169,7 +166,7 @@ export default async function BlockOrUndoBlockMemberById(req: NextApiRequest, re
         if (!res.headersSent) {
             response500(res, msg);
         }
-        logWithDate(msg, fname, e);
+        logWithDate(msg, fnn, e);
         await atlasDbClient.close();
         return;
     }

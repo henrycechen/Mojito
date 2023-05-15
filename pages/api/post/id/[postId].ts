@@ -16,78 +16,19 @@ import { IChannelStatistics } from '../../../../lib/interfaces/channel';
 import { ITopicComprehensive } from '../../../../lib/interfaces/topic';
 import { getTimeBySecond } from '../../../../lib/utils/create';
 
-const fname = GetRestrictedPostComprehensiveById.name;
+const fnn = `${GetRestrictedPostComprehensiveById.name} (API)`;
 
-/** GetRestrictedPostComprehensiveById v0.1.1
- * 
- * Last update: 24/02/2023
- * 
- * This interface ONLY accepts GET method  ( PUT/DELETE moved to /api/creation )
+/**
+ * This interface ONLY accepts GET method ( PUT/DELETE moved to /api/creation )
  * 
  * Info required for GET method
- * - token: JWT (optional)
+ * -     token: JWT (optional)
+ * 
+ * Last update:
+ * - 04/02/2023 v0.1.1
  */
 
 export default async function GetRestrictedPostComprehensiveById(req: NextApiRequest, res: NextApiResponse) {
-
-    res.send({
-        "postId": "P4CD624HHS",
-        "memberId": "M1234XXXX",
-        "createdTimeBySecond": 1678679403,
-        "title": "MX5-RE-RE",
-        "imageFullnamesArr": [
-            // "P4CD624HHS_DLBVJIQ1T.jpeg",
-            // "P4CD624HHS_6NR6EKKW11.jpeg",
-            // "P4CD624HHS_226CDUSEQK.jpeg",
-            // "P4CD624HHS_1BEEE1FJR8.jpeg",
-            // "P4CD624HHS_342QM85WET.jpeg",
-            // "P4CD624HHS_VG9OMAVRL.jpeg"
-        ],
-        "paragraphsArr": [
-            "I am selling with regret (in fact I don't have one)\n",
-            "I am selling with regret (in fact I don't have one)\n",
-            "I am selling with regret (in fact I don't have one)\n",
-            "@县长马邦德",
-        ],
-        "cuedMemberInfoArr": [
-            {
-                memberId: 'M1234ABCD',
-                nickname: '县长马邦德',
-                briefIntro: 'xxx',
-                createdTimeBySecond: 0
-            }
-        ],
-        "channelId": "automobile",
-        "topicInfoArr": [
-            {
-                topicId: '5ZGo5p2w5Lym',
-                content: '周杰伦',
-                // channelId: 'chat',
-                // totalHitCount: 1024,
-                // totalPostCount: 126
-            },
-            {
-                topicId: '6K+05aW95LiN5ZOt',
-                content: '说好不哭',
-                // channelId: 'chat',
-                // totalHitCount: 624,
-                // totalPostCount: 75
-            },
-        ],
-        "pinnedCommentId": null,
-        "status": 200,
-        "allowEditing": true,
-        "allowCommenting": true,
-        "totalHitCount": 0,
-        "totalLikedCount": 0,
-        "totalDislikedCount": 0,
-        "totalCommentCount": 0,
-        "totalSavedCount": 0,
-        "editedTimeBySecond": null
-
-    });
-    return;
-
 
     const { method } = req;
     if ('GET' !== method) {
@@ -127,7 +68,7 @@ export default async function GetRestrictedPostComprehensiveById(req: NextApiReq
         //// Response 200 ////
         res.status(200).send(getRestrictedFromPostComprehensive(postComprehensiveQueryResult));
 
-        const { memberId: authorId } = postComprehensiveQueryResult;
+        const { memberId: authorId, channelId } = postComprehensiveQueryResult;
 
         let viewerId = '';
         let viewerIsMemberButNotAuthor = false;
@@ -153,8 +94,10 @@ export default async function GetRestrictedPostComprehensiveById(req: NextApiReq
                 await historyMappingTableClient.upsertEntity<IMemberPostMapping>({
                     partitionKey: viewerId,
                     rowKey: postId,
-                    Nickname: '',
+                    AuthorId: postComprehensiveQueryResult.memberId,
+                    Nickname: postComprehensiveQueryResult.nickname,
                     Title: title,
+                    ChannelId: channelId,
                     CreatedTimeBySecond: getTimeBySecond(),
                     HasImages: false,
                     IsActive: true
@@ -174,7 +117,7 @@ export default async function GetRestrictedPostComprehensiveById(req: NextApiReq
                 }
             });
             if (!memberStatisticsUpdateResult.acknowledged) {
-                logWithDate(`Failed to update totalCreationHitCount (of IMemberStatistics, member id: ${authorId}) in [C] memberStatistics`, fname);
+                logWithDate(`Failed to update totalCreationHitCount (of IMemberStatistics, member id: ${authorId}) in [C] memberStatistics`, fnn);
             }
         }
 
@@ -184,11 +127,10 @@ export default async function GetRestrictedPostComprehensiveById(req: NextApiReq
             $inc: { ...hitCountUpdate }
         });
         if (!postComprehensiveUpdateResult.acknowledged) {
-            logWithDate(`Failed to update totalHitCount/totalMemberHitCount (of IPostComprehensive, post id: ${postId}) in [C] postComprehensive`, fname);
+            logWithDate(`Failed to update totalHitCount/totalMemberHitCount (of IPostComprehensive, post id: ${postId}) in [C] postComprehensive`, fnn);
         }
 
         //// Update totalHitCount (of IChannelStatistics) in [C] channelStatistics ////
-        const { channelId } = postComprehensiveQueryResult;
         const channelStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IChannelStatistics>('channel');
         const channelStatisticsUpdateResult = await channelStatisticsCollectionClient.updateOne({ channelId }, {
             $inc: {
@@ -196,7 +138,7 @@ export default async function GetRestrictedPostComprehensiveById(req: NextApiReq
             }
         });
         if (!channelStatisticsUpdateResult.acknowledged) {
-            logWithDate(`Failed to totalHitCount (of IChannelStatistics, channel id: ${channelId}) in [C] channelStatistics`, fname);
+            logWithDate(`Failed to totalHitCount (of IChannelStatistics, channel id: ${channelId}) in [C] channelStatistics`, fnn);
         }
 
         //// (Cond.) Update totalHitCount (of ITopicComprehensive) in [C] topicComprehensive ////
@@ -210,7 +152,7 @@ export default async function GetRestrictedPostComprehensiveById(req: NextApiReq
                     }
                 });
                 if (!topicComprehensiveUpdateResult.acknowledged) {
-                    logWithDate(`Failed to update totalHitCount (of ITopicStatistics, topic id:${t.topicId}, post id: ${postId}) in [C] topicStatistics`, fname);
+                    logWithDate(`Failed to update totalHitCount (of ITopicStatistics, topic id:${t.topicId}, post id: ${postId}) in [C] topicStatistics`, fnn);
                 }
             }
         }
@@ -232,7 +174,7 @@ export default async function GetRestrictedPostComprehensiveById(req: NextApiReq
         if (!res.headersSent) {
             response500(res, msg);
         }
-        logWithDate(msg, fname, e);
+        logWithDate(msg, fnn, e);
         await atlasDbClient.close();
         return;
     }

@@ -6,17 +6,17 @@ import AzureBlobClient from '../../../../modules/AzureBlobClient';
 import fs from 'fs';
 import path from 'path';
 
-/** GetAvatarImageByFullame v0.1.3
- *  
- * Last update 15/02/2023
- * 
+const fnn = `${GetAvatarImageByFullame.name} (API)`;
+
+/**
  * This interface ONLY accepts GET requests
  * 
  * Info required for GET requests
- * - fullname: string (query)
+ * -     fullname: string (query)
+ * 
+ * Last update:
+ * - 15/02/2023 v0.1.3
  */
-
-const fname = GetAvatarImageByFullame.name;
 
 export default async function GetAvatarImageByFullame(req: NextApiRequest, res: NextApiResponse) {
     const { method } = req;
@@ -51,7 +51,7 @@ export default async function GetAvatarImageByFullame(req: NextApiRequest, res: 
             res.send(file);
         }
     } catch (e) {
-        response500(res, `${fname}: Attempt to retrieve blob (avatar image, full name: ${fullname}) from Azure blob storage. ${e}`);
+        response500(res, `${fnn}: Attempt to retrieve blob (avatar image, full name: ${fullname}) from Azure blob storage. ${e}`);
         return;
     }
 }
