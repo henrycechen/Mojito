@@ -38,9 +38,8 @@ import grey from '@mui/material/colors/grey';
 import { Global } from '@emotion/react';
 import Masonry from '@mui/lab/Masonry';
 import axios, { AxiosError, AxiosResponse } from 'axios';
-// import 'jimp';
-// let Jimp: any;
-import Jimp from 'jimp';
+import 'jimp';
+let Jimp: any;
 
 import { IConciseMemberStatistics, IRestrictedMemberComprehensive } from '../../../lib/interfaces/member';
 import { IConcisePostComprehensive } from '../../../lib/interfaces/post';
@@ -895,7 +894,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                 const uintArray = new Uint8Array(convertedBuf);
                 formData.append('image', new Blob([uintArray]));
 
-                await axios.post(`${appDomain}/api/upload/avatar/${authorId}`, formData, config)
+                await axios.post(`/api/upload/avatar/${authorId}`, formData, config)
                     .then((response: AxiosResponse) => {
                         // Succeed
                         setMemberInfoStates({

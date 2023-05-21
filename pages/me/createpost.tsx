@@ -758,7 +758,7 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
 
             // Append image data
             formData.append('image', new Blob([new Uint8Array(bbf)], { type: Jimp.MIME_JPEG }));
-            const resp = await axios.post(`${appDomain}/api/upload/cover/${postId}?requestInfo=${tkn}`, formData, config);
+            const resp = await axios.post(`/api/upload/cover/${postId}?requestInfo=${tkn}`, formData, config);
             tkn = resp.data?.updatedRequestInfoToken;
 
         } catch (e: any) {
@@ -833,7 +833,7 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
 
                     // Append image data
                     formData.append('image', new Blob([new Uint8Array(bbf)], { type: mme }));
-                    const uploadResp = await axios.post(`${appDomain}/api/upload/image/${postId}?requestInfo=${tkn}`, formData, config);
+                    const uploadResp = await axios.post(`/api/upload/image/${postId}?requestInfo=${tkn}`, formData, config);
 
                     const { imageFullname, updatedRequestInfoToken } = uploadResp.data;
 
