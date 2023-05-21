@@ -895,7 +895,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                 const uintArray = new Uint8Array(convertedBuf);
                 formData.append('image', new Blob([uintArray]));
 
-                await axios.post(`${imageDomain}/api/upload/avatar/${authorId}`, formData, config)
+                await axios.post(`${appDomain}/api/upload/avatar/${authorId}`, formData, config)
                     .then((response: AxiosResponse) => {
                         // Succeed
                         setMemberInfoStates({
