@@ -1109,7 +1109,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
             <Navbar lang={preferenceStates.lang} />
             {/* post component */}
             <Container disableGutters >
-                <Grid container >
+                <Grid container pt={1}>
 
                     {/* //// placeholder - left //// */}
                     <Grid item xs={0} sm={1} md={1} />
@@ -1489,7 +1489,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
                                 <Typography>{authorInfo_ss.nickname} {langConfigs.hotPostRecommend[preferenceStates.lang]}</Typography>
 
                                 {/* posts */}
-                                <Stack mt={2} spacing={{ md: 2, lg: 1 }}>
+                                <Stack mt={2} spacing={2}>
                                     {0 !== creationInfoArr.length && creationInfoArr.map(p =>
                                         postId !== p.postId && <TextButton key={getRandomHexStr()} sx={{ color: 'inherit', display: 'flex', flexDirection: 'row', justifyContent: 'space-between' }} onClick={handleClickOnPostCard(p.postId)}>
 

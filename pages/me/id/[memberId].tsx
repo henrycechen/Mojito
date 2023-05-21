@@ -38,6 +38,9 @@ import grey from '@mui/material/colors/grey';
 import { Global } from '@emotion/react';
 import Masonry from '@mui/lab/Masonry';
 import axios, { AxiosError, AxiosResponse } from 'axios';
+// import 'jimp';
+// let Jimp: any;
+import Jimp from 'jimp';
 
 import { IConciseMemberStatistics, IRestrictedMemberComprehensive } from '../../../lib/interfaces/member';
 import { IConcisePostComprehensive } from '../../../lib/interfaces/post';
@@ -133,8 +136,6 @@ const langConfigs: LangConfigs = {
         en: 'likes',
     },
 
-
-
     myCreations: {
         tw: '我的作品',
         cn: '我的作品',
@@ -227,9 +228,9 @@ const langConfigs: LangConfigs = {
         en: '*Please limit the image file size to 2MB'
     },
     avatarImageRequirementShort: {
-        tw: '相片文件體積不宜超過 2 MB',
-        cn: '相片文件体积不宜超过 2 MB',
-        en: 'Please limit your image file size to 2MB'
+        tw: '相片文件體積不宜超過 5 MB',
+        cn: '相片文件体积不宜超过 5 MB',
+        en: 'Please limit your image file size to 5MB'
     },
     openFileFailed: {
         tw: '嘗試打開文件失敗，點擊以重試',
@@ -851,8 +852,9 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
             try {
                 // Retrieve file and measure the size
-                const bb = await fetch(authorInfoSettingStates.alternativeImageUrl).then(r => r.blob());
-                if ((await bb.arrayBuffer()).byteLength > 2097152) { // new image file no larger than 2 MB
+                const initialBlob = await fetch(authorInfoSettingStates.alternativeImageUrl).then(r => r.blob());
+                const initialBuf = Buffer.concat([new Uint8Array(await initialBlob.arrayBuffer())]);
+                if (5242800 < initialBuf.byteLength) { // image file size no larger than 5 MB
                     setAuthorInfoSettingStates({
                         ...authorInfoSettingStates,
                         disableButton: false,
@@ -863,8 +865,35 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                     return;
                 }
 
-                // Post avatar image file
-                formData.append('image', bb);
+                const image = await Jimp.read(initialBuf);
+
+                // Crop and resize the image
+                if (!(100 === image.bitmap.width && 100 === image.bitmap.height)) {
+                    let size, cropX, cropY; // v0.1.2 Add sizing function
+
+                    if (image.bitmap.width > image.bitmap.height) {
+                        size = image.bitmap.height;
+                        cropX = Math.round((image.bitmap.width - image.bitmap.height) / 2);
+                        cropY = 0;
+                    } else {
+                        size = image.bitmap.width;
+                        cropX = 0;
+                        cropY = Math.round((image.bitmap.height - image.bitmap.width) / 2);
+                    }
+
+                    image.crop(cropX, cropY, size, size);
+                    image.resize(100, 100);
+                }
+
+                // Drop the quality
+                if (102400 < initialBuf.byteLength) { // ideally image file size no larger than 100 KB
+                    image.quality(85);
+                }
+
+                // Output and append to form data
+                const convertedBuf = await image.getBufferAsync(Jimp.MIME_JPEG);
+                const uintArray = new Uint8Array(convertedBuf);
+                formData.append('image', new Blob([uintArray]));
 
                 await axios.post(`/api/avatar/upload/${authorId}`, formData, config)
                     .then((response: AxiosResponse) => {
