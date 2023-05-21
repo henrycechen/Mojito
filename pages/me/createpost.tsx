@@ -63,7 +63,8 @@ type TCreatePostPageProps = {
     redirect500: boolean;
 };
 
-const domain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? '';
+const appDomain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? '';
+const imageDomain = process.env.NEXT_PUBLIC_IMAGE_DOMAIN ?? '';
 const defaultLang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
     title: {
@@ -197,7 +198,7 @@ const langConfigs: LangConfigs = {
 export async function getServerSideProps(context: NextPageContext): Promise<{ props: TCreatePostPageProps; }> {
     let channelInfoDict_ss: IChannelInfoDictionary;
     try {
-        const resp = await fetch(`${domain}/api/channel/info/dictionary`);
+        const resp = await fetch(`${appDomain}/api/channel/info/dictionary`);
         if (200 !== resp.status) {
             throw new Error('Attempt to GET channel info dictionary');
         }
@@ -711,7 +712,7 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
         setUploadStates({ uploadPrecent: 0, currentIndex: -1 });
 
         // #3.1 Request for an upload token
-        const resptkn = await fetch(`/api/image/request/${postId}`);
+        const resptkn = await fetch(`${imageDomain}/api/upload/image/request/${postId}`);
         if (200 !== resptkn.status) {
             console.log(`Attempt to request for upload token.`);
             setProcessStates({
@@ -832,7 +833,7 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
 
                     // Append image data
                     formData.append('image', new Blob([new Uint8Array(bbf)], { type: mme }));
-                    const uploadResp = await axios.post(`/api/image/upload/${postId}?requestInfo=${tkn}`, formData, config);
+                    const uploadResp = await axios.post(`${imageDomain}/api/upload/image/${postId}?requestInfo=${tkn}`, formData, config);
 
                     const { imageFullname, updatedRequestInfoToken } = uploadResp.data;
 
@@ -955,7 +956,7 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
                                                 <Grid container>
                                                     <Grid item flexGrow={1}></Grid>
                                                     <Grid item>
-                                                        <Avatar src={provideAvatarImageUrl(m.memberId, domain)} sx={{ width: 34, height: 34, bgcolor: 'grey' }}>{m.nickname?.charAt(0).toUpperCase()}</Avatar>
+                                                        <Avatar src={provideAvatarImageUrl(m.memberId, imageDomain)} sx={{ width: 34, height: 34, bgcolor: 'grey' }}>{m.nickname?.charAt(0).toUpperCase()}</Avatar>
                                                     </Grid>
                                                     <Grid item flexGrow={1}></Grid>
                                                 </Grid>

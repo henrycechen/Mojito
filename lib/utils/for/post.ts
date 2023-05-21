@@ -29,9 +29,9 @@ export function provideCoverImageUrl(postId: string, domain: string, forceBrowse
 
 export function provideImageUrl(fullname: string, domain: string, forceBrowserUpdate = false): string {
     if (forceBrowserUpdate) {
-        return `${domain}/api/image/a/${fullname}?variant=${getRandomHexStr()}`;
+        return `${domain}/api/image/${fullname}?variant=${getRandomHexStr()}`;
     } else {
-        return `${domain}/api/image/a/${fullname}`;
+        return `${domain}/api/image/${fullname}`;
     }
 }
 

@@ -48,15 +48,14 @@ import { LangConfigs, TPreferenceStates } from '../../../lib/types';
 import { IMemberInfo } from '../../../lib/interfaces/member';
 import { IChannelInfoStates, IChannelInfoDictionary } from '../../../lib/interfaces/channel';
 import { getNicknameBrief, provideAvatarImageUrl, } from '../../../lib/utils/for/member';
-import { createId, getRandomHexStr } from '../../../lib/utils/create';
+import { getRandomHexStr } from '../../../lib/utils/create';
 import { restoreFromLocalStorage } from '../../../lib/utils/general';
 import { contentToParagraphsArray, cuedMemberInfoDictionaryToArray, fakeRestrictedPostComprehensive, provideImageUrl } from '../../../lib/utils/for/post';
 
 import Navbar from '../../../ui/Navbar';
 import Copyright from '../../../ui/Copyright';
 import Terms from '../../../ui/Terms';
-import { IPostComprehensive, IRestrictedPostComprehensive } from '../../../lib/interfaces/post';
-import { TextButton } from '../../../ui/Styled';
+import { IRestrictedPostComprehensive } from '../../../lib/interfaces/post';
 
 
 const storageName0 = 'PreferenceStates';
@@ -69,7 +68,8 @@ type TCreatePostPageProps = {
     redirect500: boolean;
 };
 
-const domain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? '';
+const appDomain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? '';
+const imageDomain = process.env.NEXT_PUBLIC_IMAGE_DOMAIN ?? '';
 const defaultLang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
     title: {
@@ -226,7 +226,7 @@ export async function getServerSideProps(context: NextPageContext): Promise<{ pr
     try {
         const { postId } = context.query;
         //// GET post comprehensive ////
-        const resp0 = await fetch(`${domain}/api/post/id/${postId}`);
+        const resp0 = await fetch(`${appDomain}/api/post/id/${postId}`);
         if (200 !== resp0.status) {
             if (404 === resp0.status) {
                 return {
@@ -242,7 +242,7 @@ export async function getServerSideProps(context: NextPageContext): Promise<{ pr
         }
         restrictedPostComprehensive_ss = await resp0.json();
         //// GET channel info ////
-        const resp1 = await fetch(`${domain}/api/channel/info/dictionary`);
+        const resp1 = await fetch(`${appDomain}/api/channel/info/dictionary`);
         if (200 !== resp1.status) {
             throw new Error('Attempt to GET channel info dictionary');
         }
@@ -624,7 +624,7 @@ const CreatePost = ({ restrictedPostComprehensive_ss, channelInfoDict_ss, redire
 
     React.useEffect(() => {
         if (0 !== restrictedPostComprehensive_ss.imageFullnamesArr.length) {
-            setImagesArr(restrictedPostComprehensive_ss.imageFullnamesArr.map(fullname => { return { url: provideImageUrl(fullname, domain), fullname, isUploaded: true }; }));
+            setImagesArr(restrictedPostComprehensive_ss.imageFullnamesArr.map(fullname => { return { url: provideImageUrl(fullname, imageDomain), fullname, isUploaded: true }; }));
         }
     }, []);
 
@@ -794,7 +794,7 @@ const CreatePost = ({ restrictedPostComprehensive_ss, channelInfoDict_ss, redire
         setUploadStates({ uploadPrecent: 0, currentIndex: -1 });
 
         // #3.1 Request for an upload token
-        const resptkn = await fetch(`/api/image/request/${postId}`);
+        const resptkn = await fetch(`${imageDomain}/api/upload/image/request/${postId}`);
         if (200 !== resptkn.status) {
             console.log(`Attempt to request for upload token.`);
             setProcessStates({
@@ -914,7 +914,7 @@ const CreatePost = ({ restrictedPostComprehensive_ss, channelInfoDict_ss, redire
 
                     // Append image data
                     formData.append('image', new Blob([new Uint8Array(bbf)], { type: mme }));
-                    const uploadResp = await axios.post(`/api/image/upload/${postId}?requestInfo=${tkn}`, formData, config);
+                    const uploadResp = await axios.post(`${imageDomain}/api/upload/image/${postId}?requestInfo=${tkn}`, formData, config);
 
                     const { imageFullname, updatedRequestInfoToken } = uploadResp.data;
 
@@ -1069,7 +1069,7 @@ const CreatePost = ({ restrictedPostComprehensive_ss, channelInfoDict_ss, redire
                                                 <Grid container>
                                                     <Grid item flexGrow={1}></Grid>
                                                     <Grid item>
-                                                        <Avatar src={provideAvatarImageUrl(m.memberId, domain)} sx={{ width: 34, height: 34, bgcolor: 'grey' }}>{m.nickname?.charAt(0).toUpperCase()}</Avatar>
+                                                        <Avatar src={provideAvatarImageUrl(m.memberId, imageDomain)} sx={{ width: 34, height: 34, bgcolor: 'grey' }}>{m.nickname?.charAt(0).toUpperCase()}</Avatar>
                                                     </Grid>
                                                     <Grid item flexGrow={1}></Grid>
                                                 </Grid>

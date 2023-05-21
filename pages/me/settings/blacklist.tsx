@@ -27,7 +27,8 @@ import Terms from '../../../ui/Terms';
 const storageName0 = 'PreferenceStates';
 const restorePreferenceStatesFromCache = restoreFromLocalStorage(storageName0);
 
-const domain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? '';
+const appDomain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? '';
+const imageDomain = process.env.NEXT_PUBLIC_IMAGE_DOMAIN ?? '';
 const defaultLang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
     alertContent: {
@@ -168,7 +169,7 @@ const Blacklist = () => {
                                     {/* member info */}
                                     <Stack direction={'row'} sx={{ maxHeight: 40 }}>
                                         <IconButton sx={{ px: 0 }} onClick={handleClickOnMemberInfo(info.memberId)}>
-                                            <Avatar src={provideAvatarImageUrl(info.memberId, domain)} sx={{ width: 40, height: 40, bgcolor: 'grey' }}>{info.nickname?.charAt(0).toUpperCase()}</Avatar>
+                                            <Avatar src={provideAvatarImageUrl(info.memberId, imageDomain)} sx={{ width: 40, height: 40, bgcolor: 'grey' }}>{info.nickname?.charAt(0).toUpperCase()}</Avatar>
                                         </IconButton>
                                         <Box ml={1}>
                                             <TextButton color={'inherit'} onClick={handleClickOnMemberInfo(info.memberId)}>

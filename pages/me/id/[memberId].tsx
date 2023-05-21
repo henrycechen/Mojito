@@ -70,7 +70,8 @@ type TMemberPageProps = {
     redirect500: boolean;
 };
 
-const domain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? '';
+const appDomain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? '';
+const imageDomain = process.env.NEXT_PUBLIC_IMAGE_DOMAIN ?? '';
 const defaultLang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
 
@@ -343,21 +344,21 @@ export async function getServerSideProps(context: NextPageContext): Promise<{ pr
 
     try {
         // GET channel info by id
-        const dictionary_resp = await fetch(`${domain}/api/channel/info/dictionary`);
+        const dictionary_resp = await fetch(`${appDomain}/api/channel/info/dictionary`);
         if (200 !== dictionary_resp.status) {
             throw new Error('Attempt to GET channel info dictionary');
         }
         const channelInfoDict_ss = await dictionary_resp.json();
 
         // GET member info by id
-        const info_resp = await fetch(`${domain}/api/member/info/${memberId}`);
+        const info_resp = await fetch(`${appDomain}/api/member/info/${memberId}`);
         if (200 !== info_resp.status) {
             throw new Error('Attempt to GET member info');
         }
         const memberInfo_ss = await info_resp.json();
 
         // GET member statistics by id
-        const statistics_resp = await fetch(`${domain}/api/member/statistics/${memberId}`);
+        const statistics_resp = await fetch(`${appDomain}/api/member/statistics/${memberId}`);
         if (200 !== statistics_resp.status) {
             throw new Error('Attempt to GET member statistics');
         }
@@ -427,7 +428,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
     //////// STATES - memberInfo ////////
     const [memberInfoStates, setMemberInfoStates] = React.useState<TMemberInfoStates>({
-        avatarImageUrl: provideAvatarImageUrl(authorId, domain),
+        avatarImageUrl: provideAvatarImageUrl(authorId, imageDomain),
         nickname: memberComprehensive_ss.nickname,
         briefIntro: memberComprehensive_ss.briefIntro,
         gender: memberComprehensive_ss.gender,
@@ -678,7 +679,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
     //// STATES - author info ////
     const [authorInfoSettingStates, setAuthorInfoSettingStates] = React.useState<TAuthorInfoSettingStates>({
-        alternativeImageUrl: provideAvatarImageUrl(authorId, domain),
+        alternativeImageUrl: provideAvatarImageUrl(authorId, imageDomain),
         alternativeName: memberInfoStates.nickname,
         invalidName: false,
         alternativeIntro: memberInfoStates.briefIntro,
@@ -817,7 +818,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
         // set alternatives to orignial
         // disable button
         setAuthorInfoSettingStates({
-            alternativeImageUrl: provideAvatarImageUrl(authorId, domain),
+            alternativeImageUrl: provideAvatarImageUrl(authorId, imageDomain),
             alternativeName: memberInfoStates.nickname,
             invalidName: false,
             alternativeIntro: memberInfoStates.briefIntro,
@@ -832,7 +833,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
     const executeUpdate = async () => {
         // #1 if update avatar image
-        if ('' !== authorInfoSettingStates.alternativeImageUrl && provideAvatarImageUrl(authorId, domain) !== authorInfoSettingStates.alternativeImageUrl) {
+        if ('' !== authorInfoSettingStates.alternativeImageUrl && provideAvatarImageUrl(authorId, imageDomain) !== authorInfoSettingStates.alternativeImageUrl) {
             setAuthorInfoSettingStates({
                 ...authorInfoSettingStates,
                 disableButton: true,
@@ -1288,7 +1289,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                                         {/* image */}
                                         <Box
                                             component={'img'}
-                                            src={provideCoverImageUrl(info.postId, domain)}
+                                            src={provideCoverImageUrl(info.postId, appDomain)}
                                             sx={{
                                                 maxWidth: { xs: width / 2, sm: 300 },
                                                 maxHeight: 'max-content',
@@ -1311,7 +1312,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                                                 <Grid item flexGrow={1}>
                                                     <Box display={'flex'} flexDirection={'row'}>
                                                         <Button variant={'text'} color={'inherit'} sx={{ textTransform: 'none' }} onClick={handleClickOnMemberInfo(info.memberId, info.postId)}>
-                                                            <Avatar src={provideAvatarImageUrl(authorId, domain)} sx={{ width: { xs: 24, sm: 32 }, height: { xs: 24, sm: 32 }, bgcolor: 'grey' }}>{info.nickname?.charAt(0).toUpperCase()}</Avatar>
+                                                            <Avatar src={provideAvatarImageUrl(authorId, imageDomain)} sx={{ width: { xs: 24, sm: 32 }, height: { xs: 24, sm: 32 }, bgcolor: 'grey' }}>{info.nickname?.charAt(0).toUpperCase()}</Avatar>
                                                             <Box ml={1}>
 
                                                                 {/* nickname */}

@@ -19,7 +19,7 @@ import Divider from '@mui/material/Divider';
 import { INoticeInfoWithMemberInfo } from '../../lib/interfaces/notification';
 import { LangConfigs, TPreferenceStates } from '../../lib/types';
 
-import { timeToString, updateLocalStorage, restoreFromLocalStorage } from '../../lib/utils/general';
+import { timeToString, restoreFromLocalStorage } from '../../lib/utils/general';
 import { provideAvatarImageUrl, getNicknameBrief } from '../../lib/utils/for/member';
 import { noticeIdToUrl, noticeInfoToString } from '../../lib/utils/for/notification';
 
@@ -32,7 +32,8 @@ import { CentralizedBox, ResponsiveCard, TextButton } from '../../ui/Styled';
 const storageName0 = 'PreferenceStates';
 const restorePreferenceStatesFromCache = restoreFromLocalStorage(storageName0);
 
-const domain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? '';
+const appDomain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? '';
+const imageDomain = process.env.NEXT_PUBLIC_IMAGE_DOMAIN ?? '';
 const defaultLang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
     liked: {
@@ -232,7 +233,7 @@ const Message = () => {
                                             <Box sx={{ display: 'flex', flexDirection: 'row' }}>
 
                                                 {/* avatar */}
-                                                <Avatar src={provideAvatarImageUrl(info.initiateId, domain)} sx={{ width: 40, height: 40, bgcolor: 'grey' }}>{info.nickname?.charAt(0).toUpperCase()}</Avatar>
+                                                <Avatar src={provideAvatarImageUrl(info.initiateId, imageDomain)} sx={{ width: 40, height: 40, bgcolor: 'grey' }}>{info.nickname?.charAt(0).toUpperCase()}</Avatar>
                                                 <Box ml={1}>
 
                                                     {/* nickname */}
