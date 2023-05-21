@@ -18,11 +18,6 @@ import { LangConfigs, TSignInCredentialStates } from '../lib/types';
 import { useRouter } from 'next/router';
 import Copyright from '../ui/Copyright';
 import Stack from '@mui/material/Stack';
-import Divider from '@mui/material/Divider';
-
-import CircularProgress from '@mui/material/CircularProgress';
-import Alert from '@mui/material/Alert';
-import AlertTitle from '@mui/material/AlertTitle';
 
 import { NextPageContext } from 'next/types';
 import { provideAvatarImageUrl } from '../lib/utils/for/member';
@@ -36,7 +31,8 @@ export async function getServerSideProps(context: NextPageContext) {
     };
 }
 
-const domain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? '';
+const appDomain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? '';
+const imageDomain = process.env.NEXT_PUBLIC_IMAGE_DOMAIN ?? '';
 const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfig: LangConfigs = {
     appSignout: {
@@ -80,7 +76,7 @@ const SignOut = () => {
         <Container component='main' maxWidth='xs'>
             <Stack sx={{ mt: '10rem' }}>
                 <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-                    <Avatar src={provideAvatarImageUrl(memberInfoStates.memberId, domain)} sx={{ width: 56, height: 56 }} />
+                    <Avatar src={provideAvatarImageUrl(memberInfoStates.memberId, imageDomain)} sx={{ width: 56, height: 56 }} />
                 </Box>
                 <Typography variant="h5" sx={{ textAlign: 'center', mt: 2 }}>
                     {langConfig.appSignout[lang]}

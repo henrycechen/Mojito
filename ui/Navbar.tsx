@@ -35,7 +35,8 @@ import { LangConfigs } from '../lib/types';
 import { ColorModeContext } from './Theme';
 import { provideAvatarImageUrl } from '../lib/utils/for/member';
 
-const domain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? '';
+const appDomain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? '';
+const imageDomain = process.env.NEXT_PUBLIC_IMAGE_DOMAIN ?? '';
 const langConfigs: LangConfigs = {
     open: {
         tw: '打開菜單',
@@ -140,7 +141,7 @@ export default function NavBar(props: TNavBarProps) {
                 <Toolbar disableGutters>
 
                     <Link href='/' mt={1}>
-                        <Box component={'img'} src={`${domain}/logo${'dark' === theme.palette.mode ? '-dark' : ''}.png`} sx={{ height: '2.5rem' }} />
+                        <Box component={'img'} src={`${appDomain}/logo${'dark' === theme.palette.mode ? '-dark' : ''}.png`} sx={{ height: '2.5rem' }} />
                     </Link>
 
                     <Box sx={{ flexGrow: 1 }}></Box>
@@ -153,7 +154,7 @@ export default function NavBar(props: TNavBarProps) {
                         <Box sx={{ flexGrow: 0 }}>
                             <Tooltip title={langConfigs.open[lang]}>
                                 <IconButton onClick={handleOpenMemberMenu} sx={{ p: 0 }}>
-                                    <Avatar src={'' === processStates.memberId ? '' : provideAvatarImageUrl(processStates.memberId, domain, !!props.forceUpdateImageCache)} />
+                                    <Avatar src={'' === processStates.memberId ? '' : provideAvatarImageUrl(processStates.memberId, imageDomain, !!props.forceUpdateImageCache)} />
                                 </IconButton>
                             </Tooltip>
 

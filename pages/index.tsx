@@ -74,7 +74,8 @@ interface IHomePageProcessStates {
     wasRedirected: boolean;
 }
 
-const domain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? '';
+const appDomain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? '';
+const imageDomain = process.env.NEXT_PUBLIC_IMAGE_DOMAIN ?? '';
 const defaultLang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
     allPosts: {
@@ -145,7 +146,7 @@ const langConfigs: LangConfigs = {
 export async function getServerSideProps(context: NextPageContext): Promise<{ props: THomePageProps; }> {
     let channelInfoDict_ss: IChannelInfoDictionary;
 
-    const resp = await fetch(`${domain}/api/channel/info/dictionary`);
+    const resp = await fetch(`${appDomain}/api/channel/info/dictionary`);
 
     try {
         if (200 !== resp.status) {
@@ -587,7 +588,7 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
                                             {/* image */}
                                             <Box
                                                 component={'img'}
-                                                src={provideCoverImageUrl(p.postId, domain)}
+                                                src={provideCoverImageUrl(p.postId, imageDomain)}
                                                 sx={{ maxWidth: { xs: width / 2, sm: 400 }, height: 'auto', borderTopLeftRadius: 4, borderTopRightRadius: 4 }}
                                                 onClick={handleClickOnPost(p.postId)}
                                             ></Box>
@@ -605,7 +606,7 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
                                                     <Grid item flexGrow={1}>
                                                         <Box display={'flex'} flexDirection={'row'}>
                                                             <Button variant={'text'} color={'inherit'} sx={{ textTransform: 'none' }} onClick={handleClickOnMemberInfo(p.memberId, p.postId)}>
-                                                                <Avatar src={provideAvatarImageUrl(p.memberId, domain)} sx={{ width: { xs: 24, sm: 32 }, height: { xs: 24, sm: 32 }, bgcolor: 'grey' }}>{p.nickname?.charAt(0).toUpperCase()}</Avatar>
+                                                                <Avatar src={provideAvatarImageUrl(p.memberId, imageDomain)} sx={{ width: { xs: 24, sm: 32 }, height: { xs: 24, sm: 32 }, bgcolor: 'grey' }}>{p.nickname?.charAt(0).toUpperCase()}</Avatar>
                                                                 <Box ml={1}>
                                                                     <Typography variant='body2'>{getNicknameBrief(p.nickname)}</Typography>
                                                                 </Box>
@@ -712,7 +713,7 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
 
                                         {/* image */}
                                         <Box display={{ md: 'none', lg: 'block' }}>
-                                            <Box sx={{ width: 100, height: 100, backgroundImage: `url(${provideCoverImageUrl(p.postId, domain)})`, backgroundSize: 'cover' }}></Box>
+                                            <Box sx={{ width: 100, height: 100, backgroundImage: `url(${provideCoverImageUrl(p.postId, imageDomain)})`, backgroundSize: 'cover' }}></Box>
                                         </Box>
                                     </TextButton>
                                 )}
@@ -750,7 +751,7 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
 
                                         {/* image */}
                                         <Box display={{ md: 'none', lg: 'block' }}>
-                                            <Box sx={{ width: 100, height: 100, backgroundImage: `url(${provideCoverImageUrl(p.postId, domain)})`, backgroundSize: 'cover' }}></Box>
+                                            <Box sx={{ width: 100, height: 100, backgroundImage: `url(${provideCoverImageUrl(p.postId, imageDomain)})`, backgroundSize: 'cover' }}></Box>
                                         </Box>
                                     </TextButton>
                                 )}

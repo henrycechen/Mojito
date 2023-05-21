@@ -3,13 +3,16 @@ import { getRandomHexStr } from '../create';
 
 // Utils for Member Class v0.1.1
 
+/**
+ * 
+ */
 export function provideAvatarImageUrl(memberId: any, domain: string, forceUpdateImageCache = false): string {
     if ('string' !== typeof memberId) {
         return ``;
     } else if (forceUpdateImageCache) {
-        return `${domain}/api/avatar/a/${memberId}.png?variant=${getRandomHexStr()}`;
+        return `${domain}/api/avatar/${memberId}.jpeg?variant=${getRandomHexStr()}`;
     } else {
-        return `${domain}/api/avatar/a/${memberId}.png`;
+        return `${domain}/api/avatar/${memberId}.jpeg`;
     }
 }
 

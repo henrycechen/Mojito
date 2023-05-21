@@ -7,7 +7,7 @@ import Switch from '@mui/material/Switch';
 export const ResponsiveCard = styled(Box)<BoxProps>(({ theme }) => ({
     padding: 16,
     borderRadius: theme.shape.borderRadius,
-    boxShadow: theme.shadows[2],
+    boxShadow: theme.shadows[1],
     [theme.breakpoints.down('md')]: {
         boxShadow: theme.shadows[0],
     }

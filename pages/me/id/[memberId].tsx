@@ -38,6 +38,9 @@ import grey from '@mui/material/colors/grey';
 import { Global } from '@emotion/react';
 import Masonry from '@mui/lab/Masonry';
 import axios, { AxiosError, AxiosResponse } from 'axios';
+// import 'jimp';
+// let Jimp: any;
+import Jimp from 'jimp';
 
 import { IConciseMemberStatistics, IRestrictedMemberComprehensive } from '../../../lib/interfaces/member';
 import { IConcisePostComprehensive } from '../../../lib/interfaces/post';
@@ -70,7 +73,8 @@ type TMemberPageProps = {
     redirect500: boolean;
 };
 
-const domain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? '';
+const appDomain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? '';
+const imageDomain = process.env.NEXT_PUBLIC_IMAGE_DOMAIN ?? '';
 const defaultLang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
 
@@ -131,8 +135,6 @@ const langConfigs: LangConfigs = {
         cn: '次喜欢',
         en: 'likes',
     },
-
-
 
     myCreations: {
         tw: '我的作品',
@@ -221,14 +223,14 @@ const langConfigs: LangConfigs = {
         en: 'Choose image to upload'
     },
     avatarImageRequirement: {
-        tw: '*请选择 2 MB 以内的相片文件',
-        cn: '*请选择 2 MB 以内的照片文件',
-        en: '*Please limit the image file size to 2MB'
+        tw: '*请选择 5 MB 以内的相片文件',
+        cn: '*请选择 5 MB 以内的照片文件',
+        en: '*Please limit the image file size to 5 MB'
     },
     avatarImageRequirementShort: {
-        tw: '相片文件體積不宜超過 2 MB',
-        cn: '相片文件体积不宜超过 2 MB',
-        en: 'Please limit your image file size to 2MB'
+        tw: '相片文件體積不宜超過 5 MB',
+        cn: '相片文件体积不宜超过 5 MB',
+        en: 'Please limit your image file size to 5MB'
     },
     openFileFailed: {
         tw: '嘗試打開文件失敗，點擊以重試',
@@ -343,21 +345,21 @@ export async function getServerSideProps(context: NextPageContext): Promise<{ pr
 
     try {
         // GET channel info by id
-        const dictionary_resp = await fetch(`${domain}/api/channel/info/dictionary`);
+        const dictionary_resp = await fetch(`${appDomain}/api/channel/info/dictionary`);
         if (200 !== dictionary_resp.status) {
             throw new Error('Attempt to GET channel info dictionary');
         }
         const channelInfoDict_ss = await dictionary_resp.json();
 
         // GET member info by id
-        const info_resp = await fetch(`${domain}/api/member/info/${memberId}`);
+        const info_resp = await fetch(`${appDomain}/api/member/info/${memberId}`);
         if (200 !== info_resp.status) {
             throw new Error('Attempt to GET member info');
         }
         const memberInfo_ss = await info_resp.json();
 
         // GET member statistics by id
-        const statistics_resp = await fetch(`${domain}/api/member/statistics/${memberId}`);
+        const statistics_resp = await fetch(`${appDomain}/api/member/statistics/${memberId}`);
         if (200 !== statistics_resp.status) {
             throw new Error('Attempt to GET member statistics');
         }
@@ -427,7 +429,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
     //////// STATES - memberInfo ////////
     const [memberInfoStates, setMemberInfoStates] = React.useState<TMemberInfoStates>({
-        avatarImageUrl: provideAvatarImageUrl(authorId, domain),
+        avatarImageUrl: provideAvatarImageUrl(authorId, imageDomain),
         nickname: memberComprehensive_ss.nickname,
         briefIntro: memberComprehensive_ss.briefIntro,
         gender: memberComprehensive_ss.gender,
@@ -678,7 +680,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
     //// STATES - author info ////
     const [authorInfoSettingStates, setAuthorInfoSettingStates] = React.useState<TAuthorInfoSettingStates>({
-        alternativeImageUrl: provideAvatarImageUrl(authorId, domain),
+        alternativeImageUrl: provideAvatarImageUrl(authorId, imageDomain),
         alternativeName: memberInfoStates.nickname,
         invalidName: false,
         alternativeIntro: memberInfoStates.briefIntro,
@@ -813,17 +815,17 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
     };
 
     const cancelUpdate = () => {
-        // toggle editor
-        // set alternatives to orignial
-        // disable button
         setAuthorInfoSettingStates({
-            alternativeImageUrl: provideAvatarImageUrl(authorId, domain),
+            // #1 set alternatives to orignial
+            alternativeImageUrl: provideAvatarImageUrl(authorId, imageDomain),
             alternativeName: memberInfoStates.nickname,
             invalidName: false,
             alternativeIntro: memberInfoStates.briefIntro,
             invalidIntro: false,
+            // #2 toggle editor
             displayEditor: false,
             disableButton: true,
+            // #3 disable button
             displayAlert: false,
             alertContent: '',
             displayProgress: false
@@ -832,7 +834,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
     const executeUpdate = async () => {
         // #1 if update avatar image
-        if ('' !== authorInfoSettingStates.alternativeImageUrl && provideAvatarImageUrl(authorId, domain) !== authorInfoSettingStates.alternativeImageUrl) {
+        if ('' !== authorInfoSettingStates.alternativeImageUrl && provideAvatarImageUrl(authorId, imageDomain) !== authorInfoSettingStates.alternativeImageUrl) {
             setAuthorInfoSettingStates({
                 ...authorInfoSettingStates,
                 disableButton: true,
@@ -850,8 +852,9 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
             try {
                 // Retrieve file and measure the size
-                const bb = await fetch(authorInfoSettingStates.alternativeImageUrl).then(r => r.blob());
-                if ((await bb.arrayBuffer()).byteLength > 2097152) { // new image file no larger than 2 MB
+                const initialBlob = await fetch(authorInfoSettingStates.alternativeImageUrl).then(r => r.blob());
+                const initialBuf = Buffer.concat([new Uint8Array(await initialBlob.arrayBuffer())]);
+                if (5242800 < initialBuf.byteLength) { // image file size no larger than 5 MB
                     setAuthorInfoSettingStates({
                         ...authorInfoSettingStates,
                         disableButton: false,
@@ -862,10 +865,37 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                     return;
                 }
 
-                // Post avatar image file
-                formData.append('image', bb);
+                const image = await Jimp.read(initialBuf);
 
-                await axios.post(`/api/avatar/upload/${authorId}`, formData, config)
+                // Crop and resize the image
+                if (!(100 === image.bitmap.width && 100 === image.bitmap.height)) {
+                    let size, cropX, cropY; // v0.1.2 Add sizing function
+
+                    if (image.bitmap.width > image.bitmap.height) {
+                        size = image.bitmap.height;
+                        cropX = Math.round((image.bitmap.width - image.bitmap.height) / 2);
+                        cropY = 0;
+                    } else {
+                        size = image.bitmap.width;
+                        cropX = 0;
+                        cropY = Math.round((image.bitmap.height - image.bitmap.width) / 2);
+                    }
+
+                    image.crop(cropX, cropY, size, size);
+                    image.resize(100, 100);
+                }
+
+                // Drop the quality
+                if (102400 < initialBuf.byteLength) { // ideally image file size no larger than 100 KB
+                    image.quality(85);
+                }
+
+                // Output and append to form data
+                const convertedBuf = await image.getBufferAsync(Jimp.MIME_JPEG);
+                const uintArray = new Uint8Array(convertedBuf);
+                formData.append('image', new Blob([uintArray]));
+
+                await axios.post(`${imageDomain}/api/upload/avatar/${authorId}`, formData, config)
                     .then((response: AxiosResponse) => {
                         // Succeed
                         setMemberInfoStates({
@@ -1288,7 +1318,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                                         {/* image */}
                                         <Box
                                             component={'img'}
-                                            src={provideCoverImageUrl(info.postId, domain)}
+                                            src={provideCoverImageUrl(info.postId, imageDomain)}
                                             sx={{
                                                 maxWidth: { xs: width / 2, sm: 300 },
                                                 maxHeight: 'max-content',
@@ -1311,7 +1341,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                                                 <Grid item flexGrow={1}>
                                                     <Box display={'flex'} flexDirection={'row'}>
                                                         <Button variant={'text'} color={'inherit'} sx={{ textTransform: 'none' }} onClick={handleClickOnMemberInfo(info.memberId, info.postId)}>
-                                                            <Avatar src={provideAvatarImageUrl(authorId, domain)} sx={{ width: { xs: 24, sm: 32 }, height: { xs: 24, sm: 32 }, bgcolor: 'grey' }}>{info.nickname?.charAt(0).toUpperCase()}</Avatar>
+                                                            <Avatar src={provideAvatarImageUrl(authorId, imageDomain)} sx={{ width: { xs: 24, sm: 32 }, height: { xs: 24, sm: 32 }, bgcolor: 'grey' }}>{info.nickname?.charAt(0).toUpperCase()}</Avatar>
                                                             <Box ml={1}>
 
                                                                 {/* nickname */}

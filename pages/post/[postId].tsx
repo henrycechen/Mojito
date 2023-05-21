@@ -28,6 +28,7 @@ import BarChartIcon from '@mui/icons-material/BarChart';
 import AlternateEmailIcon from '@mui/icons-material/AlternateEmail';
 
 import { Swiper, SwiperSlide } from 'swiper/react';
+import { Navigation } from 'swiper';
 import { Pagination } from 'swiper';
 import 'swiper/css';
 import 'swiper/css/pagination';
@@ -60,7 +61,6 @@ import { logWithDate, restoreFromLocalStorage, timeToString } from '../../lib/ut
 import { verifyId } from '../../lib/utils/verify';
 import { LangConfigs } from '../../lib/types';
 
-
 const storageName0 = 'PreferenceStates';
 const restorePreferenceStatesFromCache = restoreFromLocalStorage(storageName0);
 
@@ -80,7 +80,8 @@ interface IPostPageProcessStates {
     backdropOnDisplayImageUrl: string | undefined;
 }
 
-const domain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? '';
+const appDomain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? '';
+const imageDomain = process.env.NEXT_PUBLIC_IMAGE_DOMAIN ?? '';
 const defaultLang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
     title: {
@@ -237,7 +238,7 @@ export async function getServerSideProps(context: NextPageContext): Promise<{ pr
 
     try {
         // GET restricted post comprehensive
-        const restrictedPostComprehensive_resp = await fetch(`${domain}/api/post/id/${postId}`);
+        const restrictedPostComprehensive_resp = await fetch(`${appDomain}/api/post/id/${postId}`);
         if (200 !== restrictedPostComprehensive_resp.status) {
             throw new Error('Attempt to GET restricted post comprehensive');
 
@@ -245,14 +246,14 @@ export async function getServerSideProps(context: NextPageContext): Promise<{ pr
         const restrictedPostComprehensive_ss = await restrictedPostComprehensive_resp.json();
 
         // GET channel info by id
-        const channelInfo_resp = await fetch(`${domain}/api/channel/info/by/id/${restrictedPostComprehensive_ss.channelId}`);
+        const channelInfo_resp = await fetch(`${appDomain}/api/channel/info/by/id/${restrictedPostComprehensive_ss.channelId}`);
         if (200 !== channelInfo_resp.status) {
             throw new Error('Attempt to GET channel info by id');
         }
         const channelInfo_ss = await channelInfo_resp.json();
 
         // GET author info by id
-        const authorInfo_resp = await fetch(`${domain}/api/member/info/${restrictedPostComprehensive_ss.memberId}`);
+        const authorInfo_resp = await fetch(`${appDomain}/api/member/info/${restrictedPostComprehensive_ss.memberId}`);
         if (200 !== authorInfo_resp.status) {
             throw new Error('Attempt to GET member (author) info');
         }
@@ -313,19 +314,26 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
         mode: 'light'
     });
 
-    // //////// STATES - swipper (dimensions) //////// [!] Deprecated
+    // //////// STATES - swipper (dimensions)
     // // Logic:
     // // swiperWrapperHeight is designed for adjust Box (swiperslide wrapper) height
     // // Initial value set to 1 leads to Box-height having been set to 100% on initializing
     // // If there is ultra-high photo in the swiperslide array
     // // Then adujust all the Box-height to the swiper (top-level) wrapper height
     // // Which makes all the photo aligned center (horizontally)
-    // const [swiperWrapperHeight, setSwiperWrapperHeight] = React.useState(1);
+    const [swiperWrapperDimensions, setSwiperWrapperDimensions] = React.useState({ width: 1, height: 1 });
 
-    // React.useEffect(() => {
-    //     const wrapper: HTMLElement | null = document.getElementById('swiper-wrapper');
-    //     setSwiperWrapperHeight(wrapper?.offsetHeight ?? 1);
-    // }, []);
+    React.useEffect(() => {
+        const wrapper: HTMLElement | null = document.getElementById('swiper-wrapper');
+
+        // alert(wrapper?.offsetHeight);
+        // alert(wrapper?.offsetWidth);
+
+        setSwiperWrapperDimensions({
+            width: wrapper?.offsetWidth ?? 1,
+            height: wrapper?.offsetHeight ?? 500
+        });
+    }, []);
 
     type TCombinedStatistics = {
         // Member statistics
@@ -401,7 +409,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
     });
 
     const handleBackdropOpen = (imageFullname: string) => (event: React.MouseEvent) => {
-        setProcessStates({ ...processStates, displayBackdrop: true, backdropOnDisplayImageUrl: provideImageUrl(imageFullname, domain) });
+        setProcessStates({ ...processStates, displayBackdrop: true, backdropOnDisplayImageUrl: provideImageUrl(imageFullname, imageDomain) });
     };
 
     const handleBackdropClose = () => {
@@ -1065,7 +1073,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
                     }
                     if ('link' === element.type) {
                         return (
-                            <Link href={provideMemberInfoPageUrl(element.memberId, domain)} underline={'none'} key={getRandomHexStr()} >
+                            <Link href={provideMemberInfoPageUrl(element.memberId, appDomain)} underline={'none'} key={getRandomHexStr()} >
                                 {element.text}
                             </Link>
                         );
@@ -1101,7 +1109,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
             <Navbar lang={preferenceStates.lang} />
             {/* post component */}
             <Container disableGutters >
-                <Grid container >
+                <Grid container pt={1}>
 
                     {/* //// placeholder - left //// */}
                     <Grid item xs={0} sm={1} md={1} />
@@ -1133,7 +1141,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
                                 {/* post-title: mobile style */}
                                 <Stack mt={0.5} direction={'row'} sx={{ display: { xs: 'flex', sm: 'none' } }}>
                                     <IconButton sx={{ padding: 0 }}>
-                                        <Avatar src={provideAvatarImageUrl(authorId, domain)} sx={{ width: 38, height: 38, bgcolor: 'grey' }}>{authorInfo_ss.nickname?.charAt(0).toUpperCase()}</Avatar>
+                                        <Avatar src={provideAvatarImageUrl(authorId, imageDomain)} sx={{ width: 38, height: 38, bgcolor: 'grey' }}>{authorInfo_ss.nickname?.charAt(0).toUpperCase()}</Avatar>
                                     </IconButton>
                                     <Grid container ml={1}>
 
@@ -1163,12 +1171,19 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
 
                                 {/* image list (conditional rendering)*/}
                                 {true && <Box id='swiper-wrapper' mt={{ xs: 1.5, sm: 2 }} >
-                                    <Swiper modules={[Pagination]} pagination={true} >
+                                    <Swiper modules={[Navigation, Pagination]} navigation={true} pagination={true} >
                                         {0 !== postComprehensive_ss.imageFullnamesArr.length && postComprehensive_ss.imageFullnamesArr.map(fullname =>
                                             <SwiperSlide key={getRandomHexStr()} onClick={handleBackdropOpen(fullname)}>
                                                 {/* swiper slide wrapper */}
-                                                <Box sx={{ display: 'flex', justifyContent: 'center', alignContent: 'center', height: 1 }} >
-                                                    <Box component={'img'} src={provideImageUrl(fullname, domain)} maxHeight={500} sx={{ objectFit: 'contain' }}></Box>
+                                                <Box sx={{
+                                                    display: 'flex', justifyContent: 'center', alignContent: 'center',
+                                                    width: swiperWrapperDimensions.width,
+                                                    height: swiperWrapperDimensions.height
+                                                }} >
+                                                    <Box component={'img'} src={provideImageUrl(fullname, imageDomain)}
+                                                        width={1}
+                                                        maxHeight={500}
+                                                        sx={{ objectFit: 'contain' }}></Box>
                                                 </Box>
                                             </SwiperSlide>
                                         )}
@@ -1249,7 +1264,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
                                                 {/* member info */}
                                                 <Stack direction={'row'}>
                                                     <IconButton sx={{ padding: 0 }}>
-                                                        <Avatar src={provideAvatarImageUrl(commentAuthorId, domain)} sx={{ width: 38, height: 38, bgcolor: 'grey' }}>{commentAuthorNickname?.charAt(0).toUpperCase()}</Avatar>
+                                                        <Avatar src={provideAvatarImageUrl(commentAuthorId, imageDomain)} sx={{ width: 38, height: 38, bgcolor: 'grey' }}>{commentAuthorNickname?.charAt(0).toUpperCase()}</Avatar>
                                                     </IconButton>
                                                     <Box ml={1}>
                                                         <TextButton color='inherit'>
@@ -1316,7 +1331,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
                                                                     {/* member info */}
                                                                     <Stack direction={'row'}>
                                                                         <IconButton sx={{ padding: 0 }}>
-                                                                            <Avatar src={provideAvatarImageUrl(subcommentAuthorId, domain)} sx={{ width: 38, height: 38, bgcolor: 'grey' }}>{subcommentAuthorNickname?.charAt(0).toUpperCase()}</Avatar>
+                                                                            <Avatar src={provideAvatarImageUrl(subcommentAuthorId, imageDomain)} sx={{ width: 38, height: 38, bgcolor: 'grey' }}>{subcommentAuthorNickname?.charAt(0).toUpperCase()}</Avatar>
                                                                         </IconButton>
                                                                         <Box ml={1}>
                                                                             <TextButton color='inherit'>
@@ -1403,7 +1418,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
 
                                     {/* avatar image */}
                                     <Grid item flexGrow={1}>
-                                        <Avatar src={provideAvatarImageUrl(authorId, domain)} sx={{ width: 64, height: 64, bgcolor: 'grey' }}>{authorInfo_ss.nickname?.charAt(0).toUpperCase()}</Avatar>
+                                        <Avatar src={provideAvatarImageUrl(authorId, imageDomain)} sx={{ width: 64, height: 64, bgcolor: 'grey' }}>{authorInfo_ss.nickname?.charAt(0).toUpperCase()}</Avatar>
                                     </Grid>
 
                                     {/* 'follow' button */}
@@ -1474,7 +1489,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
                                 <Typography>{authorInfo_ss.nickname} {langConfigs.hotPostRecommend[preferenceStates.lang]}</Typography>
 
                                 {/* posts */}
-                                <Stack mt={2} spacing={{ md: 2, lg: 1 }}>
+                                <Stack mt={2} spacing={2}>
                                     {0 !== creationInfoArr.length && creationInfoArr.map(p =>
                                         postId !== p.postId && <TextButton key={getRandomHexStr()} sx={{ color: 'inherit', display: 'flex', flexDirection: 'row', justifyContent: 'space-between' }} onClick={handleClickOnPostCard(p.postId)}>
 
@@ -1501,7 +1516,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
 
                                             {/* image */}
                                             <Box display={{ md: 'none', lg: 'block' }}>
-                                                <Box sx={{ width: 100, height: 100, backgroundImage: `url(${provideCoverImageUrl(p.postId, domain)})`, backgroundSize: 'cover' }}></Box>
+                                                <Box sx={{ width: 100, height: 100, backgroundImage: `url(${provideCoverImageUrl(p.postId, imageDomain)})`, backgroundSize: 'cover' }}></Box>
                                             </Box>
                                         </TextButton>
                                     )}
@@ -1572,7 +1587,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
                                                 <Grid container>
                                                     <Grid item flexGrow={1}></Grid>
                                                     <Grid item>
-                                                        <Avatar src={provideAvatarImageUrl(memberInfo.memberId, domain)} sx={{ width: 34, height: 34, bgcolor: 'grey' }}>{memberInfo.nickname?.charAt(0).toUpperCase()}</Avatar>
+                                                        <Avatar src={provideAvatarImageUrl(memberInfo.memberId, imageDomain)} sx={{ width: 34, height: 34, bgcolor: 'grey' }}>{memberInfo.nickname?.charAt(0).toUpperCase()}</Avatar>
                                                     </Grid>
                                                     <Grid item flexGrow={1}></Grid>
                                                 </Grid>
