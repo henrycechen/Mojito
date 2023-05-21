@@ -815,17 +815,17 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
     };
 
     const cancelUpdate = () => {
-        // toggle editor
-        // set alternatives to orignial
-        // disable button
         setAuthorInfoSettingStates({
+            // #1 set alternatives to orignial
             alternativeImageUrl: provideAvatarImageUrl(authorId, imageDomain),
             alternativeName: memberInfoStates.nickname,
             invalidName: false,
             alternativeIntro: memberInfoStates.briefIntro,
             invalidIntro: false,
+            // #2 toggle editor
             displayEditor: false,
             disableButton: true,
+            // #3 disable button
             displayAlert: false,
             alertContent: '',
             displayProgress: false
