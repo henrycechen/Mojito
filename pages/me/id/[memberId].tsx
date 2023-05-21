@@ -38,8 +38,9 @@ import grey from '@mui/material/colors/grey';
 import { Global } from '@emotion/react';
 import Masonry from '@mui/lab/Masonry';
 import axios, { AxiosError, AxiosResponse } from 'axios';
-import 'jimp';
-let Jimp: any;
+// import 'jimp';
+// let Jimp: any;
+import Jimp from 'jimp';
 
 import { IConciseMemberStatistics, IRestrictedMemberComprehensive } from '../../../lib/interfaces/member';
 import { IConcisePostComprehensive } from '../../../lib/interfaces/post';
