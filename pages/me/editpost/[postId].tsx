@@ -39,9 +39,7 @@ import { DragDropContext } from 'react-beautiful-dnd';
 import { Droppable, Draggable } from 'react-beautiful-dnd';
 
 import axios from 'axios';
-// import Jimp from 'jimp';
 import 'jimp';
-let Jimp: any;
 
 import { IConciseTopicComprehensive, ITopicInfo } from '../../../lib/interfaces/topic';
 import { LangConfigs, TPreferenceStates } from '../../../lib/types';
@@ -283,9 +281,6 @@ const CreatePost = ({ restrictedPostComprehensive_ss, channelInfoDict_ss, redire
         if (redirect500) {
             router.push('/500');
         }
-
-        Jimp = (window as any).Jimp;
-
     }, [router]);
 
     //////// INFO - author ////////
@@ -825,6 +820,7 @@ const CreatePost = ({ restrictedPostComprehensive_ss, channelInfoDict_ss, redire
 
             const imgRp = await fetch(img.url);
             const imgbuf = Buffer.concat([new Uint8Array(await imgRp.arrayBuffer())]);
+            const Jimp = (window as any).Jimp;
             const imgf = await Jimp.read(imgbuf);
 
             // Verify image size and handle oversized image
@@ -893,6 +889,7 @@ const CreatePost = ({ restrictedPostComprehensive_ss, channelInfoDict_ss, redire
                 try {
                     const imgRp = await fetch(img.url);
                     const imgbuf = Buffer.concat([new Uint8Array(await imgRp.arrayBuffer())]);
+                    const Jimp = (window as any).Jimp;
                     const imgf = await Jimp.read(imgbuf);
 
                     // Get image mime info
