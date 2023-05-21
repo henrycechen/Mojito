@@ -223,9 +223,9 @@ const langConfigs: LangConfigs = {
         en: 'Choose image to upload'
     },
     avatarImageRequirement: {
-        tw: '*请选择 2 MB 以内的相片文件',
-        cn: '*请选择 2 MB 以内的照片文件',
-        en: '*Please limit the image file size to 2MB'
+        tw: '*请选择 5 MB 以内的相片文件',
+        cn: '*请选择 5 MB 以内的照片文件',
+        en: '*Please limit the image file size to 5 MB'
     },
     avatarImageRequirementShort: {
         tw: '相片文件體積不宜超過 5 MB',
@@ -895,7 +895,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                 const uintArray = new Uint8Array(convertedBuf);
                 formData.append('image', new Blob([uintArray]));
 
-                await axios.post(`/api/avatar/upload/${authorId}`, formData, config)
+                await axios.post(`${imageDomain}/api/upload/avatar/${authorId}`, formData, config)
                     .then((response: AxiosResponse) => {
                         // Succeed
                         setMemberInfoStates({
@@ -1318,7 +1318,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                                         {/* image */}
                                         <Box
                                             component={'img'}
-                                            src={provideCoverImageUrl(info.postId, appDomain)}
+                                            src={provideCoverImageUrl(info.postId, imageDomain)}
                                             sx={{
                                                 maxWidth: { xs: width / 2, sm: 300 },
                                                 maxHeight: 'max-content',

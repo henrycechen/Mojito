@@ -21,9 +21,9 @@ export function cuedMemberInfoDictionaryToArray(dict: { [memberId: string]: IMem
 
 export function provideCoverImageUrl(postId: string, domain: string, forceBrowserUpdate = false): string {
     if (forceBrowserUpdate) {
-        return `${domain}/api/coverimage/a/${postId}.jpeg?variant=${getRandomHexStr()}`;
+        return `${domain}/api/cover/${postId}.jpeg?variant=${getRandomHexStr()}`;
     } else {
-        return `${domain}/api/coverimage/a/${postId}.jpeg`;
+        return `${domain}/api/cover/${postId}.jpeg`;
     }
 }
 

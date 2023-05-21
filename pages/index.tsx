@@ -588,7 +588,7 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
                                             {/* image */}
                                             <Box
                                                 component={'img'}
-                                                src={provideCoverImageUrl(p.postId, appDomain)}
+                                                src={provideCoverImageUrl(p.postId, imageDomain)}
                                                 sx={{ maxWidth: { xs: width / 2, sm: 400 }, height: 'auto', borderTopLeftRadius: 4, borderTopRightRadius: 4 }}
                                                 onClick={handleClickOnPost(p.postId)}
                                             ></Box>
@@ -713,7 +713,7 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
 
                                         {/* image */}
                                         <Box display={{ md: 'none', lg: 'block' }}>
-                                            <Box sx={{ width: 100, height: 100, backgroundImage: `url(${provideCoverImageUrl(p.postId, appDomain)})`, backgroundSize: 'cover' }}></Box>
+                                            <Box sx={{ width: 100, height: 100, backgroundImage: `url(${provideCoverImageUrl(p.postId, imageDomain)})`, backgroundSize: 'cover' }}></Box>
                                         </Box>
                                     </TextButton>
                                 )}
@@ -751,7 +751,7 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
 
                                         {/* image */}
                                         <Box display={{ md: 'none', lg: 'block' }}>
-                                            <Box sx={{ width: 100, height: 100, backgroundImage: `url(${provideCoverImageUrl(p.postId, appDomain)})`, backgroundSize: 'cover' }}></Box>
+                                            <Box sx={{ width: 100, height: 100, backgroundImage: `url(${provideCoverImageUrl(p.postId, imageDomain)})`, backgroundSize: 'cover' }}></Box>
                                         </Box>
                                     </TextButton>
                                 )}

@@ -1516,7 +1516,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
 
                                             {/* image */}
                                             <Box display={{ md: 'none', lg: 'block' }}>
-                                                <Box sx={{ width: 100, height: 100, backgroundImage: `url(${provideCoverImageUrl(p.postId, appDomain)})`, backgroundSize: 'cover' }}></Box>
+                                                <Box sx={{ width: 100, height: 100, backgroundImage: `url(${provideCoverImageUrl(p.postId, imageDomain)})`, backgroundSize: 'cover' }}></Box>
                                             </Box>
                                         </TextButton>
                                     )}
