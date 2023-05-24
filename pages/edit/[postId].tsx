@@ -41,19 +41,19 @@ import { Droppable, Draggable } from 'react-beautiful-dnd';
 import axios from 'axios';
 import 'jimp';
 
-import { IConciseTopicComprehensive, ITopicInfo } from '../../../lib/interfaces/topic';
-import { LangConfigs, TPreferenceStates } from '../../../lib/types';
-import { IMemberInfo } from '../../../lib/interfaces/member';
-import { IChannelInfoStates, IChannelInfoDictionary } from '../../../lib/interfaces/channel';
-import { getNicknameBrief, provideAvatarImageUrl, } from '../../../lib/utils/for/member';
-import { getRandomHexStr } from '../../../lib/utils/create';
-import { restoreFromLocalStorage } from '../../../lib/utils/general';
-import { contentToParagraphsArray, cuedMemberInfoDictionaryToArray, fakeRestrictedPostComprehensive, provideImageUrl } from '../../../lib/utils/for/post';
+import { IConciseTopicComprehensive, ITopicInfo } from '../../lib/interfaces/topic';
+import { LangConfigs, TPreferenceStates } from '../../lib/types';
+import { IMemberInfo } from '../../lib/interfaces/member';
+import { IChannelInfoStates, IChannelInfoDictionary } from '../../lib/interfaces/channel';
+import { getNicknameBrief, provideAvatarImageUrl, } from '../../lib/utils/for/member';
+import { getRandomHexStr } from '../../lib/utils/create';
+import { restoreFromLocalStorage } from '../../lib/utils/general';
+import { contentToParagraphsArray, cuedMemberInfoDictionaryToArray, fakeRestrictedPostComprehensive, provideImageUrl } from '../../lib/utils/for/post';
 
-import Navbar from '../../../ui/Navbar';
-import Copyright from '../../../ui/Copyright';
-import Terms from '../../../ui/Terms';
-import { IRestrictedPostComprehensive } from '../../../lib/interfaces/post';
+import Navbar from '../../ui/Navbar';
+import Copyright from '../../ui/Copyright';
+import Terms from '../../ui/Terms';
+import { IRestrictedPostComprehensive } from '../../lib/interfaces/post';
 
 
 const storageName0 = 'PreferenceStates';
@@ -330,7 +330,7 @@ const CreatePost = ({ restrictedPostComprehensive_ss, channelInfoDict_ss, redire
         }
     };
 
-    //////// STATES - preference ////////
+    // States - preference ////////
     const [preferenceStates, setPreferenceStates] = React.useState<TPreferenceStates>({
         lang: defaultLang,
         mode: 'light'
@@ -352,7 +352,7 @@ const CreatePost = ({ restrictedPostComprehensive_ss, channelInfoDict_ss, redire
         interruptedByImageUpload: boolean;
     };
 
-    //////// STATES - process ////////
+    // States - process ////////
     const [processStates, setProcessStates] = React.useState<ProcessStates>({
         disableEditor: false,
         alertSeverity: 'info',
@@ -378,7 +378,7 @@ const CreatePost = ({ restrictedPostComprehensive_ss, channelInfoDict_ss, redire
 
     //////////////////////////////////////// CHANNEL ////////////////////////////////////////
 
-    //////// STATES - channel ////////
+    // States - channel ////////
     const [channelInfoStates, setChannelInfoStates] = React.useState<IChannelInfoStates>({
         channelIdSequence: [],
     });
@@ -418,7 +418,7 @@ const CreatePost = ({ restrictedPostComprehensive_ss, channelInfoDict_ss, redire
         topicInfoArr: ITopicInfo[];
     };
 
-    //////// STATE - post ////////
+    // States - post ////////
     const [postInfoStates, setPostInfoStates] = React.useState<TPostInfoOnEdit>({
         postId: '',
         title: '',
@@ -458,7 +458,7 @@ const CreatePost = ({ restrictedPostComprehensive_ss, channelInfoDict_ss, redire
         followedMemberInfoArr: IMemberInfo[];
     };
 
-    //////// STATE - author info ////////
+    // States - author info ////////
     const [authorInfoStates, setAuthorInfoStates] = React.useState<TAuthorInfo>({
         memberId: '',
         followedMemberInfoArr: []
@@ -518,7 +518,7 @@ const CreatePost = ({ restrictedPostComprehensive_ss, channelInfoDict_ss, redire
         displayNotFoundAlert: boolean;
     };
 
-    //////// STATE - topic helper ////////
+    // States - topic helper ////////
     const [topicHelperStates, setTopicHelperStates] = React.useState<TTopicHelper>({
         display: false,
         topic: '',
@@ -614,7 +614,7 @@ const CreatePost = ({ restrictedPostComprehensive_ss, channelInfoDict_ss, redire
         isUploaded: boolean;
     };
 
-    //////// STATES - images array ////////
+    // States - images array ////////
     const [imagesArr, setImagesArr] = React.useState<TImage[]>([]);
 
     React.useEffect(() => {
@@ -689,7 +689,7 @@ const CreatePost = ({ restrictedPostComprehensive_ss, channelInfoDict_ss, redire
         currentIndex: number;
     };
 
-    //////// STATES - upload process ////////
+    // States - upload process ////////
     const [uploadStates, setUploadStates] = React.useState<UploadStates>({
         uploadPrecent: 0,
         currentIndex: -1,
@@ -789,7 +789,7 @@ const CreatePost = ({ restrictedPostComprehensive_ss, channelInfoDict_ss, redire
         setUploadStates({ uploadPrecent: 0, currentIndex: -1 });
 
         // #3.1 Request for an upload token
-        const resptkn = await fetch(`${imageDomain}/api/upload/image/request/${postId}`);
+        const resptkn = await fetch(`/api/upload/image/${postId}/request/`);
         if (200 !== resptkn.status) {
             console.log(`Attempt to request for upload token.`);
             setProcessStates({
@@ -823,13 +823,17 @@ const CreatePost = ({ restrictedPostComprehensive_ss, channelInfoDict_ss, redire
             const Jimp = (window as any).Jimp;
             const imgf = await Jimp.read(imgbuf);
 
-            // Verify image size and handle oversized image
-            let bl = imgbuf.byteLength;
-            while (bl > 102400) {
-                imgf.scale(0.5);
-                const b = await imgf.getBufferAsync(Jimp.MIME_JPEG);
-                bl = b.byteLength;
-            };
+            // Shirnk the image size
+            if (960 < imgf.bitmap.width) {
+                imgf.resize(960, Jimp.AUTO);
+            }
+
+            if (1200 < imgf.bitmap.width) {
+                imgf.resize(Jimp.AUTO, 1600);
+            }
+
+            // Image quality control
+            imgf.quality(768000 > imgbuf.byteLength ? 95 : 85); // threshold 750 KB
 
             // Get processed image in PNG
             const bbf = await imgf.getBufferAsync(Jimp.MIME_JPEG);
@@ -978,7 +982,7 @@ const CreatePost = ({ restrictedPostComprehensive_ss, channelInfoDict_ss, redire
         display: boolean;
     };
 
-    //////// STATE - topic helper ////////
+    // States - topic helper ////////
     const [deleteSaverStates, setDeleteSaverState] = React.useState<TDeleteSaver>({
         display: false,
     });
@@ -986,7 +990,7 @@ const CreatePost = ({ restrictedPostComprehensive_ss, channelInfoDict_ss, redire
     const handleDeletePost = async () => {
         await fetch(`/api/creation/${postInfoStates.postId}`, { method: 'DELETE' });
         // Jump to member info page (author's post layout)
-        router.push(`/me/id/${authorInfoStates.memberId}`);
+        router.push(`/me/${authorInfoStates.memberId}`);
     };
 
     const handleDeleteSaverOpen = () => {

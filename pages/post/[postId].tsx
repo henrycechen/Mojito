@@ -308,13 +308,13 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
 
     const { postId, memberId: authorId, } = postComprehensive_ss;
 
-    //////// STATES - preference ////////
+    // States - preference ////////
     const [preferenceStates, setPreferenceStates] = React.useState<any>({
         lang: defaultLang,
         mode: 'light'
     });
 
-    // //////// STATES - swipper (dimensions)
+    // // States - swipper (dimensions)
     // // Logic:
     // // swiperWrapperHeight is designed for adjust Box (swiperslide wrapper) height
     // // Initial value set to 1 leads to Box-height having been set to 100% on initializing
@@ -347,7 +347,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
         totalCommentCount: number;
     };
 
-    //////// STATES - author statistics ////////
+    // States - author statistics ////////
     const [combinedStatisticsState, setCombinedStatisticsState] = React.useState<TCombinedStatistics>({
         totalCreationsCount: 0,
         totalCreationLikedCount: 0,
@@ -378,7 +378,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
         }
     };
 
-    //////// STATES - (recommend) creation info array  ////////
+    // States - (recommend) creation info array  ////////
     const [creationInfoArr, setCreationInfoArr] = React.useState<IConcisePostComprehensive[]>([]);
 
     React.useEffect(() => { updateCreationArr(); }, []);
@@ -399,7 +399,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
         router.push(`/post/${postId}`);
     };
 
-    //////// STATES - process ////////
+    // States - process ////////
     const [processStates, setProcessStates] = React.useState<IPostPageProcessStates>({
         lang: defaultLang,
         displayEditor: false,
@@ -611,7 +611,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
     };
 
     const handleClickOnAuthorNickname = (event: React.MouseEvent<any>) => {
-        router.push(`/me/id/${authorId}`);
+        router.push(`/me/${authorId}`);
     };
 
     const handleClickOnPostCard = (postId: string) => (event: React.MouseEvent<any>) => {
@@ -891,7 +891,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
 
     const handleEditPost = () => {
         if (authorId === viewerInfoStates.memberId) {
-            router.push(`/me/editpost/${postId}`);
+            router.push(`/edit/${postId}`);
         }
     };
 

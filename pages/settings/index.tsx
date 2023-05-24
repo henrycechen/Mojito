@@ -4,23 +4,25 @@ import { signIn, useSession } from 'next-auth/react';
 
 import Box from '@mui/material/Box';
 import Grid from '@mui/material/Grid';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
 
 import Menu from '@mui/material/Menu';
 import MenuList from '@mui/material/MenuList';
 import MenuItem from '@mui/material/MenuItem';
 import ListItemText from '@mui/material/ListItemText';
 import ListItemIcon from '@mui/material/ListItemIcon';
-import Typography from '@mui/material/Typography';
 
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
+import TranslateIcon from '@mui/icons-material/Translate';
 
-import Navbar from '../../../ui/Navbar';
-import Copyright from '../../../ui/Copyright';
-import Terms from '../../../ui/Terms';
-import { ResponsiveCard } from '../../../ui/Styled';
+import { LangConfigs, TPreferenceStates } from '../../lib/types';
+import { updateLocalStorage, restoreFromLocalStorage } from '../../lib/utils/general';
 
-import { LangConfigs, TPreferenceStates } from '../../../lib/types';
-import { updateLocalStorage, restoreFromLocalStorage } from '../../../lib/utils/general';
+import LegalInfo from '../../ui/LegalInfo';
+import SideMenu from '../../ui/SideMenu';
+import SideColumn from '../../ui/SideColumn';
+import Navbar from '../../ui/Navbar';
 
 const storageName0 = 'PreferenceStates';
 const updatePreferenceStatesCache = updateLocalStorage(storageName0);
@@ -72,16 +74,22 @@ const langConfigs: LangConfigs = {
 
 };
 
-const Settings = () => {
+/**
+ * Last update:
+ * - 24/05/2023 v0.1.2 New layout applied
+ */
+const SettingsIndex = () => {
 
     const router = useRouter();
-    const { data: session } = useSession({ required: true, onUnauthenticated() { signIn(); } });
+    const { status } = useSession({ required: true, onUnauthenticated() { signIn(); } });
 
     React.useEffect(() => {
-        restorePreferenceStatesFromCache(setPreferenceStates);
-    }, [session]);
+        if ('authenticated' === status) {
+            restorePreferenceStatesFromCache(setPreferenceStates);
+        }
+    }, [status]);
 
-    //////// STATES - preference ////////
+    // States - preference
     const [preferenceStates, setPreferenceStates] = React.useState<TPreferenceStates>({
         lang: defaultLang,
         mode: 'light'
@@ -91,7 +99,7 @@ const Settings = () => {
         languageSettingMenuAnchorEl: null | HTMLElement;
     };
 
-    //////// STATES - process ////////
+    // States - process
     const [processStates, setProcessStates] = React.useState<TProcessStates>({
         languageSettingMenuAnchorEl: null
     });
@@ -115,112 +123,116 @@ const Settings = () => {
             router.push('/forgot/');
         }
         if (1 === cat) {
-            router.push('/me/settings/privacy');
+            router.push('/settings/privacy');
         }
         if (2 === cat) {
-            router.push('/me/settings/blacklist');
+            router.push('/settings/blacklist');
         }
         if (3 === cat) {
-            router.push('/me/settings/statistics');
+            router.push('/settings/statistics');
         }
     };
 
-    ///////// COMPONENT - member page /////////
     return (
         <>
             <Navbar lang={preferenceStates.lang} />
+            <Grid container>
 
-            {/* <SettingLayout /> */}
-            <Grid container mt={{ xs: 1, sm: 10 }}>
-
-                {/* placeholder */}
-                <Grid item xs={0} sm={2} md={3} lg={3} xl={4}></Grid>
+                {/* left */}
+                <Grid item xs={0} sm={0} md={3} lg={3} xl={4} >
+                    <Box sx={{ display: { xs: 'none', sm: 'none', md: 'flex' }, flexDirection: 'row-reverse', position: 'sticky', top: 0, left: 0, }}>
+                        <SideMenu lang={preferenceStates.lang} />
+                    </Box>
+                </Grid>
 
                 {/* middle column */}
-                <Grid item xs={12} sm={8} md={6} lg={6} xl={4}>
-                    <ResponsiveCard sx={{ p: { xs: 1, sm: 2, md: 4, lg: 6 }, minHeight: { xs: 0, sm: 500 } }}>
+                <Grid item xs={12} sm={12} md={6} lg={6} xl={4}>
+                    <Stack pt={{ xs: 2, sm: 2, md: 10 }} px={2} spacing={2}>
 
-                        <MenuList >
-                            {/* title - UI */}
-                            <Box px={1}>
-                                <Typography sx={{ color: 'text.disabled' }}>{langConfigs.ui[preferenceStates.lang]}</Typography>
-                            </Box>
+                        {/* UI */}
+                        <Typography sx={{ color: 'text.disabled' }}>{langConfigs.ui[preferenceStates.lang]}</Typography>
+                        <MenuList>
 
                             {/* language settings */}
-                            <MenuItem onClick={handleOpenPopUpMenu}>
+                            <MenuItem sx={{ height: 48 }} onClick={handleOpenPopUpMenu}>
                                 <ListItemText>{langConfigs.changeLang[preferenceStates.lang]}</ListItemText>
-                                <ListItemIcon ><ArrowForwardIosIcon fontSize='small' /></ListItemIcon>
+                                <ListItemIcon><TranslateIcon /></ListItemIcon>
                             </MenuItem>
+                        </MenuList>
 
-                            {/* title - account */}
-                            <Box px={1} pt={3}>
-                                <Typography sx={{ color: 'text.disabled' }}>{langConfigs.account[preferenceStates.lang]}</Typography>
-                            </Box>
+                        {/* account */}
+                        <Typography sx={{ color: 'text.disabled' }}>{langConfigs.account[preferenceStates.lang]}</Typography>
+                        <MenuList>
 
                             {/* update password */}
-                            <MenuItem onClick={handleMenuItemClick(0)}>
+                            <MenuItem sx={{ height: 48 }} onClick={handleMenuItemClick(0)}>
                                 <ListItemText>{langConfigs.updatePassword[preferenceStates.lang]}</ListItemText>
                                 <ListItemIcon><ArrowForwardIosIcon fontSize='small' /></ListItemIcon>
                             </MenuItem>
 
                             {/* pravicy settings */}
-                            <MenuItem onClick={handleMenuItemClick(1)}>
+                            <MenuItem sx={{ height: 48 }} onClick={handleMenuItemClick(1)}>
                                 <ListItemText>{langConfigs.privacy[preferenceStates.lang]}</ListItemText>
                                 <ListItemIcon><ArrowForwardIosIcon fontSize='small' /></ListItemIcon>
                             </MenuItem>
 
                             {/* blacklist */}
-                            <MenuItem onClick={handleMenuItemClick(2)}>
+                            <MenuItem sx={{ height: 48 }} onClick={handleMenuItemClick(2)}>
                                 <ListItemText>{langConfigs.blacklist[preferenceStates.lang]}</ListItemText>
                                 <ListItemIcon><ArrowForwardIosIcon fontSize='small' /></ListItemIcon>
                             </MenuItem>
+                        </MenuList>
 
-                            {/* title - member */}
-                            <Box px={1} pt={3}>
-                                <Typography sx={{ color: 'text.disabled' }}>{langConfigs.member[preferenceStates.lang]}</Typography>
-                            </Box>
+
+                        {/* member */}
+                        <Typography sx={{ color: 'text.disabled' }}>{langConfigs.member[preferenceStates.lang]}</Typography>
+                        <MenuList>
 
                             {/* member info */}
-                            <MenuItem onClick={handleMenuItemClick(3)}>
+                            <MenuItem sx={{ height: 48 }} onClick={handleMenuItemClick(3)}>
                                 <ListItemText>{langConfigs.infoStatistics[preferenceStates.lang]}</ListItemText>
                                 <ListItemIcon><ArrowForwardIosIcon fontSize='small' /></ListItemIcon>
                             </MenuItem>
                         </MenuList>
 
-                        <Menu
-                            sx={{ mt: '45px' }}
-                            anchorEl={processStates.languageSettingMenuAnchorEl}
-                            anchorOrigin={{ vertical: 'top', horizontal: 'right', }}
-                            keepMounted
-                            transformOrigin={{ vertical: 'top', horizontal: 'right', }}
-                            open={Boolean(processStates.languageSettingMenuAnchorEl)}
-                            onClose={handleClosePopUpMenu}
-                            MenuListProps={{}}
-                        >
-                            <MenuItem onClick={handleSelectLang('tw')}>
-                                <ListItemText>繁体中文</ListItemText>
-                            </MenuItem>
-                            <MenuItem onClick={handleSelectLang('cn')}>
-                                <ListItemText>简体中文</ListItemText>
-                            </MenuItem>
-                            <MenuItem onClick={handleSelectLang('en')}>
-                                <ListItemText>English</ListItemText>
-                            </MenuItem>
-                        </Menu>
-
-                    </ResponsiveCard>
+                    </Stack>
                 </Grid>
 
-                {/* placeholder */}
-                <Grid item xs={0} sm={2} md={3} lg={3} xl={4}></Grid>
+                {/* right */}
+                <Grid item xs={0} sm={0} md={3} lg={3} xl={4}>
+                    <Box sx={{ display: { xs: 'none', sm: 'none', md: 'block' } }}>
+                        <SideColumn lang={preferenceStates.lang} />
+                    </Box>
+                </Grid>
 
             </Grid>
 
-            <Copyright sx={{ mt: 16 }} lang={preferenceStates.lang} />
-            <Terms sx={{ mb: 8 }} lang={preferenceStates.lang} />
+            {/* legal info */}
+            <LegalInfo lang={preferenceStates.lang} />
 
+            {/* language menu */}
+            <Menu
+                sx={{ mt: '3rem' }}
+                anchorEl={processStates.languageSettingMenuAnchorEl}
+                anchorOrigin={{ vertical: 'top', horizontal: 'right', }}
+                keepMounted
+                transformOrigin={{ vertical: 'top', horizontal: 'right', }}
+                open={Boolean(processStates.languageSettingMenuAnchorEl)}
+                onClose={handleClosePopUpMenu}
+                MenuListProps={{}}
+            >
+                <MenuItem onClick={handleSelectLang('tw')}>
+                    <ListItemText>繁体中文</ListItemText>
+                </MenuItem>
+                <MenuItem onClick={handleSelectLang('cn')}>
+                    <ListItemText>简体中文</ListItemText>
+                </MenuItem>
+                <MenuItem onClick={handleSelectLang('en')}>
+                    <ListItemText>English</ListItemText>
+                </MenuItem>
+            </Menu>
         </>
     );
 };
 
-export default Settings;
+export default SettingsIndex;

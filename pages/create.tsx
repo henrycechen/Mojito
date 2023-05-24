@@ -2,38 +2,50 @@ import * as React from 'react';
 import { NextPageContext } from 'next';
 import { useRouter } from 'next/router';
 import { signIn, useSession } from 'next-auth/react';
+import useTheme from '@mui/material/styles/useTheme';
 
+import Alert from '@mui/material/Alert';
+import Avatar from '@mui/material/Avatar';
+import Backdrop from '@mui/material/Backdrop';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import Chip from '@mui/material/Chip';
+import CircularProgress from '@mui/material/CircularProgress';
+import Divider from '@mui/material/Divider';
+import FormControl from '@mui/material/FormControl';
 import Grid from '@mui/material/Grid';
+import Input from '@mui/material/Input';
+import InputLabel from '@mui/material/InputLabel';
+import Link from '@mui/material/Link';
+import Modal from '@mui/material/Modal';
+import Select, { SelectChangeEvent } from '@mui/material/Select';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
-import Chip from '@mui/material/Chip';
-import Avatar from '@mui/material/Avatar';
 
-import FormControl from '@mui/material/FormControl';
-import InputLabel from '@mui/material/InputLabel';
-import MenuItem from '@mui/material/MenuItem';
-import Select, { SelectChangeEvent } from '@mui/material/Select';
-import HighlightOffIcon from '@mui/icons-material/HighlightOff';
-
-import IconButton from '@mui/material/IconButton';
-import AddIcon from '@mui/icons-material/Add';
-import SvgIcon from '@mui/material/SvgIcon';
-import AlternateEmailIcon from '@mui/icons-material/AlternateEmail';
-import TagIcon from '@mui/icons-material/Tag';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import CheckIcon from '@mui/icons-material/Check';
-
-import Alert from '@mui/material/Alert';
-import Input from '@mui/material/Input';
-import Modal from '@mui/material/Modal';
-import ListItemText from '@mui/material/ListItemText';
 import MenuList from '@mui/material/MenuList/MenuList';
-import CircularProgress from '@mui/material/CircularProgress';
-import Backdrop from '@mui/material/Backdrop';
+import MenuItem from '@mui/material/MenuItem';
+import ListItemText from '@mui/material/ListItemText';
 
+import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import AddIcon from '@mui/icons-material/Add';
+import AlternateEmailIcon from '@mui/icons-material/AlternateEmail';
+import Brightness7Icon from '@mui/icons-material/Brightness7';
+import Brightness4Icon from '@mui/icons-material/Brightness4';
+import CheckIcon from '@mui/icons-material/Check';
+import CreateIcon from '@mui/icons-material/Create';
+import EmailIcon from '@mui/icons-material/Email';
+import IconButton from '@mui/material/IconButton';
+import HighlightOffIcon from '@mui/icons-material/HighlightOff';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import SvgIcon from '@mui/material/SvgIcon';
+import TagIcon from '@mui/icons-material/Tag';
+import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
+import ReorderIcon from '@mui/icons-material/Reorder';
+import SettingsIcon from '@mui/icons-material/Settings';
+import ThumbUpIcon from '@mui/icons-material/ThumbUp';
+import ChatBubbleIcon from '@mui/icons-material/ChatBubble';
+import StarIcon from '@mui/icons-material/Star';
 
 import { DragDropContext } from 'react-beautiful-dnd';
 import { Droppable, Draggable } from 'react-beautiful-dnd';
@@ -41,18 +53,21 @@ import { Droppable, Draggable } from 'react-beautiful-dnd';
 import axios from 'axios';
 import 'jimp';
 
-import { IConciseTopicComprehensive, ITopicInfo } from '../../lib/interfaces/topic';
-import { LangConfigs, TPreferenceStates } from '../../lib/types';
-import { IMemberInfo } from '../../lib/interfaces/member';
-import { IChannelInfoStates, IChannelInfoDictionary } from '../../lib/interfaces/channel';
-import { getNicknameBrief, provideAvatarImageUrl, } from '../../lib/utils/for/member';
-import { createId, getRandomHexStr } from '../../lib/utils/create';
-import { restoreFromLocalStorage } from '../../lib/utils/general';
-import { contentToParagraphsArray, cuedMemberInfoDictionaryToArray } from '../../lib/utils/for/post';
+import { IConciseTopicComprehensive, ITopicInfo } from '../lib/interfaces/topic';
+import { LangConfigs, TPreferenceStates } from '../lib/types';
+import { IMemberInfo } from '../lib/interfaces/member';
+import { IChannelInfoStates, IChannelInfoDictionary } from '../lib/interfaces/channel';
+import { getNicknameBrief, provideAvatarImageUrl, } from '../lib/utils/for/member';
+import { createId, getRandomHexStr } from '../lib/utils/create';
+import { restoreFromLocalStorage } from '../lib/utils/general';
+import { contentToParagraphsArray, cuedMemberInfoDictionaryToArray } from '../lib/utils/for/post';
 
-import Navbar from '../../ui/Navbar';
-import Copyright from '../../ui/Copyright';
-import Terms from '../../ui/Terms';
+import Navbar from '../ui/Navbar';
+import SideMenu from '../ui/SideMenu';
+import Copyright from '../ui/Copyright';
+import Terms from '../ui/Terms';
+import { ColorModeContext } from '../ui/Theme';
+import Guidelines from '../ui/Guidelines';
 
 const storageName0 = 'PreferenceStates';
 const restorePreferenceStatesFromCache = restoreFromLocalStorage(storageName0);
@@ -66,6 +81,43 @@ const appDomain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? '';
 const imageDomain = process.env.NEXT_PUBLIC_IMAGE_DOMAIN ?? '';
 const defaultLang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
+    // Left column
+    posts: {
+        tw: '文章',
+        cn: '文章',
+        en: 'Posts'
+    },
+    followedMembers: {
+        tw: '關注',
+        cn: '关注',
+        en: 'Followed'
+    },
+    messages: {
+        tw: '訊息',
+        cn: '消息',
+        en: 'Messages'
+    },
+    unread: {
+        tw: `未讀`,
+        cn: `未读`,
+        en: `Unread`
+    },
+    member: {
+        tw: '主頁',
+        cn: '主页',
+        en: 'Member'
+    },
+    settings: {
+        tw: '設定',
+        cn: '设定',
+        en: 'Settings'
+    },
+    create: {
+        tw: '創作',
+        cn: '创作',
+        en: 'Create'
+    },
+
     title: {
         tw: '創作新文章',
         cn: '创作新文章',
@@ -111,11 +163,7 @@ const langConfigs: LangConfigs = {
         cn: '您还没有关注其他用户',
         en: 'You have not followed any member'
     },
-    posts: {
-        tw: '篇文章',
-        cn: '篇文章',
-        en: 'Posts'
-    },
+
     query: {
         tw: '搜尋',
         cn: '搜索',
@@ -279,7 +327,7 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
         }
     };
 
-    //////// STATES - preference ////////
+    // States - preference ////////
     const [preferenceStates, setPreferenceStates] = React.useState<TPreferenceStates>({
         lang: defaultLang,
         mode: 'light'
@@ -301,7 +349,7 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
         interruptedByImageUpload: boolean;
     };
 
-    //////// STATES - process ////////
+    // States - process ////////
     const [processStates, setProcessStates] = React.useState<TProcessStates>({
         disableEditor: false,
         alertSeverity: 'info',
@@ -327,7 +375,7 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
 
     //////////////////////////////////////// CHANNEL ////////////////////////////////////////
 
-    //////// STATES - channel ////////
+    // States - channel ////////
     const [channelInfoStates, setChannelInfoStates] = React.useState<IChannelInfoStates>({
         channelIdSequence: [],
     });
@@ -366,7 +414,7 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
         topicInfoArr: ITopicInfo[];
     };
 
-    //////// STATE - post ////////
+    // States - post ////////
     const [postInfoStates, setPostInfoStates] = React.useState<TPostInfoOnEdit>({
         postId: '',
         title: '',
@@ -387,13 +435,13 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
         followedMemberInfoArr: IMemberInfo[];
     };
 
-    //////// STATE - author info ////////
+    // States - author info ////////
     const [authorInfoStates, setAuthorInfoStates] = React.useState<TAuthorInfo>({
         memberId: '',
         followedMemberInfoArr: []
     });
 
-    React.useEffect(() => { if ('' === authorInfoStates.memberId) { updateAuthorInfoStates(); } }, [authorInfoStates.memberId]);
+    React.useEffect(() => { if ('' !== authorInfoStates.memberId) { updateAuthorInfoStates(); } }, [authorInfoStates.memberId]);
 
     const updateAuthorInfoStates = async () => {
         // get followed member info
@@ -447,7 +495,7 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
         displayNotFoundAlert: boolean;
     };
 
-    //////// STATE - topic helper ////////
+    // States - topic helper ////////
     const [topicHelperStates, setTopicHelperStates] = React.useState<TTopicHelper>({
         display: false,
         topic: '',
@@ -543,7 +591,7 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
         fullname: string;
     };
 
-    //////// STATES - images array ////////
+    // States - images array ////////
     const [imagesArr, setImagesArr] = React.useState<TImage[]>([]);
 
     // Handle image states change
@@ -608,7 +656,7 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
         currentIndex: number;
     };
 
-    //////// STATES - upload process ////////
+    // States - upload process ////////
     const [uploadStates, setUploadStates] = React.useState<UploadStates>({
         uploadPrecent: 0,
         currentIndex: -1,
@@ -674,8 +722,8 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
             // #2.2 retrieve post id
             postId = await respInit.text();
 
+            // Case [No images], display 'save success' alert
             if (imagesArr.length === 0) {
-                // Case [No images], display 'save success' alert
                 setProcessStates({
                     ...processStates,
                     alertSeverity: 'success',
@@ -710,7 +758,7 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
         setUploadStates({ uploadPrecent: 0, currentIndex: -1 });
 
         // #3.1 Request for an upload token
-        const resptkn = await fetch(`${imageDomain}/api/upload/image/request/${postId}`);
+        const resptkn = await fetch(`/api/upload/image/${postId}/request`);
         if (200 !== resptkn.status) {
             console.log(`Attempt to request for upload token.`);
             setProcessStates({
@@ -772,6 +820,7 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
             return;
         }
 
+        // Display uploading image alert
         setProcessStates({
             ...processStates,
             alertSeverity: 'info',
@@ -780,7 +829,7 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
             submitting: true
         });
 
-        // #3.2 Upload images one by one
+        // #3.2 Upload images 1 by 1
         for (let i = 0; i < uploadQueue.length; i++) {
             // Continue if uploaded
             if (uploadQueue[i].isUploaded) {
@@ -817,14 +866,17 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
                     // Get image mime info
                     let mme = imgf.getMIME();
 
-                    // Verify image size and handle oversized image
-                    let bl = imgbuf.byteLength;
-                    do {
-                        imgf.scale(0.5);
-                        const b = await imgf.getBufferAsync(mme);
-                        bl = b.byteLength;
-                    } while (bl > 1048576);
+                    // Shirnk the image size
+                    if (960 < imgf.bitmap.width) {
+                        imgf.resize(960, Jimp.AUTO);
+                    }
 
+                    if (1200 < imgf.bitmap.width) {
+                        imgf.resize(Jimp.AUTO, 1600);
+                    }
+
+                    // Image quality control
+                    imgf.quality(768000 > imgbuf.byteLength ? 95 : 85); // threshold 750 KB
 
                     const bbf = await imgf.getBufferAsync(mme);
                     if (!['image/png', 'image/jpeg'].includes(mme)) {
@@ -894,219 +946,284 @@ const CreatePost = ({ channelInfoDict_ss, redirect500 }: TCreatePostPageProps) =
             return;
         }
     };
+    //////////////////////////////////////// BEHAVIOURS ////////////////////////////////////////
+
+    const handleProceedToFollowedMember = () => {
+        router.push(`/follow`);
+    };
+
+    const handleProceedToMessage = () => {
+        router.push(`/message`);
+    };
+
+    const handleProceedToMemberPage = () => {
+        router.push(`/me/${authorInfoStates.memberId}`);
+    };
+
+    const handleProceedToSettingsPage = () => {
+        router.push(`/settings`);
+    };
+
+    const handleProceedToCreatePage = () => {
+        router.push(`/create`);
+    };
+    //////////////////////////////////////// THEME ////////////////////////////////////////
+    const colorMode = React.useContext(ColorModeContext);
+
+    const handleColorModeSelect = () => {
+        const preferredColorMode = colorMode.mode === 'dark' ? 'light' : 'dark';
+        colorMode.setMode(preferredColorMode);
+        document.cookie = `PreferredColorMode=${preferredColorMode}`;
+    };
+
+    const theme = useTheme();
 
     return (
         <>
             <Navbar lang={preferenceStates.lang} />
+            <Grid container>
+                {/* left */}
+                <Grid item xs={0} sm={0} md={3} lg={3} xl={4} >
+                    <Box sx={{ display: { xs: 'none', sm: 'none', md: 'flex' }, flexDirection: 'row-reverse', position: 'sticky', top: 0, left: 0, }}>
+                        <SideMenu lang={preferenceStates.lang} />
+                    </Box>
+                </Grid>
 
-            {/* post editor */}
-            <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-                <Box component={'form'} sx={{ maxWidth: 600, flexGrow: 1, padding: 2, borderRadius: 1, boxShadow: { xs: 0, sm: 1 }, backgroundColor: 'background' }} onSubmit={handleSubmit}>
-                    <Stack spacing={2}>
-                        <Typography>{langConfigs.title[preferenceStates.lang]}</Typography>
+                {/* middle */}
+                <Grid item xs={12} sm={12} md={9} lg={6} xl={4} >
+                    {/* post editor */}
+                    <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                        <Box component={'form'} sx={{ maxWidth: 600, flexGrow: 1, padding: 2, borderRadius: 1, boxShadow: { xs: 0, sm: 1 }, backgroundColor: 'background' }} onSubmit={handleSubmit}>
+                            <Stack spacing={2}>
+                                <Typography>{langConfigs.title[preferenceStates.lang]}</Typography>
 
-                        {/* (T) title */}
-                        <TextField
-                            // id='standard-basic'
-                            variant='standard'
-                            multiline
-                            placeholder={langConfigs.titlePlaceholder[preferenceStates.lang]}
-                            value={postInfoStates.title}
-                            onChange={handlePostStatesChange('title')}
-                            required
-                            disabled={processStates.submitting || processStates.disableEditor}
-                        />
+                                {/* (T) title */}
+                                <TextField
+                                    // id='standard-basic'
+                                    variant='standard'
+                                    multiline
+                                    placeholder={langConfigs.titlePlaceholder[preferenceStates.lang]}
+                                    value={postInfoStates.title}
+                                    onChange={handlePostStatesChange('title')}
+                                    required
+                                    disabled={processStates.submitting || processStates.disableEditor}
+                                />
 
-                        {/* (P) content */}
-                        <TextField
-                            // id='outlined-basic'
-                            variant='outlined'
-                            rows={5}
-                            multiline
-                            fullWidth
-                            placeholder={langConfigs.contentPlaceholder[preferenceStates.lang]}
-                            value={postInfoStates.content}
-                            onChange={handlePostStatesChange('content')}
-                            disabled={processStates.submitting || processStates.disableEditor}
-                        />
+                                {/* (P) content */}
+                                <TextField
+                                    // id='outlined-basic'
+                                    variant='outlined'
+                                    rows={5}
+                                    multiline
+                                    fullWidth
+                                    placeholder={langConfigs.contentPlaceholder[preferenceStates.lang]}
+                                    value={postInfoStates.content}
+                                    onChange={handlePostStatesChange('content')}
+                                    disabled={processStates.submitting || processStates.disableEditor}
+                                />
 
-                        {/* (#) topic info array */}
-                        {0 !== postInfoStates.topicInfoArr.length && <Grid container columnSpacing={1} rowSpacing={1}>
-                            {postInfoStates.topicInfoArr.map(t => <Grid item key={getRandomHexStr()} ><Chip label={t.content} onDelete={handleDeleteTopic(t.topicId)} /></Grid>)}
-                        </Grid>}
+                                {/* (#) topic info array */}
+                                {0 !== postInfoStates.topicInfoArr.length && <Grid container columnSpacing={1} rowSpacing={1}>
+                                    {postInfoStates.topicInfoArr.map(t => <Grid item key={getRandomHexStr()} ><Chip label={t.content} onDelete={handleDeleteTopic(t.topicId)} /></Grid>)}
+                                </Grid>}
 
-                        {/* cue (@) & topic (#) button */}
-                        <Stack direction={'row'} spacing={1}>
-                            <IconButton onClick={handleCueHelperOpenAndClose} disabled={processStates.submitting || processStates.disableEditor}><AlternateEmailIcon /></IconButton>
-                            <IconButton onClick={handleTopicHelperOpen} disabled={processStates.submitting || processStates.disableEditor}><TagIcon /></IconButton>
-                        </Stack>
+                                {/* cue (@) & topic (#) button */}
+                                <Stack direction={'row'} spacing={1}>
+                                    <IconButton onClick={handleCueHelperOpenAndClose} disabled={processStates.submitting || processStates.disableEditor}><AlternateEmailIcon /></IconButton>
+                                    <IconButton onClick={handleTopicHelperOpen} disabled={processStates.submitting || processStates.disableEditor}><TagIcon /></IconButton>
+                                </Stack>
 
-                        {/* no followed member alert */}
-                        <Box mt={2} sx={{ display: processStates.displayCueHelper && processStates.displayNoFollowedMemberAlert ? 'flex' : 'none', justifyContent: 'center' }}>
-                            <Typography color={'text.disabled'}>{langConfigs.noFollowedMember[preferenceStates.lang]}</Typography>
-                        </Box>
+                                {/* no followed member alert */}
+                                <Box mt={2} sx={{ display: processStates.displayCueHelper && processStates.displayNoFollowedMemberAlert ? 'flex' : 'none', justifyContent: 'center' }}>
+                                    <Typography color={'text.disabled'}>{langConfigs.noFollowedMember[preferenceStates.lang]}</Typography>
+                                </Box>
 
-                        {/* followed member array */}
-                        <Box mt={1} sx={{ display: processStates.displayCueHelper ? 'block' : 'none' }}>
-                            <Stack direction={'row'} sx={{ padding: 1, overflow: 'auto', }} >
-                                {authorInfoStates.followedMemberInfoArr.map(m => {
-                                    return (
-                                        <Button key={getRandomHexStr()} size={'small'} sx={{ minWidth: 72, minHeight: 86 }} onClick={handleCue(m)}>
-                                            <Stack sx={{}}>
-                                                <Grid container>
-                                                    <Grid item flexGrow={1}></Grid>
-                                                    <Grid item>
-                                                        <Avatar src={provideAvatarImageUrl(m.memberId, imageDomain)} sx={{ width: 34, height: 34, bgcolor: 'grey' }}>{m.nickname?.charAt(0).toUpperCase()}</Avatar>
-                                                    </Grid>
-                                                    <Grid item flexGrow={1}></Grid>
-                                                </Grid>
-                                                <Typography mt={1} sx={{ minHeight: 33, fontSize: 11, color: postInfoStates.cuedMemberInfoDict.hasOwnProperty(m.memberId) ? 'inherit' : 'text.secondary' }}>{getNicknameBrief(m.nickname)}</Typography>
-                                            </Stack>
-                                        </Button>
-                                    );
-                                })}
-                            </Stack>
-                        </Box>
-
-                        {/* image upload */}
-                        <Typography>{langConfigs.uploadImage[preferenceStates.lang]}</Typography>
-                        <Box sx={{ padding: 1, border: 1, borderRadius: 1, borderColor: 'grey.300' }}>
-                            <DragDropContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-                                <Droppable droppableId={'uploadImages'} direction='horizontal'>
-                                    {(provided) =>
-                                        <Stack
-                                            spacing={1}
-                                            direction={'row'}
-                                            className='uploadImages'
-                                            ref={provided.innerRef}
-                                            sx={{ maxWidth: 'calc(100vw - 3rem)', overflow: 'scroll' }}
-                                            {...provided.droppableProps}
-                                        >
-                                            {imagesArr.length !== 0 && (imagesArr.map((img, index) => {
-                                                return (
-                                                    <Draggable key={img.url} draggableId={img.url} index={index}>
-                                                        {(provided) =>
-                                                            <Grid item {...provided.draggableProps} {...provided.dragHandleProps} ref={provided.innerRef}>
-                                                                {/* image wrapper */}
-                                                                <Box
-                                                                    sx={{
-                                                                        width: 100,
-                                                                        height: 100,
-                                                                        borderRadius: '10px',
-                                                                        backgroundSize: 'cover',
-                                                                        backgroundPosition: 'center',
-                                                                        backgroundImage: `url(${img.url})`,
-                                                                        backdropFilter: 'blur(14px)',
-                                                                    }}
-                                                                    onClick={handleClick(img.url)}
-                                                                >
-                                                                    {/* remove icon */}
-                                                                    <Box sx={{ display: processStates.submitting ? 'none' : 'flex' }}>
-                                                                        <IconButton
-                                                                            sx={{
-                                                                                backgroundColor: 'white',
-                                                                                '&:hover': { backgroundColor: 'white' },
-                                                                            }}
-                                                                            size='small'
-                                                                            color='primary'
-                                                                            onClick={handleRemove(index)}
-                                                                            disabled={processStates.submitting || processStates.disableEditor}
-                                                                        >
-                                                                            <HighlightOffIcon />
-                                                                        </IconButton>
-                                                                    </Box>
-
-                                                                    {/* progress circular indeterminate */}
-                                                                    <Box sx={{ display: processStates.submitting && index > uploadStates.currentIndex ? 'flex' : 'none', paddingTop: 3.8, paddingLeft: 3.8 }}>
-                                                                        <CircularProgress />
-                                                                    </Box>
-
-                                                                    {/* progress complete sign */}
-                                                                    <Box sx={{ display: processStates.submitting && index <= uploadStates.currentIndex ? 'flex' : 'none', paddingTop: 3, paddingLeft: 3 }}>
-                                                                        <Box sx={{ width: '52px', height: '52px', backgroundColor: 'white', borderRadius: '50%', padding: 1 }}>
-                                                                            <CheckIcon fontSize='large' color='success' />
-                                                                        </Box>
-                                                                    </Box>
-                                                                </Box>
+                                {/* followed member array */}
+                                <Box mt={1} sx={{ display: processStates.displayCueHelper ? 'block' : 'none' }}>
+                                    <Stack direction={'row'} sx={{ padding: 1, overflow: 'auto', }} >
+                                        {authorInfoStates.followedMemberInfoArr.map(m => {
+                                            return (
+                                                <Button key={getRandomHexStr()} size={'small'} sx={{ minWidth: 72, minHeight: 86 }} onClick={handleCue(m)}>
+                                                    <Stack sx={{}}>
+                                                        <Grid container>
+                                                            <Grid item flexGrow={1}></Grid>
+                                                            <Grid item>
+                                                                <Avatar src={provideAvatarImageUrl(m.memberId, imageDomain)} sx={{ width: 34, height: 34, bgcolor: 'grey' }}>{m.nickname?.charAt(0).toUpperCase()}</Avatar>
                                                             </Grid>
-                                                        }
-                                                    </Draggable>
-                                                );
-                                            }))}
+                                                            <Grid item flexGrow={1}></Grid>
+                                                        </Grid>
+                                                        <Typography mt={1} sx={{ minHeight: 33, fontSize: 11, color: postInfoStates.cuedMemberInfoDict.hasOwnProperty(m.memberId) ? 'inherit' : 'text.secondary' }}>{getNicknameBrief(m.nickname)}</Typography>
+                                                    </Stack>
+                                                </Button>
+                                            );
+                                        })}
+                                    </Stack>
+                                </Box>
 
-                                            {/* the 'add' button */}
-                                            {!processStates.disableAddButton && !processStates.submitting && 10 > imagesArr.length && <IconButton
-                                                sx={{
-                                                    width: 100,
-                                                    height: 100,
-                                                    borderRadius: '10px',
-                                                    border: 1,
-                                                    borderColor: 'grey.300',
-                                                }}
-                                                aria-label='upload picture' component='label'
-                                                disabled={processStates.submitting || processStates.disableEditor}
-                                            >
-                                                <Input sx={{ display: 'none' }} inputProps={{ accept: 'image/*', type: 'file', multiple: true }} onChange={handleAddImage} disabled={processStates.submitting} />
-                                                <AddIcon fontSize='large' />
-                                            </IconButton>}
-                                            {provided.placeholder}
-                                        </Stack>
-                                    }
-                                </Droppable>
-                            </DragDropContext >
-                        </Box>
+                                {/* image upload */}
+                                <Typography>{langConfigs.uploadImage[preferenceStates.lang]}</Typography>
+                                <Box sx={{ padding: 1, border: 1, borderRadius: 1, borderColor: 'grey.300' }}>
+                                    <DragDropContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+                                        <Droppable droppableId={'uploadImages'} direction='horizontal'>
+                                            {(provided) =>
+                                                <Stack
+                                                    spacing={1}
+                                                    direction={'row'}
+                                                    className='uploadImages'
+                                                    ref={provided.innerRef}
+                                                    sx={{ maxWidth: 'calc(100vw - 3rem)', overflow: 'scroll' }}
+                                                    {...provided.droppableProps}
+                                                >
+                                                    {imagesArr.length !== 0 && (imagesArr.map((img, index) => {
+                                                        return (
+                                                            <Draggable key={img.url} draggableId={img.url} index={index}>
+                                                                {(provided) =>
+                                                                    <Grid item {...provided.draggableProps} {...provided.dragHandleProps} ref={provided.innerRef}>
+                                                                        {/* image wrapper */}
+                                                                        <Box
+                                                                            sx={{
+                                                                                width: 100,
+                                                                                height: 100,
+                                                                                borderRadius: '10px',
+                                                                                backgroundSize: 'cover',
+                                                                                backgroundPosition: 'center',
+                                                                                backgroundImage: `url(${img.url})`,
+                                                                                backdropFilter: 'blur(14px)',
+                                                                            }}
+                                                                            onClick={handleClick(img.url)}
+                                                                        >
+                                                                            {/* remove icon */}
+                                                                            <Box sx={{ display: processStates.submitting ? 'none' : 'flex' }}>
+                                                                                <IconButton
+                                                                                    sx={{
+                                                                                        backgroundColor: 'white',
+                                                                                        '&:hover': { backgroundColor: 'white' },
+                                                                                    }}
+                                                                                    size='small'
+                                                                                    color='primary'
+                                                                                    onClick={handleRemove(index)}
+                                                                                    disabled={processStates.submitting || processStates.disableEditor}
+                                                                                >
+                                                                                    <HighlightOffIcon />
+                                                                                </IconButton>
+                                                                            </Box>
 
-                        {/* channel */}
-                        <Typography>{langConfigs.choosePostChannel[preferenceStates.lang]}</Typography>
-                        <FormControl fullWidth disabled={processStates.submitting} required>
-                            <InputLabel id='channel'>{langConfigs.postChannel[preferenceStates.lang]}</InputLabel>
-                            <Select
-                                labelId='channel'
-                                value={postInfoStates.channelId}
-                                label={langConfigs.postChannel[preferenceStates.lang]}
-                                onChange={(event: SelectChangeEvent) => { setPostInfoStates({ ...postInfoStates, channelId: event.target.value as string }); }}
-                                SelectDisplayProps={{ style: { display: 'flex', alignItems: 'center' } }}
-                                MenuProps={{ style: { maxHeight: 240 } }}
-                                disabled={processStates.submitting || processStates.disableEditor}
-                            >
-                                {channelInfoStates.channelIdSequence.map(channelId => {
-                                    const channel = channelInfoDict_ss[channelId];
-                                    return (
-                                        <MenuItem value={channel.channelId} key={channel.channelId} >
-                                            <ListItemIcon sx={{ minWidth: '36px' }}>
-                                                <SvgIcon>
-                                                    <path d={channel.svgIconPath} />
-                                                </SvgIcon>
-                                            </ListItemIcon>
-                                            <ListItemText >
-                                                <Typography sx={{ marginTop: '1px' }}>
-                                                    {channel.name[preferenceStates.lang]}
-                                                </Typography>
-                                            </ListItemText>
-                                        </MenuItem>
-                                    );
-                                })}
-                            </Select>
-                        </FormControl>
-                        <Box display={processStates.displayAlert ? 'block' : 'none'}>
-                            <Alert severity={processStates.alertSeverity}>
-                                <Typography>{processStates.alertContent}</Typography>
-                            </Alert>
+                                                                            {/* progress circular indeterminate */}
+                                                                            <Box sx={{ display: processStates.submitting && index > uploadStates.currentIndex ? 'flex' : 'none', paddingTop: 3.8, paddingLeft: 3.8 }}>
+                                                                                <CircularProgress />
+                                                                            </Box>
+
+                                                                            {/* progress complete sign */}
+                                                                            <Box sx={{ display: processStates.submitting && index <= uploadStates.currentIndex ? 'flex' : 'none', paddingTop: 3, paddingLeft: 3 }}>
+                                                                                <Box sx={{ width: '52px', height: '52px', backgroundColor: 'white', borderRadius: '50%', padding: 1 }}>
+                                                                                    <CheckIcon fontSize='large' color='success' />
+                                                                                </Box>
+                                                                            </Box>
+                                                                        </Box>
+                                                                    </Grid>
+                                                                }
+                                                            </Draggable>
+                                                        );
+                                                    }))}
+
+                                                    {/* the 'add' button */}
+                                                    {!processStates.disableAddButton && !processStates.submitting && 10 > imagesArr.length && <IconButton
+                                                        sx={{
+                                                            width: 100,
+                                                            height: 100,
+                                                            borderRadius: '10px',
+                                                            border: 1,
+                                                            borderColor: 'grey.300',
+                                                        }}
+                                                        aria-label='upload picture' component='label'
+                                                        disabled={processStates.submitting || processStates.disableEditor}
+                                                    >
+                                                        <Input sx={{ display: 'none' }} inputProps={{ accept: 'image/*', type: 'file', multiple: true }} onChange={handleAddImage} disabled={processStates.submitting} />
+                                                        <AddIcon fontSize='large' />
+                                                    </IconButton>}
+                                                    {provided.placeholder}
+                                                </Stack>
+                                            }
+                                        </Droppable>
+                                    </DragDropContext >
+                                </Box>
+
+                                {/* channel */}
+                                <Typography>{langConfigs.choosePostChannel[preferenceStates.lang]}</Typography>
+                                <FormControl fullWidth disabled={processStates.submitting} required>
+                                    <InputLabel id='channel'>{langConfigs.postChannel[preferenceStates.lang]}</InputLabel>
+                                    <Select
+                                        labelId='channel'
+                                        value={postInfoStates.channelId}
+                                        label={langConfigs.postChannel[preferenceStates.lang]}
+                                        onChange={(event: SelectChangeEvent) => { setPostInfoStates({ ...postInfoStates, channelId: event.target.value as string }); }}
+                                        SelectDisplayProps={{ style: { display: 'flex', alignItems: 'center' } }}
+                                        MenuProps={{ style: { maxHeight: 240 } }}
+                                        disabled={processStates.submitting || processStates.disableEditor}
+                                    >
+                                        {channelInfoStates.channelIdSequence.map(channelId => {
+                                            const channel = channelInfoDict_ss[channelId];
+                                            return (
+                                                <MenuItem value={channel.channelId} key={channel.channelId} >
+                                                    <ListItemIcon sx={{ minWidth: '36px' }}>
+                                                        <SvgIcon>
+                                                            <path d={channel.svgIconPath} />
+                                                        </SvgIcon>
+                                                    </ListItemIcon>
+                                                    <ListItemText >
+                                                        <Typography sx={{ marginTop: '1px' }}>
+                                                            {channel.name[preferenceStates.lang]}
+                                                        </Typography>
+                                                    </ListItemText>
+                                                </MenuItem>
+                                            );
+                                        })}
+                                    </Select>
+                                </FormControl>
+                                <Box display={processStates.displayAlert ? 'block' : 'none'}>
+                                    <Alert severity={processStates.alertSeverity}>
+                                        <Typography>{processStates.alertContent}</Typography>
+                                    </Alert>
+                                </Box>
+                                {/* submit button */}
+                                <Box>
+                                    <Button type={'submit'} fullWidth variant='contained' disabled={processStates.submitting || processStates.disableEditor}>
+                                        <Typography sx={{ display: !processStates.submitting ? 'block' : 'none' }}>
+                                            {langConfigs.submit[preferenceStates.lang]}
+                                        </Typography>
+                                        <CircularProgress sx={{ color: 'white', display: processStates.submitting ? 'block' : 'none' }} />
+                                    </Button>
+                                </Box>
+                            </Stack>
+                            <Copyright sx={{ mt: 8 }} lang={preferenceStates.lang} />
+                            <Terms sx={{ mb: 4 }} lang={preferenceStates.lang} />
                         </Box>
-                        {/* submit button */}
-                        <Box>
-                            <Button type={'submit'} fullWidth variant='contained' disabled={processStates.submitting || processStates.disableEditor}>
-                                <Typography sx={{ display: !processStates.submitting ? 'block' : 'none' }}>
-                                    {langConfigs.submit[preferenceStates.lang]}
-                                </Typography>
-                                <CircularProgress sx={{ color: 'white', display: processStates.submitting ? 'block' : 'none' }} />
-                            </Button>
-                        </Box>
-                    </Stack>
-                    <Copyright sx={{ mt: 8 }} lang={preferenceStates.lang} />
-                    <Terms sx={{ mb: 4 }} lang={preferenceStates.lang} />
-                </Box>
-            </Box>
+                    </Box>
+                </Grid>
+
+                {/* right */}
+                <Grid item xs={0} sm={0} md={0} lg={3} xl={4}>
+                    <Box sx={{ display: { xs: 'none', sm: 'none', md: 'block' } }}>
+                        <Stack spacing={2} sx={{ width: 300, paddingX: 3, paddingTop: 18, }} >
+                            {/* copyright */}
+                            <Box>
+                                <Copyright lang={preferenceStates.lang} />
+                                <Guidelines lang={preferenceStates.lang} />
+                                <Terms lang={preferenceStates.lang} />
+                            </Box>
+
+                            {/* theme mode switch */}
+                            <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                                <IconButton onClick={handleColorModeSelect}>
+                                    {theme.palette.mode === 'dark' ? <Brightness4Icon /> : <Brightness7Icon />}
+                                </IconButton>
+                            </Box>
+                        </Stack>
+                    </Box>
+                </Grid>
+            </Grid>
+
+
 
             {/* topic helper */}
             <Modal

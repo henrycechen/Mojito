@@ -5,25 +5,24 @@ import { useRouter } from 'next/router';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import Checkbox from '@mui/material/Checkbox';
+import CircularProgress from '@mui/material/CircularProgress';
 import Grid from '@mui/material/Grid';
-import Stack from '@mui/material/Stack';
+import Switch from '@mui/material/Switch';
 import Typography from '@mui/material/Typography';
 
-import FormGroup from '@mui/material/FormGroup';
 import FormControlLabel from '@mui/material/FormControlLabel';
-import Switch from '@mui/material/Switch';
-import Checkbox from '@mui/material/Checkbox';
+import FormGroup from '@mui/material/FormGroup';
 
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
-import CircularProgress from '@mui/material/CircularProgress';
 
-import { ResponsiveCard } from '../../../ui/Styled';
-import Navbar from '../../../ui/Navbar';
-import Copyright from '../../../ui/Copyright';
-import Terms from '../../../ui/Terms';
+import { LangConfigs, TPreferenceStates } from '../../lib/types';
+import { restoreFromLocalStorage } from '../../lib/utils/general';
 
-import { LangConfigs, TPreferenceStates } from '../../../lib/types';
-import { restoreFromLocalStorage } from '../../../lib/utils/general';
+import LegalInfo from '../../ui/LegalInfo';
+import SideMenu from '../../ui/SideMenu';
+import SideColumn from '../../ui/SideColumn';
+import Navbar from '../../ui/Navbar';
 
 const storageName0 = 'PreferenceStates';
 const restorePreferenceStatesFromCache = restoreFromLocalStorage(storageName0);
@@ -110,6 +109,10 @@ const langConfigs: LangConfigs = {
     },
 };
 
+/**
+ * Last update:
+ * - 24/05/2023 v0.1.2 New layout applied
+ */
 const PravicySettings = () => {
 
     const router = useRouter();
@@ -117,13 +120,13 @@ const PravicySettings = () => {
 
     React.useEffect(() => {
         if ('authenticated' === status) {
-            const viewerSession: any = { ...session };
-            setProcessStates({ ...processStates, memberId: viewerSession?.user?.id ?? '' });
+            const memberSession: any = { ...session };
+            setProcessStates({ ...processStates, memberId: memberSession?.user?.id ?? '' });
             restorePreferenceStatesFromCache(setPreferenceStates);
         }
     }, [status]);
 
-    //////// STATES - preference ////////
+    // States - preference
     const [preferenceStates, setPreferenceStates] = React.useState<TPreferenceStates>({
         lang: defaultLang,
         mode: 'light'
@@ -141,13 +144,13 @@ const PravicySettings = () => {
         progressStatus: 100 | 200 | 300 | 400;
     };
 
-    //////// STATES - process ////////
+    // States - process
     const [processStates, setProcessStates] = React.useState<TProcessStates>({
         memberId: '',
         countdown: 5,
         displayAlert: false,
         displayUpdateButton: false,
-        displayProgress: false,
+        displayProgress: true,
         displayCancelButton: false,
         displayCountdown: false,
         disableButton: false,
@@ -159,71 +162,61 @@ const PravicySettings = () => {
         allowVisitingFollowedMembers: boolean;
         allowVisitingSavedPosts: boolean;
         hidePostsAndCommentsOfBlockedMember: boolean;
+        p_allowKeepingBrowsingHistory: boolean;
+        p_allowVisitingFollowedMembers: boolean;
+        p_allowVisitingSavedPosts: boolean;
+        p_hidePostsAndCommentsOfBlockedMember: boolean;
     };
 
-    //////// STATES - previous settings ////////
-    const [previousPrivacySettingsStates, setPreviousSettingsStates] = React.useState<TPrivacySettingsStates>({
-        allowKeepingBrowsingHistory: true,
-        allowVisitingFollowedMembers: true,
-        allowVisitingSavedPosts: true,
-        hidePostsAndCommentsOfBlockedMember: true,
-    });
-
-    //////// Init states ////////
-    React.useEffect(() => { if ('' !== processStates.memberId) { fetchPrivacySettings(); } }, [processStates.memberId]);
-
-    //////// STATES - previous settings ////////
+    // States - settings
     const [privacySettingsStates, setPrivacySettingsStates] = React.useState<TPrivacySettingsStates>({
         allowKeepingBrowsingHistory: true,
         allowVisitingFollowedMembers: true,
         allowVisitingSavedPosts: true,
         hidePostsAndCommentsOfBlockedMember: true,
+        p_allowKeepingBrowsingHistory: true,
+        p_allowVisitingFollowedMembers: true,
+        p_allowVisitingSavedPosts: true,
+        p_hidePostsAndCommentsOfBlockedMember: true,
     });
 
-    const fetchPrivacySettings = async () => {
+    React.useEffect(() => {
+
+        if ('' !== processStates.memberId) {
+            console.log(123);
+            getPrivacySettings();
+            setProcessStates({ ...processStates, displayProgress: false });
+        }
+    }, [processStates.memberId]);
+
+    const getPrivacySettings = async () => {
         const resp = await fetch(`/api/member/info/${processStates.memberId}`);
         try {
             if (200 !== resp.status) {
-                // error handling
                 throw new Error(`Bad fetch response`);
             }
             const info = await resp.json();
-            setPreviousSettingsStates({
-                allowKeepingBrowsingHistory: info.allowKeepingBrowsingHistory,
-                allowVisitingFollowedMembers: info.allowVisitingFollowedMembers,
-                allowVisitingSavedPosts: info.allowVisitingSavedPosts,
-                hidePostsAndCommentsOfBlockedMember: info.hidePostsAndCommentsOfBlockedMember,
-            });
+
             setPrivacySettingsStates({
                 allowKeepingBrowsingHistory: info.allowKeepingBrowsingHistory,
                 allowVisitingFollowedMembers: info.allowVisitingFollowedMembers,
                 allowVisitingSavedPosts: info.allowVisitingSavedPosts,
                 hidePostsAndCommentsOfBlockedMember: info.hidePostsAndCommentsOfBlockedMember,
+                p_allowKeepingBrowsingHistory: info.allowKeepingBrowsingHistory,
+                p_allowVisitingFollowedMembers: info.allowVisitingFollowedMembers,
+                p_allowVisitingSavedPosts: info.allowVisitingSavedPosts,
+                p_hidePostsAndCommentsOfBlockedMember: info.hidePostsAndCommentsOfBlockedMember,
             });
         } catch (e) {
-            console.log(`Attempt to get member info (privacy settings). ${e}`);
+            console.error(`Attempt to get member info (privacy settings). ${e}`);
             setProcessStates({ ...processStates, displayAlert: true });
         }
     };
 
-    const handleToggle = (prop: keyof TPrivacySettingsStates) => (event: React.ChangeEvent<HTMLInputElement>) => {
-        setPrivacySettingsStates({ ...privacySettingsStates, [prop]: !privacySettingsStates[prop] });
+    const handleToggle = (key: keyof TPrivacySettingsStates) => (event: React.ChangeEvent<HTMLInputElement>) => {
+        setPrivacySettingsStates({ ...privacySettingsStates, [key]: !privacySettingsStates[key] });
+        setProcessStates({ ...processStates, displayUpdateButton: true });
     };
-
-    React.useEffect(() => {
-        if (
-            !(
-                previousPrivacySettingsStates.allowKeepingBrowsingHistory === privacySettingsStates.allowKeepingBrowsingHistory
-                && previousPrivacySettingsStates.allowVisitingFollowedMembers === privacySettingsStates.allowVisitingFollowedMembers
-                && previousPrivacySettingsStates.allowVisitingSavedPosts === privacySettingsStates.allowVisitingSavedPosts
-                && previousPrivacySettingsStates.hidePostsAndCommentsOfBlockedMember === privacySettingsStates.hidePostsAndCommentsOfBlockedMember
-            )
-        ) {
-            setProcessStates({ ...processStates, displayUpdateButton: true });
-        } else {
-            setProcessStates({ ...processStates, displayUpdateButton: false });
-        }
-    }, [privacySettingsStates]);
 
     const handleCheck = () => {
         setProcessStates({
@@ -237,10 +230,10 @@ const PravicySettings = () => {
 
     const handleUpdate = async () => {
         if (
-            previousPrivacySettingsStates.allowKeepingBrowsingHistory === privacySettingsStates.allowKeepingBrowsingHistory
-            && previousPrivacySettingsStates.allowVisitingFollowedMembers === privacySettingsStates.allowVisitingFollowedMembers
-            && previousPrivacySettingsStates.allowVisitingSavedPosts === privacySettingsStates.allowVisitingSavedPosts
-            && previousPrivacySettingsStates.hidePostsAndCommentsOfBlockedMember === privacySettingsStates.hidePostsAndCommentsOfBlockedMember
+            privacySettingsStates.p_allowKeepingBrowsingHistory === privacySettingsStates.allowKeepingBrowsingHistory
+            && privacySettingsStates.p_allowVisitingFollowedMembers === privacySettingsStates.allowVisitingFollowedMembers
+            && privacySettingsStates.p_allowVisitingSavedPosts === privacySettingsStates.allowVisitingSavedPosts
+            && privacySettingsStates.p_hidePostsAndCommentsOfBlockedMember === privacySettingsStates.hidePostsAndCommentsOfBlockedMember
         ) {
             return;
         }
@@ -254,7 +247,6 @@ const PravicySettings = () => {
         });
 
         if (200 === resp.status) {
-            setPreviousSettingsStates({ ...privacySettingsStates });
             setProcessStates({ ...processStates, displayProgress: false, displayCancelButton: false, disableButton: true, progressStatus: 200 });
             setTimeout(() => {
                 setProcessStates({ ...processStates, displayUpdateButton: false, progressStatus: 100 });
@@ -278,88 +270,120 @@ const PravicySettings = () => {
         }
     };
 
-    const onBackwardClick = () => {
-        router.push('/me/settings/');
+    const handleBackward = () => {
+        router.push('/settings/');
     };
 
     return (
         <>
             <Navbar lang={preferenceStates.lang} />
+            <Grid container>
 
-            <Grid container mt={{ xs: 1, sm: 10 }}>
-                {/* placeholder */}
-                <Grid item xs={0} sm={2} md={3} lg={3} xl={4}></Grid>
+                {/* left */}
+                <Grid item xs={0} sm={0} md={3} lg={3} xl={4} >
+                    <Box sx={{ display: { xs: 'none', sm: 'none', md: 'flex' }, flexDirection: 'row-reverse', position: 'sticky', top: 0, left: 0, }}>
+                        <SideMenu lang={preferenceStates.lang} />
+                    </Box>
+                </Grid>
 
                 {/* middle column */}
-                <Grid item xs={12} sm={8} md={6} lg={6} xl={4}>
-                    <ResponsiveCard sx={{ p: { xs: 1, sm: 2, md: 4 }, minHeight: { xs: 0, sm: 500 } }}>
+                <Grid item xs={12} sm={12} md={6} lg={6} xl={4}>
+                    <Box pt={{ xs: 2, sm: 2, md: 10 }} px={2} >
 
                         {/* 'backward' button */}
-                        <Box>
-                            <Button color='inherit' onClick={onBackwardClick}>
+                        <Box sx={{ display: { sm: 'block', md: 'none' } }}>
+                            <Button color='inherit' onClick={handleBackward}>
                                 <ArrowBackIosIcon fontSize={'small'} sx={{ color: 'grey' }} />
                                 {'authenticated' !== status && <CircularProgress size={20} />}
                             </Button>
                         </Box>
 
-                        <Box sx={{ px: { xs: 2, sm: 2, md: 4 }, py: 1 }}>
-                            <Box pb={1} display={processStates.displayAlert ? 'block' : 'none'}>
-                                <Alert severity='error'>
-                                    <strong>{langConfigs.alertContent[preferenceStates.lang]}</strong>
-                                </Alert>
-                            </Box>
+                        {/* alert */}
+                        <Box pt={1} display={processStates.displayAlert ? 'block' : 'none'}>
+                            <Alert severity='error'>
+                                <strong>{langConfigs.alertContent[preferenceStates.lang]}</strong>
+                            </Alert>
+                        </Box>
 
+                        <Box sx={{ px: { xs: 2, sm: 4, md: 0 }, pt: 1 }}>
                             <FormGroup>
 
                                 {/* title - privacy */}
                                 <Typography variant={'body1'} py={1}>{langConfigs.privacy[preferenceStates.lang]}</Typography>
-                                <Stack pl={{ xs: 0, sm: 2, }}>
 
-                                    {/* browsing history */}
+                                {/* browsing history */}
+                                <Box pt={1}>
                                     <FormControlLabel
-                                        control={<Switch checked={privacySettingsStates.allowKeepingBrowsingHistory} onChange={handleToggle('allowKeepingBrowsingHistory')} />}
-                                        label={<Typography variant={'body2'} align={'left'}>{langConfigs.allowKeepingBrowsingHistory[preferenceStates.lang]}</Typography>}
-                                        sx={{ fontSize: 14 }} />
+                                        control={
+                                            <Switch
+                                                checked={privacySettingsStates.allowKeepingBrowsingHistory}
+                                                onChange={handleToggle('allowKeepingBrowsingHistory')}
+                                            />
+                                        }
+                                        label={langConfigs.allowKeepingBrowsingHistory[preferenceStates.lang]}
+                                    />
+                                </Box>
 
-                                    {/* show followed members */}
+                                {/* show followed members */}
+                                <Box pt={1}>
                                     <FormControlLabel
-                                        control={<Switch checked={privacySettingsStates.allowVisitingFollowedMembers} onChange={handleToggle('allowVisitingFollowedMembers')} />}
-                                        label={<Typography variant={'body2'} align={'left'}>{langConfigs.allowVisitingFollowedMembers[preferenceStates.lang]}</Typography>}
-                                        sx={{ fontSize: 14 }} />
+                                        control={
+                                            <Switch
+                                                checked={privacySettingsStates.allowVisitingFollowedMembers}
+                                                onChange={handleToggle('allowVisitingFollowedMembers')}
+                                            />
+                                        }
+                                        label={langConfigs.allowVisitingFollowedMembers[preferenceStates.lang]}
+                                    />
+                                </Box>
 
-                                    {/* show saved posts */}
+                                {/* show saved posts */}
+                                <Box pt={1}>
                                     <FormControlLabel
-                                        control={<Switch checked={privacySettingsStates.allowVisitingSavedPosts} onChange={handleToggle('allowVisitingSavedPosts')} />}
-                                        label={<Typography variant={'body2'} align={'left'}>{langConfigs.allowVisitingSavedPosts[preferenceStates.lang]}</Typography>}
-                                        sx={{ fontSize: 14 }} />
+                                        control={
+                                            <Switch
+                                                checked={privacySettingsStates.allowVisitingSavedPosts}
+                                                onChange={handleToggle('allowVisitingSavedPosts')}
+                                            />
+                                        }
+                                        label={langConfigs.allowVisitingSavedPosts[preferenceStates.lang]}
+                                    />
+                                </Box>
 
-                                    {/* hide from blocked members */}
+                                {/* hide from blocked members */}
+                                <Box pt={1}>
                                     <FormControlLabel
-                                        control={<Switch checked={privacySettingsStates.hidePostsAndCommentsOfBlockedMember} onChange={handleToggle('hidePostsAndCommentsOfBlockedMember')} />}
-                                        label={<Typography variant={'body2'} align={'left'}>{langConfigs.hidePostsAndCommentsOfBlockedMember[preferenceStates.lang]}</Typography>}
-                                        sx={{ fontSize: 14 }} />
+                                        control={
+                                            <Switch
+                                                checked={privacySettingsStates.hidePostsAndCommentsOfBlockedMember}
+                                                onChange={handleToggle('hidePostsAndCommentsOfBlockedMember')}
+                                            />
+                                        }
+                                        label={langConfigs.hidePostsAndCommentsOfBlockedMember[preferenceStates.lang]}
+                                    />
+                                </Box>
 
-                                    {/* 'update' button */}
-                                    {processStates.displayUpdateButton && <Box py={2}>
-                                        <Button
-                                            variant={'contained'}
-                                            color={400 !== processStates.progressStatus ? 'primary' : 'error'}
-                                            size={'small'}
-                                            onClick={async () => { await handleUpdate(); }}
-                                            disabled={processStates.disableButton}
-                                            fullWidth
-                                        >
+                                {/* 'update' button */}
+                                {processStates.displayUpdateButton && <Box py={2}>
+                                    <Button
+                                        variant={'contained'}
+                                        color={400 !== processStates.progressStatus ? 'primary' : 'error'}
+                                        size={'small'}
+                                        onClick={async () => { await handleUpdate(); }}
+                                        disabled={processStates.disableButton}
+                                        fullWidth
+                                    >
 
-                                            {processStates.displayProgress && <CircularProgress size={24} color='inherit' />}
-                                            {/* button: enabled, result: 100 (ready) */}
-                                            {!processStates.displayProgress && 100 === processStates.progressStatus && <Typography variant={'body2'}>{langConfigs.update[preferenceStates.lang]}</Typography>}
-                                            {/* button: disabled, result: 200 (succeeded) */}
-                                            {!processStates.displayProgress && 200 === processStates.progressStatus && <Typography variant={'body2'}>{langConfigs.updateSucceeded[preferenceStates.lang]}</Typography>}
-                                            {/* button: enabled, result: 400 (failed) */}
-                                            {!processStates.displayProgress && 400 === processStates.progressStatus && <Typography variant={'body2'}>{langConfigs.updateFailed[preferenceStates.lang]}</Typography>}
-                                        </Button>
-                                    </Box>}
-                                </Stack>
+                                        {processStates.displayProgress && <CircularProgress size={24} color='inherit' />}
+                                        {/* button: enabled, result: 100 (ready) */}
+                                        {!processStates.displayProgress && 100 === processStates.progressStatus && <Typography variant={'body2'}>{langConfigs.update[preferenceStates.lang]}</Typography>}
+                                        {/* button: disabled, result: 200 (succeeded) */}
+                                        {!processStates.displayProgress && 200 === processStates.progressStatus && <Typography variant={'body2'}>{langConfigs.updateSucceeded[preferenceStates.lang]}</Typography>}
+                                        {/* button: enabled, result: 400 (failed) */}
+                                        {!processStates.displayProgress && 400 === processStates.progressStatus && <Typography variant={'body2'}>{langConfigs.updateFailed[preferenceStates.lang]}</Typography>}
+                                    </Button>
+                                </Box>}
+
 
                                 {/* blank space */}
                                 <Box py={1}></Box>
@@ -382,19 +406,21 @@ const PravicySettings = () => {
                                     </Button>
                                 </Box>}
                             </FormGroup>
-
                         </Box >
 
-                    </ResponsiveCard>
+                        {/* legal info */}
+                        <LegalInfo lang={preferenceStates.lang} />
+                    </Box>
                 </Grid>
 
-                {/* placeholder */}
-                <Grid item xs={0} sm={2} md={3} lg={3} xl={4}></Grid>
+                {/* right */}
+                <Grid item xs={0} sm={0} md={3} lg={3} xl={4}>
+                    <Box sx={{ display: { xs: 'none', sm: 'none', md: 'block' } }}>
+                        <SideColumn lang={preferenceStates.lang} />
+                    </Box>
+                </Grid>
 
-            </Grid>
-
-            <Copyright sx={{ mt: 16 }} lang={preferenceStates.lang} />
-            <Terms sx={{ mb: 8 }} lang={preferenceStates.lang} />
+            </Grid >
 
         </>
     );

@@ -75,12 +75,12 @@ const langConfigs: LangConfigs = {
     }
 };
 
-type TNavBarProps = {
+type TNavbarProps = {
     lang?: string;
     forceUpdateImageCache?: boolean;
 };
 
-export default function NavBar(props: TNavBarProps) {
+export default function Navbar(props: TNavbarProps) {
 
     const router = useRouter();
     const { data: session, status } = useSession();
@@ -111,10 +111,10 @@ export default function NavBar(props: TNavBarProps) {
 
     const handleClick = (actionIndex: number) => {
         setProcessStates({ ...processStates, menuAnchorEl: null });
-        if (actionIndex === 0) { router.push('/me/createpost'); };
-        if (actionIndex === 1) { router.push(`/me/message`); };
-        if (actionIndex === 2) { router.push(`/me/id/${processStates.memberId}`); };
-        if (actionIndex === 3) { router.push(`/me/settings`); };
+        if (actionIndex === 0) { router.push('/create'); };
+        if (actionIndex === 1) { router.push(`/message`); };
+        if (actionIndex === 2) { router.push(`/me/${processStates.memberId}`); };
+        if (actionIndex === 3) { router.push(`/settings`); };
         if (actionIndex === 4) { signOut(); };
     };
 
@@ -134,14 +134,14 @@ export default function NavBar(props: TNavBarProps) {
     const theme = useTheme();
 
     return (
-        <AppBar position='sticky'>
+        <AppBar position='sticky' sx={{ display: { sm: 'block', md: 'none' } }}>
 
             <Container maxWidth={'xl'}>
 
                 <Toolbar disableGutters>
 
                     <Link href='/' mt={1}>
-                        <Box component={'img'} src={`${appDomain}/logo${'dark' === theme.palette.mode ? '-dark' : ''}.png`} sx={{ height: '2.5rem' }} />
+                        <Box component={'img'} src={`${appDomain}/logo${'dark' === theme.palette.mode ? '-dark' : '-bright'}.png`} sx={{ height: '2.5rem' }} />
                     </Link>
 
                     <Box sx={{ flexGrow: 1 }}></Box>

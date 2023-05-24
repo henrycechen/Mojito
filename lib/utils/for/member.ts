@@ -37,7 +37,7 @@ export function getNicknameFromToken(token: any): string {
 }
 
 export function provideMemberInfoPageUrl(memberId: string, domain: string): string {
-    return `${domain}/me/id/${memberId}`;
+    return `${domain}/me/${memberId}`;
 }
 
 export function provideCuedMemberInfoArray(cuedMemberInfoDictionary: { [memberId: string]: IMemberInfo; }): IMemberInfo[] {
@@ -47,7 +47,6 @@ export function provideCuedMemberInfoArray(cuedMemberInfoDictionary: { [memberId
     }
     return memberIdArr.map(memberId => cuedMemberInfoDictionary[memberId]);
 }
-
 
 export function fakeRestrictedMemberInfo(): IRestrictedMemberComprehensive {
     return {

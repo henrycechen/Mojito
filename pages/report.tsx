@@ -175,7 +175,7 @@ const Affair = () => {
         resultContent: string[];
     };
 
-    //////// STATES - process ////////
+    // States - process ////////
     const [processStates, setProcessStates] = React.useState<TAffairPageProcessStates>({
         lang: defaultLang,
         /**
@@ -214,7 +214,7 @@ const Affair = () => {
         additionalInfo: string;
     };
 
-    //////// STATES - affair info ////////
+    // States - affair info ////////
     const [affairInfoStates, setAffairInfoStates] = React.useState<TAffairInfo>({
         category: '1',
         memberId: '',

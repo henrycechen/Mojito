@@ -164,7 +164,7 @@ export function composeVerifyEmailAddressEmailContent(domain: string, info: stri
     <div class="mt p">
         <div class="row">${isCh ? isTw ? `您可以通過點擊以下鏈接驗證您的 Mojito 賬戶` : '您可以通过单击以下链接验证您的 Mojito 账户：' : 'You can verify your Mojito member by clicking the link below:'}</div>
         <div class="row">
-            <a href="${domain}/me/verifyemailaddress?requestInfo=${info}">${domain}/me/verifyemailaddress</a>
+            <a href="${domain}/verifyemailaddress?requestInfo=${info}">${domain}/verifyemailaddress</a>
         </div>
         <div class="row">${isCh ? isTw ? `鏈接長期有效。如果您無意執行此操作，請忽略本郵件。` : '链接长期有效。如果您无意执行此操作请忽略本邮件。' : 'The link is valid forever. Please ignore this message if you do not intend to do so.'}</div>
         <div class="signature">Mojito New Zealand</div>

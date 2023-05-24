@@ -49,28 +49,28 @@ export default async function ImageUpload(req: NextApiRequest, res: NextApiRespo
         res.status(401).send('Unauthorized');
         return;
     }
-    
+
     //// Verify postId ////
     const { isValid, category, id: postId } = verifyId(req.query?.postId);
     if (!(isValid && 'post' === category)) {
         res.status(400).send('Invalid post id');
         return;
     }
-    
+
     //// Verify request info (token) ////
     const { requestInfo } = req.query;
     if ('string' !== typeof requestInfo) {
         res.status(403).send('Invalid request info');
         return;
     }
-    
+
     //// Declare DB client ////
     const atlasDbClient = AtlasDatabaseClient();
     try {
         const tkn = CryptoJS.AES.decrypt(Buffer.from(requestInfo, 'base64').toString(), appSecret).toString(CryptoJS.enc.Utf8);
         // [!] attemp to parse JSON string makes the probability of causing SyntaxError
         const info = JSON.parse(tkn);
-        
+
         //// Match member id in token and the one in request ////
         const { sub: tokenId } = token;
         if (tokenId !== info.memberId) {
@@ -171,16 +171,16 @@ const uploadAsync = (req: NextApiRequest, postId: string) => {
                             image.resize(960, Jimp.AUTO);
                         }
 
-                        if (1600 < image.bitmap.width) {
+                        if (1200 < image.bitmap.width) {
                             image.resize(Jimp.AUTO, 1600);
                         }
 
                         // Image quality control
-                        image.quality(76800 > initialBuf.byteLength ? 95 : 85); // threshold 750 KB
-
+                        image.quality(768000 > initialBuf.byteLength ? 85 : 75); // threshold 750 KB
 
                         // Output to buffer
-                        const convertedBuf = await image.getBufferAsync(Jimp.MIME_PNG);
+                        const convertedBuf = await image.getBufferAsync(mimeType);
+
                         const blockClient = contianerClient.getBlockBlobClient(imageFullname);
                         if (await blockClient.uploadData(convertedBuf)) {
                             resolve(imageFullname);

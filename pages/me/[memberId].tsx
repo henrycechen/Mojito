@@ -40,21 +40,21 @@ import Masonry from '@mui/lab/Masonry';
 import axios, { AxiosError, AxiosResponse } from 'axios';
 import 'jimp';
 
-import { IConciseMemberStatistics, IRestrictedMemberComprehensive } from '../../../lib/interfaces/member';
-import { IConcisePostComprehensive } from '../../../lib/interfaces/post';
-import { IChannelInfoStates, IChannelInfoDictionary } from '../../../lib/interfaces/channel';
+import { IConciseMemberStatistics, IRestrictedMemberComprehensive } from '../../lib/interfaces/member';
+import { IConcisePostComprehensive } from '../../lib/interfaces/post';
+import { IChannelInfoStates, IChannelInfoDictionary } from '../../lib/interfaces/channel';
 
-import { TBrowsingHelper, LangConfigs, TPreferenceStates } from '../../../lib/types';
-import { timeToString, updateLocalStorage, restoreFromLocalStorage, logWithDate } from '../../../lib/utils/general';
-import { verifyId } from '../../../lib/utils/verify';
-import { provideAvatarImageUrl, getNicknameBrief, fakeConciseMemberStatistics, fakeRestrictedMemberInfo } from '../../../lib/utils/for/member';
-import { provideCoverImageUrl } from '../../../lib/utils/for/post';
-import { getRandomHexStr } from '../../../lib/utils/create';
+import { TBrowsingHelper, LangConfigs, TPreferenceStates } from '../../lib/types';
+import { timeToString, updateLocalStorage, restoreFromLocalStorage, logWithDate } from '../../lib/utils/general';
+import { verifyId } from '../../lib/utils/verify';
+import { provideAvatarImageUrl, getNicknameBrief, fakeConciseMemberStatistics, fakeRestrictedMemberInfo } from '../../lib/utils/for/member';
+import { provideCoverImageUrl } from '../../lib/utils/for/post';
+import { getRandomHexStr } from '../../lib/utils/create';
 
-import { CentralizedBox, ResponsiveCard } from '../../../ui/Styled';
-import Navbar from '../../../ui/Navbar';
-import Copyright from '../../../ui/Copyright';
-import Terms from '../../../ui/Terms';
+import { CentralizedBox, ResponsiveCard } from '../../ui/Styled';
+import Navbar from '../../ui/Navbar';
+import Copyright from '../../ui/Copyright';
+import Terms from '../../ui/Terms';
 
 const storageName0 = 'PreferenceStates';
 const restorePreferenceStatesFromCache = restoreFromLocalStorage(storageName0);
@@ -166,8 +166,6 @@ const langConfigs: LangConfigs = {
         en: 'All',
     },
 
-
-
     //// Alert contents ////
     noCreationsRecord: {
         tw: '您還未發表任何作品',
@@ -195,7 +193,6 @@ const langConfigs: LangConfigs = {
         en: 'No records of browsing history'
     },
 
-
     //// Member info editing ////
     cancel: {
         tw: '取消',
@@ -207,7 +204,6 @@ const langConfigs: LangConfigs = {
         cn: '更新',
         en: 'Update'
     },
-
 
     //// Avatar setting ////
     avatar: {
@@ -241,9 +237,7 @@ const langConfigs: LangConfigs = {
         en: 'You tried to open a non-image file, please try again'
     },
 
-
     //// Nickname setting ////
-
     nickname: {
         tw: '暱稱',
         cn: '昵称',
@@ -292,8 +286,6 @@ const langConfigs: LangConfigs = {
         en: 'Update succeeded'
     },
 
-
-
     //// Bried intro setting ////
     briefIntro: {
         tw: '簡介',
@@ -320,7 +312,6 @@ const langConfigs: LangConfigs = {
         cn: '简介长度超过150个字符或不符合社区规范，请重试',
         en: 'Brief intro length exceeds limit or invalid'
     },
-
 };
 
 //// Get multiple member info server-side ////
@@ -425,7 +416,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
         birthdayBySecond: number;
     };
 
-    //////// STATES - memberInfo ////////
+    // States - memberInfo ////////
     const [memberInfoStates, setMemberInfoStates] = React.useState<TMemberInfoStates>({
         avatarImageUrl: provideAvatarImageUrl(authorId, imageDomain),
         nickname: memberComprehensive_ss.nickname,
@@ -434,7 +425,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
         birthdayBySecond: memberComprehensive_ss.birthdayBySecond,
     });
 
-    //////// STATES - preference ////////
+    // States - preference ////////
     const [preferenceStates, setPreferenceStates] = React.useState<TPreferenceStates>({
         lang: defaultLang,
         mode: 'light'
@@ -451,7 +442,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
         wasRedirected: boolean;
     };
 
-    //////// STATES - process ////////
+    // States - process ////////
     const [processStates, setProcessStates] = React.useState<TProcessStates>({
         viewerId: '',
         selectedCategory: 'creations', // 'creations' | 'savedposts' | 'browsinghistory'
@@ -483,12 +474,12 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
         setBrowsingHelper({ ...browsingHelper, memorizeViewPortPositionY: undefined });
     };
 
-    //////// STATES - browsing helper ////////
+    // States - browsing helper ////////
     const [browsingHelper, setBrowsingHelper] = React.useState<TBrowsingHelper>({
         memorizeViewPortPositionY: undefined, // reset scroll-help on handleChannelSelect, handleSwitchChange, ~~handlePostCardClick~~
     });
 
-    ///////// STATES - channel /////////
+    /// States - channel /////////
     const [channelInfoStates, setChannelInfoStates] = React.useState<IChannelInfoStates>({
         channelIdSequence: [],
     });
@@ -531,7 +522,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
         setBrowsingHelper({ ...browsingHelper, memorizeViewPortPositionY: undefined });
     };
 
-    //////// STATES - (masonry) post info array ////////
+    // States - (masonry) post info array ////////
     const [masonryPostInfoArr, setMasonryPostInfoArr] = React.useState<IConcisePostComprehensive[]>([]);
 
     React.useEffect(() => { updatePostsArr(); }, [processStates.selectedHotPosts, processStates.selectedChannelId, processStates.selectedCategory]);
@@ -595,17 +586,17 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
         // #1 update process states and post layout cache
         updateProcessStatesCache({ ...processStates, memorizeLastViewedPostId: postId, memorizeViewPortPositionY: window.scrollY, wasRedirected: true });
         // #2 jump
-        router.push(`/me/id/${memberId}`);
+        router.push(`/me/${memberId}`);
     };
 
-    ///////// STATES - behaviour /////////
+    /// States - behaviour /////////
     const [undoSavedPostArr, setUndoSavedPostArr] = React.useState<string[]>([]);
 
     // Handle click on bottom-right icon button
     const handleMultiProposeButtonClick = async (categoryId: string, postId: string) => {
         // edit post 
         if ('creations' === categoryId) {
-            router.push(`/me/editpost/${postId}`);
+            router.push(`/edit/${postId}`);
             return;
         }
 
@@ -676,7 +667,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
         displayProgress: boolean;
     };
 
-    //// STATES - author info ////
+    //// States - author info ////
     const [authorInfoSettingStates, setAuthorInfoSettingStates] = React.useState<TAuthorInfoSettingStates>({
         alternativeImageUrl: provideAvatarImageUrl(authorId, imageDomain),
         alternativeName: memberInfoStates.nickname,

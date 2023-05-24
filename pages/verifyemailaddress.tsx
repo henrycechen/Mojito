@@ -6,10 +6,10 @@ import Typography from '@mui/material/Typography';
 import ReCAPTCHA from "react-google-recaptcha";
 
 import { useRouter } from 'next/router';
-import { LangConfigs } from '../../lib/types';
+import { LangConfigs } from '../lib/types';
 
-import Copyright from '../../ui/Copyright';
-import BackToHomeButtonGroup from '../../ui/BackToHomeButtonGroup';
+import Copyright from '../ui/Copyright';
+import BackToHomeButtonGroup from '../ui/BackToHomeButtonGroup';
 
 const recaptchaClientKey = process.env.NEXT_PUBLIC_INVISIABLE_RECAPTCHA_SITE_KEY ?? '';
 const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';

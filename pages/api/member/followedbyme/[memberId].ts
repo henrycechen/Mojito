@@ -30,6 +30,40 @@ const fnn = `${GetMembersFollowedByMe.name} (API)`;
 
 export default async function GetMembersFollowedByMe(req: NextApiRequest, res: NextApiResponse) {
 
+    res.send([
+        {
+            memberId: 'M9527XXYX1',
+            nickname: '县长马邦德1',
+            briefIntro: '我就是县长！我就是马邦德',
+            createdTimeBySecond: 168488670
+        },
+        {
+            memberId: 'M9527XXYX2',
+            nickname: '县长马邦德2',
+            briefIntro: '我就是县长！我就是马邦德',
+            createdTimeBySecond: 168488670
+        },
+        {
+            memberId: 'M9527XXYX3',
+            nickname: '县长马邦德3',
+            briefIntro: '我就是县长！我就是马邦德',
+            createdTimeBySecond: 168488670
+        },
+        {
+            memberId: 'M9527XXYX4',
+            nickname: '县长马邦德4',
+            briefIntro: '我就是县长！我就是马邦德',
+            createdTimeBySecond: 168488670
+        },
+        {
+            memberId: 'M9527XXYX5',
+            nickname: '县长马邦德5',
+            briefIntro: '我就是县长！我就是马邦德',
+            createdTimeBySecond: 168488670
+        },
+    ]);
+    return;
+    
     const { method } = req;
     if ('GET' !== method) {
         response405(req, res);
