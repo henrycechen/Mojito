@@ -21,18 +21,13 @@ import ListItemText from '@mui/material/ListItemText';
 import ListItemIcon from '@mui/material/ListItemIcon';
 
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
-import AddIcon from '@mui/icons-material/Add';
 import ArticleIcon from '@mui/icons-material/Article';
-import AppsIcon from '@mui/icons-material/Apps';
 import BlockIcon from '@mui/icons-material/Block';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
-import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
 import CreateIcon from '@mui/icons-material/Create';
 import EditIcon from '@mui/icons-material/Edit';
-import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 import FlagIcon from '@mui/icons-material/Flag';
-import ForumIcon from '@mui/icons-material/Forum';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import IconButton from '@mui/material/IconButton';
 import ListAltIcon from '@mui/icons-material/ListAlt';
@@ -46,7 +41,7 @@ import SvgIcon from '@mui/material/SvgIcon';
 
 import Masonry from '@mui/lab/Masonry';
 
-import { CentralizedBox, ResponsiveCard, StyledSwitch, TextButton } from '../ui/Styled';
+import { StyledSwitch } from '../ui/Styled';
 import Navbar from '../ui/Navbar';
 import Copyright from '../ui/Copyright';
 import Terms from '../ui/Terms';
@@ -462,7 +457,6 @@ const Home = () => {
     const handleProceedToCreatePage = () => {
         router.push(`/create`);
     };
-
 
     const handleEditPost = () => {
         const referenceId = popUpMenuStates.referenceId;

@@ -1,7 +1,6 @@
 import * as React from 'react';
 import { useRouter } from 'next/router';
 import { signIn, useSession, } from 'next-auth/react';
-import useTheme from '@mui/material/styles/useTheme';
 
 import Avatar from '@mui/material/Avatar';
 import Box from '@mui/material/Box';
@@ -17,28 +16,6 @@ import MenuItem from '@mui/material/MenuItem';
 import ListItemText from '@mui/material/ListItemText';
 import ListItemIcon from '@mui/material/ListItemIcon';
 
-import AccountCircleIcon from '@mui/icons-material/AccountCircle';
-import AddIcon from '@mui/icons-material/Add';
-import ArticleIcon from '@mui/icons-material/Article';
-import AppsIcon from '@mui/icons-material/Apps';
-import BlockIcon from '@mui/icons-material/Block';
-import Brightness7Icon from '@mui/icons-material/Brightness7';
-import Brightness4Icon from '@mui/icons-material/Brightness4';
-import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
-import CreateIcon from '@mui/icons-material/Create';
-import EditIcon from '@mui/icons-material/Edit';
-import ExitToAppIcon from '@mui/icons-material/ExitToApp';
-import FlagIcon from '@mui/icons-material/Flag';
-import ForumIcon from '@mui/icons-material/Forum';
-import BarChartIcon from '@mui/icons-material/BarChart';
-import IconButton from '@mui/material/IconButton';
-import ListAltIcon from '@mui/icons-material/ListAlt';
-import EmailIcon from '@mui/icons-material/Email';
-import MarkEmailUnreadIcon from '@mui/icons-material/MarkEmailUnread';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
-import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
-import ReorderIcon from '@mui/icons-material/Reorder';
-import SettingsIcon from '@mui/icons-material/Settings';
 import AlternateEmailIcon from '@mui/icons-material/AlternateEmail';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import ChatBubbleIcon from '@mui/icons-material/ChatBubble';
@@ -51,14 +28,11 @@ import { timeToString, restoreFromLocalStorage } from '../lib/utils/general';
 import { provideAvatarImageUrl, getNicknameBrief } from '../lib/utils/for/member';
 import { noticeIdToUrl, noticeInfoToString } from '../lib/utils/for/notification';
 
-import { CentralizedBox, ResponsiveCard, TextButton } from '../ui/Styled';
-
-
-
 import LegalInfo from '../ui/LegalInfo';
 import Navbar from '../ui/Navbar';
 import SideMenu from '../ui/SideMenu';
 import SideColumn from '../ui/SideColumn';
+import { TextButton } from '../ui/Styled';
 
 const storageName0 = 'PreferenceStates';
 const restorePreferenceStatesFromCache = restoreFromLocalStorage(storageName0);
@@ -233,7 +207,7 @@ const Message = () => {
                             {/* like */}
                             <Button sx={{ color: 'like' === processStates.selectedCategory ? 'primary' : 'grey.600' }} onClick={handleSelectNoticeCategory('like')}>
                                 <Box>
-                                    <CentralizedBox sx={{ p: 1 }}><ThumbUpIcon sx={{ fontSize: 22 }} /></CentralizedBox>
+                                    <Box sx={{ p: 1, display: 'flex', flexDirection: 'row', justifyContent: 'center' }}><ThumbUpIcon sx={{ fontSize: 22 }} /></Box>
                                     <Typography variant={'body1'} textAlign={'center'}>{langConfigs.liked[preferenceStates.lang]}{0 === processStates.noticeStatistics.like ? '' : `+${processStates.noticeStatistics.like}`}</Typography>
                                 </Box>
                             </Button>
@@ -241,7 +215,7 @@ const Message = () => {
                             {/* save */}
                             <Button sx={{ color: 'save' === processStates.selectedCategory ? 'primary' : 'grey.600' }} onClick={handleSelectNoticeCategory('save')}>
                                 <Box>
-                                    <CentralizedBox sx={{ p: 1 }}><StarIcon sx={{ fontSize: 22 }} /></CentralizedBox>
+                                    <Box sx={{ p: 1, display: 'flex', flexDirection: 'row', justifyContent: 'center' }}><StarIcon sx={{ fontSize: 22 }} /></Box>
                                     <Typography variant={'body1'} textAlign={'center'}>{langConfigs.saved[preferenceStates.lang]}{0 === processStates.noticeStatistics.save ? '' : `+${processStates.noticeStatistics.save}`}</Typography>
                                 </Box>
                             </Button>
@@ -249,7 +223,7 @@ const Message = () => {
                             {/* reply */}
                             <Button sx={{ color: 'reply' === processStates.selectedCategory ? 'primary' : 'grey.600' }} onClick={handleSelectNoticeCategory('reply')}>
                                 <Box>
-                                    <CentralizedBox sx={{ p: 1 }}><ChatBubbleIcon sx={{ fontSize: 22 }} /></CentralizedBox>
+                                    <Box sx={{ p: 1, display: 'flex', flexDirection: 'row', justifyContent: 'center' }}><ChatBubbleIcon sx={{ fontSize: 22 }} /></Box>
                                     <Typography variant={'body1'} textAlign={'center'}>{langConfigs.replied[preferenceStates.lang]}{0 === processStates.noticeStatistics.reply ? '' : `+${processStates.noticeStatistics.reply}`}</Typography>
                                 </Box>
                             </Button>
@@ -257,7 +231,7 @@ const Message = () => {
                             {/* cue */}
                             <Button sx={{ color: 'cue' === processStates.selectedCategory ? 'primary' : 'grey.600' }} onClick={handleSelectNoticeCategory('cue')}>
                                 <Box>
-                                    <CentralizedBox sx={{ p: 1 }}><AlternateEmailIcon sx={{ fontSize: 22 }} /></CentralizedBox>
+                                    <Box sx={{ p: 1, display: 'flex', flexDirection: 'row', justifyContent: 'center' }}><AlternateEmailIcon sx={{ fontSize: 22 }} /></Box>
                                     <Typography variant={'body1'} textAlign={'center'}>{langConfigs.cued[preferenceStates.lang]}{0 === processStates.noticeStatistics.cue ? '' : `+${processStates.noticeStatistics.cue}`}</Typography>
                                 </Box>
                             </Button>

@@ -4,7 +4,7 @@ import { RestError } from '@azure/data-tables';
 import { MongoError } from 'mongodb';
 
 import AzureTableClient from '../../../../modules/AzureTableClient';
-import AtlasDatabaseClient from "../../../../modules/AtlasDatabaseClient";
+import AtlasDatabaseClient from '../../../../modules/AtlasDatabaseClient';
 
 import { verifyId } from '../../../../lib/utils/verify';
 import { response405, response500, logWithDate } from '../../../../lib/utils/general';

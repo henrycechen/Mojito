@@ -44,7 +44,6 @@ import { verifyId } from '../../lib/utils/verify';
 import { provideAvatarImageUrl, getNicknameBrief, fakeConciseMemberStatistics, fakeRestrictedMemberInfo } from '../../lib/utils/for/member';
 import { provideCoverImageUrl } from '../../lib/utils/for/post';
 import { getRandomHexStr } from '../../lib/utils/create';
-import { CentralizedBox } from '../../ui/Styled';
 
 import SideMenu from '../../ui/SideMenu';
 import SideColumn from '../../ui/SideColumn';
@@ -1159,17 +1158,16 @@ const Member = ({ memberInfo_ss: memberComprehensive_ss, memberStatistics_ss, re
                         {/* statistics - likes & saves */}
                         <Box sx={{ display: 'flex', flexDirection: 'row' }}>
                             {0 !== memberStatistics_ss.totalFollowedByCount && <>
-                                {0 !== memberStatistics_ss.totalFollowedByCount && <>
+                                {0 !== memberStatistics_ss.totalCreationLikedCount && <>
                                     <Typography color={'text.disabled'}>{langConfigs.authorsTotalLikesP1[preferenceStates.lang]}</Typography>
-                                    <Typography fontWeight={700} color={'grey.700'} >{memberStatistics_ss.totalFollowedByCount}</Typography>
+                                    <Typography fontWeight={700} color={'grey.700'} >{memberStatistics_ss.totalCreationLikedCount}</Typography>
                                     <Typography color={'text.disabled'}>{langConfigs.authorsTotalLikesP2[preferenceStates.lang]}</Typography>
                                 </>}
-                                {0 !== memberStatistics_ss.totalFollowedByCount && 0 !== memberStatistics_ss.totalFollowedByCount && <>
-                                    <Typography fontWeight={700} color={'grey.700'} >{memberStatistics_ss.totalFollowedByCount}</Typography>
+                                {0 !== memberStatistics_ss.totalCreationLikedCount && 0 !== memberStatistics_ss.totalCreationSavedCount && <>
+                                    <Typography fontWeight={700} color={'grey.700'} >{memberStatistics_ss.totalCreationSavedCount}</Typography>
                                     <Typography color={'text.disabled'}>{langConfigs.authorsTotalSavesP2[preferenceStates.lang]}</Typography>
                                 </>}
                             </>}
-
                         </Box>
 
                         {/* divider */}
@@ -1360,26 +1358,26 @@ const Member = ({ memberInfo_ss: memberComprehensive_ss, memberStatistics_ss, re
                     </Box>}
 
                     {/* avatar image */}
-                    <CentralizedBox sx={{ pt: 2 }}>
+                    <Box sx={{ pt: 2, display: 'flex', flexDirection: 'row', justifyContent: 'center' }}>
                         <Avatar src={authorInfoSettingStates.alternativeImageUrl} sx={{ width: { xs: 96, md: 128 }, height: { xs: 96, md: 128 }, }}></Avatar>
-                    </CentralizedBox>
+                    </Box>
 
                     {/* 'open file' button */}
-                    <CentralizedBox mt={1}>
+                    <Box sx={{ mt: 1, display: 'flex', flexDirection: 'row', justifyContent: 'center' }}>
                         <Box>
                             <IconButton color={'primary'} aria-label={'upload picture'} component={'label'} >
                                 <input hidden accept={'image/*'} type={'file'} onChange={handleOpenFile} />
                                 <PhotoCamera />
                             </IconButton>
                         </Box>
-                    </CentralizedBox>
+                    </Box>
 
-                    <CentralizedBox mt={0}>
+                    <Box sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'center' }}>
                         <Typography color={'grey'} variant={'body2'} align={'center'}>{langConfigs.avatarImageRequirement[preferenceStates.lang]}</Typography>
-                    </CentralizedBox>
+                    </Box>
 
                     {/* nickname */}
-                    <CentralizedBox sx={{ pt: 2 }}>
+                    <Box sx={{ pt: 2, display: 'flex', flexDirection: 'row', justifyContent: 'center' }}>
                         <TextField
                             error={authorInfoSettingStates.invalidName}
                             label={langConfigs.newNickname[preferenceStates.lang]}
@@ -1388,14 +1386,14 @@ const Member = ({ memberInfo_ss: memberComprehensive_ss, memberStatistics_ss, re
                             size={'medium'}
                             fullWidth
                         />
-                    </CentralizedBox>
+                    </Box>
 
-                    <CentralizedBox mt={1}>
+                    <Box sx={{ mt: 1, display: 'flex', flexDirection: 'row', justifyContent: 'center' }}>
                         <Typography color={'grey'} variant={'body2'} align={'center'}>{langConfigs.nicknameRequirement[preferenceStates.lang]}</Typography>
-                    </CentralizedBox>
+                    </Box>
 
                     {/* brief intro */}
-                    <CentralizedBox sx={{ pt: 2 }}>
+                    <Box sx={{ pt: 2, display: 'flex', flexDirection: 'row', justifyContent: 'center' }}>
                         <TextField
                             error={authorInfoSettingStates.invalidIntro}
                             label={langConfigs.briefIntro[preferenceStates.lang]}
@@ -1407,21 +1405,18 @@ const Member = ({ memberInfo_ss: memberComprehensive_ss, memberStatistics_ss, re
                             size={'medium'}
                             fullWidth
                         />
-                    </CentralizedBox>
+                    </Box>
 
                     {/* requirenment */}
-                    <CentralizedBox mt={1}>
+                    <Box sx={{ mt: 1, display: 'flex', flexDirection: 'row', justifyContent: 'center' }}>
                         <Typography color={'grey'} variant={'body2'} align={'center'}>{langConfigs.briefIntroRequirement[preferenceStates.lang]}</Typography>
-                    </CentralizedBox>
+                    </Box>
 
                     {/* requirenment */}
-                    <CentralizedBox>
+                    <Box sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'center' }}>
                         <Typography color={'grey'} variant={'body2'} align={'center'}>{langConfigs.referToCommunityGuidelines[preferenceStates.lang]}</Typography>
-                    </CentralizedBox>
+                    </Box>
                 </Box>
-
-
-
             </SwipeableDrawer>
         </>
     );

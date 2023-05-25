@@ -179,7 +179,7 @@ const FollowedMembers = () => {
                                         <Typography variant='body1'>{getNicknameBrief(info.nickname)}</Typography>
 
                                         {/* brief intro */}
-                                        <Typography variant='body2' overflow={'hidden'} textOverflow={'ellipsis'}>{info.briefIntro}</Typography>
+                                        <Typography variant='body2' noWrap>{info.briefIntro}</Typography>
 
                                     </ListItemText>
                                     <ListItemIcon>

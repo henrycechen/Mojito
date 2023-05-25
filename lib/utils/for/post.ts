@@ -125,6 +125,7 @@ export function getRestrictedFromPostComprehensive(postComprehensive: IPostCompr
 
         postId: postComprehensive.postId,
         memberId: postComprehensive.memberId,
+        nickname: postComprehensive.nickname,
         createdTimeBySecond: postComprehensive.createdTimeBySecond,
         title: '',
         imageFullnamesArr: [],
@@ -190,6 +191,7 @@ export function fakeRestrictedPostComprehensive(): IRestrictedPostComprehensive 
     return {
         postId: '',
         memberId: '',
+        nickname: '',
         createdTimeBySecond: 0,
         title: '',
         imageFullnamesArr: [],

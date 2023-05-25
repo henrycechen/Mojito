@@ -2,22 +2,30 @@ import * as React from 'react';
 import { signOut, useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
 import { NextPageContext } from 'next/types';
+import { MongoError } from 'mongodb';
+
+import AtlasDatabaseClient from "../../modules/AtlasDatabaseClient";
 
 import Alert from '@mui/material/Alert';
 import Avatar from '@mui/material/Avatar';
 import Backdrop from '@mui/material/Backdrop';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import Container from '@mui/material/Container';
 import Chip from '@mui/material/Chip';
 import Divider from '@mui/material/Divider';
 import Grid from '@mui/material/Grid';
+import IconButton from '@mui/material/IconButton';
 import Popover from '@mui/material/Popover';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 
-import IconButton from '@mui/material/IconButton';
+import Menu from '@mui/material/Menu';
+import MenuList from '@mui/material/MenuList';
+import MenuItem from '@mui/material/MenuItem';
+import ListItemText from '@mui/material/ListItemText';
+import ListItemIcon from '@mui/material/ListItemIcon';
+
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import ThumbDownIcon from '@mui/icons-material/ThumbDown';
 import BookmarkIcon from '@mui/icons-material/Bookmark';
@@ -35,18 +43,14 @@ import 'swiper/css/pagination';
 
 import Link from '@mui/material/Link';
 import Tooltip from '@mui/material/Tooltip';
-import Menu from '@mui/material/Menu';
-import MenuItem from '@mui/material/MenuItem';
-import ListItemText from '@mui/material/ListItemText';
-import ListItemIcon from '@mui/material/ListItemIcon';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import BlockIcon from '@mui/icons-material/Block';
 import FlagIcon from '@mui/icons-material/Flag';
 
-import { ResponsiveCard, TextButton } from '../../ui/Styled';
+import { TextButton } from '../../ui/Styled';
 import Navbar from '../../ui/Navbar';
-import Copyright from '../../ui/Copyright';
-import Terms from '../../ui/Terms';
+import LegalInfo from '../../ui/LegalInfo';
+import SideMenu from '../../ui/SideMenu';
 
 import { IMemberInfo } from '../../lib/interfaces/member';
 import { IRestrictedPostComprehensive, IConcisePostComprehensive } from '../../lib/interfaces/post';
@@ -55,7 +59,6 @@ import { IChannelInfo } from '../../lib/interfaces/channel';
 
 import { fakeConciseMemberInfo, provideAvatarImageUrl, getNicknameBrief, provideCuedMemberInfoArray, provideMemberInfoPageUrl, } from '../../lib/utils/for/member';
 import { fakeRestrictedPostComprehensive, provideCoverImageUrl, provideImageUrl, } from '../../lib/utils/for/post';
-import { fakeChannel, } from '../../lib/utils/for/channel';
 import { getRandomHexStr, getTimeBySecond, } from '../../lib/utils/create';
 import { logWithDate, restoreFromLocalStorage, timeToString } from '../../lib/utils/general';
 import { verifyId } from '../../lib/utils/verify';
@@ -63,22 +66,6 @@ import { LangConfigs } from '../../lib/types';
 
 const storageName0 = 'PreferenceStates';
 const restorePreferenceStatesFromCache = restoreFromLocalStorage(storageName0);
-
-type TPostPageProps = {
-    restrictedPostComprehensive_ss: IRestrictedPostComprehensive;
-    channelInfo_ss: IChannelInfo;
-    authorInfo_ss: IMemberInfo;
-    redirect404: boolean;
-    redirect500: boolean;
-};
-
-interface IPostPageProcessStates {
-    lang: string;
-    displayEditor: boolean;
-    editorEnchorElement: any;
-    displayBackdrop: boolean;
-    backdropOnDisplayImageUrl: string | undefined;
-}
 
 const appDomain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? '';
 const imageDomain = process.env.NEXT_PUBLIC_IMAGE_DOMAIN ?? '';
@@ -114,6 +101,8 @@ const langConfigs: LangConfigs = {
         cn: (nickname: string) => `撰写评论回复@${nickname}`,
         en: (nickname: string) => `Create comment and reply to @${nickname}`
     },
+
+    // Right column
     follow: {
         tw: '關注',
         cn: '关注',
@@ -129,16 +118,12 @@ const langConfigs: LangConfigs = {
         cn: '取消关注',
         en: 'Undo Follow'
     },
-    defaultNickname: {
-        tw: '作者',
-        cn: '作者',
-        en: 'Post author'
+    postStackTitle: {
+        tw: '更多文章',
+        cn: '更多文章',
+        en: 'Other posts'
     },
-    hotPostRecommend: {
-        tw: '的热门文章',
-        cn: '的热门文章',
-        en: ''
-    },
+
     expendSubcomments: {
         tw: '展開討論',
         cn: '展开讨论',
@@ -169,7 +154,11 @@ const langConfigs: LangConfigs = {
         cn: '您的账户被限制因而不能发布评论',
         en: 'Unable to submit comment due to restricted member'
     },
-
+    noFollowing: {
+        tw: '还没有會員關注作者',
+        cn: '位会员正在关注作者',
+        en: 'Author has no followers',
+    },
     authorsTotalFollowing: {
         tw: '位會員正在關注作者',
         cn: '位会员正在关注作者',
@@ -184,6 +173,11 @@ const langConfigs: LangConfigs = {
         tw: '次喜欢',
         cn: '次喜欢',
         en: ' likes',
+    },
+    authorsTotalSavesP2: {
+        tw: '次收藏',
+        cn: '次喜欢',
+        en: 'likes',
     },
 
     creations: {
@@ -218,7 +212,13 @@ const langConfigs: LangConfigs = {
     },
 };
 
-//// get multiple info server-side ////
+type TPostPageProps = {
+    restrictedPostComprehensive_ss: IRestrictedPostComprehensive;
+    authorInfo_ss: IMemberInfo;
+    redirect404: boolean;
+    redirect500: boolean;
+};
+
 export async function getServerSideProps(context: NextPageContext): Promise<{ props: TPostPageProps; }> {
     const { postId: id } = context.query;
     const { isValid, category, id: postId } = verifyId(id);
@@ -228,7 +228,6 @@ export async function getServerSideProps(context: NextPageContext): Promise<{ pr
         return {
             props: {
                 restrictedPostComprehensive_ss: fakeRestrictedPostComprehensive(),
-                channelInfo_ss: fakeChannel(),
                 authorInfo_ss: fakeConciseMemberInfo(),
                 redirect404: true,
                 redirect500: false
@@ -244,36 +243,54 @@ export async function getServerSideProps(context: NextPageContext): Promise<{ pr
 
         }
         const restrictedPostComprehensive_ss = await restrictedPostComprehensive_resp.json();
-
-        // GET channel info by id
-        const channelInfo_resp = await fetch(`${appDomain}/api/channel/info/by/id/${restrictedPostComprehensive_ss.channelId}`);
-        if (200 !== channelInfo_resp.status) {
-            throw new Error('Attempt to GET channel info by id');
-        }
-        const channelInfo_ss = await channelInfo_resp.json();
+        const { nickname: n0 } = restrictedPostComprehensive_ss;
 
         // GET author info by id
         const authorInfo_resp = await fetch(`${appDomain}/api/member/info/${restrictedPostComprehensive_ss.memberId}`);
         if (200 !== authorInfo_resp.status) {
             throw new Error('Attempt to GET member (author) info');
         }
+
         const authorInfo_ss = await authorInfo_resp.json();
+        const { nickname: n1 } = authorInfo_ss;
+
+        if (n0 !== n1) {
+            const atlasDbClient = AtlasDatabaseClient();
+            try {
+                await atlasDbClient.connect();
+                const postComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection('post');
+                const postComprehensiveUpdateResult = await postComprehensiveCollectionClient.updateOne({ postId }, { $set: { nickname: n1 } });
+                if (!postComprehensiveUpdateResult.acknowledged) {
+                    throw new Error(`Failed to update status (-1, delete, of IPostComprehensive, post id: ${postId}) in [C] postComprehensive`);
+                }
+                await atlasDbClient.close();
+            } catch (e: any) {
+                let msg;
+                if (e instanceof MongoError) {
+                    msg = `Attempt to communicate with atlas mongodb.`;
+                } else {
+                    msg = `Uncategorized. ${e?.msg}`;
+                }
+                logWithDate(msg, '/pages/post/[postId].getServerSideProps', e);
+            } finally {
+                await atlasDbClient.close();
+            }
+        }
 
         return {
             props: {
                 restrictedPostComprehensive_ss,
-                channelInfo_ss,
                 authorInfo_ss,
                 redirect404: false,
                 redirect500: false,
             }
         };
+
     } catch (e: any) {
         logWithDate(e?.msg, '/pages/post/[postId].getServerSideProps', e);
         return {
             props: {
                 restrictedPostComprehensive_ss: fakeRestrictedPostComprehensive(),
-                channelInfo_ss: fakeChannel(),
                 authorInfo_ss: fakeConciseMemberInfo(),
                 redirect404: false,
                 redirect500: true
@@ -282,9 +299,10 @@ export async function getServerSideProps(context: NextPageContext): Promise<{ pr
     }
 }
 
-const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInfo_ss, authorInfo_ss, redirect404, redirect500 }: TPostPageProps) => {
+const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, authorInfo_ss, redirect404, redirect500 }: TPostPageProps) => {
 
     const router = useRouter();
+
     React.useEffect(() => {
         if (redirect404) {
             router.push('/404');
@@ -296,8 +314,6 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
 
     const { data: session, status } = useSession();
 
-    //////////////////////////////////////// INFO & STATISTICS ////////////////////////////////////////
-
     React.useEffect(() => {
         if ('authenticated' === status) {
             const viewerSession: any = { ...session };
@@ -308,27 +324,23 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
 
     const { postId, memberId: authorId, } = postComprehensive_ss;
 
-    // States - preference ////////
+    // States - preference
     const [preferenceStates, setPreferenceStates] = React.useState<any>({
         lang: defaultLang,
         mode: 'light'
     });
 
-    // // States - swipper (dimensions)
-    // // Logic:
-    // // swiperWrapperHeight is designed for adjust Box (swiperslide wrapper) height
-    // // Initial value set to 1 leads to Box-height having been set to 100% on initializing
-    // // If there is ultra-high photo in the swiperslide array
-    // // Then adujust all the Box-height to the swiper (top-level) wrapper height
-    // // Which makes all the photo aligned center (horizontally)
+    // States - swipper (dimensions)
+    // Logic:
+    // swiperWrapperHeight is designed for adjust Box (swiperslide wrapper) height
+    // Initial value set to 1 leads to Box-height having been set to 100% on initializing
+    // If there is ultra-high photo in the swiperslide array
+    // Then adujust all the Box-height to the swiper (top-level) wrapper height
+    // Which makes all the photo aligned center (horizontally)
     const [swiperWrapperDimensions, setSwiperWrapperDimensions] = React.useState({ width: 1, height: 1 });
 
     React.useEffect(() => {
         const wrapper: HTMLElement | null = document.getElementById('swiper-wrapper');
-
-        // alert(wrapper?.offsetHeight);
-        // alert(wrapper?.offsetWidth);
-
         setSwiperWrapperDimensions({
             width: wrapper?.offsetWidth ?? 1,
             height: wrapper?.offsetHeight ?? 500
@@ -339,6 +351,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
         // Member statistics
         totalCreationsCount: number;
         totalCreationLikedCount: number;
+        totalCreationSavedCount: number;
         totalFollowedByCount: number;
         // Post statistics
         totalLikedCount: number;
@@ -347,10 +360,11 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
         totalCommentCount: number;
     };
 
-    // States - author statistics ////////
+    // States - author statistics
     const [combinedStatisticsState, setCombinedStatisticsState] = React.useState<TCombinedStatistics>({
         totalCreationsCount: 0,
         totalCreationLikedCount: 0,
+        totalCreationSavedCount: 0,
         totalFollowedByCount: 0,
         totalLikedCount: postComprehensive_ss.totalLikedCount,
         totalDislikedCount: postComprehensive_ss.totalDislikedCount,
@@ -370,6 +384,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
                     ...combinedStatisticsState,
                     totalCreationsCount: stat.totalCreationsCount,
                     totalCreationLikedCount: stat.totalCreationLikedCount,
+                    totalCreationSavedCount: stat.totalCreationSavedCount,
                     totalFollowedByCount: stat.totalFollowedByCount,
                 });
             } catch (e) {
@@ -378,19 +393,19 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
         }
     };
 
-    // States - (recommend) creation info array  ////////
+    // States - (recommend) creation info array
     const [creationInfoArr, setCreationInfoArr] = React.useState<IConcisePostComprehensive[]>([]);
 
     React.useEffect(() => { updateCreationArr(); }, []);
 
     const updateCreationArr = async () => {
-        const resp = await fetch(`/api/member/creations/${authorId}`);
+        const resp = await fetch(`/api/member/creations/${authorId}/withstat`);
         if (200 === resp.status) {
             try {
                 const arr = await resp.json();
                 setCreationInfoArr([...arr]);
             } catch (e) {
-                console.error(`Attempt to GET new posts (creations) of post author (member id: ${authorId}). ${e}`);
+                console.error(`Attempt to GET posts (creations) of post author (member id: ${authorId}). ${e}`);
             }
         }
     };
@@ -399,8 +414,16 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
         router.push(`/post/${postId}`);
     };
 
-    // States - process ////////
-    const [processStates, setProcessStates] = React.useState<IPostPageProcessStates>({
+    type TProcessStates = {
+        lang: string;
+        displayEditor: boolean;
+        editorEnchorElement: any;
+        displayBackdrop: boolean;
+        backdropOnDisplayImageUrl: string | undefined;
+    };
+
+    // States - process
+    const [processStates, setProcessStates] = React.useState<TProcessStates>({
         lang: defaultLang,
         displayEditor: false,
         displayBackdrop: false,
@@ -409,14 +432,63 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
     });
 
     const handleBackdropOpen = (imageFullname: string) => (event: React.MouseEvent) => {
-        setProcessStates({ ...processStates, displayBackdrop: true, backdropOnDisplayImageUrl: provideImageUrl(imageFullname, imageDomain) });
+        setProcessStates({
+            ...processStates,
+            displayBackdrop: true,
+            backdropOnDisplayImageUrl: provideImageUrl(imageFullname, imageDomain)
+        });
     };
 
     const handleBackdropClose = () => {
-        setProcessStates({ ...processStates, displayBackdrop: false, backdropOnDisplayImageUrl: undefined });
+        setProcessStates({
+            ...processStates,
+            displayBackdrop: false,
+            backdropOnDisplayImageUrl: undefined
+        });
     };
 
-    //////////////////////////////////////// VIEWER INFO ////////////////////////////////////////
+    type TChannelInfoStates = {
+        channelName: { [key: string]: string; };
+        channelInfo: { [channelId: string]: IChannelInfo; };
+    };
+
+    // States - channel info 
+    const [channelInfoStates, setChannelInfoStates] = React.useState<TChannelInfoStates>({
+        channelName: {
+            tw: '',
+            cn: '',
+            en: ''
+        },
+        channelInfo: {},
+    });
+
+    React.useEffect(() => { getChanneInfo(); }, []);
+
+    const getChanneInfo = async () => {
+        const resp = await fetch(`/api/channel/info`);
+        if (200 !== resp.status) {
+            console.error(`Attemp to GET channel info.`);
+            return;
+        }
+        try {
+            const info = await resp.json();
+            if (!!info[postComprehensive_ss.channelId]) {
+                setChannelInfoStates({
+                    channelName: { ...info[postComprehensive_ss.channelId].name },
+                    channelInfo: { ...info }
+                });
+            } else {
+                setChannelInfoStates({
+                    ...channelInfoStates,
+                    channelInfo: { ...info }
+                });
+            }
+        } catch (e) {
+            console.error(`Attemp to parese channel info (JSON) from response. ${e}`);
+        }
+    };
+
+    // States - channel info
 
     type TViewerInfoStates = {
         memberId: string;
@@ -426,6 +498,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
         blockedMemberInfoArr: IMemberInfo[],
     };
 
+    // States - viewer info
     const [viewerInfoStates, setViewerInfoStates] = React.useState<TViewerInfoStates>({
         memberId: '',
         nickname: '',
@@ -452,18 +525,18 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
             const followResp = await fetch(`/api/member/followedbyme/${viewerInfoStates.memberId}`);
             let arr0: IMemberInfo[] = [];
             if (200 === followResp.status) {
-                const _arr = await followResp.json();
-                if (Array.isArray(_arr)) {
-                    arr0.push(..._arr);
+                const arr = await followResp.json();
+                if (Array.isArray(arr)) {
+                    arr0.push(...arr);
                 }
             }
 
             const blockResp = await fetch(`/api/member/blockedbyme/${viewerInfoStates.memberId}`);
             let arr1: IMemberInfo[] = [];
             if (200 === blockResp.status) {
-                const _arr = await blockResp.json();
-                if (Array.isArray(_arr)) {
-                    arr1.push(..._arr);
+                const arr = await blockResp.json();
+                if (Array.isArray(arr)) {
+                    arr1.push(...arr);
                 }
             }
 
@@ -495,6 +568,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
         followed: boolean;
     };
 
+    // States - behaviour
     const [behaviourStates, setBehaviourStates] = React.useState<TMemberBehaviourStates>({
         attitudeOnPost: 0,
         attitudeOnComment: {},
@@ -543,14 +617,6 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
                     console.error(`Attemp to parse follow (boolean value) from response`);
                 }
             }
-
-            setCombinedStatisticsState({
-                ...combinedStatisticsState,
-                totalFollowedByCount: combinedStatisticsState.totalFollowedByCount - (followed ? 1 : 0),
-                totalCreationLikedCount: combinedStatisticsState.totalCreationLikedCount - attitudeOnPost,
-                totalLikedCount: postComprehensive_ss.totalLikedCount - attitudeOnPost, // handle offset
-                totalSavedCount: postComprehensive_ss.totalSavedCount - (saved ? 1 : 0), // handle offset
-            });
 
             setBehaviourStates({
                 attitudeOnPost,
@@ -612,7 +678,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
         router.push(`/me/${authorId}`);
     };
 
-    const handleClickOnPostCard = (postId: string) => (event: React.MouseEvent<any>) => {
+    const handleClickOnPostCard = (postId: string) => (event: React.MouseEvent<HTMLElement>) => {
         router.push(`/post/${postId}`);
     };
 
@@ -631,8 +697,6 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
         router.push(`/report?memberId=${popUpMenuStates.memberId}&referenceId=${popUpMenuStates.referenceId}`);
     };
 
-    //////////////////////////////////////// COMMENT EDITOR ////////////////////////////////////////
-
     type TEditorStates = {
         parentId: string;
         memberId: string;
@@ -646,6 +710,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
         disableEditor: boolean;
     };
 
+    // States - editor
     const [editorStates, setEditorStates] = React.useState<TEditorStates>({
         parentId: '',
         memberId: '',
@@ -794,8 +859,6 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
         }
     };
 
-    //////////////////////////////////////// COMMENTS ////////////////////////////////////////
-
     interface IRestrictedCommentComprehensiveWithControl extends IRestrictedCommentComprehensive {
         isExpended: boolean;
     }
@@ -804,6 +867,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
         [commentId: string]: IRestrictedCommentComprehensiveWithControl;
     };
 
+    // States - comment dictionary
     const [restrictedCommentComprehensiveDict, setRestrictedCommentComprehensiveDict] = React.useState<TRestrictedCommentComprehensiveDict>({});
 
     React.useEffect(() => { updateRestrictedCommentComprehensiveDict(); }, []);
@@ -937,6 +1001,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
         };
     };
 
+    // States - subcomment dictionary
     const [restrictedSubcommentComprehensiveDict, setRestrictedSubcommentComprehensiveDict] = React.useState<TRestrictedSubcommentComprehensiveDict>({});
 
     const handleExpressAttitudeOnSubcomment = async (parentId: string, commentId: string, attitude: number) => {
@@ -996,8 +1061,6 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
         }
     };
 
-    //////////////////////////////////////// POP-UP MENU ////////////////////////////////////////
-
     type TPopUpMenuStates = {
         anchorEl: null | HTMLElement;
         memberId: string;
@@ -1005,6 +1068,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
         referenceId: string;
     };
 
+    // States - pop-up meu
     const [popUpMenuStates, setPopUpMenuStates] = React.useState<TPopUpMenuStates>({
         anchorEl: null,
         memberId: '',
@@ -1019,8 +1083,6 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
     const handleClosePopUpMenu = () => {
         setPopUpMenuStates({ ...popUpMenuStates, anchorEl: null });
     };
-
-    //////////////////////////////////////// FUNCTIONS ////////////////////////////////////////
 
     const makeParagraph = (paragraph: string, cuedMemberInfoArr: IMemberInfo[]) => {
         // [!] empty cued array
@@ -1105,427 +1167,418 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
     return (
         <>
             <Navbar lang={preferenceStates.lang} />
-            {/* post component */}
-            <Container disableGutters >
-                <Grid container pt={1}>
+            <Grid container>
 
-                    {/* //// placeholder - left //// */}
-                    <Grid item xs={0} sm={1} md={1} />
+                {/* left */}
+                <Grid item xs={0} sm={0} md={3} lg={3} xl={4} >
+                    <Box sx={{ display: { xs: 'none', sm: 'none', md: 'flex' }, flexDirection: 'row-reverse', position: 'sticky', top: 0, left: 0, }}>
+                        <SideMenu lang={preferenceStates.lang} />
+                    </Box>
+                </Grid>
 
-                    {/* //// middle column //// */}
-                    <Grid item xs={12} sm={10} md={7} >
+                {/* middle */}
+                <Grid item xs={12} sm={12} md={9} lg={6} xl={4} >
+                    <Stack maxWidth={900} pt={{ xs: 2, sm: 2, md: 10 }} px={2} spacing={{ xs: 1, sm: 2 }}>
 
-                        {/* middle card-stack */}
-                        <Stack maxWidth={800} spacing={{ xs: 1, sm: 2 }}>
+                        {/* *post */}
+                        <Box >
 
-                            {/* *post */}
-                            <ResponsiveCard sx={{ padding: { sm: 4 }, boxShadow: { sm: 1 } }}>
+                            {/* post-title: desktop style */}
+                            <Box display={{ xs: 'none', sm: 'block' }}>
 
-                                {/* post-title: desktop style */}
-                                <Box display={{ xs: 'none', sm: 'block' }}>
-
-                                    {/* channel name */}
-                                    <Typography variant={'subtitle1'} fontWeight={400} color={'grey'}>{channelInfo_ss.name[preferenceStates.lang]}</Typography>
-
-                                    {/* title */}
-                                    <Typography variant={'h6'} fontWeight={700}>{postComprehensive_ss.title}</Typography>
-
-                                    {/* member info & timestamp */}
-                                    <TextButton color='inherit' sx={{ flexDirection: 'row', marginTop: 1 }}>
-                                        <Typography variant='body2'>{`${authorInfo_ss.nickname} ${timeToString(postComprehensive_ss.createdTimeBySecond, preferenceStates.lang)}`}</Typography>
-                                    </TextButton>
-                                </Box>
-
-                                {/* post-title: mobile style */}
-                                <Stack mt={0.5} direction={'row'} sx={{ display: { xs: 'flex', sm: 'none' } }}>
-                                    <IconButton sx={{ padding: 0 }}>
-                                        <Avatar src={provideAvatarImageUrl(authorId, imageDomain)} sx={{ width: 38, height: 38, bgcolor: 'grey' }}>{authorInfo_ss.nickname?.charAt(0).toUpperCase()}</Avatar>
-                                    </IconButton>
-                                    <Grid container ml={1}>
-
-                                        {/* nickname and created time */}
-                                        <Grid item >
-                                            <TextButton color='inherit' onClick={handleClickOnAuthorNickname}>
-                                                <Typography variant='body2' >
-                                                    {authorInfo_ss.nickname}
-                                                </Typography>
-                                                <Typography variant='body2' fontSize={{ xs: 12 }} >
-                                                    {timeToString(postComprehensive_ss.createdTimeBySecond, preferenceStates.lang)}
-                                                </Typography>
-                                            </TextButton>
-                                        </Grid>
-
-                                        {/* placeholder */}
-                                        <Grid item flexGrow={1}></Grid>
-
-                                        {/* follow button */}
-                                        {viewerInfoStates.memberId !== authorId &&
-                                            <Grid item>
-                                                <Chip label={behaviourStates.followed ? langConfigs.followed[preferenceStates.lang] : langConfigs.follow[preferenceStates.lang]} sx={{ paddingX: 1 }} color={behaviourStates.followed ? 'default' : 'primary'} onClick={async () => { await handleFollowOrUndoFollow(); }} />
-                                            </Grid>
-                                        }
-                                    </Grid>
-                                </Stack>
-
-                                {/* image list (conditional rendering)*/}
-                                {true && <Box id='swiper-wrapper' mt={{ xs: 1.5, sm: 2 }} >
-                                    <Swiper modules={[Navigation, Pagination]} navigation={true} pagination={true} >
-                                        {0 !== postComprehensive_ss.imageFullnamesArr.length && postComprehensive_ss.imageFullnamesArr.map(fullname =>
-                                            <SwiperSlide key={getRandomHexStr()} onClick={handleBackdropOpen(fullname)}>
-                                                {/* swiper slide wrapper */}
-                                                <Box sx={{
-                                                    display: 'flex', justifyContent: 'center', alignContent: 'center',
-                                                    width: swiperWrapperDimensions.width,
-                                                    height: swiperWrapperDimensions.height
-                                                }} >
-                                                    <Box component={'img'} src={provideImageUrl(fullname, imageDomain)}
-                                                        width={1}
-                                                        maxHeight={500}
-                                                        sx={{ objectFit: 'contain' }}></Box>
-                                                </Box>
-                                            </SwiperSlide>
-                                        )}
-                                    </Swiper>
-                                </Box>}
+                                {/* channel name */}
+                                <Typography variant={'subtitle1'} fontWeight={400} color={'grey'}>{channelInfoStates.channelName[preferenceStates.lang]}</Typography>
 
                                 {/* title */}
-                                <Box mt={2} display={{ xs: 'flex', sm: 'none' }}>
-                                    <Typography variant={'subtitle1'} fontWeight={700}>{postComprehensive_ss.title}</Typography>
-                                </Box>
+                                <Typography variant={'h6'} fontWeight={700}>{postComprehensive_ss.title}</Typography>
 
-                                {/* paragraphs (conditional rendering)*/}
-                                {0 !== postComprehensive_ss.paragraphsArr?.length && <Box mt={{ xs: 1, sm: 2 }}>
-                                    {postComprehensive_ss.paragraphsArr.map(p => makeParagraph(p, postComprehensive_ss.cuedMemberInfoArr))}
-                                </Box>}
+                                {/* member info & timestamp */}
+                                <TextButton color='inherit' sx={{ flexDirection: 'row', marginTop: 1 }}>
+                                    <Typography variant='body2'>{`${authorInfo_ss.nickname} ${timeToString(postComprehensive_ss.createdTimeBySecond, preferenceStates.lang)}`}</Typography>
+                                </TextButton>
+                            </Box>
 
-                                {/* topics (conditional rendering) */}
-                                {0 !== postComprehensive_ss.topicInfoArr?.length && <Box mt={{ xs: 2, sm: 2 }}>
-                                    <Typography variant={'body1'}>
-                                        {postComprehensive_ss.topicInfoArr.map(t => makeTopic(t.topicId, t.content))}
-                                    </Typography>
-                                </Box>}
+                            {/* post-title: mobile style */}
+                            <Stack mt={0.5} direction={'row'} sx={{ display: { xs: 'flex', sm: 'none' } }}>
+                                <IconButton sx={{ padding: 0 }}>
+                                    <Avatar src={provideAvatarImageUrl(authorId, imageDomain)} sx={{ width: 38, height: 38, bgcolor: 'grey' }}>{authorInfo_ss.nickname?.charAt(0).toUpperCase()}</Avatar>
+                                </IconButton>
+                                <Grid container ml={1}>
 
-                                {/* member behaviours */}
-                                <Grid container mt={1}>
-
-                                    {/* like */}
-                                    <Grid item sx={{ display: 'flex', flexDirection: 'row' }}>
-                                        <IconButton aria-label='like' onClick={async () => { await handleExpressAttitudeOnPost(1); }}>
-                                            <ThumbUpIcon color={1 === behaviourStates.attitudeOnPost ? 'primary' : 'inherit'} fontSize='small' />
-                                        </IconButton>
-                                        <Typography variant='body2' sx={{ marginTop: 1 }}>{combinedStatisticsState.totalLikedCount - combinedStatisticsState.totalDislikedCount + behaviourStates.attitudeOnPost}</Typography>
+                                    {/* nickname and created time */}
+                                    <Grid item >
+                                        <TextButton color='inherit' onClick={handleClickOnAuthorNickname}>
+                                            <Typography variant='body2' >
+                                                {authorInfo_ss.nickname}
+                                            </Typography>
+                                            <Typography variant='body2' fontSize={{ xs: 12 }} >
+                                                {timeToString(postComprehensive_ss.createdTimeBySecond, preferenceStates.lang)}
+                                            </Typography>
+                                        </TextButton>
                                     </Grid>
 
-                                    {/* dislike */}
-                                    <Grid item sx={{ ml: 1 }}>
-                                        <IconButton aria-label='dislike' onClick={async () => { await handleExpressAttitudeOnPost(-1); }}>
-                                            <ThumbDownIcon color={-1 === behaviourStates.attitudeOnPost ? 'error' : 'inherit'} fontSize='small' />
-                                        </IconButton>
-                                    </Grid>
+                                    {/* placeholder */}
+                                    <Grid item flexGrow={1}></Grid>
 
-                                    {/* save */}
-                                    <Grid item sx={{ display: 'flex', flexDirection: 'row' }}>
-                                        <IconButton aria-label='save' onClick={async () => { handleSaveOrUndoSave(); }}>
-                                            <BookmarkIcon color={behaviourStates.saved ? 'warning' : 'inherit'} fontSize='small' />
-                                        </IconButton>
-                                        <Typography variant='body2' sx={{ marginTop: 1 }}>{combinedStatisticsState.totalSavedCount + (behaviourStates.saved ? 1 : 0)}</Typography>
-                                    </Grid>
-
-                                    {/* comment */}
-                                    <Grid item sx={{ display: 'flex', flexDirection: 'row' }}>
-                                        <Tooltip title={langConfigs.createComment[preferenceStates.lang]}>
-                                            <IconButton aria-label='comment' onClick={handleEditorOpen(postId, authorId, authorInfo_ss.nickname)}>
-                                                <ReplyIcon fontSize='small' />
-                                            </IconButton>
-                                        </Tooltip>
-                                        <Typography variant='body2' sx={{ marginTop: 1 }}>{combinedStatisticsState.totalCommentCount}</Typography>
-                                    </Grid>
-
-                                    {/* blank space */}
-                                    <Grid item flexGrow={1} />
-                                    <Grid item>
-                                        <IconButton onClick={handleOpenPopUpMenu(authorId, authorInfo_ss.nickname, postId)} ><MoreVertIcon fontSize='small' /></IconButton>
-                                    </Grid>
+                                    {/* follow button */}
+                                    {viewerInfoStates.memberId !== authorId &&
+                                        <Grid item>
+                                            <Chip label={behaviourStates.followed ? langConfigs.followed[preferenceStates.lang] : langConfigs.follow[preferenceStates.lang]} sx={{ paddingX: 1 }} color={behaviourStates.followed ? 'default' : 'primary'} onClick={async () => { await handleFollowOrUndoFollow(); }} />
+                                        </Grid>
+                                    }
                                 </Grid>
+                            </Stack>
 
-                            </ResponsiveCard>
-
-                            {/* **comments */}
-                            {Object.keys(restrictedCommentComprehensiveDict).length !== 0 &&
-                                Object.keys(restrictedCommentComprehensiveDict).map(commentId => {
-                                    const { memberId: commentAuthorId, nickname: commentAuthorNickname, createdTimeBySecond, content, cuedMemberInfoArr, totalLikedCount: commentTotalLikedCount, totalDislikedCount: commentTotalDislikedCount } = restrictedCommentComprehensiveDict[commentId];
-                                    return (
-                                        <Box key={commentId}>
-                                            <Divider sx={{ display: { xs: 'block', sm: 'none' } }} />
-                                            <Box sx={{ padding: { xs: 2, sm: 4 }, borderRadius: 1, boxShadow: { xs: 0, sm: 1 } }}>
-
-                                                {/* member info */}
-                                                <Stack direction={'row'}>
-                                                    <IconButton sx={{ padding: 0 }}>
-                                                        <Avatar src={provideAvatarImageUrl(commentAuthorId, imageDomain)} sx={{ width: 38, height: 38, bgcolor: 'grey' }}>{commentAuthorNickname?.charAt(0).toUpperCase()}</Avatar>
-                                                    </IconButton>
-                                                    <Box ml={1}>
-                                                        <TextButton color='inherit'>
-                                                            <Typography variant='body2' >{commentAuthorNickname}</Typography>
-                                                            <Typography variant='body2' fontSize={{ xs: 12 }} >
-                                                                {timeToString(createdTimeBySecond, preferenceStates.lang)}
-                                                            </Typography>
-                                                        </TextButton>
-                                                    </Box>
-                                                </Stack>
-
-                                                {/* comment content */}
-                                                <Box paddingTop={{ xs: 1, sm: 1.5 }} paddingX={0.5}>
-                                                    {makeParagraph(content, cuedMemberInfoArr)}
-                                                </Box>
-
-                                                {/* member behaviours */}
-                                                <Grid container mt={{ xs: 0.5, sm: 1 }}>
-
-                                                    {/* like */}
-                                                    <Grid item sx={{ display: 'flex', flexDirection: 'row' }}>
-                                                        <IconButton aria-label='like' onClick={async () => { await handleExpressAttitudeOnComment(commentId, 1); }}>
-                                                            <ThumbUpIcon color={1 === behaviourStates.attitudeOnComment[commentId] ? 'primary' : 'inherit'} fontSize='small' />
-                                                        </IconButton>
-                                                        <Typography variant='body2' sx={{ marginTop: 1 }}>{commentTotalLikedCount - commentTotalDislikedCount}</Typography>
-                                                    </Grid>
-
-                                                    {/* dislike */}
-                                                    <Grid item sx={{ ml: 1 }}>
-                                                        <IconButton aria-label='dislike' onClick={async () => { await handleExpressAttitudeOnComment(commentId, -1); }}>
-                                                            <ThumbDownIcon color={-1 === behaviourStates.attitudeOnComment[commentId] ? 'error' : 'inherit'} fontSize='small' />
-                                                        </IconButton>
-                                                    </Grid>
-
-                                                    {/* comment */}
-                                                    <Grid item sx={{ display: 'flex', flexDirection: 'row' }}>
-                                                        <Tooltip title={langConfigs.replyToComment[preferenceStates.lang](commentAuthorNickname)}>
-                                                            <IconButton aria-label='comment' onClick={handleEditorOpen(commentId, commentAuthorId, commentAuthorNickname)}>
-                                                                <ReplyIcon fontSize='small' />
-                                                            </IconButton>
-                                                        </Tooltip>
-                                                        <Typography variant='body2' sx={{ marginTop: 1 }}>{restrictedCommentComprehensiveDict[commentId].totalSubcommentCount}</Typography>
-                                                    </Grid>
-
-                                                    {/* blank space */}
-                                                    <Grid item flexGrow={1} />
-                                                    {viewerInfoStates.memberId !== commentAuthorId && <Grid item>
-                                                        <IconButton onClick={handleOpenPopUpMenu(commentAuthorId, commentAuthorNickname, commentId)} ><MoreVertIcon fontSize='small' /></IconButton>
-                                                    </Grid>}
-                                                </Grid>
-
-                                                {/* ***subcomments */}
-                                                <Box sx={{ display: 0 !== restrictedCommentComprehensiveDict[commentId].totalSubcommentCount ? 'block' : 'none' }}>
-
-                                                    {/* expend button */}
-                                                    <Button variant='text' sx={{ display: restrictedCommentComprehensiveDict[commentId].isExpended ? 'none' : 'block' }} onClick={async () => handleExpendSubcomments(commentId)} >{langConfigs.expendSubcomments[preferenceStates.lang]}</Button>
-
-                                                    {/* subcomment stack (conditional rendering)*/}
-                                                    <Stack id={`subcomment-stack-${commentId}`} spacing={1} marginTop={{ xs: 1.5, sm: 2 }} paddingLeft={3} sx={{ display: restrictedCommentComprehensiveDict[commentId].isExpended ? 'block' : 'none' }}>
-                                                        {restrictedSubcommentComprehensiveDict.hasOwnProperty(commentId) && Object.keys(restrictedSubcommentComprehensiveDict[commentId]).map(subcommentId => {
-                                                            const { memberId: subcommentAuthorId, nickname: subcommentAuthorNickname, createdTimeBySecond, content, cuedMemberInfoArr, totalLikedCount, totalDislikedCount } = restrictedSubcommentComprehensiveDict[commentId][subcommentId];
-                                                            return (
-                                                                <Box key={subcommentId}>
-                                                                    {/* member info */}
-                                                                    <Stack direction={'row'}>
-                                                                        <IconButton sx={{ padding: 0 }}>
-                                                                            <Avatar src={provideAvatarImageUrl(subcommentAuthorId, imageDomain)} sx={{ width: 38, height: 38, bgcolor: 'grey' }}>{subcommentAuthorNickname?.charAt(0).toUpperCase()}</Avatar>
-                                                                        </IconButton>
-                                                                        <Box ml={1}>
-                                                                            <TextButton color='inherit'>
-                                                                                <Typography variant='body2' >
-                                                                                    {subcommentAuthorNickname}
-                                                                                </Typography>
-                                                                                <Typography variant='body2' fontSize={{ xs: 12 }} >
-                                                                                    {timeToString(createdTimeBySecond, preferenceStates.lang)}
-                                                                                </Typography>
-                                                                            </TextButton>
-                                                                        </Box>
-                                                                    </Stack>
-
-                                                                    {/* comment content */}
-                                                                    <Box sx={{ paddingTop: 1, paddingX: 1 / 2 }}>
-                                                                        {makeParagraph(content, cuedMemberInfoArr)}
-                                                                    </Box>
-
-                                                                    {/* behaviours */}
-                                                                    <Grid container>
-
-                                                                        {/* like */}
-                                                                        <Grid item sx={{ display: 'flex', flexDirection: 'row' }}>
-                                                                            <IconButton aria-label='like' onClick={async () => { await handleExpressAttitudeOnSubcomment(commentId, subcommentId, 1); }}>
-                                                                                <ThumbUpIcon color={1 === behaviourStates.attitudeOnComment[subcommentId] ? 'primary' : 'inherit'} fontSize='small' />
-                                                                            </IconButton>
-                                                                            <Typography variant='body2' sx={{ marginTop: 1 }}>{totalLikedCount - totalDislikedCount}</Typography>
-                                                                        </Grid>
-
-                                                                        {/* dislike */}
-                                                                        <Grid item sx={{ ml: 1 }}>
-                                                                            <IconButton aria-label='dislike' onClick={async () => { await handleExpressAttitudeOnSubcomment(commentId, subcommentId, -1); }}>
-                                                                                <ThumbDownIcon color={-1 === behaviourStates.attitudeOnComment[subcommentId] ? 'error' : 'inherit'} fontSize='small' />
-                                                                            </IconButton>
-                                                                        </Grid>
-
-                                                                        {/* reply */}
-                                                                        <Grid item sx={{ display: 'flex', flexDirection: 'row' }}>
-                                                                            <Tooltip title={langConfigs.replyToComment[preferenceStates.lang](subcommentAuthorNickname)}>
-                                                                                <IconButton aria-label='comment' onClick={handleEditorOpen(commentId, subcommentAuthorId, subcommentAuthorNickname)}>
-                                                                                    <ReplyIcon fontSize='small' />
-                                                                                </IconButton>
-                                                                            </Tooltip>
-                                                                        </Grid>
-
-                                                                        {/* blank space */}
-                                                                        <Grid item flexGrow={1} />
-                                                                        {viewerInfoStates.memberId !== subcommentAuthorId && <Grid item>
-                                                                            <IconButton onClick={handleOpenPopUpMenu(subcommentAuthorId, subcommentAuthorNickname, commentId)}><MoreVertIcon fontSize='small' /></IconButton>
-                                                                        </Grid>}
-                                                                    </Grid>
-                                                                </Box>
-                                                            );
-                                                        })}
-                                                    </Stack>
-
-                                                    {/* undo expend button */}
-                                                    <Button variant='text' sx={{ display: restrictedCommentComprehensiveDict[commentId].isExpended ? 'block' : 'none' }} onClick={handleUndoExpendSubcomments(commentId)} >{langConfigs.undoExpendSubcomments[preferenceStates.lang]}</Button>
-
-                                                </Box>
-
+                            {/* image list (conditional rendering)*/}
+                            {true && <Box id='swiper-wrapper' mt={{ xs: 1.5, sm: 2 }} >
+                                <Swiper modules={[Navigation, Pagination]} navigation={true} pagination={true} >
+                                    {0 !== postComprehensive_ss.imageFullnamesArr.length && postComprehensive_ss.imageFullnamesArr.map(fullname =>
+                                        <SwiperSlide key={getRandomHexStr()} onClick={handleBackdropOpen(fullname)}>
+                                            {/* swiper slide wrapper */}
+                                            <Box sx={{
+                                                display: 'flex', justifyContent: 'center', alignContent: 'center',
+                                                width: swiperWrapperDimensions.width,
+                                                height: swiperWrapperDimensions.height
+                                            }} >
+                                                <Box component={'img'} src={provideImageUrl(fullname, imageDomain)}
+                                                    width={1}
+                                                    maxHeight={500}
+                                                    sx={{ objectFit: 'contain' }}></Box>
                                             </Box>
-                                        </Box>
-                                    );
-                                })
-                            }
+                                        </SwiperSlide>
+                                    )}
+                                </Swiper>
+                            </Box>}
 
-                        </Stack>
-                    </Grid>
+                            {/* title */}
+                            <Box mt={2} display={{ xs: 'flex', sm: 'none' }}>
+                                <Typography variant={'subtitle1'} fontWeight={700}>{postComprehensive_ss.title}</Typography>
+                            </Box>
 
-                    {/* //// right column //// */}
-                    <Grid item xs={0} sm={1} md={4} >
+                            {/* paragraphs (conditional rendering)*/}
+                            {0 !== postComprehensive_ss.paragraphsArr?.length && <Box mt={{ xs: 1, sm: 2 }}>
+                                {postComprehensive_ss.paragraphsArr.map(p => makeParagraph(p, postComprehensive_ss.cuedMemberInfoArr))}
+                            </Box>}
 
-                        {/* right card-stack */}
-                        <Stack spacing={1} sx={{ ml: 2, maxWidth: 320, display: { xs: 'none', sm: 'none', md: 'block', lg: 'block' } }} >
+                            {/* topics (conditional rendering) */}
+                            {0 !== postComprehensive_ss.topicInfoArr?.length && <Box mt={{ xs: 2, sm: 2 }}>
+                                <Typography variant={'body1'}>
+                                    {postComprehensive_ss.topicInfoArr.map(t => makeTopic(t.topicId, t.content))}
+                                </Typography>
+                            </Box>}
 
-                            {/* member info card */}
-                            <ResponsiveCard sx={{ p: 4 }}>
-
-                                {/* avatar row */}
-                                <Box sx={{ display: 'flex', flexDirection: 'row' }}>
-                                </Box>
-                                <Grid container>
-
-                                    {/* avatar image */}
-                                    <Grid item flexGrow={1}>
-                                        <Avatar src={provideAvatarImageUrl(authorId, imageDomain)} sx={{ width: 64, height: 64, bgcolor: 'grey' }}>{authorInfo_ss.nickname?.charAt(0).toUpperCase()}</Avatar>
-                                    </Grid>
-
-                                    {/* 'follow' button */}
-                                    <Grid item sx={{ mt: 2 }} >
-                                        {viewerInfoStates.memberId !== authorId &&
-                                            <Tooltip title={behaviourStates.followed ? langConfigs.undoFollow[preferenceStates.lang] : langConfigs.follow[preferenceStates.lang]}>
-                                                <Button
-                                                    variant='contained'
-                                                    sx={{ color: behaviourStates.followed ? 'inherit' : 'info', borderRadius: 4, }}
-                                                    onClick={async () => { await handleFollowOrUndoFollow(); }}
-                                                >
-                                                    {behaviourStates.followed ? langConfigs.followed[preferenceStates.lang] : langConfigs.follow[preferenceStates.lang]}
-                                                </Button>
-                                            </Tooltip>
-                                        }
-                                    </Grid>
-                                </Grid>
-
-                                {/* nickname */}
-                                <Box pt={3} sx={{ display: 'flex', flexDirection: 'row' }}>
-                                    <Button variant={'text'} color={'inherit'} sx={{ pl: 0, textTransform: 'none' }} onClick={handleClickOnAuthorNickname}>
-                                        <Typography sx={{ fontSize: 19 }} fontWeight={700}>{authorInfo_ss.nickname}</Typography>
-                                    </Button>
-                                </Box>
-
-                                {/* brief intro */}
-                                <Box pt={0} maxWidth={200}>
-                                    {makeBriefIntro(authorInfo_ss.briefIntro)}
-                                </Box>
-
-                                {/* follow */}
-                                <Box pt={4} sx={{ display: 'flex', flexDirection: 'row' }}>
-                                    <Typography fontWeight={700}>{combinedStatisticsState.totalFollowedByCount + (behaviourStates.followed ? 1 : 0)}</Typography>
-                                    <Typography color={'text.disabled'}>{langConfigs.authorsTotalFollowing[preferenceStates.lang]}</Typography>
-                                </Box>
+                            {/* member behaviours */}
+                            <Grid container mt={1}>
 
                                 {/* like */}
-                                <Box sx={{ display: 'flex', flexDirection: 'row', }}>
-                                    <Typography color={'text.disabled'}> {langConfigs.authorsTotalLikesP1[preferenceStates.lang]}</Typography>
-                                    <Typography fontWeight={700}>{(combinedStatisticsState.totalCreationLikedCount + behaviourStates.attitudeOnPost > 0) ? combinedStatisticsState.totalCreationLikedCount + behaviourStates.attitudeOnPost : 0}</Typography>
-                                    <Typography color={'text.disabled'}>{langConfigs.authorsTotalLikesP2[preferenceStates.lang]}</Typography>
-                                </Box>
+                                <Grid item sx={{ display: 'flex', flexDirection: 'row' }}>
+                                    <IconButton aria-label='like' onClick={async () => { await handleExpressAttitudeOnPost(1); }}>
+                                        <ThumbUpIcon color={1 === behaviourStates.attitudeOnPost ? 'primary' : 'inherit'} fontSize='small' />
+                                    </IconButton>
+                                    <Typography variant='body2' sx={{ marginTop: 1 }}>{combinedStatisticsState.totalLikedCount - combinedStatisticsState.totalDislikedCount + behaviourStates.attitudeOnPost}</Typography>
+                                </Grid>
+
+                                {/* dislike */}
+                                <Grid item sx={{ ml: 1 }}>
+                                    <IconButton aria-label='dislike' onClick={async () => { await handleExpressAttitudeOnPost(-1); }}>
+                                        <ThumbDownIcon color={-1 === behaviourStates.attitudeOnPost ? 'error' : 'inherit'} fontSize='small' />
+                                    </IconButton>
+                                </Grid>
+
+                                {/* save */}
+                                <Grid item sx={{ display: 'flex', flexDirection: 'row' }}>
+                                    <IconButton aria-label='save' onClick={async () => { handleSaveOrUndoSave(); }}>
+                                        <BookmarkIcon color={behaviourStates.saved ? 'warning' : 'inherit'} fontSize='small' />
+                                    </IconButton>
+                                    <Typography variant='body2' sx={{ marginTop: 1 }}>{combinedStatisticsState.totalSavedCount + (behaviourStates.saved ? 1 : 0)}</Typography>
+                                </Grid>
+
+                                {/* comment */}
+                                <Grid item sx={{ display: 'flex', flexDirection: 'row' }}>
+                                    <Tooltip title={langConfigs.createComment[preferenceStates.lang]}>
+                                        <IconButton aria-label='comment' onClick={handleEditorOpen(postId, authorId, authorInfo_ss.nickname)}>
+                                            <ReplyIcon fontSize='small' />
+                                        </IconButton>
+                                    </Tooltip>
+                                    <Typography variant='body2' sx={{ marginTop: 1 }}>{combinedStatisticsState.totalCommentCount}</Typography>
+                                </Grid>
+
+                                {/* blank space */}
+                                <Grid item flexGrow={1} />
+                                <Grid item>
+                                    <IconButton onClick={handleOpenPopUpMenu(authorId, authorInfo_ss.nickname, postId)} ><MoreVertIcon fontSize='small' /></IconButton>
+                                </Grid>
+                            </Grid>
+
+                        </Box>
+
+                        {/* **comments */}
+                        {Object.keys(restrictedCommentComprehensiveDict).length !== 0 &&
+                            Object.keys(restrictedCommentComprehensiveDict).map(commentId => {
+                                const { memberId: commentAuthorId, nickname: commentAuthorNickname, createdTimeBySecond, content, cuedMemberInfoArr, totalLikedCount: commentTotalLikedCount, totalDislikedCount: commentTotalDislikedCount } = restrictedCommentComprehensiveDict[commentId];
+                                return (
+                                    <Box key={commentId}>
+                                        <Divider sx={{ display: { xs: 'block', sm: 'none' } }} />
+                                        <Box pt={2}>
+
+                                            {/* member info */}
+                                            <Stack direction={'row'}>
+                                                <IconButton sx={{ padding: 0 }}>
+                                                    <Avatar src={provideAvatarImageUrl(commentAuthorId, imageDomain)} sx={{ width: 38, height: 38, bgcolor: 'grey' }}>{commentAuthorNickname?.charAt(0).toUpperCase()}</Avatar>
+                                                </IconButton>
+                                                <Box ml={1}>
+                                                    <TextButton color='inherit'>
+                                                        <Typography variant='body2' >{commentAuthorNickname}</Typography>
+                                                        <Typography variant='body2' fontSize={{ xs: 12 }} >
+                                                            {timeToString(createdTimeBySecond, preferenceStates.lang)}
+                                                        </Typography>
+                                                    </TextButton>
+                                                </Box>
+                                            </Stack>
+
+                                            {/* comment content */}
+                                            <Box paddingTop={{ xs: 1, sm: 1.5 }} paddingX={0.5}>
+                                                {makeParagraph(content, cuedMemberInfoArr)}
+                                            </Box>
+
+                                            {/* member behaviours */}
+                                            <Grid container mt={{ xs: 0.5, sm: 1 }}>
+
+                                                {/* like */}
+                                                <Grid item sx={{ display: 'flex', flexDirection: 'row' }}>
+                                                    <IconButton aria-label='like' onClick={async () => { await handleExpressAttitudeOnComment(commentId, 1); }}>
+                                                        <ThumbUpIcon color={1 === behaviourStates.attitudeOnComment[commentId] ? 'primary' : 'inherit'} fontSize='small' />
+                                                    </IconButton>
+                                                    <Typography variant='body2' sx={{ marginTop: 1 }}>{commentTotalLikedCount - commentTotalDislikedCount}</Typography>
+                                                </Grid>
+
+                                                {/* dislike */}
+                                                <Grid item sx={{ ml: 1 }}>
+                                                    <IconButton aria-label='dislike' onClick={async () => { await handleExpressAttitudeOnComment(commentId, -1); }}>
+                                                        <ThumbDownIcon color={-1 === behaviourStates.attitudeOnComment[commentId] ? 'error' : 'inherit'} fontSize='small' />
+                                                    </IconButton>
+                                                </Grid>
+
+                                                {/* comment */}
+                                                <Grid item sx={{ display: 'flex', flexDirection: 'row' }}>
+                                                    <Tooltip title={langConfigs.replyToComment[preferenceStates.lang](commentAuthorNickname)}>
+                                                        <IconButton aria-label='comment' onClick={handleEditorOpen(commentId, commentAuthorId, commentAuthorNickname)}>
+                                                            <ReplyIcon fontSize='small' />
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                    <Typography variant='body2' sx={{ marginTop: 1 }}>{restrictedCommentComprehensiveDict[commentId].totalSubcommentCount}</Typography>
+                                                </Grid>
+
+                                                {/* blank space */}
+                                                <Grid item flexGrow={1} />
+                                                {viewerInfoStates.memberId !== commentAuthorId && <Grid item>
+                                                    <IconButton onClick={handleOpenPopUpMenu(commentAuthorId, commentAuthorNickname, commentId)} ><MoreVertIcon fontSize='small' /></IconButton>
+                                                </Grid>}
+                                            </Grid>
+
+                                            {/* ***subcomments */}
+                                            <Box sx={{ display: 0 !== restrictedCommentComprehensiveDict[commentId].totalSubcommentCount ? 'block' : 'none' }}>
+
+                                                {/* expend button */}
+                                                <Button variant='text' sx={{ display: restrictedCommentComprehensiveDict[commentId].isExpended ? 'none' : 'block' }} onClick={async () => handleExpendSubcomments(commentId)} >{langConfigs.expendSubcomments[preferenceStates.lang]}</Button>
+
+                                                {/* subcomment stack (conditional rendering)*/}
+                                                <Stack id={`subcomment-stack-${commentId}`} spacing={2} pt={2} pl={2} sx={{ display: restrictedCommentComprehensiveDict[commentId].isExpended ? 'block' : 'none' }}>
+                                                    {restrictedSubcommentComprehensiveDict.hasOwnProperty(commentId) && Object.keys(restrictedSubcommentComprehensiveDict[commentId]).map(subcommentId => {
+                                                        const { memberId: subcommentAuthorId, nickname: subcommentAuthorNickname, createdTimeBySecond, content, cuedMemberInfoArr, totalLikedCount, totalDislikedCount } = restrictedSubcommentComprehensiveDict[commentId][subcommentId];
+                                                        return (
+                                                            <Box key={subcommentId}>
+                                                                {/* member info */}
+                                                                <Stack direction={'row'}>
+                                                                    <IconButton sx={{ padding: 0 }}>
+                                                                        <Avatar src={provideAvatarImageUrl(subcommentAuthorId, imageDomain)} sx={{ width: 38, height: 38, bgcolor: 'grey' }}>{subcommentAuthorNickname?.charAt(0).toUpperCase()}</Avatar>
+                                                                    </IconButton>
+                                                                    <Box ml={1}>
+                                                                        <TextButton color='inherit'>
+                                                                            <Typography variant='body2' >
+                                                                                {subcommentAuthorNickname}
+                                                                            </Typography>
+                                                                            <Typography variant='body2' fontSize={{ xs: 12 }} >
+                                                                                {timeToString(createdTimeBySecond, preferenceStates.lang)}
+                                                                            </Typography>
+                                                                        </TextButton>
+                                                                    </Box>
+                                                                </Stack>
+
+                                                                {/* comment content */}
+                                                                <Box sx={{ paddingTop: 1, paddingX: 1 / 2 }}>
+                                                                    {makeParagraph(content, cuedMemberInfoArr)}
+                                                                </Box>
+
+                                                                {/* behaviours */}
+                                                                <Grid container>
+
+                                                                    {/* like */}
+                                                                    <Grid item sx={{ display: 'flex', flexDirection: 'row' }}>
+                                                                        <IconButton aria-label='like' onClick={async () => { await handleExpressAttitudeOnSubcomment(commentId, subcommentId, 1); }}>
+                                                                            <ThumbUpIcon color={1 === behaviourStates.attitudeOnComment[subcommentId] ? 'primary' : 'inherit'} fontSize='small' />
+                                                                        </IconButton>
+                                                                        <Typography variant='body2' sx={{ marginTop: 1 }}>{totalLikedCount - totalDislikedCount}</Typography>
+                                                                    </Grid>
+
+                                                                    {/* dislike */}
+                                                                    <Grid item sx={{ ml: 1 }}>
+                                                                        <IconButton aria-label='dislike' onClick={async () => { await handleExpressAttitudeOnSubcomment(commentId, subcommentId, -1); }}>
+                                                                            <ThumbDownIcon color={-1 === behaviourStates.attitudeOnComment[subcommentId] ? 'error' : 'inherit'} fontSize='small' />
+                                                                        </IconButton>
+                                                                    </Grid>
+
+                                                                    {/* reply */}
+                                                                    <Grid item sx={{ display: 'flex', flexDirection: 'row' }}>
+                                                                        <Tooltip title={langConfigs.replyToComment[preferenceStates.lang](subcommentAuthorNickname)}>
+                                                                            <IconButton aria-label='comment' onClick={handleEditorOpen(commentId, subcommentAuthorId, subcommentAuthorNickname)}>
+                                                                                <ReplyIcon fontSize='small' />
+                                                                            </IconButton>
+                                                                        </Tooltip>
+                                                                    </Grid>
+
+                                                                    {/* blank space */}
+                                                                    <Grid item flexGrow={1} />
+                                                                    {viewerInfoStates.memberId !== subcommentAuthorId && <Grid item>
+                                                                        <IconButton onClick={handleOpenPopUpMenu(subcommentAuthorId, subcommentAuthorNickname, commentId)}><MoreVertIcon fontSize='small' /></IconButton>
+                                                                    </Grid>}
+                                                                </Grid>
+                                                            </Box>
+                                                        );
+                                                    })}
+                                                </Stack>
+
+                                                {/* undo expend button */}
+                                                <Button variant='text' sx={{ display: restrictedCommentComprehensiveDict[commentId].isExpended ? 'block' : 'none' }} onClick={handleUndoExpendSubcomments(commentId)} >{langConfigs.undoExpendSubcomments[preferenceStates.lang]}</Button>
+
+                                            </Box>
+
+                                        </Box>
+                                    </Box>
+                                );
+                            })
+                        }
+
+                    </Stack>
+                </Grid>
+
+                {/* right */}
+                <Grid item xs={0} sm={0} md={0} lg={3} xl={4}>
+                    <Box ml={{ lg: 0, xl: 2 }} sx={{ width: 300, display: { xs: 'none', sm: 'none', md: 'none', lg: 'block' } }}>
+                        <Stack pt={5} spacing={1}  >
+
+                            {/* avatar  */}
+                            <Grid container>
+
+                                {/* image */}
+                                <Grid item flexGrow={1}>
+                                    <Avatar
+                                        src={provideAvatarImageUrl(authorId, imageDomain)}
+                                        sx={{ width: 64, height: 64 }}
+                                    >
+                                        {authorInfo_ss.nickname?.charAt(0).toUpperCase()}
+                                    </Avatar>
+                                </Grid>
 
                                 {/* 'follow' button */}
-                                {false && <Box pt={4} sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'center' }}>
-                                    <Tooltip title={behaviourStates.followed ? langConfigs.undoFollow[preferenceStates.lang] : langConfigs.follow[preferenceStates.lang]}>
-                                        <Button
-                                            variant='contained'
-                                            sx={{
-                                                color: behaviourStates.followed ? 'inherit' : 'info',
-                                                borderRadius: 4,
-                                                paddingY: 0.5,
-                                                paddingX: 5,
-                                            }}
-                                            onClick={async () => { await handleFollowOrUndoFollow(); }}
-                                        >
-                                            {behaviourStates.followed ? langConfigs.followed[preferenceStates.lang] : langConfigs.follow[preferenceStates.lang]}
-                                        </Button>
-                                    </Tooltip>
-                                </Box>}
+                                <Grid item sx={{ mt: 2, mr: 2 }} >
+                                    {viewerInfoStates.memberId !== authorId &&
+                                        <Tooltip title={behaviourStates.followed ? langConfigs.undoFollow[preferenceStates.lang] : langConfigs.follow[preferenceStates.lang]}>
+                                            <Button
+                                                variant='contained'
+                                                sx={{ color: behaviourStates.followed ? 'inherit' : 'info', borderRadius: 4 }}
+                                                onClick={async () => { await handleFollowOrUndoFollow(); }}
+                                            >
+                                                {behaviourStates.followed ? langConfigs.followed[preferenceStates.lang] : langConfigs.follow[preferenceStates.lang]}
+                                            </Button>
+                                        </Tooltip>
+                                    }
+                                </Grid>
+                            </Grid>
 
-                            </ResponsiveCard>
+                            {/* nickname */}
+                            <Box pt={3} sx={{ display: 'flex', flexDirection: 'row' }}>
+                                <Button variant={'text'} color={'inherit'} sx={{ pl: 0, textTransform: 'none' }} onClick={handleClickOnAuthorNickname}>
+                                    <Typography variant='h6'>{authorInfo_ss.nickname}</Typography>
+                                </Button>
+                            </Box>
 
-                            {/* other post recommend in this channel */}
-                            <ResponsiveCard sx={{ padding: 3 }}>
+                            {/* brief intro */}
+                            <Box>
+                                {makeBriefIntro(authorInfo_ss.briefIntro)}
+                            </Box>
 
-                                {/* title */}
-                                <Typography>{authorInfo_ss.nickname} {langConfigs.hotPostRecommend[preferenceStates.lang]}</Typography>
+                            {/* statistics - follow */}
+                            <Box pt={4} sx={{ display: 'flex', flexDirection: 'row' }} >
+                                {0 === combinedStatisticsState.totalFollowedByCount && <>
+                                    <Typography color={'text.disabled'} >{langConfigs.noFollowing[preferenceStates.lang]}</Typography>
+                                </>}
+                                {0 !== combinedStatisticsState.totalFollowedByCount && <>
+                                    <Typography fontWeight={700} color={'grey.700'} >{combinedStatisticsState.totalFollowedByCount}</Typography>
+                                    <Typography color={'text.disabled'}>{langConfigs.authorsTotalFollowing[preferenceStates.lang]}</Typography>
+                                </>}
+                            </Box>
 
-                                {/* posts */}
-                                <Stack mt={2} spacing={2}>
-                                    {0 !== creationInfoArr.length && creationInfoArr.map(p =>
-                                        postId !== p.postId && <TextButton key={getRandomHexStr()} sx={{ color: 'inherit', display: 'flex', flexDirection: 'row', justifyContent: 'space-between' }} onClick={handleClickOnPostCard(p.postId)}>
-
-                                            {/* title & statistics */}
-                                            <Box pr={1}>
-                                                <Typography variant='body1' align='left' >{p.title}</Typography>
-
-                                                {/* post info & statistics */}
-                                                <Box sx={{ display: 'flex', flexDirection: 'row' }} alignItems={'center'}>
-
-                                                    {/* comment count icon */}
-                                                    <ForumIcon fontSize={'small'} sx={{ color: 'text.disabled' }} />
-                                                    <Typography mr={1} variant='body2' color={'text.disabled'} alignItems={'center'}>{p.totalCommentCount}</Typography>
-
-                                                    {/* hit count icon */}
-                                                    <BarChartIcon fontSize='small' sx={{ color: 'text.disabled' }} />
-                                                    <Typography variant='body2' color={'text.disabled'} alignItems={'center'}>{p.totalHitCount}</Typography>
-                                                </Box>
-                                                <Box>
-                                                    {/* <Typography mr={1} variant='body2' color={'text.disabled'} alignItems={'center'}>{channelInfo_ss.name}</Typography> */}
-
-                                                </Box>
-                                            </Box>
-
-                                            {/* image */}
-                                            <Box display={{ md: 'none', lg: 'block' }}>
-                                                <Box sx={{ width: 100, height: 100, backgroundImage: `url(${provideCoverImageUrl(p.postId, imageDomain)})`, backgroundSize: 'cover' }}></Box>
-                                            </Box>
-                                        </TextButton>
-                                    )}
-                                </Stack>
-
-                            </ResponsiveCard>
+                            {/* statistics - likes & saves */}
+                            <Box sx={{ display: 'flex', flexDirection: 'row' }}>
+                                {0 !== combinedStatisticsState.totalFollowedByCount && <>
+                                    {0 !== combinedStatisticsState.totalCreationLikedCount && <>
+                                        <Typography color={'text.disabled'}>{langConfigs.authorsTotalLikesP1[preferenceStates.lang]}</Typography>
+                                        <Typography fontWeight={700} color={'grey.700'} >{combinedStatisticsState.totalCreationLikedCount}</Typography>
+                                        <Typography color={'text.disabled'}>{langConfigs.authorsTotalLikesP2[preferenceStates.lang]}</Typography>
+                                    </>}
+                                    {0 !== combinedStatisticsState.totalCreationLikedCount && 0 !== combinedStatisticsState.totalCreationSavedCount && <>
+                                        <Typography fontWeight={700} color={'grey.700'} >{combinedStatisticsState.totalCreationSavedCount}</Typography>
+                                        <Typography color={'text.disabled'}>{langConfigs.authorsTotalSavesP2[preferenceStates.lang]}</Typography>
+                                    </>}
+                                </>}
+                            </Box>
                         </Stack>
-                    </Grid>
 
+                        {/* title */}
+                        {0 !== creationInfoArr.length && <Box pt={5}>
+                            <Typography variant={'h6'}>{langConfigs.postStackTitle[preferenceStates.lang]}</Typography>
+                        </Box>}
+
+                        {/* posts */}
+                        <MenuList>
+                            {0 !== creationInfoArr.length && creationInfoArr.map(p =>
+                                <MenuItem key={getRandomHexStr()} sx={{ height: 120 }} onClick={handleClickOnPostCard(p.postId)}>
+
+                                    {/* topic info & statistics */}
+                                    <ListItemText>
+                                        <Typography variant='body1' noWrap >{p.title}</Typography>
+                                        <Stack direction={'row'} spacing={1}>
+                                            <Typography mr={1} variant='body2' color={'text.disabled'} alignItems={'center'}>{!channelInfoStates.channelInfo[p.channelId] ? '' : channelInfoStates.channelInfo[p.channelId].name[preferenceStates.lang]}</Typography>
+
+                                            {/* comment count icon */}
+                                            <ForumIcon fontSize={'small'} sx={{ color: 'text.disabled' }} />
+                                            <Typography mr={1} variant='body2' color={'text.disabled'} alignItems={'center'}>{p.totalCommentCount}</Typography>
+
+                                            {/* hit count icon */}
+                                            <BarChartIcon fontSize='small' sx={{ color: 'text.disabled' }} />
+                                            <Typography variant='body2' color={'text.disabled'} alignItems={'center'}>{p.totalHitCount}</Typography>
+                                        </Stack>
+                                    </ListItemText>
+
+
+                                    {/* channel icon */}
+                                    <ListItemIcon>
+                                        <Avatar variant='rounded' sx={{ width: 100, height: 100, }}>
+                                            <Box sx={{ width: 100, height: 100, backgroundImage: `url(${provideCoverImageUrl(p.postId, imageDomain)})`, backgroundSize: 'cover' }}></Box>
+                                        </Avatar>
+                                    </ListItemIcon>
+
+                                </MenuItem>
+
+                            )}
+                        </MenuList>
+                    </Box>
                 </Grid>
-            </Container >
+            </Grid>
+
+            {/* legal info */}
+            <LegalInfo lang={preferenceStates.lang} />
 
             {/* pop up comment editor */}
             < Popover
@@ -1600,9 +1653,6 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
                 </Box>
             </Popover >
 
-            <Copyright sx={{ mt: 8 }} lang={preferenceStates.lang} />
-            <Terms sx={{ mb: 4 }} lang={preferenceStates.lang} />
-
             {/* backdrop - full screen image viewer */}
             <Backdrop
                 sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}
@@ -1616,7 +1666,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
 
             {/* secondary menu */}
             <Menu
-                sx={{ mt: '45px' }}
+                sx={{ mt: '3rem' }}
                 anchorEl={popUpMenuStates.anchorEl}
                 anchorOrigin={{ vertical: 'top', horizontal: 'right', }}
                 keepMounted
@@ -1627,7 +1677,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
             >
                 {/* block (identity required) */}
                 {('authenticated' === status && viewerInfoStates.memberId !== popUpMenuStates.memberId) &&
-                    <MenuItem >
+                    <MenuItem onClick={async () => { await handleBlock(popUpMenuStates.memberId); }}>
                         <ListItemIcon><BlockIcon fontSize='small' /></ListItemIcon>
                         <ListItemText><Typography variant={'body2'}>{langConfigs.block[preferenceStates.lang](popUpMenuStates.nickname)}</Typography></ListItemText>
                     </MenuItem>}
