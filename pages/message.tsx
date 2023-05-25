@@ -66,48 +66,6 @@ const restorePreferenceStatesFromCache = restoreFromLocalStorage(storageName0);
 const imageDomain = process.env.NEXT_PUBLIC_IMAGE_DOMAIN ?? '';
 const defaultLang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
-    // Left column
-    posts: {
-        tw: '文章',
-        cn: '文章',
-        en: 'Posts'
-    },
-    followedMembers: {
-        tw: '關注',
-        cn: '关注',
-        en: 'Followed'
-    },
-    messages: {
-        tw: '訊息',
-        cn: '消息',
-        en: 'Messages'
-    },
-    unread: {
-        tw: `未讀`,
-        cn: `未读`,
-        en: `Unread`
-    },
-    member: {
-        tw: '主頁',
-        cn: '主页',
-        en: 'Member'
-    },
-    settings: {
-        tw: '設定',
-        cn: '设定',
-        en: 'Settings'
-    },
-    create: {
-        tw: '創作',
-        cn: '创作',
-        en: 'Create'
-    },
-
-
-
-
-
-
 
     liked: {
         tw: '喜歡',
@@ -255,9 +213,7 @@ const Message = () => {
 
     return (
         <>
-
             <Navbar lang={preferenceStates.lang} />
-
             <Grid container >
 
                 {/* left */}
@@ -268,9 +224,8 @@ const Message = () => {
                 </Grid>
 
                 {/* middle */}
-                <Grid item xs={12} sm={12} md={9} lg={6} xl={4} >
-
-                    <Stack pt={2} >
+                <Grid item xs={12} sm={12} md={6} lg={6} xl={4} >
+                    <Stack pt={{ xs: 2, sm: 2, md: 9 }} px={2} >
 
                         {/* section select */}
                         <Box sx={{ display: 'flex', justifyContent: 'space-evenly' }}>
@@ -278,7 +233,7 @@ const Message = () => {
                             {/* like */}
                             <Button sx={{ color: 'like' === processStates.selectedCategory ? 'primary' : 'grey.600' }} onClick={handleSelectNoticeCategory('like')}>
                                 <Box>
-                                    <CentralizedBox sx={{ p: 1 }}><ThumbUpIcon /></CentralizedBox>
+                                    <CentralizedBox sx={{ p: 1 }}><ThumbUpIcon sx={{ fontSize: 22 }} /></CentralizedBox>
                                     <Typography variant={'body1'} textAlign={'center'}>{langConfigs.liked[preferenceStates.lang]}{0 === processStates.noticeStatistics.like ? '' : `+${processStates.noticeStatistics.like}`}</Typography>
                                 </Box>
                             </Button>
@@ -286,7 +241,7 @@ const Message = () => {
                             {/* save */}
                             <Button sx={{ color: 'save' === processStates.selectedCategory ? 'primary' : 'grey.600' }} onClick={handleSelectNoticeCategory('save')}>
                                 <Box>
-                                    <CentralizedBox sx={{ p: 1 }}><StarIcon /></CentralizedBox>
+                                    <CentralizedBox sx={{ p: 1 }}><StarIcon sx={{ fontSize: 22 }} /></CentralizedBox>
                                     <Typography variant={'body1'} textAlign={'center'}>{langConfigs.saved[preferenceStates.lang]}{0 === processStates.noticeStatistics.save ? '' : `+${processStates.noticeStatistics.save}`}</Typography>
                                 </Box>
                             </Button>
@@ -294,7 +249,7 @@ const Message = () => {
                             {/* reply */}
                             <Button sx={{ color: 'reply' === processStates.selectedCategory ? 'primary' : 'grey.600' }} onClick={handleSelectNoticeCategory('reply')}>
                                 <Box>
-                                    <CentralizedBox sx={{ p: 1 }}><ChatBubbleIcon /></CentralizedBox>
+                                    <CentralizedBox sx={{ p: 1 }}><ChatBubbleIcon sx={{ fontSize: 22 }} /></CentralizedBox>
                                     <Typography variant={'body1'} textAlign={'center'}>{langConfigs.replied[preferenceStates.lang]}{0 === processStates.noticeStatistics.reply ? '' : `+${processStates.noticeStatistics.reply}`}</Typography>
                                 </Box>
                             </Button>
@@ -302,7 +257,7 @@ const Message = () => {
                             {/* cue */}
                             <Button sx={{ color: 'cue' === processStates.selectedCategory ? 'primary' : 'grey.600' }} onClick={handleSelectNoticeCategory('cue')}>
                                 <Box>
-                                    <CentralizedBox sx={{ p: 1 }}><AlternateEmailIcon /></CentralizedBox>
+                                    <CentralizedBox sx={{ p: 1 }}><AlternateEmailIcon sx={{ fontSize: 22 }} /></CentralizedBox>
                                     <Typography variant={'body1'} textAlign={'center'}>{langConfigs.cued[preferenceStates.lang]}{0 === processStates.noticeStatistics.cue ? '' : `+${processStates.noticeStatistics.cue}`}</Typography>
                                 </Box>
                             </Button>
@@ -353,7 +308,7 @@ const Message = () => {
                 </Grid>
 
                 {/* right */}
-                <Grid item xs={0} sm={0} md={0} lg={3} xl={4}>
+                <Grid item xs={0} sm={0} md={3} lg={3} xl={4}>
                     <Box sx={{ display: { xs: 'none', sm: 'none', md: 'block' } }}>
                         <SideColumn lang={preferenceStates.lang} />
                     </Box>

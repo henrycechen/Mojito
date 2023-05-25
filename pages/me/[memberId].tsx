@@ -2,6 +2,9 @@ import * as React from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
 import { NextPageContext } from 'next';
+import { styled } from '@mui/material/styles';
+import useTheme from '@mui/material/styles/useTheme';
+
 
 import Alert from '@mui/material/Alert';
 import Avatar from '@mui/material/Avatar';
@@ -11,10 +14,6 @@ import CircularProgress from '@mui/material/CircularProgress';
 import Divider from '@mui/material/Divider';
 import Grid from '@mui/material/Grid';
 import IconButton from '@mui/material/IconButton';
-import ListItemText from '@mui/material/ListItemText';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import MenuList from '@mui/material/MenuList';
-import MenuItem from '@mui/material/MenuItem';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import SwipeableDrawer from '@mui/material/SwipeableDrawer';
@@ -22,17 +21,12 @@ import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 
-import SvgIcon from '@mui/material/SvgIcon';
-import BubbleChartIcon from '@mui/icons-material/BubbleChart';
 import CreateIcon from '@mui/icons-material/Create';
-import StarIcon from '@mui/icons-material/Star';
 import DeleteIcon from '@mui/icons-material/Delete';
-import HistoryIcon from '@mui/icons-material/History';
-import PhotoCamera from '@mui/icons-material/PhotoCamera';
 import EditIcon from '@mui/icons-material/Edit';
+import PhotoCamera from '@mui/icons-material/PhotoCamera';
+import StarIcon from '@mui/icons-material/Star';
 
-import useTheme from '@mui/material/styles/useTheme';
-import { styled } from '@mui/material/styles';
 import grey from '@mui/material/colors/grey';
 
 import { Global } from '@emotion/react';
@@ -42,7 +36,7 @@ import 'jimp';
 
 import { IConciseMemberStatistics, IRestrictedMemberComprehensive } from '../../lib/interfaces/member';
 import { IConcisePostComprehensive } from '../../lib/interfaces/post';
-import { IChannelInfoStates, IChannelInfoDictionary } from '../../lib/interfaces/channel';
+import { IChannelInfo } from '../../lib/interfaces/channel';
 
 import { TBrowsingHelper, LangConfigs, TPreferenceStates } from '../../lib/types';
 import { timeToString, updateLocalStorage, restoreFromLocalStorage, logWithDate } from '../../lib/utils/general';
@@ -50,11 +44,11 @@ import { verifyId } from '../../lib/utils/verify';
 import { provideAvatarImageUrl, getNicknameBrief, fakeConciseMemberStatistics, fakeRestrictedMemberInfo } from '../../lib/utils/for/member';
 import { provideCoverImageUrl } from '../../lib/utils/for/post';
 import { getRandomHexStr } from '../../lib/utils/create';
+import { CentralizedBox } from '../../ui/Styled';
 
-import { CentralizedBox, ResponsiveCard } from '../../ui/Styled';
+import SideMenu from '../../ui/SideMenu';
+import SideColumn from '../../ui/SideColumn';
 import Navbar from '../../ui/Navbar';
-import Copyright from '../../ui/Copyright';
-import Terms from '../../ui/Terms';
 
 const storageName0 = 'PreferenceStates';
 const restorePreferenceStatesFromCache = restoreFromLocalStorage(storageName0);
@@ -63,20 +57,11 @@ const storageName1 = 'MemberPageProcessStates';
 const updateProcessStatesCache = updateLocalStorage(storageName1);
 const restoreProcessStatesFromCache = restoreFromLocalStorage(storageName1);
 
-type TMemberPageProps = {
-    channelInfoDict_ss: IChannelInfoDictionary;
-    memberInfo_ss: IRestrictedMemberComprehensive;
-    memberStatistics_ss: IConciseMemberStatistics;
-    redirect404: boolean;
-    redirect500: boolean;
-};
-
 const appDomain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? '';
 const imageDomain = process.env.NEXT_PUBLIC_IMAGE_DOMAIN ?? '';
 const defaultLang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
 
-    //// UI contents ////
     editProfile: {
         tw: '資料設定',
         cn: '更改信息',
@@ -93,6 +78,7 @@ const langConfigs: LangConfigs = {
         en: 'Follow',
     },
 
+    // Statistics content
     noFollowing: {
         tw: '还没有會員關注作者',
         cn: '位会员正在关注作者',
@@ -102,6 +88,11 @@ const langConfigs: LangConfigs = {
         tw: '位會員正在關注作者',
         cn: '位会员正在关注作者',
         en: 'members are following the author',
+    },
+    noIntro: {
+        tw: '作者还未更新簡介',
+        cn: '作者还未更新简介',
+        en: 'Author has not updated intro',
     },
     noCreations: {
         tw: '作者还未曾發佈文章',
@@ -134,6 +125,7 @@ const langConfigs: LangConfigs = {
         en: 'likes',
     },
 
+    // Channel bar
     myCreations: {
         tw: '我的作品',
         cn: '我的作品',
@@ -159,14 +151,13 @@ const langConfigs: LangConfigs = {
         cn: '浏览记录',
         en: 'Browsing history',
     },
-
     allPosts: {
         tw: '全部',
         cn: '全部',
         en: 'All',
     },
 
-    //// Alert contents ////
+    // Alert contents
     noCreationsRecord: {
         tw: '您還未發表任何作品',
         cn: '您还未发表任何作品',
@@ -193,7 +184,7 @@ const langConfigs: LangConfigs = {
         en: 'No records of browsing history'
     },
 
-    //// Member info editing ////
+    // Member info editing
     cancel: {
         tw: '取消',
         cn: '取消',
@@ -205,7 +196,7 @@ const langConfigs: LangConfigs = {
         en: 'Update'
     },
 
-    //// Avatar setting ////
+    // Avatar setting
     avatar: {
         tw: '相片',
         cn: '头像',
@@ -237,7 +228,7 @@ const langConfigs: LangConfigs = {
         en: 'You tried to open a non-image file, please try again'
     },
 
-    //// Nickname setting ////
+    // Nickname setting
     nickname: {
         tw: '暱稱',
         cn: '昵称',
@@ -286,7 +277,7 @@ const langConfigs: LangConfigs = {
         en: 'Update succeeded'
     },
 
-    //// Bried intro setting ////
+    // Bried intro setting
     briefIntro: {
         tw: '簡介',
         cn: '简介',
@@ -314,7 +305,13 @@ const langConfigs: LangConfigs = {
     },
 };
 
-//// Get multiple member info server-side ////
+type TMemberPageProps = {
+    memberInfo_ss: IRestrictedMemberComprehensive;
+    memberStatistics_ss: IConciseMemberStatistics;
+    redirect404: boolean;
+    redirect500: boolean;
+};
+
 export async function getServerSideProps(context: NextPageContext): Promise<{ props: TMemberPageProps; }> {
     const { memberId } = context.query;
     const { isValid, category } = verifyId(memberId);
@@ -323,7 +320,6 @@ export async function getServerSideProps(context: NextPageContext): Promise<{ pr
     if (!(isValid && 'member' === category)) {
         return {
             props: {
-                channelInfoDict_ss: {},
                 memberInfo_ss: fakeRestrictedMemberInfo(),
                 memberStatistics_ss: fakeConciseMemberStatistics(),
                 redirect404: true,
@@ -333,13 +329,6 @@ export async function getServerSideProps(context: NextPageContext): Promise<{ pr
     }
 
     try {
-        // GET channel info by id
-        const dictionary_resp = await fetch(`${appDomain}/api/channel/info/dictionary`);
-        if (200 !== dictionary_resp.status) {
-            throw new Error('Attempt to GET channel info dictionary');
-        }
-        const channelInfoDict_ss = await dictionary_resp.json();
-
         // GET member info by id
         const info_resp = await fetch(`${appDomain}/api/member/info/${memberId}`);
         if (200 !== info_resp.status) {
@@ -356,7 +345,6 @@ export async function getServerSideProps(context: NextPageContext): Promise<{ pr
 
         return {
             props: {
-                channelInfoDict_ss,
                 memberInfo_ss,
                 memberStatistics_ss,
                 redirect404: false,
@@ -367,7 +355,6 @@ export async function getServerSideProps(context: NextPageContext): Promise<{ pr
         logWithDate(e?.msg, '/pages/me/[memberId].getServerSideProps', e);
         return {
             props: {
-                channelInfoDict_ss: {},
                 memberInfo_ss: fakeRestrictedMemberInfo(),
                 memberStatistics_ss: fakeConciseMemberStatistics(),
                 redirect404: false,
@@ -377,7 +364,7 @@ export async function getServerSideProps(context: NextPageContext): Promise<{ pr
     }
 }
 
-const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, memberStatistics_ss, redirect404, redirect500 }: TMemberPageProps) => {
+const Member = ({ memberInfo_ss: memberComprehensive_ss, memberStatistics_ss, redirect404, redirect500 }: TMemberPageProps) => {
 
     const theme = useTheme();
 
@@ -392,6 +379,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
     }, [router]);
 
     const { data: session, status } = useSession();
+    // status - 'unauthenticated' / 'authenticated'
 
     React.useEffect(() => {
         if ('authenticated' === status) {
@@ -401,31 +389,12 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
         }
     }, [status]);
 
-    //////// REF - masonry ////////
+    // Ref - masonry
     const masonryWrapper = React.useRef<any>();
     const [width, setWidth] = React.useState(375); // default 636, now use the width of iphonse se3
+    React.useEffect(() => { setWidth(masonryWrapper?.current?.offsetWidth); }, []);
 
-    //////// INFO - member (author) ////////
-    const { memberId: authorId } = memberComprehensive_ss;
-
-    type TMemberInfoStates = {
-        avatarImageUrl: string;
-        nickname: string;
-        briefIntro: string;
-        gender: number;
-        birthdayBySecond: number;
-    };
-
-    // States - memberInfo ////////
-    const [memberInfoStates, setMemberInfoStates] = React.useState<TMemberInfoStates>({
-        avatarImageUrl: provideAvatarImageUrl(authorId, imageDomain),
-        nickname: memberComprehensive_ss.nickname,
-        briefIntro: memberComprehensive_ss.briefIntro,
-        gender: memberComprehensive_ss.gender,
-        birthdayBySecond: memberComprehensive_ss.birthdayBySecond,
-    });
-
-    // States - preference ////////
+    // States - preference
     const [preferenceStates, setPreferenceStates] = React.useState<TPreferenceStates>({
         lang: defaultLang,
         mode: 'light'
@@ -442,7 +411,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
         wasRedirected: boolean;
     };
 
-    // States - process ////////
+    // States - process
     const [processStates, setProcessStates] = React.useState<TProcessStates>({
         viewerId: '',
         selectedCategory: 'creations', // 'creations' | 'savedposts' | 'browsinghistory'
@@ -455,14 +424,27 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
     });
 
     // Restore process states from cache
-    React.useEffect(() => {
-        restoreProcessStatesFromCache(setProcessStates);
-    }, []);
+    React.useEffect(() => { restoreProcessStatesFromCache(setProcessStates); }, []);
 
-    // Reset masonry width
-    React.useEffect(() => { setWidth(masonryWrapper?.current?.offsetWidth); }, []);
+    // Declare authorId
+    const { memberId: authorId } = memberComprehensive_ss;
 
-    //////////////////////////////////////// POST LAYOUT ////////////////////////////////////////
+    type TMemberInfoStates = {
+        avatarImageUrl: string;
+        nickname: string;
+        briefIntro: string;
+        gender: number;
+        birthdayBySecond: number;
+    };
+
+    // States - member info
+    const [memberInfoStates, setMemberInfoStates] = React.useState<TMemberInfoStates>({
+        avatarImageUrl: provideAvatarImageUrl(authorId, imageDomain),
+        nickname: memberComprehensive_ss.nickname,
+        briefIntro: memberComprehensive_ss.briefIntro,
+        gender: memberComprehensive_ss.gender,
+        birthdayBySecond: memberComprehensive_ss.birthdayBySecond,
+    });
 
     const handleSelectPostCategory = (categoryId: 'creations' | 'savedposts' | 'browsinghistory') => (event: React.MouseEvent<HTMLButtonElement> | React.SyntheticEvent) => {
         let states: TProcessStates = { ...processStates, selectedCategory: categoryId };
@@ -474,41 +456,47 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
         setBrowsingHelper({ ...browsingHelper, memorizeViewPortPositionY: undefined });
     };
 
-    // States - browsing helper ////////
+    // States - browsing helper
     const [browsingHelper, setBrowsingHelper] = React.useState<TBrowsingHelper>({
         memorizeViewPortPositionY: undefined, // reset scroll-help on handleChannelSelect, handleSwitchChange, ~~handlePostCardClick~~
     });
 
-    /// States - channel /////////
-    const [channelInfoStates, setChannelInfoStates] = React.useState<IChannelInfoStates>({
-        channelIdSequence: [],
-    });
-
-    React.useEffect(() => { updateChannelIdSequence(); }, []);
-
-    const updateChannelIdSequence = async () => {
-        const resp = await fetch(`/api/channel/id/sequence`);
-        if (200 !== resp.status) {
-            setChannelInfoStates({ ...channelInfoStates, channelIdSequence: Object.keys(channelInfoDict_ss) });
-            console.log(`Attemp to GET channel id array. Using sequence from channel info dictionary instead`);
-            return;
-        }
-        try {
-            const idArr = await resp.json();
-            setChannelInfoStates({ ...channelInfoStates, channelIdSequence: [...idArr] });
-        } catch (e) {
-            console.log(`Attemp to parese channel id array. ${e}`);
-        } finally {
-            setChannelInfoStates({ ...channelInfoStates, channelIdSequence: Object.keys(channelInfoDict_ss) });
-        }
+    type TChannelInfoStates = {
+        // anchorEl: null | HTMLElement;
+        channelInfo: { [channelId: string]: IChannelInfo; };
     };
 
-    // Handle channel bar restore on refresh
+    // States - channel info 
+    const [channelInfoStates, setChannelInfoStates] = React.useState<TChannelInfoStates>({
+        // anchorEl: null,
+        channelInfo: {},
+    });
+
     React.useEffect(() => {
+        getChanneInfo();
+
+        // Handle channel bar restore on refresh
         if (undefined !== processStates.memorizeChannelBarPositionX) {
             document.getElementById('channel-bar')?.scrollBy(processStates.memorizeChannelBarPositionX ?? 0, 0);
         }
-    }, [channelInfoStates.channelIdSequence]);
+    }, []);
+
+    const getChanneInfo = async () => {
+        const resp = await fetch(`/api/channel/info`);
+        if (200 !== resp.status) {
+            console.error(`Attemp to GET channel info.`);
+            return;
+        }
+        try {
+            const info = await resp.json();
+            setChannelInfoStates({
+                ...channelInfoStates,
+                channelInfo: { ...info }
+            });
+        } catch (e) {
+            console.error(`Attemp to parese channel info (JSON) from response. ${e}`);
+        }
+    };
 
     const handleChannelSelect = (channelId: string) => (event: React.MouseEvent<HTMLButtonElement> | React.SyntheticEvent) => {
         let states: TProcessStates = { ...processStates };
@@ -522,7 +510,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
         setBrowsingHelper({ ...browsingHelper, memorizeViewPortPositionY: undefined });
     };
 
-    // States - (masonry) post info array ////////
+    // States - posts (masonry)
     const [masonryPostInfoArr, setMasonryPostInfoArr] = React.useState<IConcisePostComprehensive[]>([]);
 
     React.useEffect(() => { updatePostsArr(); }, [processStates.selectedHotPosts, processStates.selectedChannelId, processStates.selectedCategory]);
@@ -542,12 +530,12 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
             url = `/api/member/browsinghistory`;
         }
 
-        const resp = await fetch(`${url}?channelId=${processStates.selectedChannelId}&sort=${processStates.selectedHotPosts ? 'hot' : 'new'}`);
+        const resp = await fetch(`${url}?channelId=${processStates.selectedChannelId}`);
         if (200 === resp.status) {
             try {
                 setMasonryPostInfoArr(await resp.json());
             } catch (e) {
-                console.log(`Attempt to GET posts of ${processStates.selectedHotPosts ? '24 hours hot' : 'new'}. ${e}`);
+                console.error(`Attempt to GET posts of ${processStates.selectedCategory}. ${e}`);
             }
         }
     };
@@ -565,9 +553,9 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                 setBrowsingHelper({ ...browsingHelper, memorizeViewPortPositionY: processStates.memorizeViewPortPositionY });
             }
             // #2 update process states and cache
-            let states1: TProcessStates = { ...processStates, memorizeLastViewedPostId: undefined, memorizeViewPortPositionY: undefined, wasRedirected: false };
-            setProcessStates({ ...states1 });
-            updateProcessStatesCache(states1);
+            let states: TProcessStates = { ...processStates, memorizeLastViewedPostId: undefined, memorizeViewPortPositionY: undefined, wasRedirected: false };
+            setProcessStates(states);
+            updateProcessStatesCache(states);
         }
     }, [masonryPostInfoArr]);
 
@@ -576,83 +564,124 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
     }
 
     const handleClickOnPost = (postId: string) => (event: React.MouseEvent) => {
-        // #1 update process states and post layout cache
-        updateProcessStatesCache({ ...processStates, memorizeLastViewedPostId: postId, memorizeViewPortPositionY: window.scrollY, wasRedirected: true });
-        // #2 jump
+        updateProcessStatesCache({
+            ...processStates,
+            memorizeLastViewedPostId: postId,
+            memorizeViewPortPositionY: window.scrollY,
+            wasRedirected: true
+        });
         router.push(`/post/${postId}`);
     };
 
     const handleClickOnMemberInfo = (memberId: string, postId: string) => (event: React.MouseEvent) => {
-        // #1 update process states and post layout cache
-        updateProcessStatesCache({ ...processStates, memorizeLastViewedPostId: postId, memorizeViewPortPositionY: window.scrollY, wasRedirected: true });
-        // #2 jump
+        updateProcessStatesCache({
+            ...processStates,
+            memorizeLastViewedPostId: postId,
+            memorizeViewPortPositionY: window.scrollY,
+            wasRedirected: true
+        });
         router.push(`/me/${memberId}`);
     };
 
-    /// States - behaviour /////////
-    const [undoSavedPostArr, setUndoSavedPostArr] = React.useState<string[]>([]);
+    type TMemberBehaviourStates = {
+        followed: boolean;
+        undoSavedPostIdArr: string[];
+    };
 
-    // Handle click on bottom-right icon button
+    /// States - behaviour
+    const [behaviourStates, setBehaviourStates] = React.useState<TMemberBehaviourStates>({
+        followed: false,
+        undoSavedPostIdArr: []
+    });
+
+    React.useEffect(() => { if ('' !== processStates.viewerId) { initializeBehaviourStates(); } }, [processStates.viewerId]);
+
+    const initializeBehaviourStates = async () => {
+        try {
+            const resp = await fetch(`/api/follow/${authorId}`);
+            if (200 !== resp.status) {
+                console.error(`Attemp to verify if followed author`);
+                return;
+            }
+            setBehaviourStates({
+                ...behaviourStates,
+                followed: await resp.json()
+            });
+        } catch (e: any) {
+            console.error(`Attempt to parse follow (boolean value) from response. ${e}`);
+        }
+    };
+
     const handleMultiProposeButtonClick = async (categoryId: string, postId: string) => {
-        // edit post 
+        // edit
         if ('creations' === categoryId) {
             router.push(`/edit/${postId}`);
             return;
         }
 
-        // undo save post
+        // undo save
         if ('savedposts' === categoryId) {
-            // #1 mark post of chice as 'undo-saved'
-            if (undoSavedPostArr.includes(postId)) {
-                const update = undoSavedPostArr.filter(id => postId !== id);
-                setUndoSavedPostArr([...update]);
+            // #1 mark post of choice as 'undo-saved'
+            if (behaviourStates.undoSavedPostIdArr.includes(postId)) {
+                const update = behaviourStates.undoSavedPostIdArr.filter(id => postId !== id);
+                setBehaviourStates({
+                    ...behaviourStates,
+                    undoSavedPostIdArr: [...update]
+                });
             } else {
-                setUndoSavedPostArr([...undoSavedPostArr, postId]);
+                setBehaviourStates({
+                    ...behaviourStates,
+                    undoSavedPostIdArr: [...behaviourStates.undoSavedPostIdArr, postId]
+                });
             }
             // #2 request to delete record
-            const resp = await fetch(``);
+            const resp = await fetch(`/api/save/${postId}`);
             if (200 !== resp.status) {
                 console.log('Attempt to undo/do save post');
             }
         }
 
-        // delete browsing history
+        // delete history
         if ('browsinghistory' === categoryId) {
             // #1 remove post card
             const update = masonryPostInfoArr.filter(po => po.postId !== postId);
             setMasonryPostInfoArr([...update]);
             // #2 request to delete record
-            const resp = await fetch(`/api/member/browsinghistory/${authorId}`, {
+            const resp = await fetch(`/api/member/browsinghistory?postId=${postId}`, {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ postId })
             });
             if (200 !== resp.status) {
-                console.log('Attempt to delete browsing history record');
+                console.error('Attempt to delete browsing history record');
             }
         }
     };
 
-    //////////////////////////////////////// FUNCTIONS ////////////////////////////////////////
-
     const makeBriefIntro = (briefIntro: any) => {
         if ('string' !== typeof briefIntro) {
-            return (<></>);
+            return (<Typography variant='subtitle1' color={'text.disabled'}>{langConfigs.noIntro[preferenceStates.lang]}</Typography>);
         }
         return (
             <>
                 {briefIntro.split('\n').map(t =>
-                    <Typography key={getRandomHexStr()} variant='body1' fontSize={{ md: 18 }} color={'text.disabled'}>{t}</Typography>
+                    <Typography key={getRandomHexStr()} variant='subtitle1' color={'text.disabled'}>{t}</Typography>
                 )}
             </>
         );
     };
 
     const handleFollowOrUndoFollow = async () => {
-
+        if ('authenticated' !== status) {
+            router.push(`/signin`);
+            return;
+        }
+        setBehaviourStates({ ...behaviourStates, followed: !behaviourStates.followed });
+        const resp = await fetch(`/api/follow/${authorId}`, { method: 'POST' });
+        if (200 !== resp.status) {
+            console.error(`Attemp to follow post author`);
+        }
     };
-
-    //////////////////////////////////////// INFO EDITOR ////////////////////////////////////////
 
     type TAuthorInfoSettingStates = {
         alternativeImageUrl: string;
@@ -667,7 +696,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
         displayProgress: boolean;
     };
 
-    //// States - author info ////
+    // States - author info
     const [authorInfoSettingStates, setAuthorInfoSettingStates] = React.useState<TAuthorInfoSettingStates>({
         alternativeImageUrl: provideAvatarImageUrl(authorId, imageDomain),
         alternativeName: memberInfoStates.nickname,
@@ -691,13 +720,10 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
             const file = event.target.files[0];
             if (file) {
                 const fname = file.name;
-
                 if (fname !== undefined) {
                     const nameArr = fname.split('.');
-
                     if (Array.isArray(nameArr) && nameArr.length > 1) {
                         const ext = nameArr.pop();
-
                         if (undefined !== ext && ['jpg', 'jpeg', 'png'].includes(ext.toLowerCase())) {
                             setAuthorInfoSettingStates({
                                 ...authorInfoSettingStates,
@@ -964,7 +990,7 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
             }
         }
 
-        // #3 if breif intro
+        // #3 if update breif intro
         if (memberInfoStates.briefIntro !== authorInfoSettingStates.alternativeIntro) {
 
             setAuthorInfoSettingStates({
@@ -1021,7 +1047,6 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
         left: 'calc(50% - 15px)',
     }));
 
-    //////////////////////////////////////// JSX ////////////////////////////////////////
 
     return (
         <>
@@ -1061,24 +1086,33 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
             />
 
             <Navbar lang={preferenceStates.lang} />
-
-            {/* layer - member info */}
             <Grid container >
 
-                {/* placeholder - left */}
-                <Grid item xs={0} sm={1} md={2} lg={3} xl={3}></Grid>
+                {/* left */}
+                <Grid item xs={0} sm={0} md={3} lg={3} xl={4} >
+                    <Box sx={{ display: { xs: 'none', sm: 'none', md: 'flex' }, flexDirection: 'row-reverse', position: 'sticky', top: 0, left: 0, }}>
+                        <SideMenu lang={preferenceStates.lang} />
+                    </Box>
+                </Grid>
 
                 {/* middle column */}
-                <Grid item xs={12} sm={10} md={8} lg={6} xl={6}>
-                    <Box sx={{ minHeight: { xs: 160, md: 200 }, px: { xs: 2, sm: 0 } }}>
+                <Grid item xs={12} sm={12} md={6} lg={6} xl={4}>
+                    <Stack pt={{ xs: 2, sm: 2, md: 10 }} px={2} spacing={1}>
 
-                        {/* 1st row - avatar */}
-                        <Grid container sx={{ mt: { xs: 4, sm: 5 } }}>
+                        {/* avatar */}
+                        <Grid container sx={{ pt: { xs: 2, sm: 2, md: 0 }, px: 1 }}>
 
                             {/* avatar image */}
                             <Grid item flexGrow={1}>
-                                <Avatar src={memberInfoStates.avatarImageUrl} sx={{ height: { xs: 64, sm: 90 }, width: { xs: 64, sm: 90 } }}>{memberInfoStates.nickname?.charAt(0).toUpperCase()}</Avatar>
+                                <Avatar src={memberInfoStates.avatarImageUrl} sx={{ height: 64, width: 64 }}>{memberInfoStates.nickname?.charAt(0).toUpperCase()}</Avatar>
                             </Grid>
+
+                            {/* 'follow' button */}
+                            {'authenticated' !== status && <Grid item sx={{ mt: 2 }} pl={1}>
+                                <Tooltip title={langConfigs.followAuthor[preferenceStates.lang]}>
+                                    <Button variant={'contained'} color={'info'} sx={{ padding: { xs: 0.5, sm: 3 / 4 }, borderRadius: 4 }} onClick={async () => { await handleFollowOrUndoFollow(); }}>{langConfigs.follow[preferenceStates.lang]}</Button>
+                                </Tooltip>
+                            </Grid>}
 
                             {/* 'edit' button */}
                             {'authenticated' === status && processStates.viewerId === authorId && <Grid item pt={2}>
@@ -1087,17 +1121,11 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                                 </Tooltip>
                             </Grid>}
 
-                            {/* 'follow' button */}
-                            {processStates.viewerId !== authorId && <Grid item sx={{ mt: 2 }} pl={1}>
-                                <Tooltip title={langConfigs.followAuthor[preferenceStates.lang]}>
-                                    <Button variant={'contained'} color={'info'} sx={{ padding: { xs: 0.5, sm: 3 / 4 }, borderRadius: 4 }} onClick={async () => { await handleFollowOrUndoFollow(); }}>{langConfigs.follow[preferenceStates.lang]}</Button>
-                                </Tooltip>
-                            </Grid>}
                         </Grid>
 
-                        {/* 2nd row - nickname */}
-                        <Box pt={{ xs: 2, sm: 2, md: 4 }}>
-                            <Typography variant='body1' fontSize={{ xs: 22, sm: 24, md: 27 }} fontWeight={600} >{memberInfoStates.nickname}</Typography>
+                        {/* nickname */}
+                        <Box pt={2}>
+                            <Typography variant='h5'>{memberInfoStates.nickname}</Typography>
                         </Box>
 
                         {/* brief intro */}
@@ -1108,265 +1136,183 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
                         {/* statistics - follow */}
                         <Box pt={4} sx={{ display: 'flex', flexDirection: 'row' }} >
                             {0 === memberStatistics_ss.totalFollowedByCount && <>
-                                <Typography fontSize={{ md: 17 }} color={'text.disabled'} >{langConfigs.noFollowing[preferenceStates.lang]}</Typography>
+                                <Typography color={'text.disabled'} >{langConfigs.noFollowing[preferenceStates.lang]}</Typography>
                             </>}
                             {0 !== memberStatistics_ss.totalFollowedByCount && <>
-                                <Typography fontSize={{ md: 17 }} fontWeight={700} color={'grey.700'} >{memberStatistics_ss.totalFollowedByCount}</Typography>
-                                <Typography fontSize={{ md: 17 }} color={'text.disabled'}>{langConfigs.authorsTotalFollowing[preferenceStates.lang]}</Typography>
+                                <Typography fontWeight={700} color={'grey.700'} >{memberStatistics_ss.totalFollowedByCount}</Typography>
+                                <Typography color={'text.disabled'}>{langConfigs.authorsTotalFollowing[preferenceStates.lang]}</Typography>
                             </>}
                         </Box>
 
                         {/* statistics - creations */}
-                        <Box pt={{ xs: 0, sm: 1 / 2 }} sx={{ display: 'flex', flexDirection: 'row' }}>
+                        <Box sx={{ display: 'flex', flexDirection: 'row' }}>
                             {0 === memberStatistics_ss.totalCreationsCount && <>
-                                <Typography fontSize={{ md: 17 }} color={'text.disabled'}>{langConfigs.noCreations[preferenceStates.lang]}</Typography>
+                                <Typography color={'text.disabled'}>{langConfigs.noCreations[preferenceStates.lang]}</Typography>
                             </>}
                             {0 !== memberStatistics_ss.totalCreationsCount && <>
-                                <Typography fontSize={{ md: 17 }} color={'text.disabled'}>{langConfigs.authorsTotalCreationsP1[preferenceStates.lang]}</Typography>
-                                <Typography fontSize={{ md: 17 }} fontWeight={700} color={'grey.700'} >{memberStatistics_ss.totalCreationsCount}</Typography>
-                                <Typography fontSize={{ md: 17 }} color={'text.disabled'}>{langConfigs.authorsTotalCreationsP2[preferenceStates.lang]}</Typography>
+                                <Typography color={'text.disabled'}>{langConfigs.authorsTotalCreationsP1[preferenceStates.lang]}</Typography>
+                                <Typography fontWeight={700} color={'grey.700'} >{memberStatistics_ss.totalCreationsCount}</Typography>
+                                <Typography color={'text.disabled'}>{langConfigs.authorsTotalCreationsP2[preferenceStates.lang]}</Typography>
                             </>}
                         </Box>
 
                         {/* statistics - likes & saves */}
-                        <Box pt={{ xs: 0, sm: 1 / 2 }} sx={{ display: 'flex', flexDirection: 'row' }}>
+                        <Box sx={{ display: 'flex', flexDirection: 'row' }}>
                             {0 !== memberStatistics_ss.totalFollowedByCount && <>
                                 {0 !== memberStatistics_ss.totalFollowedByCount && <>
-                                    <Typography fontSize={{ md: 17 }} color={'text.disabled'}>{langConfigs.authorsTotalLikesP1[preferenceStates.lang]}</Typography>
-                                    <Typography fontSize={{ md: 17 }} fontWeight={700} color={'grey.700'} >{memberStatistics_ss.totalFollowedByCount}</Typography>
-                                    <Typography fontSize={{ md: 17 }} color={'text.disabled'}>{langConfigs.authorsTotalLikesP2[preferenceStates.lang]}</Typography>
+                                    <Typography color={'text.disabled'}>{langConfigs.authorsTotalLikesP1[preferenceStates.lang]}</Typography>
+                                    <Typography fontWeight={700} color={'grey.700'} >{memberStatistics_ss.totalFollowedByCount}</Typography>
+                                    <Typography color={'text.disabled'}>{langConfigs.authorsTotalLikesP2[preferenceStates.lang]}</Typography>
                                 </>}
                                 {0 !== memberStatistics_ss.totalFollowedByCount && 0 !== memberStatistics_ss.totalFollowedByCount && <>
-                                    <Typography fontSize={{ md: 17 }} fontWeight={700} color={'grey.700'} >{memberStatistics_ss.totalFollowedByCount}</Typography>
-                                    <Typography fontSize={{ md: 17 }} color={'text.disabled'}>{langConfigs.authorsTotalSavesP2[preferenceStates.lang]}</Typography>
+                                    <Typography fontWeight={700} color={'grey.700'} >{memberStatistics_ss.totalFollowedByCount}</Typography>
+                                    <Typography color={'text.disabled'}>{langConfigs.authorsTotalSavesP2[preferenceStates.lang]}</Typography>
                                 </>}
                             </>}
 
                         </Box>
 
                         {/* divider */}
-                        <Box py={{ xs: 2, sm: 2, md: 4 }}><Divider /></Box>
-                    </Box>
-                </Grid>
+                        <Box pt={2}><Divider /></Box>
 
-                {/* placeholder - right */}
-                <Grid item xs={0} sm={1} md={2} lg={3} xl={3}></Grid>
-            </Grid>
+                        {/* channel bar */}
+                        <Stack id={'channel-bar'} direction={'row'} spacing={1} sx={{ display: { sm: 'flex', md: 'flex' }, padding: 1, overflow: 'auto' }}>
 
-            {/* layer - post layout */}
-            <Grid container >
+                            {/* creations button */}
+                            <Button variant={'creations' === processStates.selectedCategory ? 'contained' : 'outlined'} size='small' sx={{ minWidth: 'max-content' }} onClick={handleSelectPostCategory('creations')}>
+                                <Typography variant='body2'>{authorId === processStates.viewerId ? langConfigs.myCreations[preferenceStates.lang] : langConfigs.authorsCreations[preferenceStates.lang]}</Typography>
+                            </Button>
 
-                {/* placeholder */}
-                <Grid item xs={0} sm={1} md={2} lg={2} xl={1}></Grid>
+                            {/*  saved post button */}
+                            <Button variant={'savedposts' === processStates.selectedCategory ? 'contained' : 'outlined'} size='small' sx={{ minWidth: 'max-content' }} onClick={handleSelectPostCategory('savedposts')}>
+                                <Typography variant='body2'>{langConfigs.mySavedPosts[preferenceStates.lang]}</Typography>
+                            </Button>
 
-                {/* //// left column (menu for desktop mode) //// */}
-                <Grid item xs={0} sm={0} md={2} lg={2} xl={2} sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'right' }}>
-                    <Stack spacing={0} sx={{ pr: 1, display: { xs: 'none', sm: 'none', md: 'block' } }} >
+                            {/* browsing history button */}
+                            {('authenticated' === status && authorId === processStates.viewerId) && <Button variant={'browsinghistory' === processStates.selectedCategory ? 'contained' : 'outlined'} size='small' sx={{ minWidth: 'max-content' }} onClick={handleSelectPostCategory('browsinghistory')}>
+                                <Typography variant='body2'>{langConfigs.browsingHistory[preferenceStates.lang]}</Typography>
+                            </Button>}
 
-                        {/* category list */}
-                        <ResponsiveCard sx={{ padding: 1 }}>
-                            <MenuList>
-
-                                {/* creations */}
-                                <MenuItem onClick={handleSelectPostCategory('creations')} selected={'creations' === processStates.selectedCategory}>
-                                    <ListItemIcon ><CreateIcon /></ListItemIcon>
-                                    <ListItemText>
-                                        <Typography>{authorId === processStates.viewerId ? langConfigs.myCreations[preferenceStates.lang] : langConfigs.authorsCreations[preferenceStates.lang]}</Typography>
-                                    </ListItemText>
-                                </MenuItem>
-
-                                {/* saved post*/}
-                                <MenuItem onClick={handleSelectPostCategory('savedposts')} selected={'savedposts' === processStates.selectedCategory}>
-                                    <ListItemIcon ><StarIcon /></ListItemIcon>
-                                    <ListItemText>
-                                        <Typography>{authorId === processStates.viewerId ? langConfigs.mySavedPosts[preferenceStates.lang] : langConfigs.authorsSavedPosts[preferenceStates.lang]}</Typography>
-                                    </ListItemText>
-                                </MenuItem>
-
-                                {/* browsing history */}
-                                {'authenticated' === status && authorId === processStates.viewerId && <MenuItem onClick={handleSelectPostCategory('browsinghistory')} selected={'browsinghistory' === processStates.selectedCategory}>
-                                    <ListItemIcon >
-                                        <HistoryIcon />
-                                    </ListItemIcon>
-                                    <ListItemText>
-                                        <Typography>{langConfigs.browsingHistory[preferenceStates.lang]}</Typography>
-                                    </ListItemText>
-                                </MenuItem>}
-                            </MenuList>
-                        </ResponsiveCard>
-
-                        {/* channel list */}
-                        <ResponsiveCard sx={{ padding: 1 }}>
-                            <MenuList>
-                                {/* the 'all' menu item */}
-                                <MenuItem onClick={handleChannelSelect('all')} selected={processStates.selectedChannelId === 'all'}>
-                                    <ListItemIcon >
-                                        <BubbleChartIcon />
-                                    </ListItemIcon>
-                                    <ListItemText>
-                                        <Typography>{langConfigs.allPosts[preferenceStates.lang]}</Typography>
-                                    </ListItemText>
-                                </MenuItem>
-
-                                {/* other channels */}
-                                {channelInfoStates.channelIdSequence.map(id => {
-                                    const { channelId, name, svgIconPath } = channelInfoDict_ss[id];
-                                    return (
-                                        <MenuItem key={`item-${channelId}`}
-                                            onClick={handleChannelSelect(channelId)}
-                                            selected={channelId === processStates.selectedChannelId}
-                                        >
-                                            <ListItemIcon >
-                                                <SvgIcon><path d={svgIconPath} /></SvgIcon>
-                                            </ListItemIcon>
-                                            <ListItemText>
-                                                <Typography>{name[preferenceStates.lang]}</Typography>
-                                            </ListItemText>
-                                        </MenuItem>
-                                    );
-                                })}
-                            </MenuList>
-                        </ResponsiveCard>
-
-                    </Stack>
-                </Grid>
-
-                {/* right column (menu for mobile mode + post masonry) */}
-                <Grid item xs={12} sm={10} md={6} lg={6} xl={7}>
-
-                    {/* channel bar */}
-                    <Stack id={'channel-bar'} direction={'row'} spacing={1} sx={{ display: { sm: 'flex', md: 'none' }, padding: 1, overflow: 'auto' }}>
-
-                        {/* creations button */}
-                        <Button variant={'creations' === processStates.selectedCategory ? 'contained' : 'outlined'} size='small' sx={{ minWidth: 'max-content' }} onClick={handleSelectPostCategory('creations')}>
-                            <Typography variant='body2'>{authorId === processStates.viewerId ? langConfigs.myCreations[preferenceStates.lang] : langConfigs.authorsCreations[preferenceStates.lang]}</Typography>
-                        </Button>
-
-                        {/*  saved post button */}
-                        <Button variant={'savedposts' === processStates.selectedCategory ? 'contained' : 'outlined'} size='small' sx={{ minWidth: 'max-content' }} onClick={handleSelectPostCategory('savedposts')}>
-                            <Typography variant='body2'>{langConfigs.mySavedPosts[preferenceStates.lang]}</Typography>
-                        </Button>
-
-                        {/* browsing history button */}
-                        {('authenticated' === status && authorId === processStates.viewerId) && <Button variant={'browsinghistory' === processStates.selectedCategory ? 'contained' : 'outlined'} size='small' sx={{ minWidth: 'max-content' }} onClick={handleSelectPostCategory('browsinghistory')}>
-                            <Typography variant='body2'>{langConfigs.browsingHistory[preferenceStates.lang]}</Typography>
-                        </Button>}
-
-                        {/* the 'all' button */}
-                        <Button variant={'all' === processStates.selectedChannelId ? 'contained' : 'text'} size='small' onClick={handleChannelSelect('all')} >
-                            <Typography variant={'body2'} color={'all' === processStates.selectedChannelId ? 'white' : 'text.secondary'} sx={{ backgroundColor: 'primary' }}>
-                                {langConfigs.allPosts[preferenceStates.lang]}
-                            </Typography>
-                        </Button>
-
-                        {/* other channels */}
-                        {channelInfoStates.channelIdSequence.map(id =>
-                            <Button
-                                key={`button-${channelInfoDict_ss[id].channelId}`}
-                                variant={channelInfoDict_ss[id].channelId === processStates.selectedChannelId ? 'contained' : 'text'}
-                                size='small'
-                                sx={{ minWidth: 'en' === preferenceStates.lang ? 'max-content' : 64 }}
-                                onClick={handleChannelSelect(channelInfoDict_ss[id].channelId)}
-                            >
-                                <Typography
-                                    variant={'body2'}
-                                    color={channelInfoDict_ss[id].channelId === processStates.selectedChannelId ? 'white' : 'text.secondary'}
-                                    sx={{ backgroundColor: 'primary' }}
-                                >
-                                    {channelInfoDict_ss[id].name[preferenceStates.lang]}
+                            {/* the 'all' button */}
+                            <Button variant={'all' === processStates.selectedChannelId ? 'contained' : 'text'} size='small' onClick={handleChannelSelect('all')} >
+                                <Typography variant={'body2'} color={'all' === processStates.selectedChannelId ? 'white' : 'text.secondary'} sx={{ backgroundColor: 'primary' }}>
+                                    {langConfigs.allPosts[preferenceStates.lang]}
                                 </Typography>
                             </Button>
 
-                        )}
-                    </Stack>
+                            {/* other channels */}
+                            {Object.keys(channelInfoStates.channelInfo).map(id =>
+                                <Button
+                                    key={`button-${channelInfoStates.channelInfo[id].channelId}`}
+                                    variant={channelInfoStates.channelInfo[id].channelId === processStates.selectedChannelId ? 'contained' : 'text'}
+                                    size='small'
+                                    sx={{ minWidth: 'en' === preferenceStates.lang ? 'max-content' : 64 }}
+                                    onClick={handleChannelSelect(channelInfoStates.channelInfo[id].channelId)}
+                                >
+                                    <Typography
+                                        variant={'body2'}
+                                        color={channelInfoStates.channelInfo[id].channelId === processStates.selectedChannelId ? 'white' : 'text.secondary'}
+                                        sx={{ backgroundColor: 'primary' }}
+                                    >
+                                        {channelInfoStates.channelInfo[id].name[preferenceStates.lang]}
+                                    </Typography>
+                                </Button>
 
-                    {/* empty alert */}
-                    {0 === masonryPostInfoArr.length &&
-                        <Box minHeight={200} mt={10}>
-                            {/* 'creations' | 'savedposts' | 'browsinghistory' */}
-                            {'creations' === processStates.selectedCategory && <Typography color={'text.secondary'} align={'center'}>
-                                {authorId === processStates.viewerId ? langConfigs.noCreationsRecord[preferenceStates.lang] : langConfigs.authorNoCreationsRecord[preferenceStates.lang]}
-                            </Typography>}
-                            {'savedposts' === processStates.selectedCategory && <Typography color={'text.secondary'} align={'center'}>
-                                {authorId === processStates.viewerId ? langConfigs.noSavedPostsRecord[preferenceStates.lang] : langConfigs.authorNoSavedPostsRecord[preferenceStates.lang]}
-                            </Typography>}
-                            {'browsinghistory' === processStates.selectedCategory && <Typography color={'text.secondary'} align={'center'}>
-                                {langConfigs.noBrowsingHistoryRecord[preferenceStates.lang]}
-                            </Typography>}
-                        </Box>
-                    }
-
-                    {/* masonry */}
-                    <Box ml={1} ref={masonryWrapper}>
-                        <Masonry columns={{ xs: 2, sm: 3, md: 2, lg: 3, xl: 4 }}>
-
-                            {/* posts */}
-                            {0 !== masonryPostInfoArr.length && masonryPostInfoArr.map(info =>
-                                <Paper key={info.postId} id={info.postId} sx={{ maxWidth: 300, '&:hover': { cursor: 'pointer' } }}>
-                                    <Stack>
-                                        {/* image */}
-                                        <Box
-                                            component={'img'}
-                                            src={provideCoverImageUrl(info.postId, imageDomain)}
-                                            sx={{
-                                                maxWidth: { xs: width / 2, sm: 300 },
-                                                maxHeight: 'max-content',
-                                                borderTopLeftRadius: 4,
-                                                borderTopRightRadius: 4
-                                            }}
-                                            onClick={handleClickOnPost(info.postId)}
-                                        />
-
-                                        {/* title */}
-                                        <Box paddingTop={2} paddingX={2} onClick={handleClickOnPost(info.postId)}>
-                                            <Typography variant={'body1'}>{info.title}</Typography>
-                                        </Box>
-
-                                        {/* member info & member behaviour */}
-                                        <Box paddingTop={1} >
-                                            <Grid container>
-
-                                                {/* member info */}
-                                                <Grid item flexGrow={1}>
-                                                    <Box display={'flex'} flexDirection={'row'}>
-                                                        <Button variant={'text'} color={'inherit'} sx={{ textTransform: 'none' }} onClick={handleClickOnMemberInfo(info.memberId, info.postId)}>
-                                                            <Avatar src={provideAvatarImageUrl(authorId, imageDomain)} sx={{ width: { xs: 24, sm: 32 }, height: { xs: 24, sm: 32 }, bgcolor: 'grey' }}>{info.nickname?.charAt(0).toUpperCase()}</Avatar>
-                                                            <Box ml={1}>
-
-                                                                {/* nickname */}
-                                                                <Typography fontSize={14}>{getNicknameBrief(info.nickname)}</Typography>
-
-                                                                {/* created time */}
-                                                                <Typography fontSize={12} align={'left'}>{timeToString(info.createdTimeBySecond, preferenceStates.lang)}</Typography>
-                                                            </Box>
-                                                        </Button>
-                                                    </Box>
-                                                </Grid>
-
-                                                {/* member behaviour / placeholder */}
-                                                {('authenticated' === status && authorId === processStates.viewerId) && <Grid item>
-                                                    <IconButton sx={{ mt: 1 }} onClick={async () => { await handleMultiProposeButtonClick(processStates.selectedCategory, info.postId); }}>
-                                                        {'creations' === processStates.selectedCategory && <CreateIcon color={'inherit'} sx={{ fontSize: { xs: 20, sm: 24 } }} />}
-                                                        {'savedposts' === processStates.selectedCategory && <StarIcon color={undoSavedPostArr.includes(info.postId) ? 'inherit' : 'warning'} sx={{ fontSize: { xs: 20, sm: 24 } }} />}
-                                                        {'browsinghistory' === processStates.selectedCategory && <DeleteIcon color={'inherit'} sx={{ fontSize: { xs: 20, sm: 24 } }} />}
-                                                    </IconButton>
-                                                </Grid>}
-                                            </Grid>
-                                        </Box>
-                                    </Stack>
-                                </Paper>
                             )}
-                        </Masonry>
-                    </Box>
+                        </Stack>
 
+                        {/* empty alert */}
+                        {0 === masonryPostInfoArr.length &&
+                            <Box pt={10}>
+                                {/* 'creations' | 'savedposts' | 'browsinghistory' */}
+                                {'creations' === processStates.selectedCategory && <Typography color={'text.secondary'} align={'center'}>
+                                    {authorId === processStates.viewerId ? langConfigs.noCreationsRecord[preferenceStates.lang] : langConfigs.authorNoCreationsRecord[preferenceStates.lang]}
+                                </Typography>}
+                                {'savedposts' === processStates.selectedCategory && <Typography color={'text.secondary'} align={'center'}>
+                                    {authorId === processStates.viewerId ? langConfigs.noSavedPostsRecord[preferenceStates.lang] : langConfigs.authorNoSavedPostsRecord[preferenceStates.lang]}
+                                </Typography>}
+                                {'browsinghistory' === processStates.selectedCategory && <Typography color={'text.secondary'} align={'center'}>
+                                    {langConfigs.noBrowsingHistoryRecord[preferenceStates.lang]}
+                                </Typography>}
+                            </Box>
+                        }
+
+                        {/* masonry */}
+                        <Box ref={masonryWrapper}>
+                            <Masonry columns={2}>
+
+                                {/* posts */}
+                                {0 !== masonryPostInfoArr.length && masonryPostInfoArr.map(info =>
+                                    <Paper key={info.postId} id={info.postId} sx={{ maxWidth: 450, '&:hover': { cursor: 'pointer' } }}>
+                                        <Stack>
+                                            {/* image */}
+                                            <Box
+                                                component={'img'}
+                                                loading='lazy'
+                                                src={provideCoverImageUrl(info.postId, imageDomain)}
+                                                sx={{
+                                                    maxWidth: { xs: width / 2, sm: 450 },
+                                                    maxHeight: 'max-content',
+                                                    borderTopLeftRadius: 4,
+                                                    borderTopRightRadius: 4
+                                                }}
+                                                onClick={handleClickOnPost(info.postId)}
+                                            />
+
+                                            {/* title */}
+                                            <Box paddingTop={2} paddingX={2} onClick={handleClickOnPost(info.postId)}>
+                                                <Typography variant={'body1'}>{info.title}</Typography>
+                                            </Box>
+
+                                            {/* member info & member behaviour */}
+                                            <Box paddingTop={1} >
+                                                <Grid container>
+
+                                                    {/* member info */}
+                                                    <Grid item flexGrow={1}>
+                                                        <Box display={'flex'} flexDirection={'row'}>
+                                                            <Button variant={'text'} color={'inherit'} sx={{ textTransform: 'none' }} onClick={handleClickOnMemberInfo(info.memberId, info.postId)}>
+                                                                <Avatar src={provideAvatarImageUrl(authorId, imageDomain)} sx={{ width: { xs: 24, sm: 32 }, height: { xs: 24, sm: 32 }, bgcolor: 'grey' }}>{info.nickname?.charAt(0).toUpperCase()}</Avatar>
+                                                                <Box ml={1}>
+
+                                                                    {/* nickname */}
+                                                                    <Typography fontSize={14}>{getNicknameBrief(info.nickname)}</Typography>
+
+                                                                    {/* created time */}
+                                                                    <Typography fontSize={12} align={'left'}>{timeToString(info.createdTimeBySecond, preferenceStates.lang)}</Typography>
+                                                                </Box>
+                                                            </Button>
+                                                        </Box>
+                                                    </Grid>
+
+                                                    {/* member behaviour / placeholder */}
+                                                    {('authenticated' === status && authorId === processStates.viewerId) && <Grid item>
+                                                        <IconButton sx={{ mt: 1 }} onClick={async () => { await handleMultiProposeButtonClick(processStates.selectedCategory, info.postId); }}>
+                                                            {'creations' === processStates.selectedCategory && <CreateIcon color={'inherit'} sx={{ fontSize: { xs: 20, sm: 24 } }} />}
+                                                            {'savedposts' === processStates.selectedCategory && <StarIcon color={behaviourStates.undoSavedPostIdArr.includes(info.postId) ? 'inherit' : 'warning'} sx={{ fontSize: { xs: 20, sm: 24 } }} />}
+                                                            {'browsinghistory' === processStates.selectedCategory && <DeleteIcon color={'inherit'} sx={{ fontSize: { xs: 20, sm: 24 } }} />}
+                                                        </IconButton>
+                                                    </Grid>}
+                                                </Grid>
+                                            </Box>
+                                        </Stack>
+                                    </Paper>
+                                )}
+                            </Masonry>
+                        </Box>
+
+
+
+                    </Stack>
                 </Grid>
 
-                {/* //// placeholder - right //// */}
-                <Grid item xs={0} sm={1} md={2} lg={2} xl={1}></Grid>
+                {/* right */}
+                <Grid item xs={0} sm={0} md={3} lg={3} xl={4}>
+                    <Box sx={{ display: { xs: 'none', sm: 'none', md: 'block' } }}>
+                        <SideColumn lang={preferenceStates.lang} />
+                    </Box>
+                </Grid>
             </Grid>
-
-            <Copyright sx={{ mt: 16 }} lang={preferenceStates.lang} />
-            <Terms sx={{ mb: 8 }} lang={preferenceStates.lang} />
 
             {/* info editor */}
             <SwipeableDrawer
@@ -1477,7 +1423,6 @@ const Member = ({ channelInfoDict_ss, memberInfo_ss: memberComprehensive_ss, mem
 
 
             </SwipeableDrawer>
-
         </>
     );
 };

@@ -1,39 +1,40 @@
 import * as React from 'react';
+import { useRouter } from 'next/router';
+
+import Alert from '@mui/material/Alert';
 import Avatar from '@mui/material/Avatar';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import CircularProgress from '@mui/material/CircularProgress';
 import Container from '@mui/material/Container';
+import Divider from '@mui/material/Divider';
 import Stack from '@mui/material/Stack';
-import TextField from '@mui/material/TextField';
 import Link from '@mui/material/Link';
 import Typography from '@mui/material/Typography';
 
-import Alert from '@mui/material/Alert';
-import CircularProgress from '@mui/material/CircularProgress';
+import FormControl from '@mui/material/FormControl';
+import InputLabel from '@mui/material/InputLabel';
+import MenuItem from '@mui/material/MenuItem';
+import Select, { SelectChangeEvent } from '@mui/material/Select';
+import TextField from '@mui/material/TextField';
+import ListItemText from '@mui/material/ListItemText';
 
 import ReCAPTCHA from 'react-google-recaptcha';
 
 import { LangConfigs } from '../lib/types';
-import { verifyEmailAddress, verifyId } from '../lib/utils/verify';
+import { verifyId } from '../lib/utils/verify';
+import { CentralizedBox } from '../ui/Styled';
 
 import Copyright from '../ui/Copyright';
 import BackToHomeButtonGroup from '../ui/BackToHomeButtonGroup';
-import FormControl from '@mui/material/FormControl';
-import AddIcon from '@mui/icons-material/Add';
-import IconButton from '@mui/material/IconButton';
-import InputLabel from '@mui/material/InputLabel';
-import MenuItem from '@mui/material/MenuItem';
-import Select, { SelectChangeEvent } from '@mui/material/Select';
-import ListItemText from '@mui/material/ListItemText';
-
-import { useRouter } from 'next/router';
-import { CentralizedBox } from '../ui/Styled';
-import Divider from '@mui/material/Divider';
+import Guidelines from '../ui/Guidelines';
+import LangSwitch from '../ui/LangSwitch';
 import Terms from '../ui/Terms';
+import ThemeSwitch from '../ui/ThemeSwitch';
 
 const domain = process.env.NEXT_PUBLIC_APP_DOMAIN;
 const recaptchaClientKey = process.env.NEXT_PUBLIC_INVISIABLE_RECAPTCHA_SITE_KEY ?? '';
-const defaultLang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
+const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
     submit: {
         tw: '确认',
@@ -157,6 +158,10 @@ const langConfigs: LangConfigs = {
     },
 };
 
+/**
+ * Last update:
+ * - 25/05/2023 v0.1.2 New layout applied
+ */
 const Affair = () => {
 
     let recaptcha: any;
@@ -172,12 +177,12 @@ const Affair = () => {
         errorContent: string;
         displayError: boolean;
         displayCircularProgress: boolean;
-        resultContent: string[];
+        resultContent: { [key: string]: string[]; };
     };
 
     // States - process ////////
     const [processStates, setProcessStates] = React.useState<TAffairPageProcessStates>({
-        lang: defaultLang,
+        lang: lang,
         /**
          * component list:
          * - reportrequestform
@@ -188,7 +193,11 @@ const Affair = () => {
         errorContent: '',
         displayError: false,
         displayCircularProgress: false,
-        resultContent: [],
+        resultContent: {
+            tw: [],
+            cn: [],
+            en: [],
+        },
     });
 
     const setLang = () => {
@@ -254,8 +263,8 @@ const Affair = () => {
                 referenceContent: affairInfo.referenceContent
             });
         } catch (e: any) {
-            setProcessStates({ ...processStates, componentOnDisplay: 'reportrequestresult', resultContent: langConfigs.defectiveAffairInfo[processStates.lang] });
-            console.log(e);
+            setProcessStates({ ...processStates, componentOnDisplay: 'reportrequestresult', resultContent: langConfigs.defectiveAffairInfo });
+            console.error(e);
         }
     };
 
@@ -295,21 +304,21 @@ const Affair = () => {
                 ...processStates,
                 componentOnDisplay: 'reportrequestresult',
                 displayCircularProgress: false,
-                resultContent: langConfigs.goodResult[processStates.lang]
+                resultContent: langConfigs.goodResult
             });
         } else if (404 === resp.status) {
             setProcessStates({
                 ...processStates,
                 componentOnDisplay: 'reportrequestresult',
                 displayCircularProgress: false,
-                resultContent: langConfigs.defectiveAffairInfo[processStates.lang]
+                resultContent: langConfigs.defectiveAffairInfo
             });
         } else {
             setProcessStates({
                 ...processStates,
                 componentOnDisplay: 'reportrequestresult',
                 displayCircularProgress: false,
-                resultContent: langConfigs.badResult[processStates.lang]
+                resultContent: langConfigs.badResult
             });
         }
 
@@ -336,7 +345,7 @@ const Affair = () => {
                     </Box>
 
                     {/* title */}
-                    <Typography component='h1' variant='h5' sx={{ mt: 2, textAlign: 'center' }}>{langConfigs.makeReport[defaultLang]}</Typography>
+                    <Typography component='h1' variant='h5' sx={{ mt: 2, textAlign: 'center' }}>{langConfigs.makeReport[lang]}</Typography>
 
                     <Stack spacing={2} sx={{ mt: 4 }} >
                         <Box sx={{ display: processStates.displayError ? 'block' : 'none' }}>
@@ -400,20 +409,17 @@ const Affair = () => {
 
                 {/* reportrequestresult */}
                 < Box sx={{ mt: { xs: '14rem', sm: '18rem' }, mb: '10rem', display: 'reportrequestresult' === processStates.componentOnDisplay ? 'block' : 'none' }}>
-                    {processStates.resultContent.map((content, i) =>
+                    {processStates.resultContent[processStates.lang].map((content, i) =>
                         <Typography key={i} mt={0 === i ? 0 : 2} textAlign={'center'}>{content}</Typography>
                     )}
-                    <BackToHomeButtonGroup />
+                    <BackToHomeButtonGroup lang={processStates.lang} />
                 </Box >
 
-                <Copyright sx={{ mt: 8 }} lang={processStates.lang} />
-                <Terms lang={processStates.lang} />
-
-                <CentralizedBox sx={{ mb: 8 }} >
-                    <Button variant='text' sx={{ textTransform: 'none' }} onClick={setLang}>
-                        <Typography variant={'body2'}>{'繁|简|English'}</Typography>
-                    </Button>
-                </CentralizedBox>
+                <Copyright sx={{ mt: 8 }} />
+                <Guidelines lang={processStates.lang} />
+                <Terms sx={{ mb: 2 }} lang={processStates.lang} />
+                <LangSwitch setLang={setLang} />
+                <ThemeSwitch sx={{ mb: 8 }} />
             </Container >
 
             <ReCAPTCHA

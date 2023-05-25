@@ -1,38 +1,42 @@
 import * as React from 'react';
+import { useRouter } from 'next/router';
+import { NextPageContext } from 'next/types';
+import { signIn, getProviders, getCsrfToken, useSession } from 'next-auth/react';
+import useTheme from '@mui/material/styles/useTheme';
+
+import Alert from '@mui/material/Alert';
 import Avatar from '@mui/material/Avatar';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import CircularProgress from '@mui/material/CircularProgress';
 import Container from '@mui/material/Container';
 import Divider from '@mui/material/Divider';
 import Grid from '@mui/material/Grid';
+import IconButton from '@mui/material/IconButton';
 import Link from '@mui/material/Link';
 import Stack from '@mui/material/Stack';
-import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 
-import { signIn, getProviders, getSession, getCsrfToken, useSession } from 'next-auth/react';
+import Brightness7Icon from '@mui/icons-material/Brightness7';
+import Brightness4Icon from '@mui/icons-material/Brightness4';
 
-import IconButton from '@mui/material/IconButton';
 import InputLabel from '@mui/material/InputLabel';
 import InputAdornment from '@mui/material/InputAdornment';
 import OutlinedInput from '@mui/material/OutlinedInput';
 import FormControl from '@mui/material/FormControl';
+import TextField from '@mui/material/TextField';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 
-import Alert from '@mui/material/Alert';
-import CircularProgress from '@mui/material/CircularProgress';
+import ReCAPTCHA from 'react-google-recaptcha';
+
+import { LangConfigs, TSignInCredentialStates } from '../lib/types';
+import { ColorModeContext } from '../ui/Theme';
 
 import Copyright from '../ui/Copyright';
-
-import ReCAPTCHA from "react-google-recaptcha";
-
-import { useRouter } from 'next/router';
-import { NextPageContext } from 'next/types';
-import { LangConfigs, TSignInCredentialStates } from '../lib/types';
-import About from '../ui/About';
+import Guidelines from '../ui/Guidelines';
+import LangSwitch from '../ui/LangSwitch';
 import Terms from '../ui/Terms';
-import { CentralizedBox } from '../ui/Styled';
 
 type SigninPageProps = {
     providers: Awaited<ReturnType<typeof getProviders>> | null;
@@ -49,7 +53,7 @@ export async function getServerSideProps(context: NextPageContext) {
 }
 
 const recaptchaClientKey = process.env.NEXT_PUBLIC_INVISIABLE_RECAPTCHA_SITE_KEY ?? '';
-const defaultLang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
+const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
     signIn: {
         tw: '登入',
@@ -59,15 +63,14 @@ const langConfigs: LangConfigs = {
     emailAddress: {
         tw: '郵件地址',
         cn: '邮件地址',
-        en: 'Email'
+        en: 'Email address'
     },
     password: {
         tw: '密碼',
         cn: '密码',
         en: 'Password'
     },
-    appSignin:
-    {
+    appSignin: {
         tw: '使用 Mojito 賬號登錄',
         cn: '使用 Mojito 账户登录',
         en: 'Use Mojito Account to sign in'
@@ -141,18 +144,22 @@ const langConfigs: LangConfigs = {
     }
 };
 
+/**
+ * Last update:
+ * - 25/05/2023 v0.1.2 New layout applied
+ */
 const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
-    // Handle session
+
     const { data: session } = useSession();
+
     const router = useRouter();
-    if (session) {
-        router.push('/');
-    }
+    if (session) { router.push('/'); }
+
     let recaptcha: any;
 
     // Decalre process states
     const [processStates, setProcessStates] = React.useState({
-        lang: defaultLang,
+        lang: lang,
         /**
          * progress list:
          * - signin
@@ -169,13 +176,11 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
         displayCircularProgress: false
     });
 
-
     const setLang = () => {
         if ('tw' === processStates.lang) { setProcessStates({ ...processStates, lang: 'cn' }); }
         if ('cn' === processStates.lang) { setProcessStates({ ...processStates, lang: 'en' }); }
         if ('en' === processStates.lang) { setProcessStates({ ...processStates, lang: 'tw' }); }
     };
-
 
     // Handle error hint
     React.useEffect(() => {
@@ -306,6 +311,7 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
             const { providerId, emailAddressB64 } = router.query;
             const resp = await fetch(`/api/member/signup/request?recaptchaResponse=${processStates.recaptchaResponse}`, {
                 method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     providerId,
                     emailAddressB64
@@ -377,16 +383,26 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
         }, 2000);
     };
 
+    const theme = useTheme();
+
+    const colorMode = React.useContext(ColorModeContext);
+
+    const handleColorModeSelect = () => {
+        const preferredColorMode = colorMode.mode === 'dark' ? 'light' : 'dark';
+        colorMode.setMode(preferredColorMode);
+        document.cookie = `PreferredColorMode=${preferredColorMode}`;
+    };
+
     return (
         <>
             <Container component='main' maxWidth='xs'>
                 <Stack sx={{ mt: '5rem' }}>
                     <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-                        <Link href="/">
+                        <Link href='/'>
                             <Avatar src='./favicon.ico' sx={{ width: 56, height: 56 }} />
                         </Link>
                     </Box>
-                    <Typography component="h1" variant="h5" sx={{ textAlign: 'center', mt: 2 }}>
+                    <Typography component='h1' variant='h5' sx={{ textAlign: 'center', mt: 2 }}>
                         {langConfigs.appSignin[processStates.lang]}
                     </Typography>
                     <Stack component={'form'} spacing={2} sx={{ mt: 4 }} onSubmit={handleSubmit}>
@@ -418,12 +434,12 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
                                 value={signInCredentialStates.password}
                                 onChange={handleChange('password')}
                                 endAdornment={
-                                    <InputAdornment position="end">
+                                    <InputAdornment position='end'>
                                         <IconButton
-                                            aria-label="toggle password visibility"
+                                            aria-label='toggle password visibility'
                                             onClick={handleShowPassword}
                                             onMouseDown={handleMouseDownPassword}
-                                            edge="end"
+                                            edge='end'
                                         >
                                             {signInCredentialStates.showpassword ? <VisibilityIcon /> : <VisibilityOffIcon />}
                                         </IconButton>
@@ -457,7 +473,7 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
                                 <Button
                                     variant='contained'
                                     fullWidth
-                                    color={'secondary'}
+                                    color={theme.palette.mode === 'dark' ? 'secondary' : 'inherit'}
                                     onClick={() => { signIn(providers[p].id); }}
                                     key={providers[p].id}
                                 >
@@ -468,26 +484,32 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
                     </Stack>
                     <Grid container sx={{ mt: 3 }} >
                         <Grid item xs>
-                            <Link href="/forgot" variant="body2">
+                            <Link href='/forgot' variant='body2'>
                                 {langConfigs.forgotPassword[processStates.lang]}
                             </Link>
                         </Grid>
                         <Grid item>
-                            <Link href="/signup" variant="body2">
+                            <Link href='/signup' variant='body2'>
                                 {langConfigs.appSignup[processStates.lang]}
                             </Link>
                         </Grid>
                     </Grid>
                 </Stack>
-                <Copyright sx={{ mt: 8 }} lang={processStates.lang} />
-                <Terms lang={processStates.lang} />
 
-                <CentralizedBox sx={{ mb: 8 }} >
-                    <Button variant='text' sx={{ textTransform: 'none' }} onClick={setLang}>
-                        <Typography variant={'body2'}>{'繁|简|English'}</Typography>
-                    </Button>
-                </CentralizedBox>
+                {/* copyright */}
+                <Copyright sx={{ mt: 8 }} />
+                <Guidelines lang={processStates.lang} />
+                <Terms sx={{ mb: 2 }} lang={processStates.lang} />
+                <LangSwitch setLang={setLang} />
+
+                {/* theme mode switch */}
+                <Box sx={{ mb: 8, display: 'flex', flexDirection: 'row', justifyContent: 'center' }}>
+                    <IconButton onClick={handleColorModeSelect}>
+                        {theme.palette.mode === 'dark' ? <Brightness4Icon /> : <Brightness7Icon />}
+                    </IconButton>
+                </Box>
             </Container>
+            
             <ReCAPTCHA
                 hl={langConfigs.recaptchaLang[processStates.lang]}
                 size={'invisible'}

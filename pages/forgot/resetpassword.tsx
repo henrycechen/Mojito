@@ -1,7 +1,11 @@
 import * as React from 'react';
+import { useRouter } from 'next/router';
+
+import Alert from '@mui/material/Alert';
 import Avatar from '@mui/material/Avatar';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import CircularProgress from '@mui/material/CircularProgress';
 import Container from '@mui/material/Container';
 import Link from '@mui/material/Link';
 import Stack from '@mui/material/Stack';
@@ -15,17 +19,17 @@ import FormControl from '@mui/material/FormControl';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 
-import Alert from '@mui/material/Alert';
-import CircularProgress from '@mui/material/CircularProgress';
-
 import ReCAPTCHA from 'react-google-recaptcha';
 
-import { useRouter } from 'next/router';
 import { LangConfigs } from '../../lib/types';
 import { verifyPassword } from '../../lib/utils/verify';
 
 import Copyright from '../../ui/Copyright';
 import BackToHomeButtonGroup from '../../ui/BackToHomeButtonGroup';
+import Guidelines from '../../ui/Guidelines';
+import LangSwitch from '../../ui/LangSwitch';
+import Terms from '../../ui/Terms';
+import ThemeSwitch from '../../ui/ThemeSwitch';
 
 interface PasswordStates {
     password: string;
@@ -109,13 +113,31 @@ const langConfigs: LangConfigs = {
     }
 };
 
+/**
+ * Last update:
+ * - 25/05/2023 v0.1.2 New layout applied
+ */
 const ResetPassword = () => {
     let recaptcha: any;
+
     const router = useRouter();
+
     const { requestInfo } = router.query;
 
-    // Decalre process states
-    const [processStates, setProcessStates] = React.useState({
+    type TProcessStates = {
+        lang: string;
+        componentOnDisplay: 'tokencheck' | 'resetpasswordform' | 'resetpasswordresult';
+        recaptchaResponse: string;
+        errorContent: { [key: string]: string; };
+        displayError: boolean;
+        displayCircularProgress: boolean;
+        resultContent: { [key: string]: string; };
+        emailAddress: string;
+        resetPasswordToken: string;
+    };
+
+    const [processStates, setProcessStates] = React.useState<TProcessStates>({
+        lang: lang,
         /**
          * Component list:
          * - tokencheck
@@ -124,16 +146,30 @@ const ResetPassword = () => {
          */
         componentOnDisplay: 'tokencheck',
         recaptchaResponse: '',
-        errorContent: '',
+        errorContent: {
+            tw: '',
+            cn: '',
+            en: '',
+        },
         displayError: false,
         displayCircularProgress: false,
-        resultContent: '',
+        resultContent: {
+            tw: '',
+            cn: '',
+            en: '',
+        },
         emailAddress: '',
         resetPasswordToken: ''
     });
 
+    const setLang = () => {
+        if ('tw' === processStates.lang) { setProcessStates({ ...processStates, lang: 'cn' }); }
+        if ('cn' === processStates.lang) { setProcessStates({ ...processStates, lang: 'en' }); }
+        if ('en' === processStates.lang) { setProcessStates({ ...processStates, lang: 'tw' }); }
+    };
+
     // Handle process states change
-    React.useEffect(() => { post(); }, [processStates.recaptchaResponse]);
+    // React.useEffect(() => { post(); }, [processStates.recaptchaResponse]);
     const post = async () => {
         if ('tokencheck' === processStates.componentOnDisplay && '' === processStates.recaptchaResponse) {
             recaptcha?.execute();
@@ -158,6 +194,7 @@ const ResetPassword = () => {
             // Post reset password form
             const resp = await fetch(`/api/member/resetpassword?recaptchaResponse=${processStates.recaptchaResponse}`, {
                 method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     emailAddress: processStates.emailAddress,
                     resetPasswordToken: processStates.resetPasswordToken,
@@ -223,39 +260,41 @@ const ResetPassword = () => {
     return (
         <>
             <Container component='main' maxWidth={'xs'} >
+
                 {/* tokencheck */}
                 <Box sx={{ mt: '18rem', mb: '10rem', display: 'tokencheck' === processStates.componentOnDisplay ? 'block' : 'none' }}>
-                    <Typography textAlign={'center'}>{langConfigs.tokenCheck[lang]}</Typography>
+                    <Typography textAlign={'center'}>{langConfigs.tokenCheck[processStates.lang]}</Typography>
                 </Box>
+
                 {/* resetpasswordresult */}
                 <Box sx={{ mt: '18rem', mb: '10rem', display: 'resetpasswordresult' === processStates.componentOnDisplay ? 'block' : 'none' }}>
-                    <Typography textAlign={'center'}>{processStates.resultContent}</Typography>
+                    <Typography textAlign={'center'}>{processStates.resultContent[processStates.lang]}</Typography>
                     <BackToHomeButtonGroup />
                 </Box>
+
                 {/* resetpasswordform */}
                 <Stack sx={{ mt: '5rem', display: 'resetpasswordform' === processStates.componentOnDisplay ? 'block' : 'none' }}>
                     <Box sx={{ display: 'flex', justifyContent: 'center' }}>
                         <Link href='/'>
-                            {/* TODO: avatar src should be member's avatar url */}
                             <Avatar src={`${domain}/favicon.ico`} sx={{ width: 56, height: 56 }} />
                         </Link>
                     </Box>
                     <Typography component='h1' variant='h5' sx={{ textAlign: 'center', mt: 2 }}>
-                        {langConfigs.resetPassword[lang]}
+                        {langConfigs.resetPassword[processStates.lang]}
                     </Typography>
                     <Stack component={'form'} spacing={2} sx={{ mt: 4 }} onSubmit={handleSubmit} >
                         {/* Alert */}
                         <Box sx={{ display: processStates.displayError ? 'block' : 'none' }}>
                             <Alert severity='error' >
-                                <strong>{processStates.errorContent}</strong>
+                                <strong>{processStates.errorContent[processStates.lang]}</strong>
                             </Alert>
                         </Box>
                         <FormControl variant='outlined'>
-                            <InputLabel htmlFor='outlined-adornment-password'>{langConfigs.password[lang]}</InputLabel>
+                            <InputLabel htmlFor='outlined-adornment-password'>{langConfigs.password[processStates.lang]}</InputLabel>
                             <OutlinedInput
                                 required
                                 id={'outlined-adornment-password'}
-                                label={langConfigs.password[lang]}
+                                label={langConfigs.password[processStates.lang]}
                                 type={passwordStates.showpassword ? 'text' : 'password'}
                                 value={passwordStates.password}
                                 onChange={handleChange('password')}
@@ -274,11 +313,11 @@ const ResetPassword = () => {
                             />
                         </FormControl>
                         <FormControl variant='outlined'>
-                            <InputLabel htmlFor='outlined-adornment-repeat-password'>{langConfigs.repeatPassword[lang]}</InputLabel>
+                            <InputLabel htmlFor='outlined-adornment-repeat-password'>{langConfigs.repeatPassword[processStates.lang]}</InputLabel>
                             <OutlinedInput
                                 required
                                 id={'outlined-adornment-repeat-password'}
-                                label={langConfigs.repeatPassword[lang]}
+                                label={langConfigs.repeatPassword[processStates.lang]}
                                 type={passwordStates.showpassword ? 'text' : 'password'}
                                 value={passwordStates.repeatpassword}
                                 onChange={handleChange('repeatpassword')}
@@ -299,19 +338,28 @@ const ResetPassword = () => {
                         <Box>
                             <Button type='submit' fullWidth variant='contained'>
                                 <Typography sx={{ display: !processStates.displayCircularProgress ? 'block' : 'none' }}>
-                                    {langConfigs.submit[lang]}
+                                    {langConfigs.submit[processStates.lang]}
                                 </Typography>
                                 <CircularProgress sx={{ color: 'white', display: processStates.displayCircularProgress ? 'block' : 'none' }} />
                             </Button>
                         </Box>
                     </Stack>
                 </Stack>
-                <Copyright sx={{ mt: 8, mb: 4 }} />
+
+                {/* copyright */}
+                <Copyright sx={{ mt: '10rem' }} />
+                <Guidelines lang={processStates.lang} />
+                <Terms sx={{ mb: 2 }} lang={processStates.lang} />
+                <LangSwitch setLang={setLang} />
+
+                {/* theme mode switch */}
+                <ThemeSwitch />
+
             </Container>
             <ReCAPTCHA
                 sitekey={recaptchaClientKey}
                 size={'invisible'}
-                hl={langConfigs.recaptchaLang[lang]}
+                hl={langConfigs.recaptchaLang[processStates.lang]}
                 ref={(ref: any) => ref && (recaptcha = ref)}
                 onChange={handleRecaptchaChange}
             />

@@ -1,7 +1,6 @@
 import * as React from 'react';
-import { NextPageContext } from 'next/types';
 import { useRouter } from 'next/router';
-import { useSession } from 'next-auth/react';
+import { signIn, useSession } from 'next-auth/react';
 import useTheme from '@mui/material/styles/useTheme';
 
 import Avatar from '@mui/material/Avatar';
@@ -57,7 +56,7 @@ import { ColorModeContext } from '../ui/Theme';
 import { TBrowsingHelper, LangConfigs, TPreferenceStates } from '../lib/types';
 import { IConcisePostComprehensive } from '../lib/interfaces/post';
 import { IConciseTopicComprehensive } from '../lib/interfaces/topic';
-import { IChannelInfoStates, IChannelInfoDictionary } from '../lib/interfaces/channel';
+import { IChannelInfo, IChannelInfoDictionary } from '../lib/interfaces/channel';
 
 import { updateLocalStorage, restoreFromLocalStorage } from '../lib/utils/general';
 import { getNicknameBrief, provideAvatarImageUrl } from '../lib/utils/for/member';
@@ -73,10 +72,7 @@ const storageName = 'HomePageProcessStates';
 const updateProcessStatesCache = updateLocalStorage(storageName);
 const restoreProcessStatesFromCache = restoreFromLocalStorage(storageName);
 
-type THomePageProps = {
-    channelInfoDict_ss: IChannelInfoDictionary;
-    redirect500: boolean;
-};
+
 
 interface IHomePageProcessStates {
     viewerId: string;
@@ -93,6 +89,11 @@ const imageDomain = process.env.NEXT_PUBLIC_IMAGE_DOMAIN ?? '';
 const defaultLang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
     // Left column
+    signIn: {
+        tw: '登入',
+        cn: '登入',
+        en: 'Sign in'
+    },
     posts: {
         tw: '文章',
         cn: '文章',
@@ -197,48 +198,17 @@ const langConfigs: LangConfigs = {
     },
 };
 
-//// get multiple info server-side ////
-export async function getServerSideProps(context: NextPageContext): Promise<{ props: THomePageProps; }> {
-    let channelInfoDict_ss: IChannelInfoDictionary;
-
-    const resp = await fetch(`${appDomain}/api/channel/info/dictionary`);
-
-    try {
-        if (200 !== resp.status) {
-            throw new Error();
-        }
-        channelInfoDict_ss = await resp.json();
-    } catch (e) {
-        if (e instanceof SyntaxError) {
-            console.log(`Attempt to parse channel info dictionary (JSON) from resp. ${e}`);
-        } else {
-            console.log('Attempt to GET channel info dictionary');
-        }
-        return {
-            props: {
-                channelInfoDict_ss: {},
-                redirect500: true
-            }
-        };
-    }
-    return {
-        props: {
-            channelInfoDict_ss,
-            redirect500: false
-        }
-    };
-}
-
-const Home = ({ channelInfoDict_ss }: THomePageProps) => {
+const Home = () => {
 
     const router = useRouter();
+
     const { data: session, status } = useSession();
     // status - 'unauthenticated' / 'authenticated'
 
     React.useEffect(() => {
         if ('authenticated' === status) {
-            const authorSession: any = { ...session };
-            setProcessStates({ ...processStates, viewerId: authorSession?.user?.id ?? '' });
+            const viewerSession: any = { ...session };
+            setProcessStates({ ...processStates, viewerId: viewerSession?.user?.id ?? '' });
             restorePreferenceStatesFromCache(setPreferenceStates);
         }
     }, [status]);
@@ -267,8 +237,6 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
 
     React.useEffect(() => { restoreProcessStatesFromCache(setProcessStates); }, []);
 
-    //////////////////////////////////////// VIEWING ////////////////////////////////////////
-
     // States - notice statistics
     const [viewersNoticeStatistics, setViewersNoticeStatistics] = React.useState<number>(0);
 
@@ -286,50 +254,56 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
         }
     };
 
-    const handleClickOnUnreadMessage = () => {
-        router.push(`/message`);
-    };
-
     // States - browsing helper
     const [browsingHelper, setBrowsingHelper] = React.useState<TBrowsingHelper>({
         memorizeViewPortPositionY: undefined, // reset scroll-help on handleChannelSelect, handleSwitchChange, ~~handlePostCardClick~~
     });
 
-    //////////////////////////////////////// CHANNEL ////////////////////////////////////////
-
     type TChannelMenuStates = {
         anchorEl: null | HTMLElement;
-        // channelIdSequence: string[];
+        channelInfo: { [channelId: string]: IChannelInfo; };
     };
 
     // States - channel info 
-    const [channelInfoStates, setChannelInfoStates] = React.useState<TChannelMenuStates>({
+    const [channeMenuStates, setChannelMenuStates] = React.useState<TChannelMenuStates>({
         anchorEl: null,
-        // channelIdSequence: [],
+        channelInfo: {},
     });
 
-    const handleMouseEnter = (event: React.MouseEvent<HTMLElement>) => {
-        setChannelInfoStates({ ...channelInfoStates, anchorEl: event.currentTarget });
-    };
-
-    const handleMouseLeave = () => {
-        setChannelInfoStates({ ...channelInfoStates, anchorEl: null });
-    };
-
-    const handleCloseChannelMenu = () => {
-        setChannelInfoStates({ ...channelInfoStates, anchorEl: null });
-    };
-
-
-
-    // Handle channel bar restore on refresh
     React.useEffect(() => {
+        getChanneInfo();
+
+        // Handle channel bar restore on refresh
         if (!!processStates.memorizeChannelBarPositionX) {
             document.getElementById('channel-bar')?.scrollBy(processStates.memorizeChannelBarPositionX ?? 0, 0);
         }
     }, []);
 
-    // Handle channel select
+    const getChanneInfo = async () => {
+        const resp = await fetch(`/api/channel/info`);
+        if (200 !== resp.status) {
+            console.error(`Attemp to GET channel info.`);
+            return;
+        }
+        try {
+            const info = await resp.json();
+            setChannelMenuStates({
+                ...channeMenuStates,
+                channelInfo: { ...info }
+            });
+        } catch (e) {
+            console.error(`Attemp to parese channel info (JSON) from response. ${e}`);
+        }
+    };
+
+    const handleChannelMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+        setChannelMenuStates({ ...channeMenuStates, anchorEl: event.currentTarget });
+    };
+
+    const handleChannelMenuClose = () => {
+        setChannelMenuStates({ ...channeMenuStates, anchorEl: null });
+    };
+
     const handleChannelSelect = (channelId: string) => (event: React.MouseEvent<HTMLButtonElement> | React.SyntheticEvent) => {
         let states: IHomePageProcessStates = { ...processStates };
         states.selectedChannelId = channelId;
@@ -352,8 +326,6 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
         // #3 reset browsing helper
         setBrowsingHelper({ ...browsingHelper, memorizeViewPortPositionY: undefined });
     };
-
-    //////////////////////////////////////// MASONRY (POSTS) ////////////////////////////////////////
 
     // States - posts (masonry)
     const [masonryPostInfoArr, setMasonryPostInfoArr] = React.useState<IConcisePostComprehensive[]>([]);
@@ -414,8 +386,6 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
         router.push(`/me/${memberId}`);
     };
 
-    //////////////////////////////////////// RIGHT COLUMN ////////////////////////////////////////
-
     type TRightColumnStates = {
         topicInfoArr: IConciseTopicComprehensive[];
         todaysTrendPostInfoArr: IConcisePostComprehensive[];
@@ -468,7 +438,10 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
         setRightColumnStates({ topicInfoArr: [...a0], todaysTrendPostInfoArr: [...a1], weeksTrendPostInfoArr: [...a2] });
     };
 
-    //////////////////////////////////////// BEHAVIOURS ////////////////////////////////////////
+    const handleSignIn = (event: React.MouseEvent<HTMLElement>) => {
+        event.preventDefault();
+        signIn();
+    };
 
     const handleProceedToFollowedMember = () => {
         router.push(`/follow`);
@@ -528,8 +501,6 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
         router.push(`/report?memberId=${memberId}&referenceId=${referenceId}`);
     };
 
-    //////////////////////////////////////// POP-UP MENU ////////////////////////////////////////
-
     type TPopUpMenuStates = {
         anchorEl: null | HTMLElement;
         memberId: string;
@@ -537,7 +508,7 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
         referenceId: string;
     };
 
-    // States - pop up menu ////////
+    // States - pop up menu
     const [popUpMenuStates, setPopUpMenuStates] = React.useState<TPopUpMenuStates>({
         anchorEl: null,
         memberId: '',
@@ -578,15 +549,14 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
                             <Link href='/' pt={5} px={2}>
                                 <Box component={'img'} src={`${appDomain}/logo${'dark' === theme.palette.mode ? '-dark' : ''}.png`} sx={{ height: { md: '3rem', lg: '3.5rem' } }} />
                             </Link>
-                            {/* FIXME:FIXME:FIXME:FIXME:FIXME:FIXME:FIXME: */}
-                            {/* unauthenticated - login button */}
-                            {false && <Box pt={4}>
-                                <Button variant='contained' >Login</Button>
+
+                            {/* unauthenticated - login*/}
+                            {'authenticated' !== status && <Box p={3}>
+                                <Button variant={'contained'} sx={{ width: { md: '7rem', lg: '8rem' }, borderRadius: 4 }} onClick={handleSignIn}>{langConfigs.signIn[preferenceStates.lang]}</Button>
                             </Box>}
 
-                            {/* FIXME:FIXME:FIXME:FIXME:FIXME:FIXME:FIXME: */}
                             {/* authenticated - member menu */}
-                            {true && <Box sx={{ padding: 1 }}>
+                            {'authenticated' === status && <Box sx={{ padding: 1 }}>
                                 <MenuList>
 
                                     {/* posts */}
@@ -597,7 +567,7 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
                                         <ListItemText>
                                             {langConfigs.posts[preferenceStates.lang]}
                                         </ListItemText>
-                                        <ListItemIcon onMouseEnter={handleMouseEnter}>
+                                        <ListItemIcon onMouseEnter={handleChannelMenuOpen}>
                                             <MoreVertIcon />
                                         </ListItemIcon>
                                     </MenuItem>
@@ -692,8 +662,8 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
                         </Button>
 
                         {/* other channels */}
-                        {Object.keys(channelInfoDict_ss).map(id => {
-                            const { channelId, name } = channelInfoDict_ss[id];
+                        {Object.keys(channeMenuStates.channelInfo).map(id => {
+                            const { channelId, name } = channeMenuStates.channelInfo[id];
                             return (
                                 <Button variant={channelId === processStates.selectedChannelId ? 'contained' : 'text'} key={`button-${channelId}`} size='small' onClick={handleChannelSelect(channelId)}>
                                     <Typography
@@ -717,7 +687,7 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
                     }
 
                     {/* mansoy */}
-                    <Box ml={1} ref={masonryWrapper} maxWidth={{ md: 900, lg: 800 }}>
+                    <Box ref={masonryWrapper} maxWidth={{ md: 900, lg: 800 }}>
                         <Masonry columns={2}>
 
                             {/* posts */}
@@ -728,6 +698,7 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
                                             {/* image */}
                                             <Box
                                                 component={'img'}
+                                                loading='lazy'
                                                 src={provideCoverImageUrl(p.postId, imageDomain)}
                                                 sx={{ maxWidth: { xs: width / 2, sm: 450 }, height: 'auto', borderTopLeftRadius: 4, borderTopRightRadius: 4 }}
                                                 onClick={handleClickOnPost(p.postId)}
@@ -789,7 +760,7 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
                                         {/* channel icon */}
                                         <ListItemIcon>
                                             <Avatar variant='rounded'>
-                                                <SvgIcon><path d={channelInfoDict_ss[t.channelId].svgIconPath} /></SvgIcon>
+                                                <SvgIcon><path d={channeMenuStates.channelInfo[t.channelId].svgIconPath} /></SvgIcon>
                                             </Avatar>
                                         </ListItemIcon>
 
@@ -797,7 +768,7 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
                                         <ListItemText sx={{ pl: 2 }}>
                                             <Typography variant='body1'>#{t.content}</Typography>
                                             <Stack direction={'row'} spacing={1}>
-                                                <Typography mr={1} variant='body2' color={'text.disabled'} alignItems={'center'}>{channelInfoDict_ss[t.channelId].name[preferenceStates.lang]}</Typography>
+                                                <Typography mr={1} variant='body2' color={'text.disabled'} alignItems={'center'}>{channeMenuStates.channelInfo[t.channelId].name[preferenceStates.lang]}</Typography>
 
                                                 {/* posts count icon */}
                                                 <ArticleIcon fontSize='small' sx={{ color: 'text.disabled' }} />
@@ -833,12 +804,12 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
             {/* channel memu */}
             <Menu
                 sx={{ mt: '3rem' }}
-                anchorEl={channelInfoStates.anchorEl}
+                anchorEl={channeMenuStates.anchorEl}
                 anchorOrigin={{ vertical: 'top', horizontal: 'right', }}
                 keepMounted
                 transformOrigin={{ vertical: 'top', horizontal: 'right', }}
-                open={Boolean(channelInfoStates.anchorEl)}
-                onClose={handleCloseChannelMenu}
+                open={Boolean(channeMenuStates.anchorEl)}
+                onClose={handleChannelMenuClose}
                 MenuListProps={{
                     style: { minWidth: 100 }
                 }}
@@ -857,8 +828,8 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
                     </MenuItem>
                     <Divider />
                     {/* other channels */}
-                    {Object.keys(channelInfoDict_ss).map(id => {
-                        const { channelId, name, svgIconPath } = channelInfoDict_ss[id];
+                    {Object.keys(channeMenuStates.channelInfo).map(id => {
+                        const { channelId, name, svgIconPath } = channeMenuStates.channelInfo[id];
                         return (
                             <MenuItem key={`item-${channelId}`}
                                 onClick={handleChannelSelect(channelId)}

@@ -1,15 +1,20 @@
 import * as React from 'react';
+import { useRouter } from 'next/router';
+
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
 
 import ReCAPTCHA from "react-google-recaptcha";
 
-import { useRouter } from 'next/router';
 import { LangConfigs } from '../lib/types';
 
 import Copyright from '../ui/Copyright';
 import BackToHomeButtonGroup from '../ui/BackToHomeButtonGroup';
+import Guidelines from '../ui/Guidelines';
+import LangSwitch from '../ui/LangSwitch';
+import Terms from '../ui/Terms';
+import ThemeSwitch from '../ui/ThemeSwitch';
 
 const recaptchaClientKey = process.env.NEXT_PUBLIC_INVISIABLE_RECAPTCHA_SITE_KEY ?? '';
 const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
@@ -34,14 +39,27 @@ const langConfigs: LangConfigs = {
         cn: '账户激活失败😥请稍后重试或者联系我们的管理员',
         en: 'Failed to activate your account😥 Please try again later or contact our Webmaster'
     }
-}
+};
 
-const VerifyMember = () => {
+/**
+ * Last update:
+ * - 25/05/2023 v0.1.2 New layout applied
+ */
+const VerifyEmailAddress = () => {
     let recaptcha: any;
+    
     const router = useRouter();
 
-    // Decalre process states
-    const [processStates, setProcessStates] = React.useState({
+    type TProcessStates = {
+        lang: string;
+        componentOnDisplay: 'accountverify' | 'accountverifyresult';
+        requestInfo: string;
+        recaptchaResponse: string;
+        resultContent: { [key: string]: string; };
+    };
+
+    const [processStates, setProcessStates] = React.useState<TProcessStates>({
+        lang: lang,
         /**
          * Component list:
          * - accountverify
@@ -50,15 +68,25 @@ const VerifyMember = () => {
         componentOnDisplay: 'accountverify',
         requestInfo: '',
         recaptchaResponse: '',
-        resultContent: '',
+        resultContent: {
+            tw: '',
+            cn: '',
+            en: '',
+        },
     });
+
+    const setLang = () => {
+        if ('tw' === processStates.lang) { setProcessStates({ ...processStates, lang: 'cn' }); }
+        if ('cn' === processStates.lang) { setProcessStates({ ...processStates, lang: 'en' }); }
+        if ('en' === processStates.lang) { setProcessStates({ ...processStates, lang: 'tw' }); }
+    };
 
     // Handle process states change
     React.useEffect(() => {
         if (Object.keys(router.query).length === 0) {
             return;
         }
-        const { requestInfo } = router.query
+        const { requestInfo } = router.query;
         if ('string' === typeof requestInfo) {
             setProcessStates({ ...processStates, requestInfo: requestInfo });
             recaptcha?.execute();
@@ -69,7 +97,7 @@ const VerifyMember = () => {
         }
     }, [router]);
 
-    React.useEffect(() => { post() }, [processStates.recaptchaResponse]);
+    React.useEffect(() => { post(); }, [processStates.recaptchaResponse]);
     const post = async () => {
         if ('' === processStates.requestInfo) {
             // router.query is not ready
@@ -79,46 +107,53 @@ const VerifyMember = () => {
             // ReCAPTCHA challenge is not ready
             return;
         }
-        const resp = await fetch(`/api/member/signup/verify?requestInfo=${processStates.requestInfo}&recaptchaResponse=${processStates.recaptchaResponse}`, { method: 'POST' })
+        const resp = await fetch(`/api/member/signup/verify?requestInfo=${processStates.requestInfo}&recaptchaResponse=${processStates.recaptchaResponse}`, { method: 'POST' });
         if (200 === resp.status) {
-            setProcessStates({ ...processStates, componentOnDisplay: 'accountverifyresult', resultContent: langConfigs.goodResult[lang] })
+            setProcessStates({ ...processStates, componentOnDisplay: 'accountverifyresult', resultContent: langConfigs.goodResult });
         } else {
-            setProcessStates({ ...processStates, componentOnDisplay: 'accountverifyresult', resultContent: langConfigs.badResult[lang] })
+            setProcessStates({ ...processStates, componentOnDisplay: 'accountverifyresult', resultContent: langConfigs.badResult });
         }
-    }
+    };
 
     // Handle ReCAPTCHA challenge
     const handleRecaptchaChange = (value: any) => {
         if (!!value) {
-            setProcessStates({ ...processStates, recaptchaResponse: value })
+            setProcessStates({ ...processStates, recaptchaResponse: value });
         } else {
-            setProcessStates({ ...processStates })
+            setProcessStates({ ...processStates });
         }
-    }
+    };
 
     return (
         <>
             <Container component='main' maxWidth={'xs'} >
                 {/* accountverify */}
                 <Box sx={{ mt: '18rem', mb: '10rem', display: 'accountverify' === processStates.componentOnDisplay ? 'block' : 'none' }}>
-                    <Typography textAlign={'center'}>{langConfigs.accountverify[lang]}</Typography>
+                    <Typography textAlign={'center'}>{langConfigs.accountverify[processStates.lang]}</Typography>
                 </Box>
                 {/* accountverifyresult */}
                 <Box sx={{ mt: '18rem', mb: '10rem', display: 'accountverifyresult' === processStates.componentOnDisplay ? 'block' : 'none' }}>
-                    <Typography textAlign={'center'}>{processStates.resultContent}</Typography>
+                    <Typography textAlign={'center'}>{processStates.resultContent[processStates.lang]}</Typography>
                     <BackToHomeButtonGroup />
                 </Box>
-                <Copyright sx={{ mt: 8, mb: 4 }} />
+
+                {/* copyright */}
+                <Copyright sx={{ mt: 8 }} />
+                <Guidelines lang={processStates.lang} />
+                <Terms sx={{ mb: 2 }} lang={processStates.lang} />
+                <LangSwitch setLang={setLang} />
+                <ThemeSwitch />
+
             </Container>
             <ReCAPTCHA
                 sitekey={recaptchaClientKey}
                 size={'invisible'}
-                hl={langConfigs.recaptchaLang[lang]}
+                hl={langConfigs.recaptchaLang[processStates.lang]}
                 ref={(ref: any) => ref && (recaptcha = ref)}
                 onChange={handleRecaptchaChange}
             />
         </>
-    )
-}
+    );
+};
 
-export default VerifyMember;
+export default VerifyEmailAddress;

@@ -1,21 +1,19 @@
 import * as React from 'react';
 
-import Container from "@mui/material/Container";
-import Grid from "@mui/material/Grid";
-import Stack from "@mui/material/Stack";
-import Typography from "@mui/material/Typography";
 import Button from '@mui/material/Button';
-
-import Copyright from "../ui/Copyright";
-import Navbar from "../ui/Navbar";
-import Terms from "../ui/Terms";
+import Container from '@mui/material/Container';
+import Grid from '@mui/material/Grid';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
 
 import { LangConfigs } from '../lib/types';
 import { getRandomHexStr } from '../lib/utils/create';
 
-type TProcessStates = {
-    lang: string;
-}
+import Copyright from '../ui/Copyright';
+import Guidelines from '../ui/Guidelines';
+import Navbar from '../ui/Navbar';
+import Terms from '../ui/Terms';
+import ThemeSwitch from '../ui/ThemeSwitch';
 
 const defaultLang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
@@ -55,24 +53,31 @@ const langConfigs: LangConfigs = {
             'Please abide by the above statement, please read carefully before using this software.'
         ],
     }
-}
+};
 
+/**
+ * Last update:
+ * - 25/05/2023 v0.1.2 New layout applied
+ */
+export default function LicenseAndAgreement() {
 
-export default function ServiceAgreement() {
+    type TProcessStates = {
+        lang: string;
+    };
 
     const [processStates, setProcessStates] = React.useState<TProcessStates>({
         lang: defaultLang
-    })
+    });
 
     const setLang = () => {
-        if ('tw' === processStates.lang) { setProcessStates({ ...processStates, lang: 'cn' }) }
-        if ('cn' === processStates.lang) { setProcessStates({ ...processStates, lang: 'en' }) }
-        if ('en' === processStates.lang) { setProcessStates({ ...processStates, lang: 'tw' }) }
-    }
+        if ('tw' === processStates.lang) { setProcessStates({ ...processStates, lang: 'cn' }); }
+        if ('cn' === processStates.lang) { setProcessStates({ ...processStates, lang: 'en' }); }
+        if ('en' === processStates.lang) { setProcessStates({ ...processStates, lang: 'tw' }); }
+    };
 
     return (
         <>
-            <Navbar lang={processStates.lang}/>
+            <Navbar lang={processStates.lang} />
             <Container sx={{ minHeight: 600 }}>
                 <Grid container>
                     <Grid item md={1}></Grid>
@@ -91,8 +96,11 @@ export default function ServiceAgreement() {
                     <Grid item md={1}></Grid>
                 </Grid>
             </Container>
-            <Copyright sx={{ mt: 8 }} lang={processStates.lang} />
-            <Terms sx={{ mb: 8 }} lang={processStates.lang} />
+
+            <Copyright sx={{ mt: 8 }} />
+            <Guidelines lang={processStates.lang} />
+            <Terms sx={{ mb: 2 }} lang={processStates.lang} />
+            <ThemeSwitch sx={{ mb: 8 }}/>
         </>
-    )
+    );
 }

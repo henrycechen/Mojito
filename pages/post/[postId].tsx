@@ -488,16 +488,14 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
         }
     };
 
-    //////////////////////////////////////// VIEWER BEHAVIOURS ////////////////////////////////////////
-
-    type MemberBehaviourStates = {
+    type TMemberBehaviourStates = {
         attitudeOnPost: number;
         attitudeOnComment: { [commentId: string]: number; };
         saved: boolean;
         followed: boolean;
     };
 
-    const [behaviourStates, setBehaviourStates] = React.useState<MemberBehaviourStates>({
+    const [behaviourStates, setBehaviourStates] = React.useState<TMemberBehaviourStates>({
         attitudeOnPost: 0,
         attitudeOnComment: {},
         saved: false,
@@ -513,7 +511,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
         let followed = false;
 
         try {
-            //// GET attitude mapping ////
+            // Get attitude mapping
             const attitudeMapping = await fetch(`/api/attitude/on/${postId}`).then(resp => resp.json());
             if (null !== attitudeMapping) {
                 if (attitudeMapping.hasOwnProperty('attitude')) {
@@ -532,7 +530,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
                 try {
                     saved = await resp_saved.json();
                 } catch (e) {
-                    throw new Error('Attempt to parse ');
+                    throw new Error('Attempt to parse save (boolean value) from response');
                 }
             }
 
@@ -542,7 +540,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, channelInf
                 try {
                     followed = await resp_followed.json();
                 } catch (e) {
-                    console.error(`Attemp to verify if followed post author`);
+                    console.error(`Attemp to parse follow (boolean value) from response`);
                 }
             }
 

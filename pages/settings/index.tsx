@@ -145,7 +145,7 @@ const SettingsIndex = () => {
                     </Box>
                 </Grid>
 
-                {/* middle column */}
+                {/* middle */}
                 <Grid item xs={12} sm={12} md={6} lg={6} xl={4}>
                     <Stack pt={{ xs: 2, sm: 2, md: 10 }} px={2} spacing={2}>
 

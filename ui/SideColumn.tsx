@@ -20,6 +20,7 @@ type TSideColumnProps = {
 export default function SideColumn(props: TSideColumnProps) {
 
     const lang = props.lang ?? 'tw';
+    
     const theme = useTheme();
 
     const colorMode = React.useContext(ColorModeContext);

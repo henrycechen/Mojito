@@ -149,7 +149,7 @@ const FollowedMembers = () => {
 
                 {/* middle */}
                 <Grid item xs={12} sm={12} md={6} lg={6} xl={4}>
-                    <Box pt={{ xs: 2, sm: 2, md: 5 }} px={1} >
+                    <Box pt={{ xs: 2, sm: 2, md: 10 }} px={1} >
 
                         {/* 'backward' button */}
                         <Box sx={{ display: { sm: 'block', md: 'none' } }}>

@@ -3,18 +3,16 @@ import Typography from '@mui/material/Typography';
 
 type TComponentProps = {
     lang?: string,
-    sx?: any
-}
-
-const appName = process.env['NEXT_PUBLIC_APP_NAME'] ?? 'Mojito';
+    sx?: any;
+};
 
 export default function CopyrightFooter(props: TComponentProps) {
-    const { lang, sx } = props;
+    const { sx } = props;
     return (
         <Typography variant={'body2'} color={'text.secondary'} align={'center'} {...sx}>
             {'Copyright © '}
             <Link color={'inherit'} href={'/'} underline={'none'}>
-                {appName}
+                {'Mojito'}
             </Link>
             {' 2022 - '}
             {new Date().getFullYear()}
