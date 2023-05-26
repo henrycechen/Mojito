@@ -1,7 +1,7 @@
 import * as React from 'react';
 import Head from 'next/head';
 
-import type { AppProps } from 'next/app'
+import type { AppProps } from 'next/app';
 
 import createTheme from '@mui/material/styles/createTheme';
 import ThemeProvider from '@mui/material/styles/ThemeProvider';
@@ -14,7 +14,7 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import { ColorModeContext, getDesignTokens } from '../ui/Theme';
 import Cookie from 'js-cookie';
 
-const App = ({ Component, pageProps: { session, ...pageProps } }: AppProps<{ session: Session }>) => {
+const App = ({ Component, pageProps: { session, ...pageProps } }: AppProps<{ session: Session; }>) => {
   // Update 24/11/2022
   // Due to _app.tsx does not have the access to request.cookie
   // The flashing issue can not be fixed on dark mode (os/user-choice)
@@ -36,7 +36,7 @@ const App = ({ Component, pageProps: { session, ...pageProps } }: AppProps<{ ses
   }, [systemOnDarkMode]);
   // #3 create theme
   const theme = React.useMemo(() => {
-    return createTheme(getDesignTokens(mode))
+    return createTheme(getDesignTokens(mode));
   }, [mode]);
 
   // const colorMode = React.useMemo(() => {
@@ -56,6 +56,13 @@ const App = ({ Component, pageProps: { session, ...pageProps } }: AppProps<{ ses
           <CssBaseline />
           <Head>
             <meta name='theme-color' content='#535353' media='(prefers-color-scheme: dark)' />
+            <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+            <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+            <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+            <link rel="manifest" href="/site.webmanifest" />
+            <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5" />
+            <meta name="msapplication-TileColor" content="#da532c" />
+            <meta name="theme-color" content="#ffffff" />
           </Head>
           <Component {...pageProps} />
           <style jsx global>
@@ -68,7 +75,7 @@ const App = ({ Component, pageProps: { session, ...pageProps } }: AppProps<{ ses
         </ColorModeContext.Provider>
       </ThemeProvider>
     </SessionProvider >
-  )
-}
+  );
+};
 
 export default App;
