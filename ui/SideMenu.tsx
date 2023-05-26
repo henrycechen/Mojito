@@ -23,7 +23,6 @@ import SettingsIcon from '@mui/icons-material/Settings';
 
 import { LangConfigs } from '../lib/types';
 
-const appDomain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? '';
 const langConfigs: LangConfigs = {
     signIn: {
         tw: '登入',
@@ -128,7 +127,7 @@ export default function SideMenu(props: TSideMenuProps) {
 
             {/* logo */}
             <Link href='/' pt={5} px={2}>
-                <Box component={'img'} src={`${appDomain}/logo${'dark' === theme.palette.mode ? '-dark' : ''}.png`} sx={{ height: { md: '3rem', lg: '3.5rem' } }} />
+                <Box component={'img'} src={`/logo${'dark' === theme.palette.mode ? '-dark' : '-blue'}.png`} sx={{ height: { md: '3rem', lg: '3.5rem' } }} />
             </Link>
 
             {/* unauthenticated - login*/}
