@@ -67,7 +67,6 @@ const storageName = 'HomePageProcessStates';
 const updateProcessStatesCache = updateLocalStorage(storageName);
 const restoreProcessStatesFromCache = restoreFromLocalStorage(storageName);
 
-const appDomain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? '';
 const imageDomain = process.env.NEXT_PUBLIC_IMAGE_DOMAIN ?? '';
 const desc = process.env.NEXT_PUBLIC_APP_DESCRIPTION ?? '';
 const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
@@ -555,7 +554,7 @@ const Home = () => {
 
                             {/* logo */}
                             <Link href='/' pt={5} px={2}>
-                                <Box component={'img'} src={`${appDomain}/logo${'dark' === theme.palette.mode ? '-dark' : ''}.png`} sx={{ height: { md: '3rem', lg: '3.5rem' } }} />
+                                <Box component={'img'} src={`/logo${'dark' === theme.palette.mode ? '-dark' : '-blue'}.png`} sx={{ height: { md: '3rem', lg: '3.5rem' } }} />
                             </Link>
 
                             {/* unauthenticated - login*/}
