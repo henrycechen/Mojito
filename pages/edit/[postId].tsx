@@ -1,4 +1,5 @@
 import * as React from 'react';
+import Head from 'next/head';
 import { NextPageContext } from 'next';
 import { useRouter } from 'next/router';
 import { signIn, useSession } from 'next-auth/react';
@@ -61,7 +62,8 @@ const restorePreferenceStatesFromCache = restoreFromLocalStorage(storageName0);
 
 const appDomain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? '';
 const imageDomain = process.env.NEXT_PUBLIC_IMAGE_DOMAIN ?? '';
-const defaultLang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
+const desc = process.env.NEXT_PUBLIC_APP_DESCRIPTION ?? '';
+const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
     // operation
     delete: {
@@ -393,7 +395,7 @@ const EditPost = ({ restrictedPostComprehensive_ss, redirect404, redirect500 }: 
 
     // States - preference
     const [preferenceStates, setPreferenceStates] = React.useState<TPreferenceStates>({
-        lang: defaultLang,
+        lang: lang,
         mode: 'light'
     });
 
@@ -1074,6 +1076,16 @@ const EditPost = ({ restrictedPostComprehensive_ss, redirect404, redirect500 }: 
 
     return (
         <>
+            <Head>
+                <title>
+                    {{ tw: '編輯文章', cn: '编辑文章', en: 'Edit Post' }[preferenceStates.lang]}
+                </title>
+                <meta
+                    name="description"
+                    content="欢迎在 Mojito 创作文章并与 Mojito 社区分享您的想法、想法和经验。"
+                    key="desc"
+                />
+            </Head>
             <Navbar lang={preferenceStates.lang} />
             <Grid container>
                 {/* left */}

@@ -4,8 +4,8 @@ import useTheme from '@mui/material/styles/useTheme';
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
 
-import Brightness7Icon from '@mui/icons-material/Brightness7';
-import Brightness4Icon from '@mui/icons-material/Brightness4';
+import DarkModeIcon from '@mui/icons-material/DarkMode';
+import WbSunnyIcon from '@mui/icons-material/WbSunny';
 
 import { ColorModeContext } from '../ui/Theme';
 
@@ -28,7 +28,7 @@ export default function ThemeSwitch(props: TComponentProps) {
     return (
         <Box sx={sx}>
             <IconButton onClick={handleColorModeSelect}>
-                {theme.palette.mode === 'dark' ? <Brightness4Icon /> : <Brightness7Icon />}
+                {theme.palette.mode === 'dark' ? <WbSunnyIcon /> : <DarkModeIcon />}
             </IconButton>
         </Box>
     );

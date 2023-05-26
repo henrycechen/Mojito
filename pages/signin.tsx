@@ -1,4 +1,5 @@
 import * as React from 'react';
+import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { NextPageContext } from 'next/types';
 import { signIn, getProviders, getCsrfToken, useSession } from 'next-auth/react';
@@ -17,8 +18,8 @@ import Link from '@mui/material/Link';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
-import Brightness7Icon from '@mui/icons-material/Brightness7';
-import Brightness4Icon from '@mui/icons-material/Brightness4';
+import DarkModeIcon from '@mui/icons-material/DarkMode';
+import WbSunnyIcon from '@mui/icons-material/WbSunny';
 
 import InputLabel from '@mui/material/InputLabel';
 import InputAdornment from '@mui/material/InputAdornment';
@@ -53,6 +54,7 @@ export async function getServerSideProps(context: NextPageContext) {
 }
 
 const recaptchaClientKey = process.env.NEXT_PUBLIC_INVISIABLE_RECAPTCHA_SITE_KEY ?? '';
+const desc = process.env.NEXT_PUBLIC_APP_DESCRIPTION ?? '';
 const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
     signIn: {
@@ -395,6 +397,16 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
 
     return (
         <>
+            <Head>
+                <title>
+                    {{ tw: '登入', cn: '登入', en: 'Sign In' }[processStates.lang]}
+                </title>
+                <meta
+                    name="description"
+                    content={desc}
+                    key="desc"
+                />
+            </Head>
             <Container component='main' maxWidth='xs'>
                 <Stack sx={{ mt: '5rem' }}>
                     <Box sx={{ display: 'flex', justifyContent: 'center' }}>
@@ -505,11 +517,11 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
                 {/* theme mode switch */}
                 <Box sx={{ mb: 8, display: 'flex', flexDirection: 'row', justifyContent: 'center' }}>
                     <IconButton onClick={handleColorModeSelect}>
-                        {theme.palette.mode === 'dark' ? <Brightness4Icon /> : <Brightness7Icon />}
+                        {theme.palette.mode === 'dark' ? <WbSunnyIcon /> : <DarkModeIcon />}
                     </IconButton>
                 </Box>
             </Container>
-            
+
             <ReCAPTCHA
                 hl={langConfigs.recaptchaLang[processStates.lang]}
                 size={'invisible'}

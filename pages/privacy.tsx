@@ -1,4 +1,5 @@
 import * as React from 'react';
+import Head from 'next/head';
 
 import Container from '@mui/material/Container';
 import Grid from '@mui/material/Grid';
@@ -15,6 +16,7 @@ import ThemeSwitch from '../ui/ThemeSwitch';
 import { LangConfigs } from '../lib/types';
 import { getRandomHexStr } from '../lib/utils/create';
 
+const desc = process.env.NEXT_PUBLIC_APP_DESCRIPTION ?? '';
 const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
     title: {
@@ -60,7 +62,7 @@ const langConfigs: LangConfigs = {
  * - 25/05/2023 v0.1.2 New layout applied
 */
 export default function PrivacyPolicy() {
-    
+
     type TProcessStates = {
         lang: string;
     };
@@ -68,15 +70,25 @@ export default function PrivacyPolicy() {
     const [processStates, setProcessStates] = React.useState<TProcessStates>({
         lang: lang
     });
-    
+
     const setLang = () => {
         if ('tw' === processStates.lang) { setProcessStates({ ...processStates, lang: 'cn' }); }
         if ('cn' === processStates.lang) { setProcessStates({ ...processStates, lang: 'en' }); }
         if ('en' === processStates.lang) { setProcessStates({ ...processStates, lang: 'tw' }); }
     };
-    
+
     return (
         <>
+            <Head>
+                <title>
+                    {{ tw: '隱私權聲明', cn: '隐私权声明', en: 'License & Agreement' }[processStates.lang]}
+                </title>
+                <meta
+                    name="description"
+                    content={desc}
+                    key="desc"
+                />
+            </Head>
             <Navbar lang={processStates.lang} />
             <Container sx={{ minHeight: 600 }}>
                 <Grid container>

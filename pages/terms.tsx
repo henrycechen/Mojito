@@ -1,4 +1,5 @@
 import * as React from 'react';
+import Head from 'next/head';
 
 import Button from '@mui/material/Button';
 import Container from '@mui/material/Container';
@@ -15,7 +16,8 @@ import Navbar from '../ui/Navbar';
 import Terms from '../ui/Terms';
 import ThemeSwitch from '../ui/ThemeSwitch';
 
-const defaultLang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
+const desc = process.env.NEXT_PUBLIC_APP_DESCRIPTION ?? '';
+const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
     title: {
         tw: '軟體使用許可及服務協議',
@@ -66,7 +68,7 @@ export default function LicenseAndAgreement() {
     };
 
     const [processStates, setProcessStates] = React.useState<TProcessStates>({
-        lang: defaultLang
+        lang: lang
     });
 
     const setLang = () => {
@@ -77,6 +79,16 @@ export default function LicenseAndAgreement() {
 
     return (
         <>
+            <Head>
+                <title>
+                    {{ tw: '服務協議', cn: '服务协议', en: 'License & Agreement' }[processStates.lang]}
+                </title>
+                <meta
+                    name="description"
+                    content={desc}
+                    key="desc"
+                />
+            </Head>
             <Navbar lang={processStates.lang} />
             <Container sx={{ minHeight: 600 }}>
                 <Grid container>
@@ -100,7 +112,7 @@ export default function LicenseAndAgreement() {
             <Copyright sx={{ mt: 8 }} />
             <Guidelines lang={processStates.lang} />
             <Terms sx={{ mb: 2 }} lang={processStates.lang} />
-            <ThemeSwitch sx={{ mb: 8 }}/>
+            <ThemeSwitch sx={{ mb: 8 }} />
         </>
     );
 }

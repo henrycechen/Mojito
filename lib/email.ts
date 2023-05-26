@@ -71,8 +71,8 @@ export function composeResetPasswordEmailContent(domain: string, info: string, l
 </head>
 
 <body>
-    <img class="light mt ms" src="https://raw.githubusercontent.com/henrycechen/MojitoNZStaticPage/master/mojito_bright_removebg.png" alt="logo">
-    <img class="dark mt ms" src="https://raw.githubusercontent.com/henrycechen/MojitoNZStaticPage/master/mojito_dark_removebg.png" alt="logo">
+    <img class="light mt ms" src="https://i.mojito.co.nz/mojito_bright_removebg.png" alt="logo">
+    <img class="dark mt ms" src="https://i.mojito.co.nz/mojito_dark_removebg.png" alt="logo">
     <div class="mt p">
         <div class="row">${isCh ? isTw ? `您可以通過點擊以下鏈接重置您的 Mojito 賬號密碼：` : `您可以通过单击以下链接重置您的 Mojito 账户密码：` : `You can reset your Mojito member password by clicking the link below:`}</div>
         <div class="row">
@@ -159,8 +159,8 @@ export function composeVerifyEmailAddressEmailContent(domain: string, info: stri
 </head>
 
 <body>
-    <img class="light mt ms" src="https://raw.githubusercontent.com/henrycechen/MojitoNZStaticPage/master/mojito_bright_removebg.png" alt="logo">
-    <img class="dark mt ms" src="https://raw.githubusercontent.com/henrycechen/MojitoNZStaticPage/master/mojito_dark_removebg.png" alt="logo">
+    <img class="light mt ms" src="https://i.mojito.co.nz/mojito_bright_removebg.png" alt="logo">
+    <img class="dark mt ms" src="https://i.mojito.co.nz/mojito_dark_removebg.png" alt="logo">
     <div class="mt p">
         <div class="row">${isCh ? isTw ? `您可以通過點擊以下鏈接驗證您的 Mojito 賬戶` : '您可以通过单击以下链接验证您的 Mojito 账户：' : 'You can verify your Mojito member by clicking the link below:'}</div>
         <div class="row">

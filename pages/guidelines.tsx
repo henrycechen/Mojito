@@ -1,4 +1,5 @@
 import * as React from 'react';
+import Head from 'next/head';
 
 import Button from '@mui/material/Button';
 import Container from '@mui/material/Container';
@@ -15,6 +16,7 @@ import Navbar from '../ui/Navbar';
 import Terms from '../ui/Terms';
 import ThemeSwitch from '../ui/ThemeSwitch';
 
+const desc = process.env.NEXT_PUBLIC_APP_DESCRIPTION ?? '';
 const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
     title0: {
@@ -239,6 +241,16 @@ export default function CommunityGidelines() {
 
     return (
         <>
+            <Head>
+                <title>
+                    {{ tw: '社區規範', cn: '社区规范', en: 'Guidelines' }[processStates.lang]}
+                </title>
+                <meta
+                    name="description"
+                    content={desc}
+                    key="desc"
+                />
+            </Head>
             <Navbar lang={processStates.lang} />
             <Container sx={{ minHeight: 600 }}>
                 <Grid container>

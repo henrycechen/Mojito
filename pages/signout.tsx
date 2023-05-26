@@ -1,4 +1,5 @@
 import * as React from 'react';
+import Head from 'next/head';
 import { NextPageContext } from 'next/types';
 import { useRouter } from 'next/router';
 import { signOut, getProviders, getCsrfToken, useSession } from 'next-auth/react';
@@ -29,6 +30,7 @@ export async function getServerSideProps(context: NextPageContext) {
 }
 
 const imageDomain = process.env.NEXT_PUBLIC_IMAGE_DOMAIN ?? '';
+const desc = process.env.NEXT_PUBLIC_APP_DESCRIPTION ?? '';
 const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfig: LangConfigs = {
     appSignout: {
@@ -87,29 +89,41 @@ const SignOut = () => {
     };
 
     return (
-        <Container component='main' maxWidth='xs'>
-            <Stack sx={{ mt: '5rem' }}>
-                <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-                    <Avatar src={provideAvatarImageUrl(memberInfoStates.memberId, imageDomain)} sx={{ width: 56, height: 56 }} />
-                </Box>
-                <Typography variant='h5' sx={{ textAlign: 'center', pt: 2 }}>
-                    {langConfig.appSignout[processStates.lang]}
-                </Typography>
-                <Stack component={'form'} sx={{ pt: 10 }} onSubmit={handleSubmit}>
-                    <Box sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'center' }}>
-
-                        <Button type='submit' variant='contained'>
-                            {langConfig.confirm[processStates.lang]}
-                        </Button>
+        <>
+            <Head>
+                <title>
+                    {{ tw: '登出', cn: '登出', en: 'Sign Out' }[processStates.lang]}
+                </title>
+                <meta
+                    name="description"
+                    content={desc}
+                    key="desc"
+                />
+            </Head>
+            <Container component='main' maxWidth='xs'>
+                <Stack sx={{ mt: '5rem' }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                        <Avatar src={provideAvatarImageUrl(memberInfoStates.memberId, imageDomain)} sx={{ width: 56, height: 56 }} />
                     </Box>
+                    <Typography variant='h5' sx={{ textAlign: 'center', pt: 2 }}>
+                        {langConfig.appSignout[processStates.lang]}
+                    </Typography>
+                    <Stack component={'form'} sx={{ pt: 10 }} onSubmit={handleSubmit}>
+                        <Box sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'center' }}>
+
+                            <Button type='submit' variant='contained'>
+                                {langConfig.confirm[processStates.lang]}
+                            </Button>
+                        </Box>
+                    </Stack>
                 </Stack>
-            </Stack>
-            <Copyright sx={{ mt: 16 }} />
-            <Guidelines lang={processStates.lang} />
-            <Terms sx={{ mb: 2 }} lang={processStates.lang} />
-            <LangSwitch setLang={setLang} />
-            <ThemeSwitch sx={{ mb: 8 }} />
-        </Container>
+                <Copyright sx={{ mt: 16 }} />
+                <Guidelines lang={processStates.lang} />
+                <Terms sx={{ mb: 2 }} lang={processStates.lang} />
+                <LangSwitch setLang={setLang} />
+                <ThemeSwitch sx={{ mb: 8 }} />
+            </Container>
+        </>
     );
 };
 

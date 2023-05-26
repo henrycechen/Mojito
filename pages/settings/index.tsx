@@ -1,4 +1,5 @@
 import * as React from 'react';
+import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { signIn, useSession } from 'next-auth/react';
 
@@ -28,9 +29,9 @@ const storageName0 = 'PreferenceStates';
 const updatePreferenceStatesCache = updateLocalStorage(storageName0);
 const restorePreferenceStatesFromCache = restoreFromLocalStorage(storageName0);
 
-const defaultLang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
+const desc = process.env.NEXT_PUBLIC_APP_DESCRIPTION ?? '';
+const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
-
     ui: {
         tw: '界面',
         cn: '界面',
@@ -91,7 +92,7 @@ const SettingsIndex = () => {
 
     // States - preference
     const [preferenceStates, setPreferenceStates] = React.useState<TPreferenceStates>({
-        lang: defaultLang,
+        lang: lang,
         mode: 'light'
     });
 
@@ -135,6 +136,16 @@ const SettingsIndex = () => {
 
     return (
         <>
+            <Head>
+                <title>
+                    {{ tw: '設定', cn: '设置', en: 'Blacklist' }[preferenceStates.lang]}
+                </title>
+                <meta
+                    name="description"
+                    content={desc}
+                    key="desc"
+                />
+            </Head>
             <Navbar lang={preferenceStates.lang} />
             <Grid container>
 

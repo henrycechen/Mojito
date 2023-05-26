@@ -1,4 +1,5 @@
 import * as React from 'react';
+import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { signIn, useSession } from 'next-auth/react';
 
@@ -912,6 +913,16 @@ const CreatePost = () => {
 
     return (
         <>
+            <Head>
+                <title>
+                    {{ tw: '創作新文章', cn: '创作新文章', en: 'Create A New Post' }[preferenceStates.lang]}
+                </title>
+                <meta
+                    name="description"
+                    content="欢迎在 Mojito 创作文章并与 Mojito 社区分享您的想法、想法和经验。"
+                    key="desc"
+                />
+            </Head>
             <Navbar lang={preferenceStates.lang} />
             <Grid container>
                 {/* left */}

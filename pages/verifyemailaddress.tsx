@@ -1,4 +1,5 @@
 import * as React from 'react';
+import Head from 'next/head';
 import { useRouter } from 'next/router';
 
 import Box from '@mui/material/Box';
@@ -17,6 +18,7 @@ import Terms from '../ui/Terms';
 import ThemeSwitch from '../ui/ThemeSwitch';
 
 const recaptchaClientKey = process.env.NEXT_PUBLIC_INVISIABLE_RECAPTCHA_SITE_KEY ?? '';
+const desc = process.env.NEXT_PUBLIC_APP_DESCRIPTION ?? '';
 const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
     accountverify: {
@@ -47,7 +49,7 @@ const langConfigs: LangConfigs = {
  */
 const VerifyEmailAddress = () => {
     let recaptcha: any;
-    
+
     const router = useRouter();
 
     type TProcessStates = {
@@ -126,6 +128,16 @@ const VerifyEmailAddress = () => {
 
     return (
         <>
+            <Head>
+                <title>
+                    {{ tw: '驗證郵件地址', cn: '验证邮箱', en: 'Verify Email Address' }[processStates.lang]}
+                </title>
+                <meta
+                    name="description"
+                    content={desc}
+                    key="desc"
+                />
+            </Head>
             <Container component='main' maxWidth={'xs'} >
                 {/* accountverify */}
                 <Box sx={{ mt: '18rem', mb: '10rem', display: 'accountverify' === processStates.componentOnDisplay ? 'block' : 'none' }}>

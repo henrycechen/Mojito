@@ -1,10 +1,10 @@
 import * as React from 'react';
+import Head from 'next/head';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
 import { NextPageContext } from 'next';
 import { styled } from '@mui/material/styles';
 import useTheme from '@mui/material/styles/useTheme';
-
 
 import Alert from '@mui/material/Alert';
 import Avatar from '@mui/material/Avatar';
@@ -150,7 +150,7 @@ const langConfigs: LangConfigs = {
         cn: '浏览记录',
         en: 'Browsing history',
     },
-    allPosts: {
+    all: {
         tw: '全部',
         cn: '全部',
         en: 'All',
@@ -1049,6 +1049,17 @@ const Member = ({ memberInfo_ss: memberComprehensive_ss, memberStatistics_ss, re
 
     return (
         <>
+            <Head>
+                <title>
+                    {`${memberInfoStates.nickname} | Mojito New Zealand`}
+                </title>
+                <meta
+                    name="description"
+                    content={memberInfoStates.briefIntro}
+                    key="desc"
+                />
+            </Head>
+
             {/* styles for info editor */}
             <Global
                 styles={{
@@ -1194,7 +1205,7 @@ const Member = ({ memberInfo_ss: memberComprehensive_ss, memberStatistics_ss, re
                             {/* the 'all' button */}
                             <Button variant={'all' === processStates.selectedChannelId ? 'contained' : 'text'} size='small' onClick={handleChannelSelect('all')} >
                                 <Typography variant={'body2'} color={'all' === processStates.selectedChannelId ? 'white' : 'text.secondary'} sx={{ backgroundColor: 'primary' }}>
-                                    {langConfigs.allPosts[preferenceStates.lang]}
+                                    {langConfigs.all[preferenceStates.lang]}
                                 </Typography>
                             </Button>
 

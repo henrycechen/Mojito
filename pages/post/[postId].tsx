@@ -1,4 +1,5 @@
 import * as React from 'react';
+import Head from 'next/head';
 import { signOut, useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
 import { NextPageContext } from 'next/types';
@@ -48,8 +49,10 @@ import BlockIcon from '@mui/icons-material/Block';
 import FlagIcon from '@mui/icons-material/Flag';
 
 import { TextButton } from '../../ui/Styled';
-import Navbar from '../../ui/Navbar';
 import LegalInfo from '../../ui/LegalInfo';
+import Copyright from '../../ui/Copyright';
+import Guidelines from '../../ui/Guidelines';
+import Navbar from '../../ui/Navbar';
 import SideMenu from '../../ui/SideMenu';
 
 import { IMemberInfo } from '../../lib/interfaces/member';
@@ -63,6 +66,9 @@ import { getRandomHexStr, getTimeBySecond, } from '../../lib/utils/create';
 import { logWithDate, restoreFromLocalStorage, timeToString } from '../../lib/utils/general';
 import { verifyId } from '../../lib/utils/verify';
 import { LangConfigs } from '../../lib/types';
+import Terms from '../../ui/Terms';
+import LangSwitch from '../../ui/LangSwitch';
+import ThemeSwitch from '../../ui/ThemeSwitch';
 
 const storageName0 = 'PreferenceStates';
 const restorePreferenceStatesFromCache = restoreFromLocalStorage(storageName0);
@@ -330,6 +336,12 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, authorInfo
         mode: 'light'
     });
 
+    const setLang = () => {
+        if ('tw' === preferenceStates.lang) { setPreferenceStates({ ...preferenceStates, lang: 'cn' }); }
+        if ('cn' === preferenceStates.lang) { setPreferenceStates({ ...preferenceStates, lang: 'en' }); }
+        if ('en' === preferenceStates.lang) { setPreferenceStates({ ...preferenceStates, lang: 'tw' }); }
+    };
+
     // States - swipper (dimensions)
     // Logic:
     // swiperWrapperHeight is designed for adjust Box (swiperslide wrapper) height
@@ -410,12 +422,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, authorInfo
         }
     };
 
-    const handleRedirectToPost = (postId: string) => (event: React.MouseEvent<any>) => {
-        router.push(`/post/${postId}`);
-    };
-
     type TProcessStates = {
-        lang: string;
         displayEditor: boolean;
         editorEnchorElement: any;
         displayBackdrop: boolean;
@@ -424,7 +431,6 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, authorInfo
 
     // States - process
     const [processStates, setProcessStates] = React.useState<TProcessStates>({
-        lang: defaultLang,
         displayEditor: false,
         displayBackdrop: false,
         backdropOnDisplayImageUrl: undefined,
@@ -1166,6 +1172,16 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, authorInfo
 
     return (
         <>
+            <Head>
+                <title>
+                    {`${postComprehensive_ss.title} | Mojito New Zealand`}
+                </title>
+                <meta
+                    name="description"
+                    content={postComprehensive_ss.paragraphsArr.join('')}
+                    key="desc"
+                />
+            </Head>
             <Navbar lang={preferenceStates.lang} />
             <Grid container>
 
@@ -1570,9 +1586,21 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, authorInfo
                                     </ListItemIcon>
 
                                 </MenuItem>
-
                             )}
                         </MenuList>
+
+                        {/* copyright */}
+                        <Box pt={8}>
+                            <Copyright lang={preferenceStates.lang} />
+                            <Guidelines lang={preferenceStates.lang} />
+                            <Terms lang={preferenceStates.lang} />
+                        </Box>
+
+                        {/* lang switch */}
+                        <LangSwitch setLang={setLang} />
+
+                        {/* theme mode switch */}
+                        <ThemeSwitch sx={{ pb: 8 }} />
                     </Box>
                 </Grid>
             </Grid>

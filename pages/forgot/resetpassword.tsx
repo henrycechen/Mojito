@@ -1,4 +1,5 @@
 import * as React from 'react';
+import Head from 'next/head';
 import { useRouter } from 'next/router';
 
 import Alert from '@mui/material/Alert';
@@ -37,8 +38,8 @@ interface PasswordStates {
     showpassword: boolean;
 }
 
-const domain = process.env.NEXT_PUBLIC_APP_DOMAIN;
 const recaptchaClientKey = process.env.NEXT_PUBLIC_INVISIABLE_RECAPTCHA_SITE_KEY ?? '';
+const desc = process.env.NEXT_PUBLIC_APP_DESCRIPTION ?? '';
 const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
     submit: {
@@ -259,6 +260,16 @@ const ResetPassword = () => {
 
     return (
         <>
+            <Head>
+                <title>
+                    {{ tw: '設定新密碼', cn: '设定新密码', en: 'Set New Password' }[processStates.lang]}
+                </title>
+                <meta
+                    name="description"
+                    content={desc}
+                    key="desc"
+                />
+            </Head>
             <Container component='main' maxWidth={'xs'} >
 
                 {/* tokencheck */}
@@ -276,7 +287,7 @@ const ResetPassword = () => {
                 <Stack sx={{ mt: '5rem', display: 'resetpasswordform' === processStates.componentOnDisplay ? 'block' : 'none' }}>
                     <Box sx={{ display: 'flex', justifyContent: 'center' }}>
                         <Link href='/'>
-                            <Avatar src={`${domain}/favicon.ico`} sx={{ width: 56, height: 56 }} />
+                            <Avatar src={`/favicon.ico`} sx={{ width: 56, height: 56 }} />
                         </Link>
                     </Box>
                     <Typography component='h1' variant='h5' sx={{ textAlign: 'center', mt: 2 }}>

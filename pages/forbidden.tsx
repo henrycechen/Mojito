@@ -1,4 +1,5 @@
 import * as React from 'react';
+import Head from 'next/head';
 
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
@@ -13,6 +14,7 @@ import Guidelines from '../ui/Guidelines';
 import LangSwitch from '../ui/LangSwitch';
 import Terms from '../ui/Terms';
 
+const desc = process.env.NEXT_PUBLIC_APP_DESCRIPTION ?? '';
 const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
     title: {
@@ -49,6 +51,16 @@ export default function Forbidden() {
 
     return (
         <>
+            <Head>
+                <title>
+                    {{ tw: '权限不足', cn: '权限不足', en: 'Forbidden' }[processStates.lang]}
+                </title>
+                <meta
+                    name="description"
+                    content={desc}
+                    key="desc"
+                />
+            </Head>
             <Navbar lang={processStates.lang} />
             <Stack
                 sx={{ backgroundColor: '#2DAAE0', height: '100vh' }}>

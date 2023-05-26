@@ -1,4 +1,5 @@
 import * as React from 'react';
+import Head from 'next/head';
 import { signIn, useSession, } from 'next-auth/react';
 import { useRouter } from 'next/router';
 
@@ -28,7 +29,8 @@ import SideColumn from '../../ui/SideColumn';
 const storageName0 = 'PreferenceStates';
 const restorePreferenceStatesFromCache = restoreFromLocalStorage(storageName0);
 
-const defaultLang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
+const desc = process.env.NEXT_PUBLIC_APP_DESCRIPTION ?? '';
+const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
     alertContent: {
         tw: '出錯了，刷新頁面以重新獲取數據',
@@ -38,7 +40,7 @@ const langConfigs: LangConfigs = {
     memberInfo: {
         tw: '賬號資訊',
         cn: '账户信息',
-        en: 'Member info'
+        en: 'Member Info'
     },
     memberId: {
         tw: '賬號 ID',
@@ -48,57 +50,58 @@ const langConfigs: LangConfigs = {
     emailAddress: {
         tw: '郵件地址',
         cn: '电子邮箱',
-        en: 'Email address'
+        en: 'Email Address'
     },
     registeredDate: {
         tw: '注冊日期',
         cn: '注册日期',
-        en: 'Register date'
+        en: 'Register Date'
     },
     verifiedDate: {
         tw: '驗證日期',
         cn: '验证日期',
-        en: 'Verified date'
+        en: 'Verified Date'
     },
+
     memberStatus: {
         tw: '賬號狀況',
         cn: '账户状态',
-        en: 'Member status'
+        en: 'Member Status'
     },
     normalStatus: {
         tw: '正常',
         cn: '正常',
-        en: 'normal'
+        en: 'Normal'
     },
     restrictedStatus: {
         tw: '受限',
         cn: '受限',
-        en: 'restricted'
+        en: 'Restricted'
     },
     memberStatistics: {
         tw: '統計數據',
         cn: '统计数据',
-        en: 'Member statistics'
+        en: 'Member Statistics'
     },
     totalCreationsCount: {
         tw: '創作數',
         cn: '发布量',
-        en: 'Total creations'
+        en: 'Total Creations'
     },
     totalCreationHitCount: {
         tw: '閲讀量',
         cn: '浏览量',
-        en: 'Total creation viewed'
+        en: 'Total Viewed'
     },
     totalCreationLikedCount: {
         tw: '喜歡',
         cn: '点赞',
-        en: 'Total creation liked'
+        en: 'Total Liked'
     },
     totalCreationSavedCount: {
         tw: '收藏',
         cn: '收藏',
-        en: 'Total creation saved'
+        en: 'Total Saved'
     },
     totalFollowedByCount: {
         tw: '關注數',
@@ -126,7 +129,7 @@ const MemberInfoAndStatistics = () => {
 
     // States - preference
     const [preferenceStates, setPreferenceStates] = React.useState<TPreferenceStates>({
-        lang: defaultLang,
+        lang: lang,
         mode: 'light'
     });
 
@@ -234,6 +237,16 @@ const MemberInfoAndStatistics = () => {
 
     return (
         <>
+            <Head>
+                <title>
+                    {{ tw: '賬號資訊', cn: '账户信息', en: 'Member Info' }[preferenceStates.lang]}
+                </title>
+                <meta
+                    name="description"
+                    content={desc}
+                    key="desc"
+                />
+            </Head>
             <Navbar lang={preferenceStates.lang} />
             <Grid container>
 

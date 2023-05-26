@@ -1,4 +1,5 @@
 import * as React from 'react';
+import Head from 'next/head';
 import { useRouter } from 'next/router';
 
 import Box from '@mui/material/Box';
@@ -38,6 +39,7 @@ export async function getStaticProps() {
     };
 }
 
+const desc = process.env.NEXT_PUBLIC_APP_DESCRIPTION ?? '';
 const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
     title: {
@@ -81,6 +83,16 @@ export default function FiveHundred({ errorMessage }: any) {
 
     return (
         <>
+            <Head>
+                <title>
+                    {{ tw: '出錯啦', cn: '出错啦', en: 'Opps' }[processStates.lang]}
+                </title>
+                <meta
+                    name="description"
+                    content={desc}
+                    key="desc"
+                />
+            </Head>
             <Navbar lang={processStates.lang} />
             <Stack
                 sx={{ backgroundColor: '#2DAAE0', height: '100vh' }}>

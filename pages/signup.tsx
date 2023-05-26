@@ -1,4 +1,5 @@
 import * as React from 'react';
+import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { signIn, getProviders, useSession } from 'next-auth/react';
 import useTheme from '@mui/material/styles/useTheme';
@@ -16,8 +17,8 @@ import Link from '@mui/material/Link';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
-import Brightness7Icon from '@mui/icons-material/Brightness7';
-import Brightness4Icon from '@mui/icons-material/Brightness4';
+import DarkModeIcon from '@mui/icons-material/DarkMode';
+import WbSunnyIcon from '@mui/icons-material/WbSunny';
 
 import InputLabel from '@mui/material/InputLabel';
 import InputAdornment from '@mui/material/InputAdornment';
@@ -47,6 +48,7 @@ export async function getServerSideProps() {
 }
 
 const recaptchaClientKey = process.env.NEXT_PUBLIC_INVISIABLE_RECAPTCHA_SITE_KEY ?? '';
+const desc = process.env.NEXT_PUBLIC_APP_DESCRIPTION ?? '';
 const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
     signUp: {
@@ -345,6 +347,16 @@ const SignUp = ({ providers }: any) => {
 
     return (
         <>
+            <Head>
+                <title>
+                    {{ tw: '注冊', cn: '注册', en: 'Sign Up' }[processStates.lang]}
+                </title>
+                <meta
+                    name="description"
+                    content={desc}
+                    key="desc"
+                />
+            </Head>
             <Container component='main' maxWidth='xs'>
                 {/* signuprequestresult */}
                 <Box sx={{ mt: '18rem', mb: '10rem', display: 'signuprequestresult' === processStates.componentOnDisplay ? 'block' : 'none' }}>
@@ -470,7 +482,7 @@ const SignUp = ({ providers }: any) => {
                 {/* theme mode switch */}
                 <Box sx={{ mb: 8, display: 'flex', flexDirection: 'row', justifyContent: 'center' }}>
                     <IconButton onClick={handleColorModeSelect}>
-                        {theme.palette.mode === 'dark' ? <Brightness4Icon /> : <Brightness7Icon />}
+                        {theme.palette.mode === 'dark' ? <WbSunnyIcon /> : <DarkModeIcon />}
                     </IconButton>
                 </Box>
             </Container>

@@ -1,4 +1,5 @@
 import * as React from 'react';
+import Head from 'next/head';
 import { signIn, useSession, } from 'next-auth/react';
 import { useRouter } from 'next/router';
 
@@ -31,7 +32,8 @@ const storageName0 = 'PreferenceStates';
 const restorePreferenceStatesFromCache = restoreFromLocalStorage(storageName0);
 
 const imageDomain = process.env.NEXT_PUBLIC_IMAGE_DOMAIN ?? '';
-const defaultLang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
+const desc = process.env.NEXT_PUBLIC_APP_DESCRIPTION ?? '';
+const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
     alertContent: {
         tw: '出錯了，刷新頁面以重新獲取數據',
@@ -69,7 +71,7 @@ const Blacklist = () => {
 
     // States - preference
     const [preferenceStates, setPreferenceStates] = React.useState<TPreferenceStates>({
-        lang: defaultLang,
+        lang: lang,
         mode: 'light'
     });
 
@@ -137,6 +139,16 @@ const Blacklist = () => {
 
     return (
         <>
+            <Head>
+                <title>
+                    {{ tw: '屏蔽列表', cn: '黑名单', en: 'Blacklist' }[preferenceStates.lang]}
+                </title>
+                <meta
+                    name="description"
+                    content={desc}
+                    key="desc"
+                />
+            </Head>
             <Navbar lang={preferenceStates.lang} />
             <Grid container>
 

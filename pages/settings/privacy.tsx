@@ -1,4 +1,5 @@
 import * as React from 'react';
+import Head from 'next/head';
 import { signIn, signOut, useSession, } from 'next-auth/react';
 import { useRouter } from 'next/router';
 
@@ -27,7 +28,8 @@ import Navbar from '../../ui/Navbar';
 const storageName0 = 'PreferenceStates';
 const restorePreferenceStatesFromCache = restoreFromLocalStorage(storageName0);
 
-const defaultLang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
+const desc = process.env.NEXT_PUBLIC_APP_DESCRIPTION ?? '';
+const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
     alertContent: {
         tw: '出錯了，刷新頁面以重新獲取數據',
@@ -128,7 +130,7 @@ const PravicySettings = () => {
 
     // States - preference
     const [preferenceStates, setPreferenceStates] = React.useState<TPreferenceStates>({
-        lang: defaultLang,
+        lang: lang,
         mode: 'light'
     });
 
@@ -276,6 +278,16 @@ const PravicySettings = () => {
 
     return (
         <>
+            <Head>
+                <title>
+                    {{ tw: '隱私設定', cn: '隱私设置', en: 'Privacy Settings' }[preferenceStates.lang]}
+                </title>
+                <meta
+                    name="description"
+                    content={desc}
+                    key="desc"
+                />
+            </Head>
             <Navbar lang={preferenceStates.lang} />
             <Grid container>
 

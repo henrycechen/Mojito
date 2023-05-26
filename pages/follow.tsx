@@ -1,4 +1,5 @@
 import * as React from 'react';
+import Head from 'next/head';
 import { signIn, useSession, } from 'next-auth/react';
 import { useRouter } from 'next/router';
 
@@ -15,8 +16,6 @@ import MenuItem from '@mui/material/MenuItem';
 import ListItemText from '@mui/material/ListItemText';
 import ListItemIcon from '@mui/material/ListItemIcon';
 
-import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
-
 import { IMemberInfo } from '../lib/interfaces/member';
 import { LangConfigs, TPreferenceStates } from '../lib/types';
 import { restoreFromLocalStorage } from '../lib/utils/general';
@@ -31,7 +30,8 @@ const storageName0 = 'PreferenceStates';
 const restorePreferenceStatesFromCache = restoreFromLocalStorage(storageName0);
 
 const imageDomain = process.env.NEXT_PUBLIC_IMAGE_DOMAIN ?? '';
-const defaultLang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
+const desc = process.env.NEXT_PUBLIC_APP_DESCRIPTION ?? '';
+const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
     alertContent: {
         tw: '出錯了，刷新頁面以重新獲取數據',
@@ -69,7 +69,7 @@ const FollowedMembers = () => {
 
     // States - preference
     const [preferenceStates, setPreferenceStates] = React.useState<TPreferenceStates>({
-        lang: defaultLang,
+        lang: lang,
         mode: 'light'
     });
 
@@ -131,12 +131,16 @@ const FollowedMembers = () => {
         }
     };
 
-    const handleBackward = () => {
-        router.push('/settings');
-    };
-
     return (
         <>
+            <title>
+                {{ tw: '關注', cn: '關注', en: 'Follow' }[preferenceStates.lang]}
+            </title>
+            <meta
+                name="description"
+                content={desc}
+                key="desc"
+            />
             <Navbar lang={preferenceStates.lang} />
             <Grid container>
 
@@ -150,17 +154,6 @@ const FollowedMembers = () => {
                 {/* middle */}
                 <Grid item xs={12} sm={12} md={6} lg={6} xl={4}>
                     <Box pt={{ xs: 2, sm: 2, md: 10 }} px={1} >
-
-                        {/* 'backward' button */}
-                        <Box sx={{ display: { sm: 'block', md: 'none' } }}>
-                            <Button color='inherit' onClick={handleBackward}>
-                                <ArrowBackIosIcon fontSize={'small'} sx={{ color: 'grey' }} />
-                                {('authenticated' !== status || processStates.displayProgress) && <CircularProgress size={20} />}
-                            </Button>
-                        </Box>
-
-                        {/* space */}
-                        <Box pt={1}></Box>
 
                         {/* alert */}
                         <Box pb={1} display={processStates.displayAlert ? 'block' : 'none'}>

@@ -5,8 +5,8 @@ import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
 import Stack from '@mui/material/Stack';
 
-import Brightness7Icon from '@mui/icons-material/Brightness7';
-import Brightness4Icon from '@mui/icons-material/Brightness4';
+import DarkModeIcon from '@mui/icons-material/DarkMode';
+import WbSunnyIcon from '@mui/icons-material/WbSunny';
 
 import Copyright from '../ui/Copyright';
 import Terms from '../ui/Terms';
@@ -43,7 +43,7 @@ export default function SideColumn(props: TSideColumnProps) {
             {/* theme mode switch */}
             <Box sx={{ display: 'flex', justifyContent: 'center' }}>
                 <IconButton onClick={handleColorModeSelect}>
-                    {theme.palette.mode === 'dark' ? <Brightness4Icon /> : <Brightness7Icon />}
+                    {theme.palette.mode === 'dark' ? <WbSunnyIcon /> : <DarkModeIcon />}
                 </IconButton>
             </Box>
         </Stack>

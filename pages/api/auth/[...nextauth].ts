@@ -43,7 +43,7 @@ const salt = process.env.APP_PASSWORD_SALT ?? '';
 export const loginProviderIdMapping: TProviderIdMapping = {
     //// [!] Every time add a new provider, update this dictionary ////
     mojito: 'MojitoMemberSystem',
-    github: 'GitHubOAuth',
+    // github: 'GitHubOAuth',
     google: 'GoogleOAuth',
     // instagram
     // twitter
@@ -51,6 +51,7 @@ export const loginProviderIdMapping: TProviderIdMapping = {
 };
 
 const domain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? '';
+const desc = process.env.NEXT_PUBLIC_APP_DESCRIPTION ?? '';
 const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
     emailSubject: {
@@ -66,10 +67,10 @@ export default NextAuth({
         maxAge: 15 * 24 * 60 * 60, // [!] 15 days
     },
     providers: [
-        GithubProvider({
-            clientId: process.env.GITHUB_ID ?? '',
-            clientSecret: process.env.GITHUB_SECRET ?? ''
-        }),
+        // GithubProvider({
+        //     clientId: process.env.GITHUB_ID ?? '',
+        //     clientSecret: process.env.GITHUB_SECRET ?? ''
+        // }),
         GoogleProvide({
             clientId: process.env.GOOGLE_CLIENT_ID ?? '',
             clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? ''

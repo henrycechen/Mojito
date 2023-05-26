@@ -1,4 +1,5 @@
 import * as React from 'react';
+import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { signIn, useSession } from 'next-auth/react';
 import useTheme from '@mui/material/styles/useTheme';
@@ -22,16 +23,16 @@ import ListItemIcon from '@mui/material/ListItemIcon';
 
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import ArticleIcon from '@mui/icons-material/Article';
+import BarChartIcon from '@mui/icons-material/BarChart';
 import BlockIcon from '@mui/icons-material/Block';
-import Brightness7Icon from '@mui/icons-material/Brightness7';
-import Brightness4Icon from '@mui/icons-material/Brightness4';
+import DarkModeIcon from '@mui/icons-material/DarkMode';
+import WbSunnyIcon from '@mui/icons-material/WbSunny';
 import CreateIcon from '@mui/icons-material/Create';
 import EditIcon from '@mui/icons-material/Edit';
+import EmailIcon from '@mui/icons-material/Email';
 import FlagIcon from '@mui/icons-material/Flag';
-import BarChartIcon from '@mui/icons-material/BarChart';
 import IconButton from '@mui/material/IconButton';
 import ListAltIcon from '@mui/icons-material/ListAlt';
-import EmailIcon from '@mui/icons-material/Email';
 import MarkEmailUnreadIcon from '@mui/icons-material/MarkEmailUnread';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
@@ -42,11 +43,11 @@ import SvgIcon from '@mui/material/SvgIcon';
 import Masonry from '@mui/lab/Masonry';
 
 import { StyledSwitch } from '../ui/Styled';
-import Navbar from '../ui/Navbar';
-import Copyright from '../ui/Copyright';
-import Terms from '../ui/Terms';
 import { ColorModeContext } from '../ui/Theme';
-
+import Copyright from '../ui/Copyright';
+import Guidelines from '../ui/Guidelines';
+import Navbar from '../ui/Navbar';
+import Terms from '../ui/Terms';
 
 import { TBrowsingHelper, LangConfigs, TPreferenceStates } from '../lib/types';
 import { IConcisePostComprehensive } from '../lib/interfaces/post';
@@ -57,8 +58,7 @@ import { updateLocalStorage, restoreFromLocalStorage } from '../lib/utils/genera
 import { getNicknameBrief, provideAvatarImageUrl } from '../lib/utils/for/member';
 import { provideCoverImageUrl } from '../lib/utils/for/post';
 import { getRandomHexStr } from '../lib/utils/create';
-import Guidelines from '../ui/Guidelines';
-
+import LangSwitch from '../ui/LangSwitch';
 
 const storageName0 = 'PreferenceStates';
 const restorePreferenceStatesFromCache = restoreFromLocalStorage(storageName0);
@@ -67,21 +67,10 @@ const storageName = 'HomePageProcessStates';
 const updateProcessStatesCache = updateLocalStorage(storageName);
 const restoreProcessStatesFromCache = restoreFromLocalStorage(storageName);
 
-
-
-interface IHomePageProcessStates {
-    viewerId: string;
-    selectedChannelId: string;
-    selectedHotPosts: boolean;
-    memorizeChannelBarPositionX: number | undefined;
-    memorizeViewPortPositionY: number | undefined;
-    memorizeLastViewedPostId: string | undefined;
-    wasRedirected: boolean;
-}
-
 const appDomain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? '';
 const imageDomain = process.env.NEXT_PUBLIC_IMAGE_DOMAIN ?? '';
-const defaultLang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
+const desc = process.env.NEXT_PUBLIC_APP_DESCRIPTION ?? '';
+const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
     // Left column
     signIn: {
@@ -126,10 +115,10 @@ const langConfigs: LangConfigs = {
     },
 
     // Channel menu
-    allPosts: {
+    all: {
         tw: '全部',
         cn: '全部',
-        en: 'All posts'
+        en: 'All'
     },
     following: {
         tw: '关注',
@@ -215,12 +204,28 @@ const Home = () => {
 
     // States - preference
     const [preferenceStates, setPreferenceStates] = React.useState<TPreferenceStates>({
-        lang: defaultLang,
+        lang: lang,
         mode: 'light'
     });
 
+    const setLang = () => {
+        if ('tw' === preferenceStates.lang) { setPreferenceStates({ ...preferenceStates, lang: 'cn' }); }
+        if ('cn' === preferenceStates.lang) { setPreferenceStates({ ...preferenceStates, lang: 'en' }); }
+        if ('en' === preferenceStates.lang) { setPreferenceStates({ ...preferenceStates, lang: 'tw' }); }
+    };
+
+    type TProcessStates = {
+        viewerId: string;
+        selectedChannelId: string;
+        selectedHotPosts: boolean;
+        memorizeChannelBarPositionX: number | undefined;
+        memorizeViewPortPositionY: number | undefined;
+        memorizeLastViewedPostId: string | undefined;
+        wasRedirected: boolean;
+    };
+
     // States - process
-    const [processStates, setProcessStates] = React.useState<IHomePageProcessStates>({
+    const [processStates, setProcessStates] = React.useState<TProcessStates>({
         viewerId: '',
         selectedChannelId: '',
         selectedHotPosts: false,
@@ -300,7 +305,7 @@ const Home = () => {
     };
 
     const handleChannelSelect = (channelId: string) => (event: React.MouseEvent<HTMLButtonElement> | React.SyntheticEvent) => {
-        let states: IHomePageProcessStates = { ...processStates };
+        let states: TProcessStates = { ...processStates };
         states.selectedChannelId = channelId;
         states.memorizeChannelBarPositionX = document.getElementById('channel-bar')?.scrollLeft;
         // #1 update process states
@@ -313,7 +318,7 @@ const Home = () => {
 
     // Handle newest/hotest posts switch
     const handleToggleSwitch = () => {
-        let states: IHomePageProcessStates = { ...processStates, selectedHotPosts: !processStates.selectedHotPosts };
+        let states: TProcessStates = { ...processStates, selectedHotPosts: !processStates.selectedHotPosts };
         // #1 update process states
         setProcessStates(states);
         // #2 presist process states to cache
@@ -350,7 +355,7 @@ const Home = () => {
             } else { // 600 ~ ∞
                 setBrowsingHelper({ ...browsingHelper, memorizeViewPortPositionY: processStates.memorizeViewPortPositionY });
             }
-            let states: IHomePageProcessStates = { ...processStates, memorizeLastViewedPostId: undefined, memorizeViewPortPositionY: undefined, wasRedirected: false };
+            let states: TProcessStates = { ...processStates, memorizeLastViewedPostId: undefined, memorizeViewPortPositionY: undefined, wasRedirected: false };
             // #2 update process states
             setProcessStates(states);
             // #3 update process state cache
@@ -518,7 +523,6 @@ const Home = () => {
         setPopUpMenuStates({ ...popUpMenuStates, anchorEl: null });
     };
 
-    //////////////////////////////////////// THEME ////////////////////////////////////////
     const colorMode = React.useContext(ColorModeContext);
 
     const handleColorModeSelect = () => {
@@ -531,6 +535,16 @@ const Home = () => {
 
     return (
         <>
+            <Head>
+                <title>
+                    莫希托新西蘭 Mojito New Zealand
+                </title>
+                <meta
+                    name="description"
+                    content={desc}
+                    key="desc"
+                />
+            </Head>
             <Navbar lang={preferenceStates.lang} />
             <Grid container>
 
@@ -643,15 +657,8 @@ const Home = () => {
 
                         {/* the 'all' button */}
                         <Button variant={'all' === processStates.selectedChannelId ? 'contained' : 'text'} size='small' onClick={handleChannelSelect('all')}>
-                            <Typography variant='body2' color={'all' === processStates.selectedChannelId ? 'white' : "text.secondary"} sx={{ backgroundColor: 'primary' }}>
-                                {langConfigs.allPosts[preferenceStates.lang]}
-                            </Typography>
-                        </Button>
-
-                        {/* the 'following' button */}
-                        <Button variant={'following' === processStates.selectedChannelId ? 'contained' : 'text'} size='small' onClick={handleChannelSelect('all')}>
-                            <Typography variant='body2' color={'following' === processStates.selectedChannelId ? 'white' : "text.secondary"} sx={{ backgroundColor: 'primary' }}>
-                                {langConfigs.following[preferenceStates.lang]}
+                            <Typography variant='body2' color={'all' === processStates.selectedChannelId ? 'white' : 'text.secondary'} sx={{ backgroundColor: 'primary' }}>
+                                {langConfigs.all[preferenceStates.lang]}
                             </Typography>
                         </Button>
 
@@ -659,11 +666,18 @@ const Home = () => {
                         {Object.keys(channeMenuStates.channelInfo).map(id => {
                             const { channelId, name } = channeMenuStates.channelInfo[id];
                             return (
-                                <Button variant={channelId === processStates.selectedChannelId ? 'contained' : 'text'} key={`button-${channelId}`} size='small' onClick={handleChannelSelect(channelId)}>
+                                <Button
+                                    variant={channelId === processStates.selectedChannelId ? 'contained' : 'text'}
+                                    key={`button-${channelId}`}
+                                    size='small'
+                                    onClick={handleChannelSelect(channelId)}
+                                >
                                     <Typography
                                         variant={'body2'}
                                         color={channelId === processStates.selectedChannelId ? 'white' : 'text.secondary'}
-                                        sx={{ backgroundColor: 'primary' }}>
+                                        sx={{ backgroundColor: 'primary' }}
+                                        noWrap
+                                    >
                                         {name[preferenceStates.lang]}
                                     </Typography>
                                 </Button>
@@ -689,6 +703,7 @@ const Home = () => {
                                 return (
                                     <Paper key={p.postId} id={p.postId} sx={{ maxWidth: 450, '&:hover': { cursor: 'pointer' } }} >
                                         <Stack>
+
                                             {/* image */}
                                             <Box
                                                 component={'img'}
@@ -737,7 +752,7 @@ const Home = () => {
                 {/* right */}
                 <Grid item xs={0} sm={0} md={0} lg={3} xl={4}>
                     <Box sx={{ display: { xs: 'none', sm: 'none', md: 'block' } }}>
-                        <Stack spacing={2} sx={{ width: 300, paddingX: 3, paddingTop: 8, }} >
+                        <Stack spacing={2} sx={{ width: 300, px: 3, pt: 8, }} >
 
                             {/* title */}
                             <Box sx={{ paddingX: 2 }}>
@@ -784,12 +799,18 @@ const Home = () => {
                                 <Terms lang={preferenceStates.lang} />
                             </Box>
 
+                            {/* lang switch */}
+                            <Box>
+                                <LangSwitch setLang={setLang} />
+                            </Box>
+
                             {/* theme mode switch */}
                             <Box sx={{ display: 'flex', justifyContent: 'center' }}>
                                 <IconButton onClick={handleColorModeSelect}>
-                                    {theme.palette.mode === 'dark' ? <Brightness4Icon /> : <Brightness7Icon />}
+                                    {theme.palette.mode === 'dark' ? <WbSunnyIcon /> : <DarkModeIcon />}
                                 </IconButton>
                             </Box>
+
                         </Stack>
                     </Box>
                 </Grid>
@@ -817,10 +838,11 @@ const Home = () => {
                             <ListAltIcon />
                         </ListItemIcon>
                         <ListItemText>
-                            <Typography>全部</Typography>
+                            <Typography>{langConfigs.all[preferenceStates.lang]}</Typography>
                         </ListItemText>
                     </MenuItem>
                     <Divider />
+
                     {/* other channels */}
                     {Object.keys(channeMenuStates.channelInfo).map(id => {
                         const { channelId, name, svgIconPath } = channeMenuStates.channelInfo[id];
@@ -838,6 +860,8 @@ const Home = () => {
                         );
                     })}
                     <Divider />
+
+                    {/* new / trend switch */}
                     <MenuItem>
                         <FormControlLabel
                             control={<StyledSwitch sx={{ ml: 1 }} checked={processStates.selectedHotPosts} />}
@@ -848,7 +872,6 @@ const Home = () => {
                     </MenuItem>
                 </MenuList>
             </Menu>
-
 
             {/* pop-up memu */}
             <Menu

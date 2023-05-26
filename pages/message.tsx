@@ -1,4 +1,5 @@
 import * as React from 'react';
+import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { signIn, useSession, } from 'next-auth/react';
 
@@ -38,7 +39,8 @@ const storageName0 = 'PreferenceStates';
 const restorePreferenceStatesFromCache = restoreFromLocalStorage(storageName0);
 
 const imageDomain = process.env.NEXT_PUBLIC_IMAGE_DOMAIN ?? '';
-const defaultLang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
+const desc = process.env.NEXT_PUBLIC_APP_DESCRIPTION ?? '';
+const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
 
     liked: {
@@ -84,7 +86,7 @@ const Message = () => {
 
     // States - preference
     const [preferenceStates, setPreferenceStates] = React.useState<TPreferenceStates>({
-        lang: defaultLang,
+        lang: lang,
         mode: 'light'
     });
 
@@ -102,8 +104,6 @@ const Message = () => {
         noticeInfoArr: [],
         noticeStatistics: { cue: 0, reply: 0, like: 0, pin: 0, save: 0, follow: 0 },
     });
-
-
 
     const updateNoticeArrayAndStatistics = async () => {
         let arr = [];
@@ -187,6 +187,16 @@ const Message = () => {
 
     return (
         <>
+            <Head>
+                <title>
+                    {{ tw: '消息', cn: '訊息', en: 'Messages' }[preferenceStates.lang]}
+                </title>
+                <meta
+                    name="description"
+                    content={desc}
+                    key="desc"
+                />
+            </Head>
             <Navbar lang={preferenceStates.lang} />
             <Grid container >
 

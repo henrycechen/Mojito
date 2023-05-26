@@ -1,4 +1,5 @@
 import * as React from 'react';
+import Head from 'next/head';
 
 import Alert from '@mui/material/Alert';
 import Avatar from '@mui/material/Avatar';
@@ -23,8 +24,8 @@ import LangSwitch from '../../ui/LangSwitch';
 import Terms from '../../ui/Terms';
 import ThemeSwitch from '../../ui/ThemeSwitch';
 
-const domain = process.env.NEXT_PUBLIC_APP_DOMAIN;
 const recaptchaClientKey = process.env.NEXT_PUBLIC_INVISIABLE_RECAPTCHA_SITE_KEY ?? '';
+const desc = process.env.NEXT_PUBLIC_APP_DESCRIPTION ?? '';
 const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
     submit: {
@@ -195,13 +196,23 @@ const Forgot = () => {
 
     return (
         <>
+            <Head>
+                <title>
+                    {{ tw: '重新設定密碼', cn: '重新设置密码', en: 'Reset Password' }[processStates.lang]}
+                </title>
+                <meta
+                    name="description"
+                    content={desc}
+                    key="desc"
+                />
+            </Head>
             <Container component='main' maxWidth={'xs'} >
 
                 {/* resetpasswordrequestform */}
                 <Stack sx={{ mt: '5rem', display: 'resetpasswordrequestform' === processStates.componentOnDisplay ? 'block' : 'none' }}>
                     <Box sx={{ display: 'flex', justifyContent: 'center' }}>
                         <Link href='/'>
-                            <Avatar src={`${domain}/favicon.ico`} sx={{ width: 56, height: 56 }} />
+                            <Avatar src={`/favicon.ico`} sx={{ width: 56, height: 56 }} />
                         </Link>
                     </Box>
                     <Typography component='h1' variant='h5' sx={{ mt: 2, textAlign: 'center' }}>

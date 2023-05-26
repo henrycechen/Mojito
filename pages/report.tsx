@@ -1,4 +1,5 @@
 import * as React from 'react';
+import Head from 'next/head';
 import { useRouter } from 'next/router';
 
 import Alert from '@mui/material/Alert';
@@ -23,7 +24,6 @@ import ReCAPTCHA from 'react-google-recaptcha';
 
 import { LangConfigs } from '../lib/types';
 import { verifyId } from '../lib/utils/verify';
-import { CentralizedBox } from '../ui/Styled';
 
 import Copyright from '../ui/Copyright';
 import BackToHomeButtonGroup from '../ui/BackToHomeButtonGroup';
@@ -34,6 +34,7 @@ import ThemeSwitch from '../ui/ThemeSwitch';
 
 const domain = process.env.NEXT_PUBLIC_APP_DOMAIN;
 const recaptchaClientKey = process.env.NEXT_PUBLIC_INVISIABLE_RECAPTCHA_SITE_KEY ?? '';
+const desc = process.env.NEXT_PUBLIC_APP_DESCRIPTION ?? '';
 const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
     submit: {
@@ -335,6 +336,16 @@ const Affair = () => {
 
     return (
         <>
+            <Head>
+                <title>
+                    {{ tw: '檢舉', cn: '检举', en: 'Report' }[processStates.lang]}
+                </title>
+                <meta
+                    name="description"
+                    content="欢迎使用我们的举报滥用和问题解决页面。 我们致力于为我们社区的所有成员营造一个安全、包容和尊重的环境。 此页面是一个专用空间，您可以在其中报告任何滥用、骚扰或其他可能违反我们的社区准则或服务条款的问题"
+                    key="desc"
+                />
+            </Head>
             <Container component='main' maxWidth={'xs'} >
                 {/* reportrequestform */}
                 <Stack sx={{ mt: '5rem', display: 'reportrequestform' === processStates.componentOnDisplay ? 'block' : 'none' }}>
