@@ -170,6 +170,7 @@ export interface IEditedPostComprehensive {
 export interface IRestrictedPostComprehensive {
     postId: string; // 10 characters, UPPERCASE
     memberId: string;
+    nickname: string;
     createdTimeBySecond: number; // created time of this document (post est.)
     title: string;
     imageFullnamesArr: string[];
@@ -219,7 +220,7 @@ export interface IRestrictedPostComprehensive {
 export interface IConcisePostComprehensive {
     postId: string; // 10 characters, UPPERCASE, also used as coverImageFullname (e.g., P12345ABCDE.png)
     memberId: string;
-    nickname?: string;
+    nickname: string;
     createdTimeBySecond: number; // created time of this document (post est.)
     title: string;
     channelId: string;

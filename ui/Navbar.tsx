@@ -1,35 +1,35 @@
 import * as React from 'react';
+import { useSession, signIn, signOut } from 'next-auth/react';
 import { useRouter } from 'next/router';
+import useTheme from '@mui/material/styles/useTheme';
+import useScrollTrigger from '@mui/material/useScrollTrigger';
 
 import AppBar from '@mui/material/AppBar';
+import Avatar from '@mui/material/Avatar';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Container from '@mui/material/Container';
 import Divider from '@mui/material/Divider';
-
-import Toolbar from '@mui/material/Toolbar';
-
-import Avatar from '@mui/material/Avatar';
 import IconButton from '@mui/material/IconButton';
 import Link from '@mui/material/Link';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
+import Slide from '@mui/material/Slide';
+import Toolbar from '@mui/material/Toolbar';
 import Tooltip from '@mui/material/Tooltip';
 
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 
-import CreateIcon from '@mui/icons-material/Create';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import DarkModeIcon from '@mui/icons-material/DarkMode';
+import WbSunnyIcon from '@mui/icons-material/WbSunny';
+import CreateIcon from '@mui/icons-material/Create';
 import EmailIcon from '@mui/icons-material/Email';
-import SettingsIcon from '@mui/icons-material/Settings';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
-import Brightness7Icon from '@mui/icons-material/Brightness7';
-import Brightness4Icon from '@mui/icons-material/Brightness4';
+import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
+import SettingsIcon from '@mui/icons-material/Settings';
 
-import useTheme from '@mui/material/styles/useTheme';
-
-import { useSession, signIn, signOut } from 'next-auth/react';
 import { LangConfigs } from '../lib/types';
 
 import { ColorModeContext } from './Theme';
@@ -58,6 +58,11 @@ const langConfigs: LangConfigs = {
         cn: '消息',
         en: 'Message'
     },
+    followedMembers: {
+        tw: '關注',
+        cn: '关注',
+        en: 'Followed'
+    },
     member: {
         tw: '主页',
         cn: '主页',
@@ -72,15 +77,20 @@ const langConfigs: LangConfigs = {
         tw: '登出',
         cn: '登出',
         en: 'Sign out'
+    },
+    mode: {
+        tw: '主題',
+        cn: '主題',
+        en: 'Mode'
     }
 };
 
-type TNavBarProps = {
+type TNavbarProps = {
     lang?: string;
     forceUpdateImageCache?: boolean;
 };
 
-export default function NavBar(props: TNavBarProps) {
+export default function Navbar(props: TNavbarProps) {
 
     const router = useRouter();
     const { data: session, status } = useSession();
@@ -104,18 +114,28 @@ export default function NavBar(props: TNavBarProps) {
         }
     }, [status]);
 
+    const handleOpenMemberMenu = (event: React.MouseEvent<HTMLElement>) => {
+        setProcessStates({
+            ...processStates,
+            menuAnchorEl: document.getElementById('menu-anchor')
+        });
+    };
 
-    const handleOpenMemberMenu = (event: React.MouseEvent<HTMLElement>) => { setProcessStates({ ...processStates, menuAnchorEl: event.currentTarget }); };
-
-    const handleCloseMemberMenu = () => { setProcessStates({ ...processStates, menuAnchorEl: null }); };
+    const handleCloseMemberMenu = () => {
+        setProcessStates({
+            ...processStates,
+            menuAnchorEl: null
+        });
+    };
 
     const handleClick = (actionIndex: number) => {
         setProcessStates({ ...processStates, menuAnchorEl: null });
-        if (actionIndex === 0) { router.push('/me/createpost'); };
-        if (actionIndex === 1) { router.push(`/me/message`); };
-        if (actionIndex === 2) { router.push(`/me/id/${processStates.memberId}`); };
-        if (actionIndex === 3) { router.push(`/me/settings`); };
-        if (actionIndex === 4) { signOut(); };
+        if (actionIndex === 0) { router.push('/create'); };
+        if (actionIndex === 1) { router.push(`/message`); };
+        if (actionIndex === 2) { router.push(`/follow`); };
+        if (actionIndex === 3) { router.push(`/me/${processStates.memberId}`); };
+        if (actionIndex === 4) { router.push(`/settings`); };
+        if (actionIndex === 5) { signOut(); };
     };
 
     const handleSignIn = (event: React.MouseEvent<HTMLElement>) => {
@@ -133,84 +153,107 @@ export default function NavBar(props: TNavBarProps) {
 
     const theme = useTheme();
 
+    type TComponentProps = {
+        children: React.ReactElement;
+    };
+
+    const HideOnScroll = (props: TComponentProps) => {
+        const { children } = props;
+        const trigger = useScrollTrigger();
+        return (
+            <Slide appear={false} direction="down" in={!trigger}>
+                {children}
+            </Slide>
+        );
+    };
+
     return (
-        <AppBar position='sticky'>
+        <>
+            <Box id={'menu-anchor'}></Box>
+            <HideOnScroll {...props}>
+                <AppBar position='sticky' sx={{ display: { sm: 'block', md: 'none' } }}>
+                    <Container maxWidth={'xl'}>
+                        <Toolbar disableGutters>
 
-            <Container maxWidth={'xl'}>
+                            {/* logo */}
+                            <Link href='/' mt={1}>
+                                <Box component={'img'} src={`${appDomain}/logo${'dark' === theme.palette.mode ? '-dark' : '-bright'}.png`} sx={{ height: '2.5rem' }} />
+                            </Link>
 
-                <Toolbar disableGutters>
+                            {/* space */}
+                            <Box sx={{ flexGrow: 1 }}></Box>
 
-                    <Link href='/' mt={1}>
-                        <Box component={'img'} src={`${appDomain}/logo${'dark' === theme.palette.mode ? '-dark' : ''}.png`} sx={{ height: '2.5rem' }} />
-                    </Link>
+                            {/* authenticated - signin button */}
+                            {(!session || 'authenticated' !== status) && (
+                                <Button variant='contained' onClick={handleSignIn}>{langConfigs.signIn[props.lang ?? 'tw']}</Button>
+                            )}
 
-                    <Box sx={{ flexGrow: 1 }}></Box>
+                            {/* authenticated - avatar */}
+                            {(session && 'authenticated' === status) && (
+                                <Box>
+                                    <Tooltip title={langConfigs.open[lang]}>
+                                        <IconButton onClick={handleOpenMemberMenu} sx={{ p: 0 }}>
+                                            <Avatar src={'' === processStates.memberId ? '' : provideAvatarImageUrl(processStates.memberId, imageDomain, !!props.forceUpdateImageCache)} />
+                                        </IconButton>
+                                    </Tooltip>
+                                </Box>
+                            )}
 
-                    {(!session || 'authenticated' !== status) && (
-                        <Button variant='contained' onClick={handleSignIn}>{langConfigs.signIn[props.lang ?? 'tw']}</Button>
-                    )}
+                        </Toolbar>
+                    </Container>
+                </AppBar>
+            </HideOnScroll>
+            <Menu
+                sx={{ mt: '3rem' }}
+                anchorEl={processStates.menuAnchorEl}
+                anchorOrigin={{ vertical: 'top', horizontal: 'right', }}
+                keepMounted
+                transformOrigin={{ vertical: 'top', horizontal: 'right', }}
+                open={Boolean(processStates.menuAnchorEl)}
+                onClose={handleCloseMemberMenu}
+                MenuListProps={{}}
+            >
+                <MenuItem onClick={() => handleClick(0)} >
+                    <ListItemIcon><CreateIcon /></ListItemIcon>
+                    <ListItemText>{langConfigs.create[lang]}</ListItemText>
+                </MenuItem>
 
-                    {(session && 'authenticated' === status) && (
-                        <Box sx={{ flexGrow: 0 }}>
-                            <Tooltip title={langConfigs.open[lang]}>
-                                <IconButton onClick={handleOpenMemberMenu} sx={{ p: 0 }}>
-                                    <Avatar src={'' === processStates.memberId ? '' : provideAvatarImageUrl(processStates.memberId, imageDomain, !!props.forceUpdateImageCache)} />
-                                </IconButton>
-                            </Tooltip>
+                <MenuItem onClick={() => handleClick(1)} >
+                    <ListItemIcon><EmailIcon /></ListItemIcon>
+                    <ListItemText>{langConfigs.message[lang]}</ListItemText>
+                </MenuItem>
 
-                            <Menu
-                                sx={{ mt: '45px' }}
-                                anchorEl={processStates.menuAnchorEl}
-                                anchorOrigin={{ vertical: 'top', horizontal: 'right', }}
-                                keepMounted
-                                transformOrigin={{ vertical: 'top', horizontal: 'right', }}
-                                open={Boolean(processStates.menuAnchorEl)}
-                                onClose={handleCloseMemberMenu}
-                                MenuListProps={{}}
-                            >
-                                <MenuItem onClick={() => handleClick(0)} >
-                                    <ListItemIcon><CreateIcon /></ListItemIcon>
-                                    <ListItemText>{langConfigs.create[lang]}</ListItemText>
-                                </MenuItem>
+                <MenuItem onClick={() => handleClick(2)} >
+                    <ListItemIcon><NotificationsActiveIcon /></ListItemIcon>
+                    <ListItemText>{langConfigs.followedMembers[lang]}</ListItemText>
+                </MenuItem>
 
-                                <MenuItem onClick={() => handleClick(1)} >
-                                    <ListItemIcon><EmailIcon /></ListItemIcon>
-                                    <ListItemText>{langConfigs.message[lang]}</ListItemText>
-                                </MenuItem>
+                <MenuItem onClick={() => handleClick(3)} >
+                    <ListItemIcon><AccountCircleIcon /></ListItemIcon>
+                    <ListItemText>{langConfigs.member[lang]}</ListItemText>
+                </MenuItem>
 
-                                <MenuItem onClick={() => handleClick(2)} >
-                                    <ListItemIcon><AccountCircleIcon /></ListItemIcon>
-                                    <ListItemText>{langConfigs.member[lang]}</ListItemText>
-                                </MenuItem>
+                <MenuItem onClick={() => handleClick(4)} >
+                    <ListItemIcon><SettingsIcon /></ListItemIcon>
+                    <ListItemText>{langConfigs.settings[lang]}</ListItemText>
+                </MenuItem>
 
-                                <MenuItem onClick={() => handleClick(3)} >
-                                    <ListItemIcon><SettingsIcon /></ListItemIcon>
-                                    <ListItemText>{langConfigs.settings[lang]}</ListItemText>
-                                </MenuItem>
+                <MenuItem onClick={() => handleClick(5)} >
+                    <ListItemIcon><ExitToAppIcon /></ListItemIcon>
+                    <ListItemText>{langConfigs.signOut[lang]}</ListItemText>
+                </MenuItem>
 
-                                <MenuItem onClick={() => handleClick(4)} >
-                                    <ListItemIcon><ExitToAppIcon /></ListItemIcon>
-                                    <ListItemText>{langConfigs.signOut[lang]}</ListItemText>
-                                </MenuItem>
+                <Divider />
 
-                                <Divider />
-
-                                <MenuItem onClick={handleColorModeSelect} >
-                                    <ListItemIcon>
-                                        {theme.palette.mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
-                                    </ListItemIcon>
-                                    <ListItemText>
-                                        {theme.palette.mode}
-                                    </ListItemText>
-                                </MenuItem>
-                            </Menu>
-                        </Box>
-                    )}
-
-                </Toolbar>
-
-            </Container>
-
-        </AppBar>
+                <MenuItem onClick={handleColorModeSelect} >
+                    <ListItemIcon>
+                        {theme.palette.mode === 'dark' ? <DarkModeIcon /> : <WbSunnyIcon />}
+                    </ListItemIcon>
+                    <ListItemText>
+                        {langConfigs.mode[lang]}
+                    </ListItemText>
+                </MenuItem>
+            </Menu>
+        </>
     );
 }

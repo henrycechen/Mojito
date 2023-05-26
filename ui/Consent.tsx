@@ -1,9 +1,12 @@
-import Link from "@mui/material/Link";
-import Typography from "@mui/material/Typography";
-
+import Link from '@mui/material/Link';
+import Typography from '@mui/material/Typography';
 import { LangConfigs } from '../lib/types';
 
-const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
+type TComponentProps = {
+    lang?: string,
+    sx?: any;
+};
+
 const langConfigs: LangConfigs = {
     title: {
         tw: '* 注册即同意我们的',
@@ -25,19 +28,20 @@ const langConfigs: LangConfigs = {
         cn: '服務協議',
         en: 'service agreement'
     }
-}
+};
 
-export default () => {
+export default (props: TComponentProps) => {
+    const { lang, sx } = props;
     return (
-        <Typography variant="body2" color="text.secondary" align="center">
-            {langConfigs.title[lang]}
-            <Link color="inherit" href="/terms/community-gidelines" >
-                {langConfigs.guidelines[lang]}
+        <Typography variant='body2' color='text.secondary' align='center'  {...sx}>
+            {langConfigs.title[lang ?? 'tw']}
+            <Link color='inherit' href='/terms/community-gidelines' >
+                {langConfigs.guidelines[lang ?? 'tw']}
             </Link>
-            {langConfigs.and[lang]}
-            <Link color="inherit" href="/terms/service-agreement" >
-                {langConfigs.agreement[lang]}
+            {langConfigs.and[lang ?? 'tw']}
+            <Link color='inherit' href='/terms/service-agreement' >
+                {langConfigs.agreement[lang ?? 'tw']}
             </Link>
         </Typography>
     );
-}
+};

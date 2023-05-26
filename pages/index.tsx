@@ -1,56 +1,64 @@
 import * as React from 'react';
-import { NextPageContext } from 'next/types';
+import Head from 'next/head';
+import { useRouter } from 'next/router';
+import { signIn, useSession } from 'next-auth/react';
+import useTheme from '@mui/material/styles/useTheme';
 
 import Avatar from '@mui/material/Avatar';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import Divider from '@mui/material/Divider';
+import FormControlLabel from '@mui/material/FormControlLabel';
 import Grid from '@mui/material/Grid';
+import Link from '@mui/material/Link';
 import Stack from '@mui/material/Stack';
+import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
 
-import { useSession } from 'next-auth/react';
-
-import SvgIcon from '@mui/material/SvgIcon';
-
-import IconButton from '@mui/material/IconButton';
-
-import EmailIcon from '@mui/icons-material/Email';
-import ReorderIcon from '@mui/icons-material/Reorder';
-import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
-
-import Masonry from '@mui/lab/Masonry';
-
-import Paper from '@mui/material/Paper';
-
-import { FormControlLabel, Menu, styled } from '@mui/material';
-
-
-import Divider from '@mui/material/Divider';
+import Menu from '@mui/material/Menu';
 import MenuList from '@mui/material/MenuList';
 import MenuItem from '@mui/material/MenuItem';
 import ListItemText from '@mui/material/ListItemText';
 import ListItemIcon from '@mui/material/ListItemIcon';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
-import BlockIcon from '@mui/icons-material/Block';
-import FlagIcon from '@mui/icons-material/Flag';
+
+import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import ArticleIcon from '@mui/icons-material/Article';
-import ForumIcon from '@mui/icons-material/Forum';
 import BarChartIcon from '@mui/icons-material/BarChart';
+import BlockIcon from '@mui/icons-material/Block';
+import DarkModeIcon from '@mui/icons-material/DarkMode';
+import WbSunnyIcon from '@mui/icons-material/WbSunny';
+import CreateIcon from '@mui/icons-material/Create';
+import EditIcon from '@mui/icons-material/Edit';
+import EmailIcon from '@mui/icons-material/Email';
+import FlagIcon from '@mui/icons-material/Flag';
+import IconButton from '@mui/material/IconButton';
+import ListAltIcon from '@mui/icons-material/ListAlt';
+import MarkEmailUnreadIcon from '@mui/icons-material/MarkEmailUnread';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
+import ReorderIcon from '@mui/icons-material/Reorder';
+import SettingsIcon from '@mui/icons-material/Settings';
+import SvgIcon from '@mui/material/SvgIcon';
 
-import { useRouter } from 'next/router';
+import Masonry from '@mui/lab/Masonry';
 
-import { TBrowsingHelper, LangConfigs } from '../lib/types';
+import { StyledSwitch } from '../ui/Styled';
+import { ColorModeContext } from '../ui/Theme';
+import Copyright from '../ui/Copyright';
+import Guidelines from '../ui/Guidelines';
+import Navbar from '../ui/Navbar';
+import Terms from '../ui/Terms';
+
+import { TBrowsingHelper, LangConfigs, TPreferenceStates } from '../lib/types';
+import { IConcisePostComprehensive } from '../lib/interfaces/post';
+import { IConciseTopicComprehensive } from '../lib/interfaces/topic';
+import { IChannelInfo, IChannelInfoDictionary } from '../lib/interfaces/channel';
+
 import { updateLocalStorage, restoreFromLocalStorage } from '../lib/utils/general';
 import { getNicknameBrief, provideAvatarImageUrl } from '../lib/utils/for/member';
-import { CentralizedBox, ResponsiveCard, StyledSwitch, TextButton } from '../ui/Styled';
-import Navbar from '../ui/Navbar';
-import { IConcisePostComprehensive } from '../lib/interfaces/post';
-import { IChannelInfoStates, IChannelInfoDictionary } from '../lib/interfaces/channel';
-import Copyright from '../ui/Copyright';
-import { IConciseTopicComprehensive } from '../lib/interfaces/topic';
 import { provideCoverImageUrl } from '../lib/utils/for/post';
 import { getRandomHexStr } from '../lib/utils/create';
-import Terms from '../ui/Terms';
+import LangSwitch from '../ui/LangSwitch';
 
 const storageName0 = 'PreferenceStates';
 const restorePreferenceStatesFromCache = restoreFromLocalStorage(storageName0);
@@ -59,29 +67,58 @@ const storageName = 'HomePageProcessStates';
 const updateProcessStatesCache = updateLocalStorage(storageName);
 const restoreProcessStatesFromCache = restoreFromLocalStorage(storageName);
 
-type THomePageProps = {
-    channelInfoDict_ss: IChannelInfoDictionary;
-    redirect500: boolean;
-};
-
-interface IHomePageProcessStates {
-    viewerId: string;
-    selectedChannelId: string;
-    selectedHotPosts: boolean;
-    memorizeChannelBarPositionX: number | undefined;
-    memorizeViewPortPositionY: number | undefined;
-    memorizeLastViewedPostId: string | undefined;
-    wasRedirected: boolean;
-}
-
 const appDomain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? '';
 const imageDomain = process.env.NEXT_PUBLIC_IMAGE_DOMAIN ?? '';
-const defaultLang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
+const desc = process.env.NEXT_PUBLIC_APP_DESCRIPTION ?? '';
+const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
-    allPosts: {
+    // Left column
+    signIn: {
+        tw: '登入',
+        cn: '登入',
+        en: 'Sign in'
+    },
+    posts: {
+        tw: '文章',
+        cn: '文章',
+        en: 'Posts'
+    },
+    followedMembers: {
+        tw: '關注',
+        cn: '关注',
+        en: 'Followed'
+    },
+    messages: {
+        tw: '訊息',
+        cn: '消息',
+        en: 'Messages'
+    },
+    unread: {
+        tw: `未讀`,
+        cn: `未读`,
+        en: `Unread`
+    },
+    member: {
+        tw: '主頁',
+        cn: '主页',
+        en: 'Member'
+    },
+    settings: {
+        tw: '設定',
+        cn: '设定',
+        en: 'Settings'
+    },
+    create: {
+        tw: '創作',
+        cn: '创作',
+        en: 'Create'
+    },
+
+    // Channel menu
+    all: {
         tw: '全部',
         cn: '全部',
-        en: 'All posts'
+        en: 'All'
     },
     following: {
         tw: '关注',
@@ -98,13 +135,11 @@ const langConfigs: LangConfigs = {
         cn: '最新',
         en: 'Newest'
     },
-
     noPosts: {
         tw: '還沒有作者在該頻道發佈過文章',
         cn: '还没有作者在该频道发布过文章',
         en: 'No articles in this channel'
     },
-
     unreadReplyNotice: {
         tw: `條未讀消息`,
         cn: `条未读提醒`,
@@ -130,10 +165,15 @@ const langConfigs: LangConfigs = {
         cn: '浏览',
         en: 'views'
     },
+    edit: {
+        tw: `編輯文章`,
+        cn: `编辑文章`,
+        en: `Edit post`,
+    },
     block: {
-        tw: (nickname: string) => `屏蔽 ${nickname}`,
-        cn: (nickname: string) => `屏蔽 ${nickname}`,
-        en: (nickname: string) => `Block ${nickname}`,
+        tw: `屏蔽`,
+        cn: `屏蔽`,
+        en: `Block`,
     },
     report: {
         tw: '檢舉',
@@ -142,65 +182,50 @@ const langConfigs: LangConfigs = {
     },
 };
 
-//// get multiple info server-side ////
-export async function getServerSideProps(context: NextPageContext): Promise<{ props: THomePageProps; }> {
-    let channelInfoDict_ss: IChannelInfoDictionary;
-
-    const resp = await fetch(`${appDomain}/api/channel/info/dictionary`);
-
-    try {
-        if (200 !== resp.status) {
-            throw new Error();
-        }
-        channelInfoDict_ss = await resp.json();
-    } catch (e) {
-        if (e instanceof SyntaxError) {
-            console.log(`Attempt to parse channel info dictionary (JSON) from resp. ${e}`);
-        } else {
-            console.log('Attempt to GET channel info dictionary');
-        }
-        return {
-            props: {
-                channelInfoDict_ss: {},
-                redirect500: true
-            }
-        };
-    }
-    return {
-        props: {
-            channelInfoDict_ss,
-            redirect500: false
-        }
-    };
-}
-
-const Home = ({ channelInfoDict_ss }: THomePageProps) => {
+const Home = () => {
 
     const router = useRouter();
+
     const { data: session, status } = useSession();
     // status - 'unauthenticated' / 'authenticated'
 
     React.useEffect(() => {
         if ('authenticated' === status) {
-            const authorSession: any = { ...session };
-            setProcessStates({ ...processStates, viewerId: authorSession?.user?.id ?? '' });
+            const viewerSession: any = { ...session };
+            setProcessStates({ ...processStates, viewerId: viewerSession?.user?.id ?? '' });
             restorePreferenceStatesFromCache(setPreferenceStates);
         }
     }, [status]);
 
-    //////// REF - masonry ////////
+    // Ref - masonry
     const masonryWrapper = React.useRef<any>();
-    const [width, setWidth] = React.useState(375); // default change from 636 to 375 (width of iPhone se 2)
+    const [width, setWidth] = React.useState(375); // default change from 636 to 375 (width of iPhone SE2)
     React.useEffect(() => { setWidth(masonryWrapper?.current?.offsetWidth); }, []);
 
-    //////// STATES - preference ////////
-    const [preferenceStates, setPreferenceStates] = React.useState<any>({
-        lang: defaultLang,
+    // States - preference
+    const [preferenceStates, setPreferenceStates] = React.useState<TPreferenceStates>({
+        lang: lang,
         mode: 'light'
     });
 
-    //////// STATES - process ////////
-    const [processStates, setProcessStates] = React.useState<IHomePageProcessStates>({
+    const setLang = () => {
+        if ('tw' === preferenceStates.lang) { setPreferenceStates({ ...preferenceStates, lang: 'cn' }); }
+        if ('cn' === preferenceStates.lang) { setPreferenceStates({ ...preferenceStates, lang: 'en' }); }
+        if ('en' === preferenceStates.lang) { setPreferenceStates({ ...preferenceStates, lang: 'tw' }); }
+    };
+
+    type TProcessStates = {
+        viewerId: string;
+        selectedChannelId: string;
+        selectedHotPosts: boolean;
+        memorizeChannelBarPositionX: number | undefined;
+        memorizeViewPortPositionY: number | undefined;
+        memorizeLastViewedPostId: string | undefined;
+        wasRedirected: boolean;
+    };
+
+    // States - process
+    const [processStates, setProcessStates] = React.useState<TProcessStates>({
         viewerId: '',
         selectedChannelId: '',
         selectedHotPosts: false,
@@ -212,9 +237,7 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
 
     React.useEffect(() => { restoreProcessStatesFromCache(setProcessStates); }, []);
 
-    //////////////////////////////////////// VIEWING ////////////////////////////////////////
-
-    //////// STATES - viewer's notice statistics ////////
+    // States - notice statistics
     const [viewersNoticeStatistics, setViewersNoticeStatistics] = React.useState<number>(0);
 
     React.useEffect(() => { if ('' === processStates.viewerId) { updateNoticeStatistics(); } }, [processStates.viewerId]);
@@ -231,50 +254,58 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
         }
     };
 
-    const handleClickOnUnreadMessage = () => {
-        router.push(`/me/message`);
-    };
-
-    //////// STATES - browsing helper ////////
+    // States - browsing helper
     const [browsingHelper, setBrowsingHelper] = React.useState<TBrowsingHelper>({
         memorizeViewPortPositionY: undefined, // reset scroll-help on handleChannelSelect, handleSwitchChange, ~~handlePostCardClick~~
     });
 
-    ///////// STATES - channel /////////
-    const [channelInfoStates, setChannelInfoStates] = React.useState<IChannelInfoStates>({
-        channelIdSequence: [],
-    });
-
-    React.useEffect(() => { updateChannelIdSequence(); }, []);
-
-    const updateChannelIdSequence = async () => {
-        const resp = await fetch(`/api/channel/id/sequence`);
-        if (200 !== resp.status) {
-            setChannelInfoStates({ ...channelInfoStates, channelIdSequence: Object.keys(channelInfoDict_ss) });
-            console.log(`Attemp to GET channel id array. Using sequence from channel info dictionary instead`);
-            return;
-        }
-        try {
-            const idArr = await resp.json();
-            setChannelInfoStates({ ...channelInfoStates, channelIdSequence: [...idArr] });
-        } catch (e) {
-            console.log(`Attemp to parese channel id array. ${e}`);
-        } finally {
-            setChannelInfoStates({ ...channelInfoStates, channelIdSequence: Object.keys(channelInfoDict_ss) });
-        }
-
+    type TChannelMenuStates = {
+        anchorEl: null | HTMLElement;
+        channelInfo: { [channelId: string]: IChannelInfo; };
     };
 
-    // Handle channel bar restore on refresh
+    // States - channel info 
+    const [channeMenuStates, setChannelMenuStates] = React.useState<TChannelMenuStates>({
+        anchorEl: null,
+        channelInfo: {},
+    });
+
     React.useEffect(() => {
+        getChanneInfo();
+
+        // Handle channel bar restore on refresh
         if (!!processStates.memorizeChannelBarPositionX) {
             document.getElementById('channel-bar')?.scrollBy(processStates.memorizeChannelBarPositionX ?? 0, 0);
         }
-    }, [channelInfoStates.channelIdSequence]);
+    }, []);
 
-    //// Handle channel select
+    const getChanneInfo = async () => {
+        const resp = await fetch(`/api/channel/info`);
+        if (200 !== resp.status) {
+            console.error(`Attemp to GET channel info.`);
+            return;
+        }
+        try {
+            const info = await resp.json();
+            setChannelMenuStates({
+                ...channeMenuStates,
+                channelInfo: { ...info }
+            });
+        } catch (e) {
+            console.error(`Attemp to parese channel info (JSON) from response. ${e}`);
+        }
+    };
+
+    const handleChannelMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+        setChannelMenuStates({ ...channeMenuStates, anchorEl: event.currentTarget });
+    };
+
+    const handleChannelMenuClose = () => {
+        setChannelMenuStates({ ...channeMenuStates, anchorEl: null });
+    };
+
     const handleChannelSelect = (channelId: string) => (event: React.MouseEvent<HTMLButtonElement> | React.SyntheticEvent) => {
-        let states: IHomePageProcessStates = { ...processStates };
+        let states: TProcessStates = { ...processStates };
         states.selectedChannelId = channelId;
         states.memorizeChannelBarPositionX = document.getElementById('channel-bar')?.scrollLeft;
         // #1 update process states
@@ -286,8 +317,8 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
     };
 
     // Handle newest/hotest posts switch
-    const handleSwitchChange = () => {
-        let states: IHomePageProcessStates = { ...processStates, selectedHotPosts: !processStates.selectedHotPosts };
+    const handleToggleSwitch = () => {
+        let states: TProcessStates = { ...processStates, selectedHotPosts: !processStates.selectedHotPosts };
         // #1 update process states
         setProcessStates(states);
         // #2 presist process states to cache
@@ -296,9 +327,7 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
         setBrowsingHelper({ ...browsingHelper, memorizeViewPortPositionY: undefined });
     };
 
-    //////////////////////////////////////// MASONRY ////////////////////////////////////////
-
-    //////// STATE - posts (masonry) ////////
+    // States - posts (masonry)
     const [masonryPostInfoArr, setMasonryPostInfoArr] = React.useState<IConcisePostComprehensive[]>([]);
 
     React.useEffect(() => { updatePostsArr(); }, [processStates.selectedChannelId, processStates.selectedHotPosts]);
@@ -326,7 +355,7 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
             } else { // 600 ~ ∞
                 setBrowsingHelper({ ...browsingHelper, memorizeViewPortPositionY: processStates.memorizeViewPortPositionY });
             }
-            let states: IHomePageProcessStates = { ...processStates, memorizeLastViewedPostId: undefined, memorizeViewPortPositionY: undefined, wasRedirected: false };
+            let states: TProcessStates = { ...processStates, memorizeLastViewedPostId: undefined, memorizeViewPortPositionY: undefined, wasRedirected: false };
             // #2 update process states
             setProcessStates(states);
             // #3 update process state cache
@@ -339,27 +368,31 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
     }
 
     const handleClickOnPost = (postId: string) => (event: React.MouseEvent) => {
-        // Update process state cache
-        updateProcessStatesCache({ ...processStates, memorizeLastViewedPostId: postId, memorizeViewPortPositionY: window.scrollY, wasRedirected: true });
-        // Jump
+        updateProcessStatesCache({
+            ...processStates,
+            memorizeLastViewedPostId: postId,
+            memorizeViewPortPositionY: window.scrollY,
+            wasRedirected: true
+        });
         router.push(`/post/${postId}`);
     };
 
     const handleClickOnMemberInfo = (memberId: string, postId: string) => (event: React.MouseEvent) => {
-        // Update process state cache
-        updateProcessStatesCache({ ...processStates, memorizeLastViewedPostId: postId, memorizeViewPortPositionY: window.scrollY, wasRedirected: true });
-        // Jump
-        router.push(`/me/id/${memberId}`);
+        updateProcessStatesCache({
+            ...processStates, memorizeLastViewedPostId: postId,
+            memorizeViewPortPositionY: window.scrollY,
+            wasRedirected: true
+        });
+        router.push(`/me/${memberId}`);
     };
 
-
-    //////////////////////////////////////// RIGHT COLUMN ////////////////////////////////////////
     type TRightColumnStates = {
         topicInfoArr: IConciseTopicComprehensive[];
         todaysTrendPostInfoArr: IConcisePostComprehensive[];
         weeksTrendPostInfoArr: IConcisePostComprehensive[];
     };
 
+    // States - right column
     const [rightColumnStates, setRightColumnStates] = React.useState<TRightColumnStates>({
         topicInfoArr: [],
         todaysTrendPostInfoArr: [],
@@ -372,36 +405,74 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
         let a0: IConciseTopicComprehensive[] = [];
         let a1: IConcisePostComprehensive[] = [];
         let a2: IConcisePostComprehensive[] = [];
-        const resp0 = await fetch(`/api/topic/trend`);
-        const resp1 = await fetch(`/api/post/s/trend/24h`);
-        const resp2 = await fetch(`/api/post/s/trend/7d`);
+
+        const r0 = await fetch(`/api/topic/trend`);
+        const r1 = await fetch(`/api/post/s/trend/24h`);
+        const r2 = await fetch(`/api/post/s/trend/7d`);
+
         try {
-            if (200 !== resp0.status) {
-                throw new Error(`Attempt to GET topic info array of trending`);
+            if (200 !== r0.status) {
+                console.error(`Attempt to GET topic info array of trending`);
             }
-            const _a0 = await resp0.json();
+            const _a0 = await r0.json();
             a0.push(..._a0);
-            if (200 !== resp1.status) {
-                throw new Error(`Attempt to GET post info array of trending today`);
+
+            if (200 !== r1.status) {
+                console.error(`Attempt to GET post info array of trending today`);
             }
-            const _a1 = await resp1.json();
+            const _a1 = await r1.json();
             a1.push(..._a1);
-            if (200 !== resp2.status) {
-                throw new Error(`Attempt to GET post info array of trending this week`);
+
+            if (200 !== r2.status) {
+                console.error(`Attempt to GET post info array of trending this week`);
             }
-            const _a2 = await resp2.json();
+            const _a2 = await r2.json();
             a2.push(..._a2);
         } catch (e: any) {
             if (e instanceof SyntaxError) {
-                console.log(`Attempt to parse info array (JSON string) from resp. ${e}`);
+                console.error(`Attempt to parse info array (JSON string) from response. ${e}`);
             } else {
-                console.log(e?.msg);
+                console.error(e?.msg);
             }
         }
         setRightColumnStates({ topicInfoArr: [...a0], todaysTrendPostInfoArr: [...a1], weeksTrendPostInfoArr: [...a2] });
     };
 
-    //////////////////////////////////////// VIEWER BEHAVIOURS ////////////////////////////////////////
+    const handleSignIn = (event: React.MouseEvent<HTMLElement>) => {
+        event.preventDefault();
+        signIn();
+    };
+
+    const handleProceedToFollowedMember = () => {
+        router.push(`/follow`);
+    };
+
+    const handleProceedToMessage = () => {
+        router.push(`/message`);
+    };
+
+    const handleProceedToMemberPage = () => {
+        router.push(`/me/${processStates.viewerId}`);
+    };
+
+    const handleProceedToSettingsPage = () => {
+        router.push(`/settings`);
+    };
+
+    const handleProceedToCreatePage = () => {
+        router.push(`/create`);
+    };
+
+    const handleEditPost = () => {
+        const referenceId = popUpMenuStates.referenceId;
+        setPopUpMenuStates({
+            anchorEl: null,
+            memberId: '',
+            nickname: '',
+            referenceId: '',
+        });
+        router.push(`/edit/${referenceId}`);
+    };
 
     const handleBlock = async () => {
         const memberId = popUpMenuStates.memberId;
@@ -429,8 +500,6 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
         router.push(`/report?memberId=${memberId}&referenceId=${referenceId}`);
     };
 
-    //////////////////////////////////////// POP-UP MENU ////////////////////////////////////////
-
     type TPopUpMenuStates = {
         anchorEl: null | HTMLElement;
         memberId: string;
@@ -438,7 +507,7 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
         referenceId: string;
     };
 
-    //////// STATES - pop up menu ////////
+    // States - pop up menu
     const [popUpMenuStates, setPopUpMenuStates] = React.useState<TPopUpMenuStates>({
         anchorEl: null,
         memberId: '',
@@ -454,76 +523,125 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
         setPopUpMenuStates({ ...popUpMenuStates, anchorEl: null });
     };
 
+    const colorMode = React.useContext(ColorModeContext);
+
+    const handleColorModeSelect = () => {
+        const preferredColorMode = colorMode.mode === 'dark' ? 'light' : 'dark';
+        colorMode.setMode(preferredColorMode);
+        document.cookie = `PreferredColorMode=${preferredColorMode}`;
+    };
+
+    const theme = useTheme();
+
     return (
         <>
+            <Head>
+                <title>
+                    莫希托新西蘭 Mojito New Zealand
+                </title>
+                <meta
+                    name="description"
+                    content={desc}
+                    key="desc"
+                />
+            </Head>
             <Navbar lang={preferenceStates.lang} />
             <Grid container>
 
-                {/* //// placeholder //// */}
-                <Grid item xs={0} sm={0} md={0} lg={0} xl={2}></Grid>
+                {/* left */}
+                <Grid item xs={0} sm={0} md={3} lg={3} xl={4} >
+                    <Box sx={{ display: { xs: 'none', sm: 'none', md: 'flex' }, flexDirection: 'row-reverse', position: 'sticky', top: 0, left: 0, }}>
+                        <Stack spacing={1} sx={{ width: { md: 200, lg: 240 }, }} >
 
-                {/* //// left column //// */}
-                <Grid item xs={0} sm={0} md={2} lg={2} xl={1}>
-                    <Stack spacing={1} sx={{ marginX: 1, display: { xs: 'none', sm: 'none', md: 'block' } }} >
+                            {/* logo */}
+                            <Link href='/' pt={5} px={2}>
+                                <Box component={'img'} src={`${appDomain}/logo${'dark' === theme.palette.mode ? '-dark' : ''}.png`} sx={{ height: { md: '3rem', lg: '3.5rem' } }} />
+                            </Link>
 
-                        {/* channel menu (desktop mode) */}
-                        <ResponsiveCard sx={{ padding: 1 }}>
-                            <MenuList>
+                            {/* unauthenticated - login*/}
+                            {'authenticated' !== status && <Box p={3}>
+                                <Button variant={'contained'} sx={{ width: { md: '7rem', lg: '8rem' }, borderRadius: 4 }} onClick={handleSignIn}>{langConfigs.signIn[preferenceStates.lang]}</Button>
+                            </Box>}
 
-                                {/* the 'all' menu item */}
-                                <MenuItem onClick={handleChannelSelect('all')} selected={processStates.selectedChannelId === 'all'}>
-                                    <ListItemIcon>
-                                        <ReorderIcon />
-                                    </ListItemIcon>
-                                    <ListItemText>
-                                        <Typography>{langConfigs.allPosts[preferenceStates.lang]}</Typography>
-                                    </ListItemText>
-                                </MenuItem>
+                            {/* authenticated - member menu */}
+                            {'authenticated' === status && <Box sx={{ padding: 1 }}>
+                                <MenuList>
 
-                                {/* the 'following' menu item */}
-                                <MenuItem onClick={handleChannelSelect('following')} selected={'following' === processStates.selectedChannelId}>
-                                    <ListItemIcon>
-                                        <NotificationsActiveIcon />
-                                    </ListItemIcon>
-                                    <ListItemText>
-                                        <Typography>{langConfigs.following[preferenceStates.lang]}</Typography>
-                                    </ListItemText>
-                                </MenuItem>
+                                    {/* posts */}
+                                    <MenuItem sx={{ height: 56 }} >
+                                        <ListItemIcon>
+                                            <ReorderIcon />
+                                        </ListItemIcon>
+                                        <ListItemText>
+                                            {langConfigs.posts[preferenceStates.lang]}
+                                        </ListItemText>
+                                        <ListItemIcon onMouseEnter={handleChannelMenuOpen}>
+                                            <MoreVertIcon />
+                                        </ListItemIcon>
+                                    </MenuItem>
 
-                                {/* other channels */}
-                                {channelInfoStates.channelIdSequence.map(id => {
-                                    const { channelId, name, svgIconPath } = channelInfoDict_ss[id];
-                                    return (
-                                        <MenuItem key={`item-${channelId}`}
-                                            onClick={handleChannelSelect(channelId)}
-                                            selected={channelId === processStates.selectedChannelId}
-                                        >
-                                            <ListItemIcon >
-                                                <SvgIcon><path d={svgIconPath} /></SvgIcon>
-                                            </ListItemIcon>
-                                            <ListItemText>
-                                                <Typography>{name[preferenceStates.lang]}</Typography>
-                                            </ListItemText>
-                                        </MenuItem>
-                                    );
-                                })}
-                            </MenuList>
-                        </ResponsiveCard>
+                                    {/* followed members */}
+                                    <MenuItem sx={{ height: 56 }} onClick={handleProceedToFollowedMember} >
+                                        <ListItemIcon>
+                                            <NotificationsActiveIcon />
+                                        </ListItemIcon>
+                                        <ListItemText>
+                                            {langConfigs.followedMembers[preferenceStates.lang]}
+                                        </ListItemText>
+                                    </MenuItem>
 
-                        {/* hotest / newest switch */}
-                        <ResponsiveCard sx={{ padding: 0, paddingY: 2, paddingLeft: 2 }}>
-                            <FormControlLabel
-                                control={<StyledSwitch sx={{ ml: 1 }} checked={processStates.selectedHotPosts} />}
-                                label={processStates.selectedHotPosts ? langConfigs.hotPosts[preferenceStates.lang] : langConfigs.newPosts[preferenceStates.lang]}
-                                onChange={handleSwitchChange}
-                                sx={{ marginRight: 0 }}
-                            />
-                        </ResponsiveCard>
-                    </Stack>
+                                    {/* message */}
+                                    <MenuItem sx={{ height: 56 }} onClick={handleProceedToMessage} >
+                                        <ListItemIcon>
+                                            {0 === viewersNoticeStatistics ? <EmailIcon /> : <MarkEmailUnreadIcon />}
+                                        </ListItemIcon>
+                                        <ListItemText>
+                                            {
+                                                0 === viewersNoticeStatistics ?
+                                                    langConfigs.messages[preferenceStates.lang] :
+                                                    `${langConfigs.messages[preferenceStates.lang]} (${viewersNoticeStatistics}${langConfigs.unread[preferenceStates.lang]})`
+                                            }
+                                        </ListItemText>
+                                    </MenuItem>
+
+                                    {/* member */}
+                                    <MenuItem sx={{ height: 56 }} onClick={handleProceedToMemberPage}>
+                                        <ListItemIcon>
+                                            <AccountCircleIcon />
+                                        </ListItemIcon>
+                                        <ListItemText>
+                                            {langConfigs.member[preferenceStates.lang]}
+                                        </ListItemText>
+                                    </MenuItem>
+
+                                    {/* settings */}
+                                    <MenuItem sx={{ height: 56 }} onClick={handleProceedToSettingsPage} >
+                                        <ListItemIcon>
+                                            <SettingsIcon />
+                                        </ListItemIcon>
+                                        <ListItemText>
+                                            {langConfigs.settings[preferenceStates.lang]}
+                                        </ListItemText>
+                                    </MenuItem>
+
+                                    <Divider />
+                                    {/* create */}
+                                    <MenuItem sx={{ height: 56 }} onClick={handleProceedToCreatePage} >
+                                        <ListItemIcon>
+                                            <CreateIcon />
+                                        </ListItemIcon>
+                                        <ListItemText>
+                                            {langConfigs.create[preferenceStates.lang]}
+                                        </ListItemText>
+                                    </MenuItem>
+                                </MenuList>
+                            </Box>}
+                        </Stack>
+                    </Box>
                 </Grid>
 
-                {/* //// middle column //// */}
-                <Grid item xs={12} sm={12} md={7} lg={7} xl={5} >
+                {/* middle */}
+                <Grid item xs={12} sm={12} md={9} lg={6} xl={4} >
 
                     {/* channel bar (mobile mode) */}
                     <Stack direction={'row'} id='channel-bar' sx={{ display: { sm: 'flex', md: 'none' }, padding: 1, overflow: 'auto' }}>
@@ -533,33 +651,33 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
                             <FormControlLabel
                                 control={<StyledSwitch sx={{ ml: 1 }} checked={processStates.selectedHotPosts} />}
                                 label={processStates.selectedHotPosts ? langConfigs.hotPosts[preferenceStates.lang] : langConfigs.newPosts[preferenceStates.lang]}
-                                onChange={handleSwitchChange}
+                                onChange={handleToggleSwitch}
                             />
                         </Box>
 
                         {/* the 'all' button */}
                         <Button variant={'all' === processStates.selectedChannelId ? 'contained' : 'text'} size='small' onClick={handleChannelSelect('all')}>
-                            <Typography variant='body2' color={'all' === processStates.selectedChannelId ? 'white' : "text.secondary"} sx={{ backgroundColor: 'primary' }}>
-                                {langConfigs.allPosts[preferenceStates.lang]}
-                            </Typography>
-                        </Button>
-
-                        {/* the 'following' button */}
-                        <Button variant={'following' === processStates.selectedChannelId ? 'contained' : 'text'} size='small' onClick={handleChannelSelect('all')}>
-                            <Typography variant='body2' color={'following' === processStates.selectedChannelId ? 'white' : "text.secondary"} sx={{ backgroundColor: 'primary' }}>
-                                {langConfigs.following[preferenceStates.lang]}
+                            <Typography variant='body2' color={'all' === processStates.selectedChannelId ? 'white' : 'text.secondary'} sx={{ backgroundColor: 'primary' }}>
+                                {langConfigs.all[preferenceStates.lang]}
                             </Typography>
                         </Button>
 
                         {/* other channels */}
-                        {channelInfoStates.channelIdSequence.map(id => {
-                            const { channelId, name } = channelInfoDict_ss[id];
+                        {Object.keys(channeMenuStates.channelInfo).map(id => {
+                            const { channelId, name } = channeMenuStates.channelInfo[id];
                             return (
-                                <Button variant={channelId === processStates.selectedChannelId ? 'contained' : 'text'} key={`button-${channelId}`} size='small' onClick={handleChannelSelect(channelId)}>
+                                <Button
+                                    variant={channelId === processStates.selectedChannelId ? 'contained' : 'text'}
+                                    key={`button-${channelId}`}
+                                    size='small'
+                                    onClick={handleChannelSelect(channelId)}
+                                >
                                     <Typography
                                         variant={'body2'}
                                         color={channelId === processStates.selectedChannelId ? 'white' : 'text.secondary'}
-                                        sx={{ backgroundColor: 'primary' }}>
+                                        sx={{ backgroundColor: 'primary' }}
+                                        noWrap
+                                    >
                                         {name[preferenceStates.lang]}
                                     </Typography>
                                 </Button>
@@ -577,19 +695,21 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
                     }
 
                     {/* mansoy */}
-                    <Box ml={1} ref={masonryWrapper}>
-                        <Masonry columns={{ xs: 2, sm: 3, md: 2, lg: 3, xl: 3 }}>
+                    <Box ref={masonryWrapper} maxWidth={{ md: 900, lg: 800 }}>
+                        <Masonry columns={2}>
 
                             {/* posts */}
                             {0 !== masonryPostInfoArr.length && masonryPostInfoArr.map(p => {
                                 return (
-                                    <Paper key={p.postId} id={p.postId} sx={{ maxWidth: 400, '&:hover': { cursor: 'pointer' } }} >
+                                    <Paper key={p.postId} id={p.postId} sx={{ maxWidth: 450, '&:hover': { cursor: 'pointer' } }} >
                                         <Stack>
+
                                             {/* image */}
                                             <Box
                                                 component={'img'}
+                                                loading='lazy'
                                                 src={provideCoverImageUrl(p.postId, imageDomain)}
-                                                sx={{ maxWidth: { xs: width / 2, sm: 400 }, height: 'auto', borderTopLeftRadius: 4, borderTopRightRadius: 4 }}
+                                                sx={{ maxWidth: { xs: width / 2, sm: 450 }, height: 'auto', borderTopLeftRadius: 4, borderTopRightRadius: 4 }}
                                                 onClick={handleClickOnPost(p.postId)}
                                             ></Box>
 
@@ -615,10 +735,9 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
                                                     </Grid>
 
                                                     {/* member behaviour / placeholder */}
-                                                    {/* FIXME:FIXME:FIXME:FIXME:FIXME:FIXME:FIXME:FIXME:FIXME: */}
-                                                    {processStates.viewerId !== popUpMenuStates.memberId && <Grid item >
+                                                    <Grid item >
                                                         <IconButton onClick={handleOpenPopUpMenu(p.memberId, p.nickname ?? '', p.postId)}><MoreVertIcon /></IconButton>
-                                                    </Grid>}
+                                                    </Grid>
                                                 </Grid>
                                             </Box>
                                         </Stack>
@@ -630,148 +749,133 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
 
                 </Grid>
 
-                {/* //// right column //// */}
-                <Grid item xs={0} sm={0} md={3} lg={3} xl={2}>
+                {/* right */}
+                <Grid item xs={0} sm={0} md={0} lg={3} xl={4}>
+                    <Box sx={{ display: { xs: 'none', sm: 'none', md: 'block' } }}>
+                        <Stack spacing={2} sx={{ width: 300, px: 3, pt: 8, }} >
 
-                    {/* viewer info stack */}
-                    {'authenticated' === status && <Stack spacing={1} sx={{ marginX: 1, display: { xs: 'none', sm: 'none', md: 'flex' } }} >
+                            {/* title */}
+                            <Box sx={{ paddingX: 2 }}>
+                                <Typography variant='h6' >{langConfigs.tredingTopics[preferenceStates.lang]}</Typography>
+                            </Box>
 
-                        {/* unread message statistics */}
-                        <ResponsiveCard sx={{ paddingY: 2 }}>
-                            <CentralizedBox>
-                                <Button variant='text' color='inherit' onClick={handleClickOnUnreadMessage}>
-                                    <EmailIcon sx={{ color: 'grey' }} />
-                                    <Typography variant='body1' sx={{ marginTop: 0.1, marginLeft: 1 }}>{viewersNoticeStatistics}{langConfigs.unreadReplyNotice[preferenceStates.lang]}</Typography>
-                                </Button>
-                            </CentralizedBox>
-                        </ResponsiveCard>
-                    </ Stack>}
-
-                    {/* topics and posts stack */}
-                    <Stack spacing={1} sx={{ marginX: 1, display: { xs: 'none', sm: 'none', md: 'flex' } }} >
-
-                        {/* topic trending */}
-                        <ResponsiveCard sx={{ padding: { md: 3, lg: 4 } }} mt={2}>
-
-                            {/* trending title */}
-                            <Typography>{langConfigs.tredingTopics[preferenceStates.lang]}</Typography>
-                            <Stack mt={1} spacing={2}>
+                            {/* topic list */}
+                            <MenuList>
 
                                 {/* topics */}
                                 {0 !== rightColumnStates.topicInfoArr.length && rightColumnStates.topicInfoArr.map(t =>
-                                    <TextButton key={getRandomHexStr()} color={'inherit'} sx={{ textTransform: 'none' }} >
+                                    <MenuItem key={getRandomHexStr()} sx={{ height: 64 }} >
 
-                                        {/* topic name */}
-                                        <Typography variant='body1'>#{t.content}</Typography>
+                                        {/* channel icon */}
+                                        <ListItemIcon>
+                                            <Avatar variant='rounded'>
+                                                <SvgIcon><path d={channeMenuStates.channelInfo[t.channelId].svgIconPath} /></SvgIcon>
+                                            </Avatar>
+                                        </ListItemIcon>
 
                                         {/* topic info & statistics */}
-                                        <Box sx={{ display: 'flex', flexDirection: 'row' }} alignItems={'center'}>
-                                            <Typography mr={1} variant='body2' color={'text.disabled'} alignItems={'center'}>{channelInfoDict_ss[t.channelId].name[preferenceStates.lang]}</Typography>
+                                        <ListItemText sx={{ pl: 2 }}>
+                                            <Typography variant='body1'>#{t.content}</Typography>
+                                            <Stack direction={'row'} spacing={1}>
+                                                <Typography mr={1} variant='body2' color={'text.disabled'} alignItems={'center'}>{channeMenuStates.channelInfo[t.channelId].name[preferenceStates.lang]}</Typography>
 
-                                            {/* posts count icon */}
-                                            <ArticleIcon fontSize='small' sx={{ color: 'text.disabled' }} />
-                                            <Typography mr={1} variant='body2' color={'text.disabled'} alignItems={'center'}>{t.totalPostCount}</Typography>
-
-                                            {/* hit count icon */}
-                                            <BarChartIcon fontSize='small' sx={{ color: 'text.disabled' }} />
-                                            <Typography variant='body2' color={'text.disabled'} alignItems={'center'}>{t.totalHitCount}</Typography>
-                                        </Box>
-
-                                    </TextButton>
-                                )}
-                            </Stack>
-                        </ResponsiveCard>
-
-                        {/* 24h trend */}
-                        <ResponsiveCard sx={{ padding: { md: 3, lg: 4 } }} mt={2}>
-
-                            {/* trending title */}
-                            <Typography>{langConfigs.todaysTrendingPosts[preferenceStates.lang]}</Typography>
-                            <Stack mt={1} spacing={2}>
-
-                                {/* posts */}
-                                {0 !== rightColumnStates.todaysTrendPostInfoArr.length && rightColumnStates.todaysTrendPostInfoArr.map(p =>
-                                    <TextButton key={getRandomHexStr()} sx={{ color: 'inherit', display: 'flex', flexDirection: 'row', justifyContent: 'space-between' }}>
-
-                                        {/* title & statistics */}
-                                        <Box pr={1}>
-                                            <Typography variant='body1' align='left'  >{p.title}</Typography>
-
-                                            {/* post info & statistics */}
-                                            <Box sx={{ display: 'flex', flexDirection: 'row' }} alignItems={'center'}>
-                                                <Typography mr={1} variant='body2' color={'text.disabled'} alignItems={'center'}>{channelInfoDict_ss[p.channelId].name[preferenceStates.lang]}</Typography>
-
-                                                {/* comment count icon */}
-                                                <ForumIcon fontSize={'small'} sx={{ color: 'text.disabled' }} />
-                                                <Typography mr={1} variant='body2' color={'text.disabled'} alignItems={'center'}>{p.totalCommentCount}</Typography>
+                                                {/* posts count icon */}
+                                                <ArticleIcon fontSize='small' sx={{ color: 'text.disabled' }} />
+                                                <Typography mr={1} variant='body2' color={'text.disabled'} alignItems={'center'}>{t.totalPostCount}</Typography>
 
                                                 {/* hit count icon */}
                                                 <BarChartIcon fontSize='small' sx={{ color: 'text.disabled' }} />
-                                                <Typography variant='body2' color={'text.disabled'} alignItems={'center'}>{p.totalHitCount}</Typography>
-                                            </Box>
-                                        </Box>
-
-                                        {/* image */}
-                                        <Box display={{ md: 'none', lg: 'block' }}>
-                                            <Box sx={{ width: 100, height: 100, backgroundImage: `url(${provideCoverImageUrl(p.postId, imageDomain)})`, backgroundSize: 'cover' }}></Box>
-                                        </Box>
-                                    </TextButton>
+                                                <Typography variant='body2' color={'text.disabled'} alignItems={'center'}>{t.totalHitCount}</Typography>
+                                            </Stack>
+                                        </ListItemText>
+                                    </MenuItem>
                                 )}
-                            </Stack>
-                        </ResponsiveCard>
+                            </MenuList>
 
-                        {/* 7d trend */}
-                        <ResponsiveCard sx={{ padding: { md: 3, lg: 4 } }} mt={2}>
+                            {/* copyright */}
+                            <Box>
+                                <Copyright lang={preferenceStates.lang} />
+                                <Guidelines lang={preferenceStates.lang} />
+                                <Terms lang={preferenceStates.lang} />
+                            </Box>
 
-                            {/* trending title */}
-                            <Typography>{langConfigs.thisWeeksTrendingPosts[preferenceStates.lang]}</Typography>
-                            <Stack mt={1} spacing={2}>
+                            {/* lang switch */}
+                            <Box>
+                                <LangSwitch setLang={setLang} />
+                            </Box>
 
-                                {/* posts */}
-                                {0 !== rightColumnStates.weeksTrendPostInfoArr.length && rightColumnStates.weeksTrendPostInfoArr.map(p =>
-                                    <TextButton key={getRandomHexStr()} sx={{ color: 'inherit', display: 'flex', flexDirection: 'row', justifyContent: 'space-between' }}>
+                            {/* theme mode switch */}
+                            <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                                <IconButton onClick={handleColorModeSelect}>
+                                    {theme.palette.mode === 'dark' ? <WbSunnyIcon /> : <DarkModeIcon />}
+                                </IconButton>
+                            </Box>
 
-                                        {/* title & statistics */}
-                                        <Box pr={1}>
-                                            <Typography variant='body1' align='left' >{p.title}</Typography>
-
-                                            {/* post info & statistics */}
-                                            <Box sx={{ display: 'flex', flexDirection: 'row' }} alignItems={'center'}>
-                                                <Typography mr={1} variant='body2' color={'text.disabled'} alignItems={'center'}>{channelInfoDict_ss[p.channelId].name[preferenceStates.lang]}</Typography>
-
-                                                {/* comment count icon */}
-                                                <ForumIcon fontSize={'small'} sx={{ color: 'text.disabled' }} />
-                                                <Typography mr={1} variant='body2' color={'text.disabled'} alignItems={'center'}>{p.totalCommentCount}</Typography>
-
-                                                {/* hit count icon */}
-                                                <BarChartIcon fontSize='small' sx={{ color: 'text.disabled' }} />
-                                                <Typography variant='body2' color={'text.disabled'} alignItems={'center'}>{p.totalHitCount}</Typography>
-                                            </Box>
-                                        </Box>
-
-                                        {/* image */}
-                                        <Box display={{ md: 'none', lg: 'block' }}>
-                                            <Box sx={{ width: 100, height: 100, backgroundImage: `url(${provideCoverImageUrl(p.postId, imageDomain)})`, backgroundSize: 'cover' }}></Box>
-                                        </Box>
-                                    </TextButton>
-                                )}
-                            </Stack>
-                        </ResponsiveCard>
-
-                    </Stack>
+                        </Stack>
+                    </Box>
                 </Grid>
-
-                {/* //// placeholder //// */}
-                <Grid item xs={0} sm={0} md={0} lg={0} xl={1}></Grid>
             </Grid>
 
-            {/* copyright */}
-            <Copyright sx={{ mt: 8 }} lang={preferenceStates.lang} />
-            <Terms sx={{ mb: 8 }} lang={preferenceStates.lang} />
+            {/* channel memu */}
+            <Menu
+                sx={{ mt: '3rem' }}
+                anchorEl={channeMenuStates.anchorEl}
+                anchorOrigin={{ vertical: 'top', horizontal: 'right', }}
+                keepMounted
+                transformOrigin={{ vertical: 'top', horizontal: 'right', }}
+                open={Boolean(channeMenuStates.anchorEl)}
+                onClose={handleChannelMenuClose}
+                MenuListProps={{
+                    style: { minWidth: 100 }
+                }}
+            >
+                <MenuList>
+                    <MenuItem
+                        onClick={handleChannelSelect('all')}
+                        selected={processStates.selectedChannelId === 'all'}
+                    >
+                        <ListItemIcon>
+                            <ListAltIcon />
+                        </ListItemIcon>
+                        <ListItemText>
+                            <Typography>{langConfigs.all[preferenceStates.lang]}</Typography>
+                        </ListItemText>
+                    </MenuItem>
+                    <Divider />
+
+                    {/* other channels */}
+                    {Object.keys(channeMenuStates.channelInfo).map(id => {
+                        const { channelId, name, svgIconPath } = channeMenuStates.channelInfo[id];
+                        return (
+                            <MenuItem key={`item-${channelId}`}
+                                onClick={handleChannelSelect(channelId)}
+                            >
+                                <ListItemIcon >
+                                    <SvgIcon><path d={svgIconPath} /></SvgIcon>
+                                </ListItemIcon>
+                                <ListItemText>
+                                    <Typography>{name[preferenceStates.lang]}</Typography>
+                                </ListItemText>
+                            </MenuItem>
+                        );
+                    })}
+                    <Divider />
+
+                    {/* new / trend switch */}
+                    <MenuItem>
+                        <FormControlLabel
+                            control={<StyledSwitch sx={{ ml: 1 }} checked={processStates.selectedHotPosts} />}
+                            label={processStates.selectedHotPosts ? langConfigs.hotPosts[preferenceStates.lang] : langConfigs.newPosts[preferenceStates.lang]}
+                            onChange={handleToggleSwitch}
+                            sx={{ marginRight: 0 }}
+                        />
+                    </MenuItem>
+                </MenuList>
+            </Menu>
 
             {/* pop-up memu */}
             <Menu
-                sx={{ mt: '45px' }}
+                sx={{ mt: '3rem' }}
                 anchorEl={popUpMenuStates.anchorEl}
                 anchorOrigin={{ vertical: 'top', horizontal: 'right', }}
                 keepMounted
@@ -780,11 +884,18 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
                 onClose={handleClosePopUpMenu}
                 MenuListProps={{}}
             >
+                {/* edit post */}
+                {processStates.viewerId === popUpMenuStates.memberId &&
+                    <MenuItem onClick={handleEditPost}>
+                        <ListItemIcon><EditIcon fontSize='small' /></ListItemIcon>
+                        <ListItemText><Typography variant={'body2'}>{langConfigs.edit[preferenceStates.lang]}</Typography></ListItemText>
+                    </MenuItem>}
+
                 {/* block (identity required) */}
                 {('authenticated' === status && processStates.viewerId !== popUpMenuStates.memberId) &&
                     <MenuItem onClick={async () => { await handleBlock(); }}>
                         <ListItemIcon><BlockIcon fontSize='small' /></ListItemIcon>
-                        <ListItemText><Typography variant={'body2'}>{langConfigs.block[preferenceStates.lang](popUpMenuStates.nickname)}</Typography></ListItemText>
+                        <ListItemText><Typography variant={'body2'}>{`${langConfigs.block[preferenceStates.lang]} ${popUpMenuStates.nickname}`}</Typography></ListItemText>
                     </MenuItem>}
 
                 {/* report */}
@@ -794,7 +905,6 @@ const Home = ({ channelInfoDict_ss }: THomePageProps) => {
                         <ListItemText><Typography variant={'body2'}>{langConfigs.report[preferenceStates.lang]}</Typography></ListItemText>
                     </MenuItem>}
             </Menu>
-
         </>
     );
 };

@@ -1,45 +1,54 @@
 import * as React from 'react';
+import Head from 'next/head';
+import { useRouter } from 'next/router';
+import { signIn, getProviders, useSession } from 'next-auth/react';
+import useTheme from '@mui/material/styles/useTheme';
+
+import Alert from '@mui/material/Alert';
 import Avatar from '@mui/material/Avatar';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import CircularProgress from '@mui/material/CircularProgress';
 import Container from '@mui/material/Container';
 import Divider from '@mui/material/Divider';
 import Grid from '@mui/material/Grid';
+import IconButton from '@mui/material/IconButton';
 import Link from '@mui/material/Link';
 import Stack from '@mui/material/Stack';
-import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 
-import { signIn, getProviders, useSession } from 'next-auth/react'
+import DarkModeIcon from '@mui/icons-material/DarkMode';
+import WbSunnyIcon from '@mui/icons-material/WbSunny';
 
-import IconButton from '@mui/material/IconButton';
 import InputLabel from '@mui/material/InputLabel';
 import InputAdornment from '@mui/material/InputAdornment';
 import OutlinedInput from '@mui/material/OutlinedInput';
 import FormControl from '@mui/material/FormControl';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
+import TextField from '@mui/material/TextField';
 
-import Alert from '@mui/material/Alert';
-import CircularProgress from '@mui/material/CircularProgress';
+import ReCAPTCHA from 'react-google-recaptcha';
 
-import Copyright from '../ui/Copyright';
-import BackToHomeButtonGroup from '../ui/BackToHomeButtonGroup';
-
-import ReCAPTCHA from "react-google-recaptcha";
-
-import { useRouter } from 'next/router';
 import { LangConfigs, TSignInCredentialStates } from '../lib/types';
 import { verifyEmailAddress, verifyPassword } from '../lib/utils/verify';
+import { ColorModeContext } from '../ui/Theme';
+
+import Copyright from '../ui/Copyright';
 import Consent from '../ui/Consent';
+import BackToHomeButtonGroup from '../ui/BackToHomeButtonGroup';
+import Guidelines from '../ui/Guidelines';
+import LangSwitch from '../ui/LangSwitch';
+import Terms from '../ui/Terms';
 
 export async function getServerSideProps() {
     return {
         props: { providers: await getProviders() }
-    }
+    };
 }
 
 const recaptchaClientKey = process.env.NEXT_PUBLIC_INVISIABLE_RECAPTCHA_SITE_KEY ?? '';
+const desc = process.env.NEXT_PUBLIC_APP_DESCRIPTION ?? '';
 const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
     signUp: {
@@ -142,12 +151,18 @@ const langConfigs: LangConfigs = {
         cn: '验证邮件发送失败😥请稍后重试或者联系我们的管理员',
         en: 'Failed to re-send verification email😥 Please try again later or contact our Webmaster'
     }
-}
+};
 
+/**
+ * Last update:
+ * - 25/05/2023 v0.1.2 New layout applied
+ */
 const SignUp = ({ providers }: any) => {
-    // Handle session
+
     const { data: session } = useSession();
+
     const router = useRouter();
+
     React.useEffect(() => {
         if (session) router.push('/');
         const { info } = router.query;
@@ -157,7 +172,7 @@ const SignUp = ({ providers }: any) => {
                     ...processStates,
                     componentOnDisplay: 'signuprequestresult',
                     displayCircularProgress: false,
-                    resultContent: langConfigs.goodResendEmailResult[lang]
+                    resultContent: langConfigs.goodResendEmailResult
                 });
                 return;
             }
@@ -166,7 +181,7 @@ const SignUp = ({ providers }: any) => {
                     ...processStates,
                     componentOnDisplay: 'signuprequestresult',
                     displayCircularProgress: false,
-                    resultContent: langConfigs.cannotResendEmailResult[lang]
+                    resultContent: langConfigs.cannotResendEmailResult
                 });
                 return;
             }
@@ -175,7 +190,7 @@ const SignUp = ({ providers }: any) => {
                     ...processStates,
                     componentOnDisplay: 'signuprequestresult',
                     displayCircularProgress: false,
-                    resultContent: langConfigs.badResendEmailResult[lang]
+                    resultContent: langConfigs.badResendEmailResult
                 });
                 return;
             }
@@ -184,8 +199,18 @@ const SignUp = ({ providers }: any) => {
 
     let recaptcha: any;
 
-    // Declare process states
-    const [processStates, setProcessStates] = React.useState({
+    type TProcessStates = {
+        lang: string;
+        componentOnDisplay: 'signuprequestform' | 'signuprequestresult';
+        recaptchaResponse: string;
+        errorContent: { [key: string]: string; };
+        displayError: boolean;
+        displayCircularProgress: boolean;
+        resultContent: { [key: string]: string; };
+    };
+
+    const [processStates, setProcessStates] = React.useState<TProcessStates>({
+        lang: lang,
         /**
          * component list:
          * - signuprequestform
@@ -193,14 +218,29 @@ const SignUp = ({ providers }: any) => {
          */
         componentOnDisplay: 'signuprequestform',
         recaptchaResponse: '',
-        errorContent: '',
+        errorContent: {
+            tw: '',
+            cn: '',
+            en: '',
+        },
         displayError: false,
         displayCircularProgress: false,
-        resultContent: '',
+        resultContent: {
+            tw: '',
+            cn: '',
+            en: '',
+        },
     });
 
+    const setLang = () => {
+        if ('tw' === processStates.lang) { setProcessStates({ ...processStates, lang: 'cn' }); }
+        if ('cn' === processStates.lang) { setProcessStates({ ...processStates, lang: 'en' }); }
+        if ('en' === processStates.lang) { setProcessStates({ ...processStates, lang: 'tw' }); }
+    };
+
     // Handle process states change
-    React.useEffect(() => { postRequest() }, [processStates.recaptchaResponse]);
+    React.useEffect(() => { postRequest(); }, [processStates.recaptchaResponse]);
+
     const postRequest = async () => {
         if ('' === processStates.recaptchaResponse) {
             // ReCAPTCHA challenge not ready
@@ -209,27 +249,38 @@ const SignUp = ({ providers }: any) => {
         if ('' !== signInCredentialStates.emailAddress && '' !== signInCredentialStates.password) {
             const resp = await fetch(`/api/member/signup?recaptchaResponse=${processStates.recaptchaResponse}`, {
                 method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     emailAddress: signInCredentialStates.emailAddress,
                     password: signInCredentialStates.password
                 })
             });
             if (200 === resp.status) {
-                setProcessStates({ ...processStates, componentOnDisplay: 'signuprequestresult', displayCircularProgress: false, resultContent: langConfigs.goodResult[lang] });
+                setProcessStates({
+                    ...processStates,
+                    componentOnDisplay: 'signuprequestresult',
+                    displayCircularProgress: false,
+                    resultContent: langConfigs.goodResult
+                });
             } else if (400 === resp.status) {
                 // reest ReCAPTCHA
                 recaptcha?.reset();
                 setProcessStates({
                     ...processStates,
-                    errorContent: langConfigs.loginCredentialsExistError[lang],
+                    errorContent: langConfigs.loginCredentialsExistError,
                     displayError: true,
                     displayCircularProgress: false
-                })
+                });
             } else {
-                setProcessStates({ ...processStates, componentOnDisplay: 'signuprequestresult', displayCircularProgress: false, resultContent: langConfigs.badResult[lang] })
+                setProcessStates({
+                    ...processStates,
+                    componentOnDisplay: 'signuprequestresult',
+                    displayCircularProgress: false,
+                    resultContent: langConfigs.badResult
+                });
             }
         }
-    }
+    };
 
     // Decalre signIn credential states
     const [signInCredentialStates, setSignInCredentialStates] = React.useState({
@@ -237,15 +288,15 @@ const SignUp = ({ providers }: any) => {
         password: '',
         repeatpassword: '',
         showpassword: false
-    })
+    });
 
     // Handle signIn credential states change
     const handleChange = (prop: keyof TSignInCredentialStates) => (event: React.ChangeEvent<HTMLInputElement>) => {
         setSignInCredentialStates({ ...signInCredentialStates, [prop]: event.target.value });
     };
     const handleShowPassword = () => {
-        setSignInCredentialStates({ ...signInCredentialStates, showpassword: !signInCredentialStates.showpassword })
-    }
+        setSignInCredentialStates({ ...signInCredentialStates, showpassword: !signInCredentialStates.showpassword });
+    };
     const handleMouseDownPassword = (event: React.MouseEvent<HTMLButtonElement>) => {
         event.preventDefault();
     };
@@ -254,22 +305,22 @@ const SignUp = ({ providers }: any) => {
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         if (verifyEmailAddress(signInCredentialStates.emailAddress)) {
-            setProcessStates({ ...processStates, displayError: false })
+            setProcessStates({ ...processStates, displayError: false });
         } else {
-            setProcessStates({ ...processStates, errorContent: langConfigs.emailAddressNotSatisfiedError[lang], displayError: true })
+            setProcessStates({ ...processStates, errorContent: langConfigs.emailAddressNotSatisfiedError, displayError: true });
             return;
         }
         if (signInCredentialStates.password !== signInCredentialStates.repeatpassword) {
-            setProcessStates({ ...processStates, errorContent: langConfigs.passwordNotMatchError[lang], displayError: true })
+            setProcessStates({ ...processStates, errorContent: langConfigs.passwordNotMatchError, displayError: true });
             return;
         } else {
-            setProcessStates({ ...processStates, displayError: false })
+            setProcessStates({ ...processStates, displayError: false });
         }
         if (!verifyPassword(signInCredentialStates.password)) {
-            setProcessStates({ ...processStates, errorContent: langConfigs.passwordNotSatisfiedError[lang], displayError: true })
+            setProcessStates({ ...processStates, errorContent: langConfigs.passwordNotSatisfiedError, displayError: true });
             return;
         } else {
-            setProcessStates({ ...processStates, displayError: false })
+            setProcessStates({ ...processStates, displayError: false });
         }
         setProcessStates({ ...processStates, displayCircularProgress: true });
         recaptcha?.execute();
@@ -278,60 +329,80 @@ const SignUp = ({ providers }: any) => {
     // Handle ReCAPTCHA challenge
     const handleRecaptchaChange = (value: any) => {
         if (!!value) {
-            setProcessStates({ ...processStates, recaptchaResponse: value })
+            setProcessStates({ ...processStates, recaptchaResponse: value });
         } else {
-            setProcessStates({ ...processStates })
+            setProcessStates({ ...processStates });
         }
-    }
+    };
+
+    const theme = useTheme();
+
+    const colorMode = React.useContext(ColorModeContext);
+
+    const handleColorModeSelect = () => {
+        const preferredColorMode = colorMode.mode === 'dark' ? 'light' : 'dark';
+        colorMode.setMode(preferredColorMode);
+        document.cookie = `PreferredColorMode=${preferredColorMode}`;
+    };
 
     return (
         <>
+            <Head>
+                <title>
+                    {{ tw: '注冊', cn: '注册', en: 'Sign Up' }[processStates.lang]}
+                </title>
+                <meta
+                    name="description"
+                    content={desc}
+                    key="desc"
+                />
+            </Head>
             <Container component='main' maxWidth='xs'>
                 {/* signuprequestresult */}
                 <Box sx={{ mt: '18rem', mb: '10rem', display: 'signuprequestresult' === processStates.componentOnDisplay ? 'block' : 'none' }}>
-                    <Typography textAlign={'center'}>{processStates.resultContent}</Typography>
+                    <Typography textAlign={'center'}>{processStates.resultContent[processStates.lang]}</Typography>
                     <BackToHomeButtonGroup />
                 </Box>
                 {/* signuprequestform */}
                 <Stack sx={{ mt: '5rem', display: 'signuprequestform' === processStates.componentOnDisplay ? 'block' : 'none' }}>
                     <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-                        <Link href="/">
+                        <Link href='/'>
                             <Avatar src='./favicon.ico' sx={{ width: 56, height: 56 }} />
                         </Link>
                     </Box>
-                    <Typography component="h1" variant="h5" sx={{ textAlign: 'center', mt: 2 }}>
-                        {langConfigs.appSignup[lang]}
+                    <Typography component='h1' variant='h5' sx={{ textAlign: 'center', mt: 2 }}>
+                        {langConfigs.appSignup[processStates.lang]}
                     </Typography>
                     <Stack component={'form'} spacing={2} sx={{ mt: 4 }} onSubmit={handleSubmit}>
                         {/* Alert */}
                         <Box sx={{ display: processStates.displayError ? 'block' : 'none' }}>
                             <Alert severity='error' >
-                                <strong>{processStates.errorContent}</strong>
+                                <strong>{processStates.errorContent[processStates.lang]}</strong>
                             </Alert>
                         </Box>
                         <TextField
                             required
                             id='emailAddress'
-                            label={langConfigs.emailAddress[lang]}
+                            label={langConfigs.emailAddress[processStates.lang]}
                             onChange={handleChange('emailAddress')}
                             autoComplete='email'
                         />
                         <FormControl variant='outlined'>
-                            <InputLabel htmlFor='outlined-adornment-password'>{langConfigs.password[lang]}</InputLabel>
+                            <InputLabel htmlFor='outlined-adornment-password'>{langConfigs.password[processStates.lang]}</InputLabel>
                             <OutlinedInput
                                 required
                                 id={'outlined-adornment-password'}
-                                label={langConfigs.password[lang]}
+                                label={langConfigs.password[processStates.lang]}
                                 type={signInCredentialStates.showpassword ? 'text' : 'password'}
                                 value={signInCredentialStates.password}
                                 onChange={handleChange('password')}
                                 endAdornment={
-                                    <InputAdornment position="end">
+                                    <InputAdornment position='end'>
                                         <IconButton
-                                            aria-label="toggle password visibility"
+                                            aria-label='toggle password visibility'
                                             onClick={handleShowPassword}
                                             onMouseDown={handleMouseDownPassword}
-                                            edge="end"
+                                            edge='end'
                                         >
                                             {signInCredentialStates.showpassword ? <VisibilityIcon /> : <VisibilityOffIcon />}
                                         </IconButton>
@@ -340,21 +411,21 @@ const SignUp = ({ providers }: any) => {
                             />
                         </FormControl>
                         <FormControl variant='outlined'>
-                            <InputLabel htmlFor='outlined-adornment-repeat-password'>{langConfigs.repeatPassword[lang]}</InputLabel>
+                            <InputLabel htmlFor='outlined-adornment-repeat-password'>{langConfigs.repeatPassword[processStates.lang]}</InputLabel>
                             <OutlinedInput
                                 required
                                 id={'outlined-adornment-repeat-password'}
-                                label={langConfigs.repeatPassword[lang]}
+                                label={langConfigs.repeatPassword[processStates.lang]}
                                 type={signInCredentialStates.showpassword ? 'text' : 'password'}
                                 value={signInCredentialStates.repeatpassword}
                                 onChange={handleChange('repeatpassword')}
                                 endAdornment={
-                                    <InputAdornment position="end">
+                                    <InputAdornment position='end'>
                                         <IconButton
-                                            aria-label="toggle password visibility"
+                                            aria-label='toggle password visibility'
                                             onClick={handleShowPassword}
                                             onMouseDown={handleMouseDownPassword}
-                                            edge="end"
+                                            edge='end'
                                         >
                                             {signInCredentialStates.showpassword ? <VisibilityIcon /> : <VisibilityOffIcon />}
                                         </IconButton>
@@ -365,7 +436,7 @@ const SignUp = ({ providers }: any) => {
                         <Box>
                             <Button type='submit' fullWidth variant='contained'>
                                 <Typography sx={{ display: !processStates.displayCircularProgress ? 'block' : 'none' }}>
-                                    {langConfigs.signUp[lang]}
+                                    {langConfigs.signUp[processStates.lang]}
                                 </Typography>
                                 <CircularProgress sx={{ color: 'white', display: processStates.displayCircularProgress ? 'block' : 'none' }} />
                             </Button>
@@ -379,39 +450,52 @@ const SignUp = ({ providers }: any) => {
                                 <Button
                                     variant='contained'
                                     fullWidth
-                                    color={'inherit'}
-                                    onClick={() => { signIn(providers[p].id) }}
+                                    color={theme.palette.mode === 'dark' ? 'secondary' : 'inherit'}
+                                    onClick={() => { signIn(providers[p].id); }}
                                     key={providers[p].id}
                                 >
-                                    {langConfigs.thirdPartySignUp[lang](providers[p].name)}
+                                    {langConfigs.thirdPartySignUp[processStates.lang](providers[p].name)}
                                 </Button>
-                            )
+                            );
                         })}
                     </Stack>
                     <Grid container sx={{ mt: 3 }} >
                         <Grid item flexGrow={1}>
-                            <Link href="/api/auth/signin" variant="body2">
-                                {langConfigs.appSignin[lang]}
+                            <Link href='/api/auth/signin' variant='body2'>
+                                {langConfigs.appSignin[processStates.lang]}
                             </Link>
                         </Grid>
                         <Grid item>
-                            <Link href="/forgot" variant="body2">
-                                {langConfigs.forgotPassword[lang]}
+                            <Link href='/forgot' variant='body2'>
+                                {langConfigs.forgotPassword[processStates.lang]}
                             </Link>
                         </Grid>
                     </Grid>
                 </Stack>
-                <Copyright sx={{ mt: 8, mb: 4 }} />
+
+                {/* copyright */}
+                <Copyright sx={{ mt: 8 }} />
+                <Guidelines lang={processStates.lang} />
+                <Terms sx={{ mb: 2 }} lang={processStates.lang} />
+                <LangSwitch setLang={setLang} />
+
+                {/* theme mode switch */}
+                <Box sx={{ mb: 8, display: 'flex', flexDirection: 'row', justifyContent: 'center' }}>
+                    <IconButton onClick={handleColorModeSelect}>
+                        {theme.palette.mode === 'dark' ? <WbSunnyIcon /> : <DarkModeIcon />}
+                    </IconButton>
+                </Box>
             </Container>
+
             <ReCAPTCHA
-                hl={langConfigs.recaptchaLang[lang]}
+                hl={langConfigs.recaptchaLang[processStates.lang]}
                 size={'invisible'}
                 ref={(ref: any) => ref && (recaptcha = ref)}
                 sitekey={recaptchaClientKey}
                 onChange={handleRecaptchaChange}
             />
         </>
-    )
-}
+    );
+};
 
 export default SignUp;

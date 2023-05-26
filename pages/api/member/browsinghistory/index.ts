@@ -27,7 +27,7 @@ const fnn = `${GetOrDeleteBrowsingHistory.name} (API)`;
  * 
  * Info required for DELETE requets
  * -     token: JWT
- * -     postId: string
+ * -     postId: string (query string)
  * 
  * Last update:
  * - 21/02/2023 v0.1.1
@@ -141,39 +141,3 @@ export default async function GetOrDeleteBrowsingHistory(req: NextApiRequest, re
         return;
     }
 }
-
-
-// if ('DELETE' !== method) {
-//     response405(req, res);
-//     return;
-// }
-// //// Verify identity ////
-// const token = await getToken({ req });
-// if (!(token && token?.sub)) {
-//     res.status(400).send('Invalid identity');
-//     return;
-// }
-// const { sub: memberId } = token;
-
-// // Verify post id
-
-
-// //// Declare DB client ////
-// const atlasDbClient = AtlasDatabaseClient();
-// try {
-//     await atlasDbClient.connect();
-
-//     //// Verify member status ////
-//     const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
-//     const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne({ memberId }, { projection: { _id: 0, status: 1 } });
-//     if (null === memberComprehensiveQueryResult) {
-//         throw new Error(`Member attempt to delete browsing history record but have no document (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
-//     }
-//     const { status: memberStatus } = memberComprehensiveQueryResult;
-//     if (0 > memberStatus) {
-//         res.status(403).send('Method not allowed due to member suspended or deactivated');
-//         await atlasDbClient.close();
-//         return;
-//     }
-//     await atlasDbClient.close();
-

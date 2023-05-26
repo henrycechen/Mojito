@@ -1,7 +1,7 @@
 import * as React from 'react';
+import Head from 'next/head';
 
 import type { AppProps } from 'next/app'
-import Head from 'next/head';
 
 import createTheme from '@mui/material/styles/createTheme';
 import ThemeProvider from '@mui/material/styles/ThemeProvider';
@@ -13,7 +13,6 @@ import { PaletteMode } from '@mui/material';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { ColorModeContext, getDesignTokens } from '../ui/Theme';
 import Cookie from 'js-cookie';
-
 
 const App = ({ Component, pageProps: { session, ...pageProps } }: AppProps<{ session: Session }>) => {
   // Update 24/11/2022

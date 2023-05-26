@@ -4,10 +4,11 @@ import { RestError } from '@azure/data-tables';
 import { MongoError } from 'mongodb';
 
 import AtlasDatabaseClient from '../../../../modules/AtlasDatabaseClient';
+import AzureTableClient from '../../../../modules/AzureTableClient';
+
 import { logWithDate, response405, response500 } from '../../../../lib/utils/general';
 import { verifyId } from '../../../../lib/utils/verify';
 import { IMemberInfo, IMemberComprehensive } from '../../../../lib/interfaces/member';
-import AzureTableClient from '../../../../modules/AzureTableClient';
 import { IMemberMemberMapping } from '../../../../lib/interfaces/mapping';
 
 const fnn = `${GetMembersFollowedByMe.name} (API)`;
@@ -29,7 +30,7 @@ const fnn = `${GetMembersFollowedByMe.name} (API)`;
 */
 
 export default async function GetMembersFollowedByMe(req: NextApiRequest, res: NextApiResponse) {
-
+    
     const { method } = req;
     if ('GET' !== method) {
         response405(req, res);

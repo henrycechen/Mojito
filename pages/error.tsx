@@ -1,14 +1,19 @@
+import * as React from 'react';
+import Head from 'next/head';
+import { useRouter } from 'next/router';
+
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
-import AppBar from '../ui/Navbar';
-import Copyright from '../ui/Copyright';
-
-import { useRouter } from 'next/router';
-
 import { LangConfigs } from '../lib/types';
+
+import Navbar from '../ui/Navbar';
 import BackToHomeButtonGroup from '../ui/BackToHomeButtonGroup';
+import Copyright from '../ui/Copyright';
+import Guidelines from '../ui/Guidelines';
+import LangSwitch from '../ui/LangSwitch';
+import Terms from '../ui/Terms';
 
 export async function getStaticProps() {
     return {
@@ -31,9 +36,10 @@ export async function getStaticProps() {
                 en: 'Something went wrong in our server.'
             }
         },
-    }
+    };
 }
 
+const desc = process.env.NEXT_PUBLIC_APP_DESCRIPTION ?? '';
 const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
     title: {
@@ -63,14 +69,43 @@ const langConfigs: LangConfigs = {
             en: ['Your membership has been suspended or deactivated', ', please try again later or contact our Webmaster']
         }
     }
-}
+};
 
+/**
+ * Last update:
+ * - 25/05/2023 v0.1.2 New layout applied
+ */
+export default function Error({ errorMessage }: any) {
 
-export default function About({ errorMessage }: any) {
     const router = useRouter();
+
+    type TProcessStates = {
+        lang: string;
+    };
+
+    const [processStates, setProcessStates] = React.useState<TProcessStates>({
+        lang: lang
+    });
+
+    const setLang = () => {
+        if ('tw' === processStates.lang) { setProcessStates({ ...processStates, lang: 'cn' }); }
+        if ('cn' === processStates.lang) { setProcessStates({ ...processStates, lang: 'en' }); }
+        if ('en' === processStates.lang) { setProcessStates({ ...processStates, lang: 'tw' }); }
+    };
+
     return (
         <>
-            <AppBar />
+            <Head>
+                <title>
+                    {{ tw: '出錯啦', cn: '出错啦', en: 'Opps' }[processStates.lang]}
+                </title>
+                <meta
+                    name="description"
+                    content={desc}
+                    key="desc"
+                />
+            </Head>
+            <Navbar lang={processStates.lang} />
             <Stack
                 sx={{ backgroundColor: '#2DAAE0', height: '100vh' }}>
                 <Box sx={{ display: 'flex', justifyContent: 'center', mt: '10rem' }}>
@@ -81,35 +116,31 @@ export default function About({ errorMessage }: any) {
                             fontWeight: 1000,
                             letterSpacing: '.2rem',
                             maxWidth: 460,
-                            ml: { xs: 'none', sm: '2.8rem' }
+                            textAlign: 'center'
                         }}>
-                        {langConfigs.title[lang]}
-                    </Typography>
-                    <Typography sx={{
-                        display: { xs: 'none', sm: 'block' },
-                        color: 'white',
-                        fontSize: '7rem',
-                        fontWeight: 1000,
-                        letterSpacing: '.2rem',
-                    }}>
-                        ..
+                        {langConfigs.title[processStates.lang]}
                     </Typography>
                 </Box>
                 <Box sx={{ color: 'white', textAlign: 'center', mt: '3rem', padding: 4 }}>
                     {!!router.query.error && Object.keys(langConfigs.errors).includes('string' === typeof router.query.error ? router.query.error : '') &&
                         <Typography variant='h6' sx={{ color: 'white', textAlign: 'center' }}>
-                            {langConfigs.errors['string' === typeof router.query.error ? router.query.error : ''][lang]}
+                            {langConfigs.errors['string' === typeof router.query.error ? router.query.error : ''][processStates.lang]}
                         </Typography>
                     }
                     {!router.query.error &&
                         <Typography variant='h6' sx={{ color: 'white', textAlign: 'center' }}>
-                            {errorMessage[lang]}
+                            {errorMessage[processStates.lang]}
                         </Typography>
                     }
                 </Box>
-                <BackToHomeButtonGroup color={'white'} />
-                <Copyright sx={{ mt: '10rem', mb: 4, color: 'white' }} />
+
+                <BackToHomeButtonGroup color={'white'} lang={processStates.lang} />
+
+                <Copyright sx={{ mt: '10rem', color: 'white' }} />
+                <Guidelines sx={{ color: 'white' }} lang={processStates.lang} />
+                <Terms sx={{ mb: 2, color: 'white' }} lang={processStates.lang} />
+                <LangSwitch sx={{ mb: 8 }} setLang={setLang} />
             </Stack>
         </>
-    )
+    );
 }

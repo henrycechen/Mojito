@@ -105,7 +105,7 @@ export default async function UpdateImageFullnamesArray(req: NextApiRequest, res
         res.status(200).send('Image fullname array updated');
 
         //// (Cond.) Handle notice.cue ////
-        if (cuedMemberInfoArr.length !== 0) {
+        if (Array.isArray(cuedMemberInfoArr) && cuedMemberInfoArr.length !== 0) {
             const blockingMemberMappingTableClient = AzureTableClient('BlockingMemberMapping');
             const notificationStatisticsCollectionClient = atlasDbClient.db('statistics').collection<INotificationStatistics>('notification');
 

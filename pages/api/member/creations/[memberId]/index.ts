@@ -2,12 +2,12 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { RestError } from '@azure/data-tables';
 import { MongoError } from 'mongodb';
 
-import AzureTableClient from '../../../../modules/AzureTableClient';
+import AzureTableClient from '../../../../../modules/AzureTableClient';
 
-import { logWithDate, response405, response500 } from '../../../../lib/utils/general';
-import { verifyId } from '../../../../lib/utils/verify';
-import { IConcisePostComprehensive } from '../../../../lib/interfaces/post';
-import { IMemberPostMapping } from '../../../../lib/interfaces/mapping';
+import { logWithDate, response405, response500 } from '../../../../../lib/utils/general';
+import { verifyId } from '../../../../../lib/utils/verify';
+import { IConcisePostComprehensive } from '../../../../../lib/interfaces/post';
+import { IMemberPostMapping } from '../../../../../lib/interfaces/mapping';
 
 const fnn = `${GetCreationsByMemberId.name} (API)`;
 
@@ -37,7 +37,7 @@ export default async function GetCreationsByMemberId(req: NextApiRequest, res: N
     }
 
     // Verify author id
-    const { memberId } = req.query;
+    const { memberId, quantity } = req.query;
     const { isValid, category, id: authorId } = verifyId(memberId);
     if (!(isValid && 'member' === category)) {
         res.status(400).send('Invalid member id');
@@ -45,6 +45,11 @@ export default async function GetCreationsByMemberId(req: NextApiRequest, res: N
     }
 
     try {
+        let q: number = 20;
+        if ('string' === typeof quantity && 0 < parseInt(quantity)) {
+            q = parseInt(quantity);
+        }
+        
         let str = `PartitionKey eq '${authorId}' and IsActive eq true`;
 
         const { channelId } = req.query;
@@ -56,9 +61,10 @@ export default async function GetCreationsByMemberId(req: NextApiRequest, res: N
         const creationsMappingTableClient = AzureTableClient('CreationsMapping');
         const creationsMappingQuery = creationsMappingTableClient.listEntities<IMemberPostMapping>({ queryOptions: { filter: str } });
 
-        // [!] attemp to reterieve entity makes the probability of causing RestError
+        let a: number = 0;
         let creationsMappingQueryResult = await creationsMappingQuery.next();
-        while (!creationsMappingQueryResult.done) {
+        // [!] attemp to reterieve entity makes the probability of causing RestError
+        while (!creationsMappingQueryResult.done && a < q) {
             arr.push({
                 postId: creationsMappingQueryResult.value.rowKey,
                 memberId: authorId,
@@ -67,12 +73,13 @@ export default async function GetCreationsByMemberId(req: NextApiRequest, res: N
                 title: creationsMappingQueryResult.value.Title,
                 channelId: creationsMappingQueryResult.value.ChannelId,
                 hasImages: creationsMappingQueryResult.value.HasImages,
-                totalCommentCount: 0,
-                totalHitCount: 0,
-                totalLikedCount: 0,
-                totalDislikedCount: 0
+                totalCommentCount: 0, // not supported
+                totalHitCount: 0, // not supported
+                totalLikedCount: 0, // not supported
+                totalDislikedCount: 0 // not supported
             });
             creationsMappingQueryResult = await creationsMappingQuery.next();
+            a++;
         }
 
         //// Response 200 ////
