@@ -57,9 +57,9 @@ export default function FourHundredAndFour() {
                     {{ tw: '很抱歉，你要找的頁面不見了', cn: '很抱歉，你要找的页面不见了', en: 'Sorry, we can not find the page you\'re looking for' }[processStates.lang]}
                 </title>
                 <meta
-                    name="description"
+                    name='description'
                     content={desc}
-                    key="desc"
+                    key='desc'
                 />
             </Head>
             <Navbar lang={processStates.lang} />

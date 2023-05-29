@@ -3,16 +3,19 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { signIn, useSession } from 'next-auth/react';
 import useTheme from '@mui/material/styles/useTheme';
+import useScrollTrigger from '@mui/material/useScrollTrigger';
 
 import Avatar from '@mui/material/Avatar';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import CircularProgress from '@mui/material/CircularProgress';
 import Divider from '@mui/material/Divider';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Grid from '@mui/material/Grid';
 import Link from '@mui/material/Link';
 import Stack from '@mui/material/Stack';
 import Paper from '@mui/material/Paper';
+import Slide from '@mui/material/Slide';
 import Typography from '@mui/material/Typography';
 
 import Menu from '@mui/material/Menu';
@@ -35,7 +38,7 @@ import IconButton from '@mui/material/IconButton';
 import ListAltIcon from '@mui/icons-material/ListAlt';
 import MarkEmailUnreadIcon from '@mui/icons-material/MarkEmailUnread';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
-import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
+import NotificationsIcon from '@mui/icons-material/Notifications';
 import ReorderIcon from '@mui/icons-material/Reorder';
 import SettingsIcon from '@mui/icons-material/Settings';
 import SvgIcon from '@mui/material/SvgIcon';
@@ -532,19 +535,112 @@ const Home = () => {
 
     const theme = useTheme();
 
+    type TChannelBarProps = {
+        children: React.ReactElement;
+        sx?: any;
+    };
+
+    const HideOnScroll = (props: TChannelBarProps) => {
+        const { children } = props;
+        const trigger = useScrollTrigger();
+        return (
+            <Slide appear={false} direction="down" in={!trigger} {...props}>
+                {children}
+            </Slide>
+        );
+    };
+
+    type TAnimationStates = {
+        scrollYPixels: number;
+        requireUpdate: boolean;
+    };
+
+    // States - animation
+    const [animationStates, setAnimationStates] = React.useState<TAnimationStates>({
+        scrollYPixels: 0,
+        requireUpdate: false,
+    });
+
+    // Register animation listener
+    React.useEffect(() => {
+        const handleScroll = () => {
+
+            if (0 > window.scrollY) {
+                setAnimationStates({
+                    ...animationStates,
+                    scrollYPixels: window.scrollY,
+                });
+                if (Math.abs(window.scrollY) > 50) {
+
+                    setAnimationStates({
+                        ...animationStates,
+                        requireUpdate: true
+                    });
+
+                    window.removeEventListener('scroll', handleScroll);
+
+                    setTimeout(() => {
+                        setAnimationStates({
+                            ...animationStates,
+                            requireUpdate: false
+                        });
+
+                        window.addEventListener('scroll', handleScroll);
+                    }, 5000);
+                }
+            }
+
+        };
+
+        window.addEventListener('scroll', handleScroll);
+
+        return () => {
+            window.removeEventListener('scroll', handleScroll);
+        };
+    }, []);
+
+    React.useEffect(() => { refreshPostsArr(); }, [animationStates.requireUpdate]);
+
+    const refreshPostsArr = async () => {
+        const resp = await fetch(`/api/post/s/${processStates.selectedHotPosts ? 'trend' : 'new'}?channelId=${processStates.selectedChannelId}`);
+        if (200 === resp.status) {
+            try {
+                setMasonryPostInfoArr(await resp.json());
+                setAnimationStates({ scrollYPixels: 0, requireUpdate: false });
+            } catch (e) {
+                console.log(`Attempt to GET posts of ${processStates.selectedHotPosts ? 'trend' : 'new'}. ${e}`);
+            }
+        }
+    };
+
     return (
         <>
             <Head>
                 <title>
-                    莫希托新西蘭 Mojito New Zealand
+                    莫希托
                 </title>
                 <meta
-                    name="description"
+                    name='description'
                     content={desc}
-                    key="desc"
+                    key='desc'
                 />
             </Head>
-            <Navbar lang={preferenceStates.lang} />
+
+            {/* pull-to-refresh */}
+            <Box
+                sx={{
+                    display: 'flex',
+                    flexDirection: 'row',
+                    justifyContent: 'center',
+                    opacity: animationStates.requireUpdate ? 1 : Math.abs(animationStates.scrollYPixels) / 25
+                }}>
+                <CircularProgress
+                    variant={animationStates.requireUpdate ? 'indeterminate' : 'determinate'}
+                    size={Math.abs(animationStates.scrollYPixels) * 1.8 < 24 && !animationStates.requireUpdate ? Math.abs(animationStates.scrollYPixels) * 1.8 : 24}
+                    value={Math.abs(animationStates.scrollYPixels) < 50 && !animationStates.requireUpdate ? Math.abs(animationStates.scrollYPixels) * 2 : 100} />
+            </Box>
+
+            <Navbar lang={preferenceStates.lang} unreadNotification={0 !== viewersNoticeStatistics} />
             <Grid container>
 
                 {/* left */}
@@ -569,7 +665,7 @@ const Home = () => {
                                     {/* posts */}
                                     <MenuItem sx={{ height: 56 }} >
                                         <ListItemIcon>
-                                            <ReorderIcon />
+                                            <ArticleIcon />
                                         </ListItemIcon>
                                         <ListItemText>
                                             {langConfigs.posts[preferenceStates.lang]}
@@ -582,7 +678,7 @@ const Home = () => {
                                     {/* followed members */}
                                     <MenuItem sx={{ height: 56 }} onClick={handleProceedToFollowedMember} >
                                         <ListItemIcon>
-                                            <NotificationsActiveIcon />
+                                            <NotificationsIcon />
                                         </ListItemIcon>
                                         <ListItemText>
                                             {langConfigs.followedMembers[preferenceStates.lang]}
@@ -643,46 +739,48 @@ const Home = () => {
                 <Grid item xs={12} sm={12} md={9} lg={6} xl={4} >
 
                     {/* channel bar (mobile mode) */}
-                    <Stack direction={'row'} id='channel-bar' sx={{ display: { sm: 'flex', md: 'none' }, padding: 1, overflow: 'auto' }}>
+                    <HideOnScroll >
+                        <Stack direction={'row'} id='channel-bar' sx={{ position: 'sticky', top: 0, zIndex: 9999, backgroundColor: 'dark' === colorMode.mode ? '#424242 ' : '#fff', display: { sm: 'flex', md: 'none' }, padding: 1, overflow: 'auto' }}>
 
-                        {/* trend / new switch */}
-                        <Box minWidth={110}>
-                            <FormControlLabel
-                                control={<StyledSwitch sx={{ ml: 1 }} checked={processStates.selectedHotPosts} />}
-                                label={processStates.selectedHotPosts ? langConfigs.hotPosts[preferenceStates.lang] : langConfigs.newPosts[preferenceStates.lang]}
-                                onChange={handleToggleSwitch}
-                            />
-                        </Box>
+                            {/* trend / new switch */}
+                            <Box minWidth={110}>
+                                <FormControlLabel
+                                    control={<StyledSwitch sx={{ ml: 1 }} checked={processStates.selectedHotPosts} />}
+                                    label={processStates.selectedHotPosts ? langConfigs.hotPosts[preferenceStates.lang] : langConfigs.newPosts[preferenceStates.lang]}
+                                    onChange={handleToggleSwitch}
+                                />
+                            </Box>
 
-                        {/* the 'all' button */}
-                        <Button variant={'all' === processStates.selectedChannelId ? 'contained' : 'text'} size='small' onClick={handleChannelSelect('all')}>
-                            <Typography variant='body2' color={'all' === processStates.selectedChannelId ? 'white' : 'text.secondary'} sx={{ backgroundColor: 'primary' }}>
-                                {langConfigs.all[preferenceStates.lang]}
-                            </Typography>
-                        </Button>
+                            {/* the 'all' button */}
+                            <Button variant={'all' === processStates.selectedChannelId ? 'contained' : 'text'} size='small' onClick={handleChannelSelect('all')}>
+                                <Typography variant='body2' color={'all' === processStates.selectedChannelId ? 'white' : 'text.secondary'} sx={{ backgroundColor: 'primary' }}>
+                                    {langConfigs.all[preferenceStates.lang]}
+                                </Typography>
+                            </Button>
 
-                        {/* other channels */}
-                        {Object.keys(channeMenuStates.channelInfo).map(id => {
-                            const { channelId, name } = channeMenuStates.channelInfo[id];
-                            return (
-                                <Button
-                                    variant={channelId === processStates.selectedChannelId ? 'contained' : 'text'}
-                                    key={`button-${channelId}`}
-                                    size='small'
-                                    onClick={handleChannelSelect(channelId)}
-                                >
-                                    <Typography
-                                        variant={'body2'}
-                                        color={channelId === processStates.selectedChannelId ? 'white' : 'text.secondary'}
-                                        sx={{ backgroundColor: 'primary' }}
-                                        noWrap
+                            {/* other channels */}
+                            {Object.keys(channeMenuStates.channelInfo).map(id => {
+                                const { channelId, name } = channeMenuStates.channelInfo[id];
+                                return (
+                                    <Button
+                                        variant={channelId === processStates.selectedChannelId ? 'contained' : 'text'}
+                                        key={`button-${channelId}`}
+                                        size='small'
+                                        onClick={handleChannelSelect(channelId)}
                                     >
-                                        {name[preferenceStates.lang]}
-                                    </Typography>
-                                </Button>
-                            );
-                        })}
-                    </Stack>
+                                        <Typography
+                                            variant={'body2'}
+                                            color={channelId === processStates.selectedChannelId ? 'white' : 'text.secondary'}
+                                            sx={{ backgroundColor: 'primary' }}
+                                            noWrap
+                                        >
+                                            {name[preferenceStates.lang]}
+                                        </Typography>
+                                    </Button>
+                                );
+                            })}
+                        </Stack>
+                    </HideOnScroll>
 
                     {/* empty alert */}
                     {0 === masonryPostInfoArr.length &&
@@ -695,7 +793,7 @@ const Home = () => {
 
                     {/* mansoy */}
                     <Box ref={masonryWrapper} maxWidth={{ md: 900, lg: 800 }}>
-                        <Masonry columns={2}>
+                        <Masonry columns={2} sx={{ margin: 0 }}>
 
                             {/* posts */}
                             {0 !== masonryPostInfoArr.length && masonryPostInfoArr.map(p => {
@@ -708,12 +806,17 @@ const Home = () => {
                                                 component={'img'}
                                                 loading='lazy'
                                                 src={provideCoverImageUrl(p.postId, imageDomain)}
-                                                sx={{ maxWidth: { xs: width / 2, sm: 450 }, height: 'auto', borderTopLeftRadius: 4, borderTopRightRadius: 4 }}
+                                                sx={{
+                                                    maxWidth: 450,
+                                                    height: 'auto',
+                                                    borderTopLeftRadius: 4,
+                                                    borderTopRightRadius: 4
+                                                }}
                                                 onClick={handleClickOnPost(p.postId)}
                                             ></Box>
 
                                             {/* title */}
-                                            <Box paddingTop={2} paddingX={2} onClick={handleClickOnPost(p.postId)}>
+                                            <Box pt={2} px={2} onClick={handleClickOnPost(p.postId)}>
                                                 <Typography variant={'body1'}>{p.title}</Typography>
                                             </Box>
 
@@ -735,7 +838,12 @@ const Home = () => {
 
                                                     {/* member behaviour / placeholder */}
                                                     <Grid item >
-                                                        <IconButton onClick={handleOpenPopUpMenu(p.memberId, p.nickname ?? '', p.postId)}><MoreVertIcon /></IconButton>
+                                                        <IconButton
+                                                            sx={{ width: { xs: 34, sm: 34, md: 40 }, height: { xs: 34, sm: 34, md: 40 }, }}
+                                                            onClick={handleOpenPopUpMenu(p.memberId, p.nickname ?? '', p.postId)}
+                                                        >
+                                                            <MoreVertIcon />
+                                                        </IconButton>
                                                     </Grid>
                                                 </Grid>
                                             </Box>
@@ -834,7 +942,7 @@ const Home = () => {
                         selected={processStates.selectedChannelId === 'all'}
                     >
                         <ListItemIcon>
-                            <ListAltIcon />
+                            <ArticleIcon />
                         </ListItemIcon>
                         <ListItemText>
                             <Typography>{langConfigs.all[preferenceStates.lang]}</Typography>

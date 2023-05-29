@@ -20,7 +20,7 @@ import TranslateIcon from '@mui/icons-material/Translate';
 import { LangConfigs, TPreferenceStates } from '../../lib/types';
 import { updateLocalStorage, restoreFromLocalStorage } from '../../lib/utils/general';
 
-import LegalInfo from '../../ui/LegalInfo';
+
 import SideMenu from '../../ui/SideMenu';
 import SideColumn from '../../ui/SideColumn';
 import Navbar from '../../ui/Navbar';
@@ -71,8 +71,32 @@ const langConfigs: LangConfigs = {
         tw: '信息和數據',
         cn: '信息和数据',
         en: 'Info & Statistics'
-    }
-
+    },
+    about: {
+        tw: '關於',
+        cn: '关于',
+        en: 'About'
+    },
+    aboutMojito: {
+        tw: '關於 Mojito',
+        cn: '关于 Mojito',
+        en: 'About Mojito'
+    },
+    guidelines: {
+        tw: '網絡社區規範',
+        cn: '网络社区规范',
+        en: 'Community Guidelines'
+    },
+    privacyPolicy: {
+        tw: '隱私權聲明',
+        cn: '隐私权声明',
+        en: 'Software Usage Privacy Statement'
+    },
+    terms: {
+        tw: '軟體使用許可及服務協議',
+        cn: '软件使用许可及服务协议',
+        en: 'Software license and service agreement'
+    },
 };
 
 /**
@@ -132,6 +156,19 @@ const SettingsIndex = () => {
         if (3 === cat) {
             router.push('/settings/statistics');
         }
+
+        if (10 === cat) {
+            router.push('/about');
+        }
+        if (11 === cat) {
+            router.push('/guidelines');
+        }
+        if (12 === cat) {
+            router.push('/privacy');
+        }
+        if (13 === cat) {
+            router.push('/terms');
+        }
     };
 
     return (
@@ -141,9 +178,9 @@ const SettingsIndex = () => {
                     {{ tw: '設定', cn: '设置', en: 'Blacklist' }[preferenceStates.lang]}
                 </title>
                 <meta
-                    name="description"
+                    name='description'
                     content={desc}
-                    key="desc"
+                    key='desc'
                 />
             </Head>
             <Navbar lang={preferenceStates.lang} />
@@ -178,19 +215,16 @@ const SettingsIndex = () => {
                             {/* update password */}
                             <MenuItem sx={{ height: 48 }} onClick={handleMenuItemClick(0)}>
                                 <ListItemText>{langConfigs.updatePassword[preferenceStates.lang]}</ListItemText>
-                                <ListItemIcon><ArrowForwardIosIcon fontSize='small' /></ListItemIcon>
                             </MenuItem>
 
                             {/* pravicy settings */}
                             <MenuItem sx={{ height: 48 }} onClick={handleMenuItemClick(1)}>
                                 <ListItemText>{langConfigs.privacy[preferenceStates.lang]}</ListItemText>
-                                <ListItemIcon><ArrowForwardIosIcon fontSize='small' /></ListItemIcon>
                             </MenuItem>
 
                             {/* blacklist */}
                             <MenuItem sx={{ height: 48 }} onClick={handleMenuItemClick(2)}>
                                 <ListItemText>{langConfigs.blacklist[preferenceStates.lang]}</ListItemText>
-                                <ListItemIcon><ArrowForwardIosIcon fontSize='small' /></ListItemIcon>
                             </MenuItem>
                         </MenuList>
 
@@ -202,7 +236,31 @@ const SettingsIndex = () => {
                             {/* member info */}
                             <MenuItem sx={{ height: 48 }} onClick={handleMenuItemClick(3)}>
                                 <ListItemText>{langConfigs.infoStatistics[preferenceStates.lang]}</ListItemText>
-                                <ListItemIcon><ArrowForwardIosIcon fontSize='small' /></ListItemIcon>
+                            </MenuItem>
+                        </MenuList>
+
+                        {/* about */}
+                        <Typography sx={{ color: 'text.disabled' }}>{langConfigs.about[preferenceStates.lang]}</Typography>
+                        <MenuList>
+
+                            {/* about mojito */}
+                            <MenuItem sx={{ height: 48 }} onClick={handleMenuItemClick(10)}>
+                                <ListItemText>{langConfigs.aboutMojito[preferenceStates.lang]}</ListItemText>
+                            </MenuItem>
+
+                            {/* guidelines */}
+                            <MenuItem sx={{ height: 48 }} onClick={handleMenuItemClick(11)}>
+                                <ListItemText>{langConfigs.guidelines[preferenceStates.lang]}</ListItemText>
+                            </MenuItem>
+
+                            {/* privacy */}
+                            <MenuItem sx={{ height: 48 }} onClick={handleMenuItemClick(12)}>
+                                <ListItemText>{langConfigs.privacyPolicy[preferenceStates.lang]}</ListItemText>
+                            </MenuItem>
+
+                            {/* terms */}
+                            <MenuItem sx={{ height: 48 }} onClick={handleMenuItemClick(13)}>
+                                <ListItemText>{langConfigs.terms[preferenceStates.lang]}</ListItemText>
                             </MenuItem>
                         </MenuList>
 
@@ -218,8 +276,8 @@ const SettingsIndex = () => {
 
             </Grid>
 
-            {/* legal info */}
-            <LegalInfo lang={preferenceStates.lang} />
+            {/* bottom space */}
+            <Box pb={'10rem'} />
 
             {/* language menu */}
             <Menu

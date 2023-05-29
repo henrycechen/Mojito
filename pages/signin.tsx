@@ -402,16 +402,16 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
                     {{ tw: '登入', cn: '登入', en: 'Sign In' }[processStates.lang]}
                 </title>
                 <meta
-                    name="description"
+                    name='description'
                     content={desc}
-                    key="desc"
+                    key='desc'
                 />
             </Head>
             <Container component='main' maxWidth='xs'>
                 <Stack sx={{ mt: '5rem' }}>
                     <Box sx={{ display: 'flex', justifyContent: 'center' }}>
                         <Link href='/'>
-                            <Avatar src='./favicon.ico' sx={{ width: 56, height: 56 }} />
+                            <Avatar src='/logo.png' sx={{ width: 56, height: 56 }} />
                         </Link>
                     </Box>
                     <Typography component='h1' variant='h5' sx={{ textAlign: 'center', mt: 2 }}>

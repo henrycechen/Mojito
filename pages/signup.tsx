@@ -352,9 +352,9 @@ const SignUp = ({ providers }: any) => {
                     {{ tw: '注冊', cn: '注册', en: 'Sign Up' }[processStates.lang]}
                 </title>
                 <meta
-                    name="description"
+                    name='description'
                     content={desc}
-                    key="desc"
+                    key='desc'
                 />
             </Head>
             <Container component='main' maxWidth='xs'>
@@ -367,7 +367,7 @@ const SignUp = ({ providers }: any) => {
                 <Stack sx={{ mt: '5rem', display: 'signuprequestform' === processStates.componentOnDisplay ? 'block' : 'none' }}>
                     <Box sx={{ display: 'flex', justifyContent: 'center' }}>
                         <Link href='/'>
-                            <Avatar src='./favicon.ico' sx={{ width: 56, height: 56 }} />
+                            <Avatar src='/logo.png' sx={{ width: 56, height: 56 }} />
                         </Link>
                     </Box>
                     <Typography component='h1' variant='h5' sx={{ textAlign: 'center', mt: 2 }}>

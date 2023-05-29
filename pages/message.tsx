@@ -29,7 +29,7 @@ import { timeToString, restoreFromLocalStorage } from '../lib/utils/general';
 import { provideAvatarImageUrl, getNicknameBrief } from '../lib/utils/for/member';
 import { noticeIdToUrl, noticeInfoToString } from '../lib/utils/for/notification';
 
-import LegalInfo from '../ui/LegalInfo';
+
 import Navbar from '../ui/Navbar';
 import SideMenu from '../ui/SideMenu';
 import SideColumn from '../ui/SideColumn';
@@ -192,9 +192,9 @@ const Message = () => {
                     {{ tw: '消息', cn: '訊息', en: 'Messages' }[preferenceStates.lang]}
                 </title>
                 <meta
-                    name="description"
+                    name='description'
                     content={desc}
-                    key="desc"
+                    key='desc'
                 />
             </Head>
             <Navbar lang={preferenceStates.lang} />
@@ -299,8 +299,8 @@ const Message = () => {
                 </Grid>
             </Grid >
 
-            {/* legal info */}
-            <LegalInfo lang={preferenceStates.lang} />
+            {/* bottom space */}
+            <Box pb={'10rem'} />
         </>
     );
 };

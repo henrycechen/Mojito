@@ -49,7 +49,6 @@ import { getRandomHexStr } from '../lib/utils/create';
 import { restoreFromLocalStorage } from '../lib/utils/general';
 import { contentToParagraphsArray, cuedMemberInfoDictionaryToArray } from '../lib/utils/for/post';
 
-import LegalInfo from '../ui/LegalInfo';
 import SideMenu from '../ui/SideMenu';
 import SideColumn from '../ui/SideColumn';
 import Navbar from '../ui/Navbar';
@@ -1152,8 +1151,8 @@ const CreatePost = () => {
                 </Grid>
             </Grid>
 
-            {/* legal info */}
-            <LegalInfo lang={preferenceStates.lang} />
+            {/* bottom space */}
+            <Box pb={'10rem'} />
 
             {/* topic helper */}
             <Modal

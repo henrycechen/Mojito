@@ -95,9 +95,9 @@ const SignOut = () => {
                     {{ tw: '登出', cn: '登出', en: 'Sign Out' }[processStates.lang]}
                 </title>
                 <meta
-                    name="description"
+                    name='description'
                     content={desc}
-                    key="desc"
+                    key='desc'
                 />
             </Head>
             <Container component='main' maxWidth='xs'>
@@ -121,7 +121,7 @@ const SignOut = () => {
                 <Guidelines lang={processStates.lang} />
                 <Terms sx={{ mb: 2 }} lang={processStates.lang} />
                 <LangSwitch setLang={setLang} />
-                <ThemeSwitch sx={{ mb: 8 }} />
+                <ThemeSwitch sx={{ mb: '8rem' }} />
             </Container>
         </>
     );

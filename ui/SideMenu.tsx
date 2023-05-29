@@ -15,9 +15,10 @@ import ListItemText from '@mui/material/ListItemText';
 import ListItemIcon from '@mui/material/ListItemIcon';
 
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import ArticleIcon from '@mui/icons-material/Article';
 import CreateIcon from '@mui/icons-material/Create';
 import EmailIcon from '@mui/icons-material/Email';
-import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
+import NotificationsIcon from '@mui/icons-material/Notifications';
 import ReorderIcon from '@mui/icons-material/Reorder';
 import SettingsIcon from '@mui/icons-material/Settings';
 
@@ -142,7 +143,7 @@ export default function SideMenu(props: TSideMenuProps) {
                     {/* posts */}
                     <MenuItem sx={{ height: 56 }} onClick={handleProceedToHome} >
                         <ListItemIcon>
-                            <ReorderIcon />
+                            <ArticleIcon />
                         </ListItemIcon>
                         <ListItemText>
                             {langConfigs.posts[lang]}
@@ -152,7 +153,7 @@ export default function SideMenu(props: TSideMenuProps) {
                     {/* followed members */}
                     <MenuItem sx={{ height: 56 }} onClick={handleProceedToFollowedMember} >
                         <ListItemIcon>
-                            <NotificationsActiveIcon />
+                            <NotificationsIcon />
                         </ListItemIcon>
                         <ListItemText>
                             {langConfigs.followedMembers[lang]}

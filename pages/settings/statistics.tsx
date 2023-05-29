@@ -21,7 +21,7 @@ import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import { LangConfigs, TPreferenceStates } from '../../lib/types';
 import { restoreFromLocalStorage } from '../../lib/utils/general';
 
-import LegalInfo from '../../ui/LegalInfo';
+
 import Navbar from '../../ui/Navbar';
 import SideMenu from '../../ui/SideMenu';
 import SideColumn from '../../ui/SideColumn';
@@ -242,9 +242,9 @@ const MemberInfoAndStatistics = () => {
                     {{ tw: '賬號資訊', cn: '账户信息', en: 'Member Info' }[preferenceStates.lang]}
                 </title>
                 <meta
-                    name="description"
+                    name='description'
                     content={desc}
-                    key="desc"
+                    key='desc'
                 />
             </Head>
             <Navbar lang={preferenceStates.lang} />
@@ -371,9 +371,6 @@ const MemberInfoAndStatistics = () => {
                 </Grid>
 
             </Grid >
-
-            {/* legal info */}
-            < LegalInfo lang={preferenceStates.lang} />
         </>
     );
 };

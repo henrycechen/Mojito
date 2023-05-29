@@ -21,7 +21,7 @@ import { LangConfigs, TPreferenceStates } from '../lib/types';
 import { restoreFromLocalStorage } from '../lib/utils/general';
 import { provideAvatarImageUrl, getNicknameBrief } from '../lib/utils/for/member';
 
-import LegalInfo from '../ui/LegalInfo';
+
 import Navbar from '../ui/Navbar';
 import SideMenu from '../ui/SideMenu';
 import SideColumn from '../ui/SideColumn';
@@ -202,8 +202,8 @@ const FollowedMembers = () => {
 
             </Grid>
 
-            {/* legal info */}
-            <LegalInfo lang={preferenceStates.lang} />
+            {/* bottom space */}
+            <Box pb={'10rem'} />
         </>
     );
 };

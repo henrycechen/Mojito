@@ -20,8 +20,8 @@ export function getNicknameBrief(nickname: any): string {
     if (!('string' === typeof nickname && '' !== nickname)) {
         return `Mojito用戶${Math.floor(Math.random() * Math.pow(10, 2)).toString(16).toUpperCase()}`;
     }
-    if (nickname.length > 13) {
-        return `${nickname.slice(0, 13)}...`;
+    if (nickname.length > 10) {
+        return `${nickname.slice(0, 10)}...`;
     }
     return nickname;
 }

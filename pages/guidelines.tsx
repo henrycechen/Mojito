@@ -1,6 +1,7 @@
 import * as React from 'react';
 import Head from 'next/head';
 
+import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Container from '@mui/material/Container';
 import Grid from '@mui/material/Grid';
@@ -10,6 +11,7 @@ import Typography from '@mui/material/Typography';
 import { LangConfigs } from '../lib/types';
 import { getRandomHexStr } from '../lib/utils/create';
 
+import BackwardToSettingsButton from '../ui/BackwardButton';
 import Copyright from '../ui/Copyright';
 import Guidelines from '../ui/Guidelines';
 import Navbar from '../ui/Navbar';
@@ -246,23 +248,24 @@ export default function CommunityGidelines() {
                     {{ tw: '社區規範', cn: '社区规范', en: 'Guidelines' }[processStates.lang]}
                 </title>
                 <meta
-                    name="description"
+                    name='description'
                     content={desc}
-                    key="desc"
+                    key='desc'
                 />
             </Head>
             <Navbar lang={processStates.lang} />
-            <Container sx={{ minHeight: 600 }}>
+            <BackwardToSettingsButton />
+            <Container sx={{ minHeight: { xs: 1000, sm: 1000, md: 800 } }}>
                 <Grid container>
                     <Grid item md={1}></Grid>
-                    <Grid item md={3} sx={{ p: 1, paddingTop: 16 }}>
+                    <Grid item md={3} sx={{ px: 1, pt: { xs: 8, sm: 8, md: 24 } }}>
                         <Typography variant={'h5'}>{langConfigs.title0[processStates.lang]}</Typography>
                         <Typography variant={'body2'}>{langConfigs.publishedDate0[processStates.lang]}</Typography>
                         <Button variant='text' sx={{ textTransform: 'none' }} onClick={setLang}>
                             <Typography variant={'body2'}>{'繁|简|English'}</Typography>
                         </Button>
                     </Grid>
-                    <Grid item md={7} sx={{ p: 1, paddingTop: { xs: 4, sm: 8, md: 16 } }}>
+                    <Grid item md={7} sx={{ px: 1, pt: { xs: 4, sm: 8, md: 24 } }}>
                         <Stack direction={'column'} spacing={2}>
                             {langConfigs.terms0[processStates.lang].map((term: string) => <Typography key={getRandomHexStr()} variant={'body1'}>{term}</Typography>)}
                         </Stack>
@@ -271,11 +274,11 @@ export default function CommunityGidelines() {
                 </Grid>
                 <Grid container>
                     <Grid item md={1}></Grid>
-                    <Grid item md={3} sx={{ p: 1, paddingTop: 16 }}>
+                    <Grid item md={3} sx={{ px: 1, pt: { xs: 4, sm: 8, md: 24 } }}>
                         <Typography variant={'h5'}>{langConfigs.title1[processStates.lang]}</Typography>
                         <Typography variant={'body2'}>{langConfigs.publishedDate1[processStates.lang]}</Typography>
                     </Grid>
-                    <Grid item md={7} sx={{ p: 1, paddingTop: { xs: 4, sm: 8, md: 16 } }}>
+                    <Grid item md={7} sx={{ px: 1, pt: { xs: 4, sm: 8, md: 24 } }}>
                         <Stack direction={'column'} spacing={2}>
                             {langConfigs.terms1[processStates.lang].map((term: string) => <Typography key={getRandomHexStr()} variant={'body1'}>{term}</Typography>)}
                         </Stack>
@@ -284,11 +287,11 @@ export default function CommunityGidelines() {
                 </Grid>
                 <Grid container>
                     <Grid item md={1}></Grid>
-                    <Grid item md={3} sx={{ p: 1, paddingTop: 16 }}>
+                    <Grid item md={3} sx={{ px: 1, pt: { xs: 4, sm: 8, md: 24 } }}>
                         <Typography variant={'h5'}>{langConfigs.title2[processStates.lang]}</Typography>
                         <Typography variant={'body2'}>{langConfigs.publishedDate2[processStates.lang]}</Typography>
                     </Grid>
-                    <Grid item md={7} sx={{ p: 1, paddingTop: { xs: 4, sm: 8, md: 16 } }}>
+                    <Grid item md={7} sx={{ px: 1, pt: { xs: 4, sm: 8, md: 24 } }}>
                         <Stack direction={'column'} spacing={2}>
                             {langConfigs.terms2[processStates.lang].map((term: string) => <Typography key={getRandomHexStr()} variant={'body1'}>{term}</Typography>)}
                         </Stack>
@@ -297,11 +300,11 @@ export default function CommunityGidelines() {
                 </Grid>
                 <Grid container>
                     <Grid item md={1}></Grid>
-                    <Grid item md={3} sx={{ p: 1, paddingTop: 16 }}>
+                    <Grid item md={3} sx={{ px: 1, pt: { xs: 4, sm: 8, md: 24 } }}>
                         <Typography variant={'h5'}>{langConfigs.title3[processStates.lang]}</Typography>
                         <Typography variant={'body2'}>{langConfigs.publishedDate3[processStates.lang]}</Typography>
                     </Grid>
-                    <Grid item md={7} sx={{ p: 1, paddingTop: { xs: 4, sm: 8, md: 16 } }}>
+                    <Grid item md={7} sx={{ px: 1, pt: { xs: 4, sm: 8, md: 24 } }}>
                         <Stack direction={'column'} spacing={2}>
                             {langConfigs.terms3[processStates.lang].map((term: string) => <Typography key={getRandomHexStr()} variant={'body1'}>{term}</Typography>)}
                         </Stack>
@@ -310,11 +313,11 @@ export default function CommunityGidelines() {
                 </Grid>
                 <Grid container>
                     <Grid item md={1}></Grid>
-                    <Grid item md={3} sx={{ p: 1, paddingTop: 16 }}>
+                    <Grid item md={3} sx={{ px: 1, pt: { xs: 4, sm: 8, md: 24 } }}>
                         <Typography variant={'h5'}>{langConfigs.title4[processStates.lang]}</Typography>
                         <Typography variant={'body2'}>{langConfigs.publishedDate4[processStates.lang]}</Typography>
                     </Grid>
-                    <Grid item md={7} sx={{ p: 1, paddingTop: { xs: 4, sm: 8, md: 16 } }}>
+                    <Grid item md={7} sx={{ px: 1, pt: { xs: 4, sm: 8, md: 24 } }}>
                         <Stack direction={'column'} spacing={2}>
                             {langConfigs.terms4[processStates.lang].map((term: string) => <Typography key={getRandomHexStr()} variant={'body1'}>{term}</Typography>)}
                         </Stack>
@@ -323,10 +326,12 @@ export default function CommunityGidelines() {
                 </Grid>
             </Container>
 
-            <Copyright sx={{ mt: 8 }} />
-            <Guidelines lang={processStates.lang} />
-            <Terms sx={{ mb: 2 }} lang={processStates.lang} />
-            <ThemeSwitch sx={{ mb: 8 }} />
+            <Box sx={{ display: { xs: 'none', sm: 'none', md: 'block' } }}>
+                <Copyright sx={{ mt: '16rem' }} />
+                <Guidelines lang={processStates.lang} />
+                <Terms sx={{ mb: 2 }} lang={processStates.lang} />
+                <ThemeSwitch sx={{ mb: '8rem' }} />
+            </Box>
         </>
     );
 }

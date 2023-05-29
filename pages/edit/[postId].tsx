@@ -50,7 +50,7 @@ import { getRandomHexStr } from '../../lib/utils/create';
 import { restoreFromLocalStorage } from '../../lib/utils/general';
 import { contentToParagraphsArray, cuedMemberInfoDictionaryToArray, fakeRestrictedPostComprehensive, provideImageUrl } from '../../lib/utils/for/post';
 
-import LegalInfo from '../../ui/LegalInfo';
+
 import SideMenu from '../../ui/SideMenu';
 import SideColumn from '../../ui/SideColumn';
 import Navbar from '../../ui/Navbar';
@@ -1324,8 +1324,8 @@ const EditPost = ({ restrictedPostComprehensive_ss, redirect404, redirect500 }: 
                 </Grid>
             </Grid>
 
-            {/* legal info */}
-            <LegalInfo lang={preferenceStates.lang} />
+            {/* bottom space */}
+            <Box pb={'10rem'} />
 
             {/* topic helper */}
             <Modal

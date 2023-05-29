@@ -88,9 +88,9 @@ export default function FiveHundred({ errorMessage }: any) {
                     {{ tw: '出錯啦', cn: '出错啦', en: 'Opps' }[processStates.lang]}
                 </title>
                 <meta
-                    name="description"
+                    name='description'
                     content={desc}
-                    key="desc"
+                    key='desc'
                 />
             </Head>
             <Navbar lang={processStates.lang} />

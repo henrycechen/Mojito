@@ -351,7 +351,7 @@ const Affair = () => {
                 <Stack sx={{ mt: '5rem', display: 'reportrequestform' === processStates.componentOnDisplay ? 'block' : 'none' }}>
                     <Box sx={{ display: 'flex', justifyContent: 'center' }}>
                         <Link href='/'>
-                            <Avatar src={`${domain}/favicon.ico`} sx={{ width: 56, height: 56 }} />
+                            <Avatar src={`/logo.png`} sx={{ width: 56, height: 56 }} />
                         </Link>
                     </Box>
 
@@ -430,7 +430,7 @@ const Affair = () => {
                 <Guidelines lang={processStates.lang} />
                 <Terms sx={{ mb: 2 }} lang={processStates.lang} />
                 <LangSwitch setLang={setLang} />
-                <ThemeSwitch sx={{ mb: 8 }} />
+                <ThemeSwitch sx={{ mb: '8rem' }} />
             </Container >
 
             <ReCAPTCHA

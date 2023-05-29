@@ -1045,6 +1045,82 @@ const Member = ({ memberInfo_ss: memberComprehensive_ss, memberStatistics_ss, re
         left: 'calc(50% - 15px)',
     }));
 
+    type TAnimationStates = {
+        scrollYPixels: number;
+        requireUpdate: boolean;
+    };
+
+    // States - animation
+    const [animationStates, setAnimationStates] = React.useState<TAnimationStates>({
+        scrollYPixels: 0,
+        requireUpdate: false,
+    });
+
+    // Register animation listener
+    React.useEffect(() => {
+        const handleScroll = () => {
+
+            if (0 > window.scrollY) {
+                setAnimationStates({
+                    ...animationStates,
+                    scrollYPixels: window.scrollY,
+                });
+                if (Math.abs(window.scrollY) > 50) {
+
+                    setAnimationStates({
+                        ...animationStates,
+                        requireUpdate: true
+                    });
+
+                    window.removeEventListener('scroll', handleScroll);
+
+                    setTimeout(() => {
+                        setAnimationStates({
+                            ...animationStates,
+                            requireUpdate: false
+                        });
+
+                        window.addEventListener('scroll', handleScroll);
+                    }, 5000);
+                }
+            }
+
+        };
+
+        window.addEventListener('scroll', handleScroll);
+
+        return () => {
+            window.removeEventListener('scroll', handleScroll);
+        };
+    }, []);
+
+    React.useEffect(() => { refreshMemberPage(); }, [animationStates.requireUpdate]);
+
+    const refreshMemberPage = async () => {
+        let url = '';
+
+        if ('creations' === processStates.selectedCategory) {
+            url = `/api/member/creations/${authorId}`;
+        }
+
+        if ('savedposts' === processStates.selectedCategory) {
+            url = `/api/member/savedposts/${authorId}`;
+        }
+
+        if ('browsinghistory' === processStates.selectedCategory) {
+            url = `/api/member/browsinghistory`;
+        }
+
+        const resp = await fetch(`${url}?channelId=${processStates.selectedChannelId}`);
+        if (200 === resp.status) {
+            try {
+                setMasonryPostInfoArr(await resp.json());
+                setAnimationStates({ scrollYPixels: 0, requireUpdate: false });
+            } catch (e) {
+                console.error(`Attempt to GET posts of ${processStates.selectedCategory}. ${e}`);
+            }
+        }
+    };
 
     return (
         <>
@@ -1093,6 +1169,20 @@ const Member = ({ memberInfo_ss: memberComprehensive_ss, memberStatistics_ss, re
                     }
                 }}
             />
+
+            {/* pull-to-refresh */}
+            <Box
+                sx={{
+                    display: 'flex',
+                    flexDirection: 'row',
+                    justifyContent: 'center',
+                    opacity: animationStates.requireUpdate ? 1 : Math.abs(animationStates.scrollYPixels) / 25
+                }}>
+                <CircularProgress
+                    variant={animationStates.requireUpdate ? 'indeterminate' : 'determinate'}
+                    size={Math.abs(animationStates.scrollYPixels) * 1.8 < 24 && !animationStates.requireUpdate ? Math.abs(animationStates.scrollYPixels) * 1.8 : 24}
+                    value={Math.abs(animationStates.scrollYPixels) < 50 && !animationStates.requireUpdate ? Math.abs(animationStates.scrollYPixels) * 2 : 100} />
+            </Box>
 
             <Navbar lang={preferenceStates.lang} />
             <Grid container >
@@ -1247,19 +1337,20 @@ const Member = ({ memberInfo_ss: memberComprehensive_ss, memberStatistics_ss, re
 
                         {/* masonry */}
                         <Box ref={masonryWrapper}>
-                            <Masonry columns={2}>
+                            <Masonry columns={2} sx={{ margin: 0 }}>
 
                                 {/* posts */}
                                 {0 !== masonryPostInfoArr.length && masonryPostInfoArr.map(info =>
                                     <Paper key={info.postId} id={info.postId} sx={{ maxWidth: 450, '&:hover': { cursor: 'pointer' } }}>
                                         <Stack>
+
                                             {/* image */}
                                             <Box
                                                 component={'img'}
                                                 loading='lazy'
                                                 src={provideCoverImageUrl(info.postId, imageDomain)}
                                                 sx={{
-                                                    maxWidth: { xs: width / 2, sm: 450 },
+                                                    maxWidth: 450,
                                                     maxHeight: 'max-content',
                                                     borderTopLeftRadius: 4,
                                                     borderTopRightRadius: 4
