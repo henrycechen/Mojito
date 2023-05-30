@@ -218,7 +218,7 @@ const Message = () => {
                             <Button sx={{ color: 'like' === processStates.selectedCategory ? 'primary' : 'grey.600' }} onClick={handleSelectNoticeCategory('like')}>
                                 <Box>
                                     <Box sx={{ p: 1, display: 'flex', flexDirection: 'row', justifyContent: 'center' }}><ThumbUpIcon sx={{ fontSize: 22 }} /></Box>
-                                    <Typography variant={'body1'} textAlign={'center'}>{langConfigs.liked[preferenceStates.lang]}{0 === processStates.noticeStatistics.like ? '' : `+${processStates.noticeStatistics.like}`}</Typography>
+                                    <Typography variant={'body2'} textAlign={'center'}>{langConfigs.liked[preferenceStates.lang]}{0 === processStates.noticeStatistics.like ? '' : `+${processStates.noticeStatistics.like}`}</Typography>
                                 </Box>
                             </Button>
 
@@ -226,7 +226,7 @@ const Message = () => {
                             <Button sx={{ color: 'save' === processStates.selectedCategory ? 'primary' : 'grey.600' }} onClick={handleSelectNoticeCategory('save')}>
                                 <Box>
                                     <Box sx={{ p: 1, display: 'flex', flexDirection: 'row', justifyContent: 'center' }}><StarIcon sx={{ fontSize: 22 }} /></Box>
-                                    <Typography variant={'body1'} textAlign={'center'}>{langConfigs.saved[preferenceStates.lang]}{0 === processStates.noticeStatistics.save ? '' : `+${processStates.noticeStatistics.save}`}</Typography>
+                                    <Typography variant={'body2'} textAlign={'center'}>{langConfigs.saved[preferenceStates.lang]}{0 === processStates.noticeStatistics.save ? '' : `+${processStates.noticeStatistics.save}`}</Typography>
                                 </Box>
                             </Button>
 
@@ -234,7 +234,7 @@ const Message = () => {
                             <Button sx={{ color: 'reply' === processStates.selectedCategory ? 'primary' : 'grey.600' }} onClick={handleSelectNoticeCategory('reply')}>
                                 <Box>
                                     <Box sx={{ p: 1, display: 'flex', flexDirection: 'row', justifyContent: 'center' }}><ChatBubbleIcon sx={{ fontSize: 22 }} /></Box>
-                                    <Typography variant={'body1'} textAlign={'center'}>{langConfigs.replied[preferenceStates.lang]}{0 === processStates.noticeStatistics.reply ? '' : `+${processStates.noticeStatistics.reply}`}</Typography>
+                                    <Typography variant={'body2'} textAlign={'center'}>{langConfigs.replied[preferenceStates.lang]}{0 === processStates.noticeStatistics.reply ? '' : `+${processStates.noticeStatistics.reply}`}</Typography>
                                 </Box>
                             </Button>
 
@@ -242,7 +242,7 @@ const Message = () => {
                             <Button sx={{ color: 'cue' === processStates.selectedCategory ? 'primary' : 'grey.600' }} onClick={handleSelectNoticeCategory('cue')}>
                                 <Box>
                                     <Box sx={{ p: 1, display: 'flex', flexDirection: 'row', justifyContent: 'center' }}><AlternateEmailIcon sx={{ fontSize: 22 }} /></Box>
-                                    <Typography variant={'body1'} textAlign={'center'}>{langConfigs.cued[preferenceStates.lang]}{0 === processStates.noticeStatistics.cue ? '' : `+${processStates.noticeStatistics.cue}`}</Typography>
+                                    <Typography variant={'body2'} textAlign={'center'}>{langConfigs.cued[preferenceStates.lang]}{0 === processStates.noticeStatistics.cue ? '' : `+${processStates.noticeStatistics.cue}`}</Typography>
                                 </Box>
                             </Button>
                         </Box>

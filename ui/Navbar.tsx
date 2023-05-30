@@ -193,13 +193,12 @@ export default function Navbar(props: TNavbarProps) {
                         {/* authenticated - control components */}
                         {(session && 'authenticated' == status) && ControlComponents()}
 
-                        <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center' }}></Box>
-
                         {/* authenticated - signin button */}
                         {(!session || 'authenticated' !== status) && (
                             <Button variant='contained' onClick={handleSignIn}>{langConfigs.signIn[props.lang ?? 'tw']}</Button>
                         )}
 
+                        <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center' }}></Box>
                     </Toolbar >
                 </Container >
             </AppBar >

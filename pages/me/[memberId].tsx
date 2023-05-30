@@ -330,7 +330,14 @@ export async function getServerSideProps(context: NextPageContext): Promise<{ pr
         // GET member info by id
         const info_resp = await fetch(`${appDomain}/api/member/info/${memberId}`);
         if (200 !== info_resp.status) {
-            throw new Error('Attempt to GET member info');
+            return {
+                props: {
+                    memberInfo_ss: fakeRestrictedMemberInfo(),
+                    memberStatistics_ss: fakeConciseMemberStatistics(),
+                    redirect404: true,
+                    redirect500: false,
+                }
+            };
         }
         const memberInfo_ss = await info_resp.json();
 

@@ -201,8 +201,6 @@ const Home = () => {
 
     // Ref - masonry
     const masonryWrapper = React.useRef<any>();
-    const [width, setWidth] = React.useState(375); // default change from 636 to 375 (width of iPhone SE2)
-    React.useEffect(() => { setWidth(masonryWrapper?.current?.offsetWidth); }, []);
 
     // States - preference
     const [preferenceStates, setPreferenceStates] = React.useState<TPreferenceStates>({
