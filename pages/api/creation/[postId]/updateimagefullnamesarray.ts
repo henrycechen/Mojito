@@ -5,16 +5,17 @@ import { getToken } from 'next-auth/jwt';
 
 import AzureTableClient from '../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from '../../../../modules/AtlasDatabaseClient';
-import { logWithDate, response405, response500 } from '../../../../lib/utils/general';
-import { createNoticeId, getTimeBySecond } from '../../../../lib/utils/create';
+
+import { IMemberMemberMapping } from '../../../../lib/interfaces/mapping';
 import { IMemberComprehensive } from '../../../../lib/interfaces/member';
 import { IPostComprehensive } from '../../../../lib/interfaces/post';
-import { INoticeInfo, INotificationStatistics } from '../../../../lib/interfaces/notification';
-import { getNicknameFromToken } from '../../../../lib/utils/for/member';
-import { verifyId } from '../../../../lib/utils/verify';
-import { IMemberMemberMapping } from '../../../../lib/interfaces/mapping';
+import { INotificationComprehensive, INotificationStatistics } from '../../../../lib/interfaces/notification';
 
-const ffn = `${UpdateImageFullnamesArray.name} (API)`;
+import { verifyId } from '../../../../lib/utils/verify';
+import { createNoticeId, getTimeBySecond } from '../../../../lib/utils/create';
+import { logWithDate, response405, response500 } from '../../../../lib/utils/general';
+
+const fnn = `${UpdateImageFullnamesArray.name} (API)`;
 
 /**
  * This interface ONLY accepts PUT method
@@ -26,6 +27,7 @@ const ffn = `${UpdateImageFullnamesArray.name} (API)`;
  * 
  * Last update:
  * - 10/05/2023 v0.1.1
+ * - 31/05/2023 v0.1.2
  */
 
 export default async function UpdateImageFullnamesArray(req: NextApiRequest, res: NextApiResponse) {
@@ -85,6 +87,9 @@ export default async function UpdateImageFullnamesArray(req: NextApiRequest, res
         }
         const { status: postStatus, allowEditing, title, cuedMemberInfoArr } = postComprehensiveQueryResult;
         if (!(21 === postStatus && allowEditing)) {
+            console.log(21 === postStatus);
+            console.log(allowEditing);
+
             res.status(403).send('Method not allowed due to restricted post status');
             await atlasDbClient.close();
             return;
@@ -107,10 +112,12 @@ export default async function UpdateImageFullnamesArray(req: NextApiRequest, res
         //// (Cond.) Handle notice.cue ////
         if (Array.isArray(cuedMemberInfoArr) && cuedMemberInfoArr.length !== 0) {
             const blockingMemberMappingTableClient = AzureTableClient('BlockingMemberMapping');
+            const notificationComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<INotificationComprehensive>('notification');
             const notificationStatisticsCollectionClient = atlasDbClient.db('statistics').collection<INotificationStatistics>('notification');
 
             // #1 maximum 12 members are allowed to cued at one time (in one comment)
             const cuedMemberIdsArrSliced = cuedMemberInfoArr.slice(0, 12);
+
             for await (const cuedMemberInfo of cuedMemberIdsArrSliced) {
                 const { memberId: cuedId } = cuedMemberInfo;
 
@@ -124,23 +131,25 @@ export default async function UpdateImageFullnamesArray(req: NextApiRequest, res
                     isBlocked = isActive;
                 }
                 if (!isBlocked) {
-                    // #3 upsert record (INoticeInfo.Cued) in [PRL] Notice
-                    const noticeTableClient = AzureTableClient('Notice');
-                    noticeTableClient.upsertEntity<INoticeInfo>({
-                        partitionKey: cuedId,
-                        rowKey: createNoticeId('cue', memberId, postId), // combined id
-                        Category: 'cue',
-                        InitiateId: memberId,
-                        Nickname: getNicknameFromToken(token),
-                        // PostId: postId,
-                        PostTitle: title,
-                        CommentBrief: '', // [!] comment brief is not supplied in this case
-                        CreatedTimeBySecond: getTimeBySecond()
-                    }, 'Replace');
+                    // #3 upsert document (of notificationComprehensive) in [C] notificationComprehensive
+                    const notificationComprehensiveUpdateResult = await notificationComprehensiveCollectionClient.updateOne({ noticeId: createNoticeId('cue', memberId, postId) }, {
+                        noticeId: createNoticeId('cue', memberId, postId),
+                        category: 'cue',
+                        memberId: cuedId,
+                        initiateId: memberId,
+                        nickname: memberComprehensiveQueryResult.nickname,
+                        postTitle: title,
+                        commentBrief: '',
+                        createdTimeBySecond: getTimeBySecond()
+                    }, { upsert: true });
+                    if (!notificationComprehensiveUpdateResult.acknowledged) {
+                        logWithDate(`Failed to upsert document (of INotificationComprehensive, member id: ${cuedId}) in [C] notificationComprehensive`, fnn);
+                    }
+
                     // #4 update cue (of INotificationStatistics) (of cued member) in [C] notificationStatistics
                     const notificationStatisticsUpdateResult = await notificationStatisticsCollectionClient.updateOne({ memberId: cuedId }, { $inc: { cue: 1 } });
                     if (!notificationStatisticsUpdateResult.acknowledged) {
-                        logWithDate(`Document (IPostComprehensive, post id: ${postId}) inserted in [C] postComprehensive successfully but failed to update cue (of INotificationStatistics, member id: ${cuedId}) in [C] notificationStatistics`, ffn);
+                        logWithDate(`Document (IPostComprehensive, post id: ${postId}) inserted in [C] postComprehensive successfully but failed to update cue (of INotificationStatistics, member id: ${cuedId}) in [C] notificationStatistics`, fnn);
                     }
                 }
             }
@@ -163,7 +172,7 @@ export default async function UpdateImageFullnamesArray(req: NextApiRequest, res
         if (!res.headersSent) {
             response500(res, msg);
         }
-        logWithDate(msg, ffn, e);
+        logWithDate(msg, fnn, e);
         await atlasDbClient.close();
         return;
     }

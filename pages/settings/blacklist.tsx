@@ -207,6 +207,9 @@ const Blacklist = () => {
                         </Box>}
 
                     </Box>
+
+                    {/* bottom space */}
+                    <Box pb={{ xs: '10rem', sm: '10rem', md: 0 }} />
                 </Grid>
 
                 {/* right */}

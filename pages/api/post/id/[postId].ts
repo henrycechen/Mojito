@@ -1,20 +1,16 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { RestError } from '@azure/data-tables';
 import { MongoError } from 'mongodb';
-import { getToken } from 'next-auth/jwt';
 
-import AzureTableClient from '../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from '../../../../modules/AtlasDatabaseClient';
 
-import { IMemberPostMapping } from '../../../../lib/interfaces/mapping';
-import { response405, response500, logWithDate, } from '../../../../lib/utils/general';
-import { verifyId } from '../../../../lib/utils/verify';
+import { IMemberStatistics } from '../../../../lib/interfaces/member';
 import { IPostComprehensive } from '../../../../lib/interfaces/post';
-import { getRestrictedFromPostComprehensive } from '../../../../lib/utils/for/post';
-import { IMemberComprehensive, IMemberStatistics } from '../../../../lib/interfaces/member';
 import { IChannelStatistics } from '../../../../lib/interfaces/channel';
 import { ITopicComprehensive } from '../../../../lib/interfaces/topic';
-import { getTimeBySecond } from '../../../../lib/utils/create';
+
+import { response405, response500, logWithDate, } from '../../../../lib/utils/general';
+import { verifyId } from '../../../../lib/utils/verify';
+import { getRestrictedFromPostComprehensive } from '../../../../lib/utils/for/post';
 
 const fnn = `${GetRestrictedPostComprehensiveById.name} (API)`;
 
@@ -26,6 +22,7 @@ const fnn = `${GetRestrictedPostComprehensiveById.name} (API)`;
  * 
  * Last update:
  * - 04/02/2023 v0.1.1
+ * - 31/05/2023 v0.1.1
  */
 
 export default async function GetRestrictedPostComprehensiveById(req: NextApiRequest, res: NextApiResponse) {
@@ -68,63 +65,26 @@ export default async function GetRestrictedPostComprehensiveById(req: NextApiReq
         //// Response 200 ////
         res.status(200).send(getRestrictedFromPostComprehensive(postComprehensiveQueryResult));
 
-        const { memberId: authorId, channelId } = postComprehensiveQueryResult;
-
-        let viewerId = '';
-        let viewerIsMemberButNotAuthor = false;
-
-        //// Update browsing history mapping ////
-        const token = await getToken({ req });
-        if (token && token?.sub) {
-
-            viewerId = token.sub;
-
-            //// Look up member status (od IMemberComprehensive) in [C] memberComprehensive ////
-            const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
-            const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne({ memberId: viewerId }, { projection: { _id: 0, status: 1 } });
-            if (null === memberComprehensiveQueryResult) {
-                throw new Error(`Member attempt to upsert entity (of browsing history, of IMemberPostMapping) but have no document (of IMemberComprehensive, member id: ${viewerId}) in [C] memberComprehensive`);
-            }
-
-            //// Verify member status ////
-            const { status: memberStatus } = memberComprehensiveQueryResult;
-            if (0 < memberStatus) {
-                const { title } = postComprehensiveQueryResult;
-                const historyMappingTableClient = AzureTableClient('HistoryMapping');
-                await historyMappingTableClient.upsertEntity<IMemberPostMapping>({
-                    partitionKey: viewerId,
-                    rowKey: postId,
-                    AuthorId: postComprehensiveQueryResult.memberId,
-                    Nickname: postComprehensiveQueryResult.nickname,
-                    Title: title,
-                    ChannelId: channelId,
-                    CreatedTimeBySecond: getTimeBySecond(),
-                    HasImages: false,
-                    IsActive: true
-                }, 'Merge');
-                viewerIsMemberButNotAuthor = authorId !== viewerId;
-            }
-        }
-
         //// Update statistics ////
+        const { memberId, channelId } = postComprehensiveQueryResult;
 
         // Update totalCreationHitCount (of IMemberStatistics) in [C] memberStatistics ////
-        if (authorId !== viewerId) { // [!] No counting author's hit 
-            const memberStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IMemberStatistics>('member');
-            const memberStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId: authorId }, {
-                $inc: {
-                    totalCreationHitCount: 1
-                }
-            });
-            if (!memberStatisticsUpdateResult.acknowledged) {
-                logWithDate(`Failed to update totalCreationHitCount (of IMemberStatistics, member id: ${authorId}) in [C] memberStatistics`, fnn);
+        const memberStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IMemberStatistics>('member');
+        const memberStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId }, {
+            $inc: {
+                totalCreationHitCount: 1
             }
+        });
+        if (!memberStatisticsUpdateResult.acknowledged) {
+            logWithDate(`Failed to update totalCreationHitCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`, fnn);
         }
 
+
         //// Update totalHitCount (of IPostComprehensive) in [C] postComprehensive ////
-        let hitCountUpdate = viewerIsMemberButNotAuthor ? { totalHitCount: 1, totalMemberHitCount: 1 } : { totalHitCount: 1 };
         const postComprehensiveUpdateResult = await postComprehensiveCollectionClient.updateOne({ postId }, {
-            $inc: { ...hitCountUpdate }
+            $inc: {
+                totalHitCount: 1
+            }
         });
         if (!postComprehensiveUpdateResult.acknowledged) {
             logWithDate(`Failed to update totalHitCount/totalMemberHitCount (of IPostComprehensive, post id: ${postId}) in [C] postComprehensive`, fnn);
@@ -164,8 +124,6 @@ export default async function GetRestrictedPostComprehensiveById(req: NextApiReq
         if (e instanceof SyntaxError) {
             res.status(400).send('Improperly normalized request info');
             return;
-        } else if (e instanceof RestError) {
-            msg = `Attempt to communicate with azure table storage.`;
         } else if (e instanceof MongoError) {
             msg = `Attempt to communicate with atlas mongodb.`;
         } else {

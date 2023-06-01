@@ -8,32 +8,30 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Divider from '@mui/material/Divider';
 import Grid from '@mui/material/Grid';
-import Link from '@mui/material/Link';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
 import MenuList from '@mui/material/MenuList';
 import MenuItem from '@mui/material/MenuItem';
-import ListItemText from '@mui/material/ListItemText';
+import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 
 import AlternateEmailIcon from '@mui/icons-material/AlternateEmail';
+import ClearIcon from '@mui/icons-material/Clear';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import ChatBubbleIcon from '@mui/icons-material/ChatBubble';
 import StarIcon from '@mui/icons-material/Star';
 
-import { INoticeInfoWithMemberInfo } from '../lib/interfaces/notification';
+import { INotificationComprehensive } from '../lib/interfaces/notification';
 import { LangConfigs, TPreferenceStates } from '../lib/types';
 
 import { timeToString, restoreFromLocalStorage } from '../lib/utils/general';
 import { provideAvatarImageUrl, getNicknameBrief } from '../lib/utils/for/member';
 import { noticeIdToUrl, noticeInfoToString } from '../lib/utils/for/notification';
 
-
 import Navbar from '../ui/Navbar';
 import SideMenu from '../ui/SideMenu';
 import SideColumn from '../ui/SideColumn';
-import { TextButton } from '../ui/Styled';
 
 const storageName0 = 'PreferenceStates';
 const restorePreferenceStatesFromCache = restoreFromLocalStorage(storageName0);
@@ -90,18 +88,18 @@ const Message = () => {
         mode: 'light'
     });
 
-    type TMessagePageProcessStates = {
+    type TProcessStates = {
         memberId: string;
         selectedCategory: string;
-        noticeInfoArr: INoticeInfoWithMemberInfo[];
+        noticeComprehensiveArr: INotificationComprehensive[];
         noticeStatistics: { [category: string]: number; };
     };
 
     // States - process
-    const [processStates, setProcessStates] = React.useState<TMessagePageProcessStates>({
+    const [processStates, setProcessStates] = React.useState<TProcessStates>({
         memberId: '',
         selectedCategory: 'like', // default
-        noticeInfoArr: [],
+        noticeComprehensiveArr: [],
         noticeStatistics: { cue: 0, reply: 0, like: 0, pin: 0, save: 0, follow: 0 },
     });
 
@@ -137,7 +135,7 @@ const Message = () => {
         }
 
         // Update process states
-        setProcessStates({ ...processStates, noticeStatistics: { ...update_stat }, noticeInfoArr: [...arr] });
+        setProcessStates({ ...processStates, noticeStatistics: { ...update_stat }, noticeComprehensiveArr: [...arr] });
 
         // PUT (reset) notice statistics
         const resp = await fetch(`/api/notice/statistics`, { method: 'PUT' });
@@ -146,9 +144,6 @@ const Message = () => {
             return;
         }
     };
-
-
-
 
     React.useEffect(() => { if ('authenticated' === status) { updateNoticeArray(); } }, [processStates.selectedCategory]);
 
@@ -161,7 +156,7 @@ const Message = () => {
         try {
             setProcessStates({
                 ...processStates,
-                noticeInfoArr: [...(await resp.json())]
+                noticeComprehensiveArr: [...(await resp.json())]
             });
         } catch (e) {
             console.log(`Attempt to get notice array from resp. ${e}`);
@@ -172,17 +167,34 @@ const Message = () => {
         setProcessStates({
             ...processStates,
             selectedCategory: category,
-            noticeInfoArr: [],
+            noticeComprehensiveArr: [],
             noticeStatistics: { ...processStates.noticeStatistics, [category]: 0 }
         });
     };
 
-    const handleClickOnInitiateInfo = (initiateId: string) => (event: React.MouseEvent<HTMLButtonElement>) => {
+    const handleClickOnInitiateInfo = (initiateId: string) => (event: React.MouseEvent<HTMLElement>) => {
+        event.stopPropagation();
         router.push(`/me/${initiateId}`);
     };
 
-    const handleClickOnNoticeInfo = (noticeId: string) => (event: React.MouseEvent<HTMLButtonElement>) => {
+    const handleClickOnNoticeInfo = (noticeId: string) => (event: React.MouseEvent<HTMLElement>) => {
         router.push(noticeIdToUrl(noticeId));
+    };
+
+    const handleDeleteNotice = async (noticeId: string) => {
+        const arr = processStates.noticeComprehensiveArr;
+        setProcessStates({
+            ...processStates,
+            noticeComprehensiveArr: arr.filter(n => noticeId !== n.noticeId)
+        });
+
+        const resp = await fetch(`/api/notice/id/${noticeId}`, {
+            method: 'DELETE'
+        });
+
+        if (200 !== resp.status) {
+            console.error('Delete notice failed');
+        }
     };
 
     return (
@@ -249,43 +261,50 @@ const Message = () => {
                         <Box mt={{ xs: 1, sm: 2 }} mb={{ xs: 2, sm: 1 }}><Divider /></Box>
 
                         {/* message list */}
-                        <Stack padding={{ xs: 0, sm: 2 }} spacing={{ xs: 3, sm: 4 }}>
-                            {0 !== processStates.noticeInfoArr.length && processStates.noticeInfoArr.map(info =>
-                                <Box key={info.noticeId} sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between' }} >
+                        <MenuList>
+                            {0 !== processStates.noticeComprehensiveArr.length && processStates.noticeComprehensiveArr.map(n =>
+                                <MenuItem key={n.noticeId} sx={{ whiteSpace: 'normal', px: { xs: 0 }, py: 1 }} onClick={handleClickOnNoticeInfo(n.noticeId)}>
 
-                                    {/* member info */}
-                                    <Button variant={'text'} color={'inherit'} sx={{ pl: { xs: 0, sm: 1 }, textTransform: 'none' }} onClick={handleClickOnInitiateInfo(info.initiateId)}>
-                                        <Box sx={{ display: 'flex', flexDirection: 'row' }}>
+                                    {/* initiate info */}
+                                    <ListItemButton sx={{ p: 1, width: { xs: 360, sm: 200, md: 380 } }} onClick={handleClickOnInitiateInfo(n.initiateId)}>
 
-                                            {/* avatar */}
-                                            <Avatar src={provideAvatarImageUrl(info.initiateId, imageDomain)} sx={{ width: 40, height: 40, bgcolor: 'grey' }}>{info.nickname?.charAt(0).toUpperCase()}</Avatar>
-                                            <Box ml={1}>
+                                        <Avatar src={provideAvatarImageUrl(n.initiateId, imageDomain)} sx={{ width: 36, height: 36 }}>{n.nickname?.charAt(0).toUpperCase()}</Avatar>
+                                        <Box pl={1}>
 
-                                                {/* nickname */}
-                                                <Typography fontSize={{ xs: 14, sm: 16 }} align={'left'}>{getNicknameBrief(info.nickname)}</Typography>
+                                            {/* nickname */}
+                                            <Typography align={'left'} fontSize={{ xs: 14, sm: 14, md: 16 }}>{getNicknameBrief(n.nickname)}</Typography>
 
-                                                {/* created time */}
-                                                <Typography variant={'body2'} align={'left'}>{timeToString(info.createdTimeBySecond, preferenceStates.lang)}</Typography>
-                                            </Box>
+                                            {/* created time */}
+                                            <Typography fontSize={{ xs: 12, sm: 12, md: 14 }} align={'left'}>{timeToString(n.createdTimeBySecond, preferenceStates.lang)}</Typography>
                                         </Box>
-                                    </Button>
+                                    </ListItemButton>
 
                                     {/* notice info */}
-                                    <TextButton color={'inherit'} sx={{ p: 1 }} onClick={handleClickOnNoticeInfo(info.noticeId)}>
-                                        <Box sx={{ maxWidth: { xs: 170, sm: 190, md: 240 } }}>
-                                            <Typography fontSize={{ xs: 14, sm: 16 }} align={'right'}>{noticeInfoToString(info, preferenceStates.lang)}</Typography>
-                                        </Box>
-                                    </TextButton>
-                                </Box>
-                            )}
+                                    <Box
+                                        sx={{
+                                            px: 1,
+                                            fontSize: { xs: 14, sm: 14, md: 16 },
+                                            overflowWrap: 'break-word',
+                                        }}
+                                    >{noticeInfoToString(n, preferenceStates.lang)}
+                                    </Box>
 
-                            {/* no record alert */}
-                            {0 === processStates.noticeInfoArr.length &&
-                                <Box minHeight={200} mt={10}>
-                                    <Typography color={'text.secondary'} align={'center'}>{langConfigs.noNotificationRecord[preferenceStates.lang]}</Typography>
-                                </Box>
-                            }
-                        </Stack>
+                                    {/* delete button */}
+                                    <ListItemIcon sx={{ pl: 1 }} onClick={async (event: React.MouseEvent<HTMLElement>) => { event.stopPropagation(); await handleDeleteNotice(n.noticeId); }}>
+                                        <ClearIcon sx={{ fontSize: { xs: 16, sm: 16, md: 20 } }} />
+                                    </ListItemIcon>
+
+                                </MenuItem>
+                            )}
+                        </MenuList>
+
+
+                        {/* no record alert */}
+                        {0 === processStates.noticeComprehensiveArr.length &&
+                            <Box minHeight={200} mt={10}>
+                                <Typography color={'text.secondary'} align={'center'}>{langConfigs.noNotificationRecord[preferenceStates.lang]}</Typography>
+                            </Box>
+                        }
 
                     </Stack>
 
@@ -300,7 +319,7 @@ const Message = () => {
             </Grid >
 
             {/* bottom space */}
-            <Box pb={'10rem'} />
+            <Box pb={{ xs: '10rem', sm: '10rem', md: 0 }} />
         </>
     );
 };

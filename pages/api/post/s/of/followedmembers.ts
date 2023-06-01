@@ -2,16 +2,16 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { getToken } from 'next-auth/jwt';
 import { MongoError } from 'mongodb';
 
-import AtlasDatabaseClient from '../../../../modules/AtlasDatabaseClient';
-import AzureTableClient from '../../../../modules/AzureTableClient';
+import AtlasDatabaseClient from '../../../../../modules/AtlasDatabaseClient';
+import AzureTableClient from '../../../../../modules/AzureTableClient';
 
-import { IPostComprehensive } from '../../../../lib/interfaces/post';
-import { logWithDate, response405, response500 } from '../../../../lib/utils/general';
-import { verifyId } from '../../../../lib/utils/verify';
-import { IMemberComprehensive } from '../../../../lib/interfaces/member';
-import { IMemberMemberMapping } from '../../../../lib/interfaces/mapping';
+import { IPostComprehensive } from '../../../../../lib/interfaces/post';
+import { logWithDate, response405, response500 } from '../../../../../lib/utils/general';
+import { verifyId } from '../../../../../lib/utils/verify';
+import { IMemberComprehensive } from '../../../../../lib/interfaces/member';
+import { IMemberMemberMapping } from '../../../../../lib/interfaces/mapping';
 
-const fnn = `${PostsOfFollowedMember.name} (API)`;
+const fnn = `${PostsOfFollowedMembers.name} (API)`;
 
 /**
  * This interface ONLY accepts GET requests
@@ -26,7 +26,7 @@ const fnn = `${PostsOfFollowedMember.name} (API)`;
  * - 30/05/2023 v0.1.1
  */
 
-export default async function PostsOfFollowedMember(req: NextApiRequest, res: NextApiResponse) {
+export default async function PostsOfFollowedMembers(req: NextApiRequest, res: NextApiResponse) {
     const { method } = req;
     if ('GET' !== method) {
         response405(req, res);

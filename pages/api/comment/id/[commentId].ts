@@ -6,18 +6,18 @@ import { MongoError } from 'mongodb';
 import AzureTableClient from '../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from '../../../../modules/AtlasDatabaseClient';
 
-import { response405, response500, logWithDate, getContentBrief } from '../../../../lib/utils/general';
-import { verifyId } from '../../../../lib/utils/verify';
-import { ICommentComprehensive } from '../../../../lib/interfaces/comment';
-import { getRestrictedFromCommentComprehensive, provideCommentComprehensiveUpdate } from '../../../../lib/utils/for/comment';
 import { IMemberComprehensive, IMemberStatistics } from '../../../../lib/interfaces/member';
 import { IPostComprehensive } from '../../../../lib/interfaces/post';
-import { getCuedMemberInfoArrayFromRequestBody } from '../../../../lib/utils/for/post';
-import { INoticeInfo, INotificationStatistics } from '../../../../lib/interfaces/notification';
-import { createNoticeId, getTimeBySecond } from '../../../../lib/utils/create';
-import { getNicknameFromToken } from '../../../../lib/utils/for/member';
+import { ICommentComprehensive } from '../../../../lib/interfaces/comment';
 import { IChannelStatistics } from '../../../../lib/interfaces/channel';
 import { ITopicComprehensive } from '../../../../lib/interfaces/topic';
+import { INotificationComprehensive, INotificationStatistics } from '../../../../lib/interfaces/notification';
+
+import { verifyId } from '../../../../lib/utils/verify';
+import { getRestrictedFromCommentComprehensive, provideCommentComprehensiveUpdate } from '../../../../lib/utils/for/comment';
+import { response405, response500, logWithDate, getContentBrief } from '../../../../lib/utils/general';
+import { getCuedMemberInfoArrayFromRequestBody } from '../../../../lib/utils/for/post';
+import { createNoticeId, getTimeBySecond } from '../../../../lib/utils/create';
 
 const fnn = `${GetRestrictedCommentComprehensiveById.name} (API)`;
 
@@ -44,6 +44,7 @@ const fnn = `${GetRestrictedCommentComprehensiveById.name} (API)`;
  * 
  * Last update:
  * - 21/02/2023 v0.1.1
+ * - 31/05/2023 v0.1.2
  */
 
 export default async function GetRestrictedCommentComprehensiveById(req: NextApiRequest, res: NextApiResponse) {
@@ -173,10 +174,13 @@ export default async function GetRestrictedCommentComprehensiveById(req: NextApi
             // #5.1 verify cued member ids array
             if (cuedMemberInfoArr.length !== 0) {
                 const blockingMemberMappingTableClient = AzureTableClient('BlockingMemberMapping');
+                const notificationComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<INotificationComprehensive>('notification');
                 const notificationStatisticsCollectionClient = atlasDbClient.db('statistics').collection<INotificationStatistics>('notification');
                 const { title } = postComprehensiveQueryResult;
-                // #5.2 maximum 9 members are allowed to cued at one time (in one comment)
-                const cuedMemberInfoArrSliced = cuedMemberInfoArr.slice(0, 9);
+                
+                // #5.2 maximum 12 members are allowed to cued at one time (in one comment)
+                const cuedMemberInfoArrSliced = cuedMemberInfoArr.slice(0, 12);
+
                 for await (const cuedMemberInfo of cuedMemberInfoArrSliced) {
                     const { memberId: memberId_cued } = cuedMemberInfo;
                     // #5.3 look up record (of IMemberMemberMapping) in [RL] BlockingMemberMapping
@@ -185,18 +189,22 @@ export default async function GetRestrictedCommentComprehensiveById(req: NextApi
                     const _blockingMemberMappingQueryResult = await _blockingMemberMappingQuery.next();
                     if (!_blockingMemberMappingQueryResult.value) {
                         //// [!] comment author has not been blocked by cued member ////
-                        // #5.4 upsert record (of INoticeInfo.Cued) in [PRL] Notice
-                        const noticeTableClient = AzureTableClient('Notice');
-                        await noticeTableClient.upsertEntity<INoticeInfo>({
-                            partitionKey: memberId_cued,
-                            rowKey: createNoticeId('cue', authorId, postId, commentId), // combined id
-                            Category: 'cue',
-                            InitiateId: authorId,
-                            Nickname: getNicknameFromToken(token),
-                            PostTitle: title,
-                            CommentBrief: getContentBrief(content),
-                            CreatedTimeBySecond: getTimeBySecond()
-                        }, 'Replace');
+
+                        // #5.4 upsert document (of notificationComprehensive) in [C] notificationComprehensive
+                        const notificationComprehensiveUpdateResult = await notificationComprehensiveCollectionClient.updateOne({ noticeId: createNoticeId('cue', authorId, postId, commentId) }, {
+                            noticeId: createNoticeId('cue', memberId, postId, commentId),
+                            category: 'cue',
+                            memberId: authorId,
+                            initiateId: memberId,
+                            nickname: memberComprehensiveQueryResult.nickname,
+                            postTitle: title,
+                            commentBrief: getContentBrief(content),
+                            createdTimeBySecond: getTimeBySecond()
+                        }, { upsert: true });
+                        if (!notificationComprehensiveUpdateResult.acknowledged) {
+                            logWithDate(`Failed to upsert document (of INotificationComprehensive, member id: ${authorId}) in [C] notificationComprehensive`, fnn);
+                        }
+
                         // #5.5 update cue (INotificationStatistics) (of cued member) in [C] notificationStatistics
                         const notificationStatisticsUpdateResult = await notificationStatisticsCollectionClient.updateOne({ memberId: memberId_cued }, { $inc: { cue: 1 } });
                         if (!notificationStatisticsUpdateResult.acknowledged) {

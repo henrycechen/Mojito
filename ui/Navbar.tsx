@@ -14,71 +14,28 @@ import AccountCircleOutlinedIcon from '@mui/icons-material/AccountCircleOutlined
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
 import CreateOutlinedIcon from '@mui/icons-material/CreateOutlined';
 import CircleNotificationsOutlinedIcon from '@mui/icons-material/CircleNotificationsOutlined';
-
 import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined';
 import MarkEmailUnreadOutlinedIcon from '@mui/icons-material/MarkEmailUnreadOutlined';
+import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
 
 import { LangConfigs } from '../lib/types';
 
 const langConfigs: LangConfigs = {
-    open: {
-        tw: '打開菜單',
-        cn: '打开菜单',
-        en: 'Open menu'
-    },
     signIn: {
         tw: '登入',
         cn: '登入',
         en: 'Sign in'
-    },
-    create: {
-        tw: '創作',
-        cn: '创作',
-        en: 'Create'
-    },
-    message: {
-        tw: '消息',
-        cn: '消息',
-        en: 'Message'
-    },
-    followedMembers: {
-        tw: '關注',
-        cn: '关注',
-        en: 'Followed'
-    },
-    member: {
-        tw: '主页',
-        cn: '主页',
-        en: 'Member'
-    },
-    settings: {
-        tw: '設定',
-        cn: '设置',
-        en: 'Settings'
-    },
-    signOut: {
-        tw: '登出',
-        cn: '登出',
-        en: 'Sign out'
-    },
-    mode: {
-        tw: '主題',
-        cn: '主題',
-        en: 'Mode'
     }
 };
 
 type TNavbarProps = {
     lang?: string;
-    unreadNotification?: boolean;
 };
 
 export default function Navbar(props: TNavbarProps) {
 
     const router = useRouter();
     const { data: session, status } = useSession();
-
-    const lang = props.lang ?? 'tw';
 
     type TProcessStates = {
         memberId: string;
@@ -97,19 +54,12 @@ export default function Navbar(props: TNavbarProps) {
         }
     }, [status]);
 
-    const handleCloseMemberMenu = () => {
-        setProcessStates({
-            ...processStates,
-            menuAnchorEl: null
-        });
-    };
-
     const handleClick = (actionIndex: number) => (event: React.MouseEvent<HTMLButtonElement>) => {
         setProcessStates({ ...processStates, menuAnchorEl: null });
         if (actionIndex === 0) { router.push('/'); };
         if (actionIndex === 1) { router.push(`/follow`); };
         if (actionIndex === 2) { router.push(`/create`); };
-        if (actionIndex === 3) { router.push(`/message`); };
+        if (actionIndex === 3) { router.push(`/query`); };
         if (actionIndex === 4) { router.push(`/me/${processStates.memberId}`); };
         // if (actionIndex === 5) { signOut(); };
     };
@@ -123,7 +73,6 @@ export default function Navbar(props: TNavbarProps) {
     const ControlComponents = () => {
         return (
             <>
-
                 {/* posts */}
                 <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center' }}>
                     <IconButton
@@ -144,34 +93,33 @@ export default function Navbar(props: TNavbarProps) {
                     </IconButton>
                 </Box>
 
+                {/* create */}
                 <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center' }}>
                     <IconButton
 
-                        aria-label="open drawer"
+                        aria-label={'create'}
                         onClick={handleClick(2)}
                     >
                         <CreateOutlinedIcon sx={{ fontSize: 30 }} />
                     </IconButton>
                 </Box>
 
-                {/* message */}
+                {/* query */}
                 <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center' }}>
                     <IconButton
 
-                        aria-label="open drawer"
+                        aria-label={'query'}
                         onClick={handleClick(3)}
                     >
-                        {!!props.unreadNotification ?
-                            <MarkEmailUnreadOutlinedIcon sx={{ fontSize: 30 }} /> :
-                            <EmailOutlinedIcon sx={{ fontSize: 30 }} />
-                        }
+                        <SearchOutlinedIcon sx={{ fontSize: 30 }} />
                     </IconButton>
                 </Box>
 
+                {/* member */}
                 <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center' }}>
                     <IconButton
 
-                        aria-label="open drawer"
+                        aria-label={'member'}
                         onClick={handleClick(4)}
                     >
                         <AccountCircleOutlinedIcon sx={{ fontSize: 30 }} />
@@ -184,7 +132,7 @@ export default function Navbar(props: TNavbarProps) {
 
     return (
         <>
-            <AppBar position="fixed" color="inherit" sx={{ top: 'auto', bottom: 0, height: '6rem', display: { xs: 'block', sm: 'block', md: 'none' } }}>
+            <AppBar position="fixed" color="inherit" sx={{ top: 'auto', bottom: 0, height: '5rem', display: { xs: 'block', sm: 'block', md: 'none' } }}>
                 <Container maxWidth={'md'}>
                     <Toolbar disableGutters>
 

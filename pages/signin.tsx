@@ -522,6 +522,9 @@ const SignIn = ({ providers, csrfToken }: SigninPageProps) => {
                 </Box>
             </Container>
 
+            {/* bottom space */}
+            <Box pb={{ xs: '10rem', sm: '10rem', md: 0 }} />
+
             <ReCAPTCHA
                 hl={langConfigs.recaptchaLang[processStates.lang]}
                 size={'invisible'}

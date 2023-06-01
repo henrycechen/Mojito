@@ -32,10 +32,10 @@ export function createId(catergory: 'member' | 'notice' | 'post' | 'comment' | '
 
 export function createNoticeId(category: 'cue' | 'reply' | 'like' | 'pin' | 'save' | 'follow', initiateId: string, postId = '', commentId = ''): string {
     switch (category) {
-        case 'cue': return `NC-${initiateId}${'' === postId ? '' : `-${postId}`}${'' === commentId ? '' : `-${commentId}`}`;
-        case 'reply': return `NR-${initiateId}${'' === postId ? '' : `-${postId}`}${'' === commentId ? '' : `-${commentId}`}`;
-        case 'like': return `NL-${initiateId}${'' === postId ? '' : `-${postId}`}${'' === commentId ? '' : `-${commentId}`}`;
-        case 'pin': return `NP-${initiateId}${'' === postId ? '' : `-${postId}`}${'' === commentId ? '' : `-${commentId}`}`;
+        case 'cue': return `NC-${initiateId}${'' === postId ? '' : `-${postId}`}${'' === commentId && postId !== commentId ? '' : `-${commentId}`}`;
+        case 'reply': return `NR-${initiateId}${'' === postId ? '' : `-${postId}`}${'' === commentId && postId !== commentId ? '' : `-${commentId}`}`;
+        case 'like': return `NL-${initiateId}${'' === postId ? '' : `-${postId}`}${'' === commentId && postId !== commentId ? '' : `-${commentId}`}`;
+        case 'pin': return `NP-${initiateId}${'' === postId ? '' : `-${postId}`}${'' === commentId && postId !== commentId ? '' : `-${commentId}`}`;
         case 'save': return `NS-${initiateId}${'' === postId ? '' : `-${postId}`}`;
         case 'follow': return 'NF-' + initiateId;
     }

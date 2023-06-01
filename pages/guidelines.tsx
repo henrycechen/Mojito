@@ -253,8 +253,11 @@ export default function CommunityGidelines() {
                     key='desc'
                 />
             </Head>
+
             <Navbar lang={processStates.lang} />
+
             <BackwardToSettingsButton />
+            
             <Container sx={{ minHeight: { xs: 1000, sm: 1000, md: 800 } }}>
                 <Grid container>
                     <Grid item md={1}></Grid>
@@ -332,6 +335,9 @@ export default function CommunityGidelines() {
                 <Terms sx={{ mb: 2 }} lang={processStates.lang} />
                 <ThemeSwitch sx={{ mb: '8rem' }} />
             </Box>
+
+            {/* bottom space */}
+            <Box pb={{ xs: '10rem', sm: '10rem', md: 0 }} />
         </>
     );
 }

@@ -90,7 +90,6 @@ export function verifyNoticeId(id: any): { isValid: boolean; category: string; e
     }
 }
 
-
 export function verifyUrl(url: any): boolean {
     if (undefined === url) {
         return false;

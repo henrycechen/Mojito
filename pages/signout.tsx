@@ -123,6 +123,8 @@ const SignOut = () => {
                 <LangSwitch setLang={setLang} />
                 <ThemeSwitch sx={{ mb: '8rem' }} />
             </Container>
+            {/* bottom space */}
+            <Box pb={{ xs: '10rem', sm: '10rem', md: 0 }} />
         </>
     );
 };

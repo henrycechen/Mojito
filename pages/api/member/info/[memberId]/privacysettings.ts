@@ -1,13 +1,12 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getToken } from 'next-auth/jwt';
-import { RestError } from '@azure/storage-blob';
 import { MongoError } from 'mongodb';
 
 import AtlasDatabaseClient from '../../../../../modules/AtlasDatabaseClient';
-import AzureTableClient from '../../../../../modules/AzureTableClient';
 
 import { IMemberComprehensive } from '../../../../../lib/interfaces/member';
 import { IMemberPostMapping } from '../../../../../lib/interfaces/mapping';
+
 import { response405, response500, logWithDate, } from '../../../../../lib/utils/general';
 import { getTimeBySecond } from '../../../../../lib/utils/create';
 import { verifyId } from '../../../../../lib/utils/verify';
@@ -23,6 +22,7 @@ const fnn = `${UpdatePrivacySettings.name} (API)`;
  * 
  * Last update:
  * - 03/05/2023 v0.1.2
+ * - 31/05/2023 v0.1.3
 */
 
 export default async function UpdatePrivacySettings(req: NextApiRequest, res: NextApiResponse) {
@@ -39,14 +39,14 @@ export default async function UpdatePrivacySettings(req: NextApiRequest, res: Ne
         res.status(401).send('Unauthorized');
         return;
     }
-    
+
     //// Verify member id ////
     const { isValid, category, id: memberId } = verifyId(req.query?.memberId);
     if (!(isValid && 'member' === category)) {
         res.status(400).send('Invalid member id');
         return;
     }
-    
+
     //// Match the member id in token and the one in request ////
     const { sub: tokenId } = token;
     if (tokenId !== memberId) {
@@ -85,6 +85,7 @@ export default async function UpdatePrivacySettings(req: NextApiRequest, res: Ne
             )
         ) {
             res.status(400).send('Update failed due to defavtive update setting object');
+            await atlasDbClient.close();
             return;
         }
 
@@ -102,32 +103,23 @@ export default async function UpdatePrivacySettings(req: NextApiRequest, res: Ne
         if (!memberComprehensiveUpdateResult.acknowledged) {
             logWithDate(`Failed to update allowKeepingBrowsingHistory, allowVisitingSavedPosts, hidePostsAndCommentsOfBlockedMember, lastSettingUpdatedTimeBySecond (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`, fnn);
             res.status(500).send(`Attempt to update privacy settings`);
+            await atlasDbClient.close();
             return;
         }
-
-        await atlasDbClient.close();
 
         //// Response 200 ////
         res.status(200).send('Privacy settings updated');
 
         if (!settings.allowKeepingBrowsingHistory) {
-            const browsingHistoryMappingTableClient = AzureTableClient('HistoryMapping');
-            const historyQuery = browsingHistoryMappingTableClient.listEntities<IMemberPostMapping>({ queryOptions: { filter: `PartitionKey eq '${memberId}' and IsActive eq true` } });
-            let result = await historyQuery.next();
-            while (!result.done) {
-                await browsingHistoryMappingTableClient.updateEntity({
-                    partitionKey: memberId,
-                    rowKey: result.value.rowKey,
-                    IsActive: false
-                }, 'Merge');
-            }
+            const memberPostMappingCollectionClient = atlasDbClient.db('mapping').collection<IMemberPostMapping>('member-post-history');
+            await memberPostMappingCollectionClient.updateMany({ memberId }, { $set: { status: 0 } });
         }
+
+        await atlasDbClient.close();
         return;
     } catch (e: any) {
         let msg;
-        if (e instanceof RestError) {
-            msg = `Attempt to communicate with azure table storage.`;
-        } else if (e instanceof MongoError) {
+        if (e instanceof MongoError) {
             msg = `Attempt to communicate with atlas mongodb.`;
         } else {
             msg = `Uncategorized. ${e?.msg}`;

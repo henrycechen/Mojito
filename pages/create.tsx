@@ -38,7 +38,6 @@ import { DragDropContext } from 'react-beautiful-dnd';
 import { Droppable, Draggable } from 'react-beautiful-dnd';
 
 import axios from 'axios';
-import 'jimp';
 
 import { IConciseTopicComprehensive, ITopicInfo } from '../lib/interfaces/topic';
 import { LangConfigs, TPreferenceStates } from '../lib/types';
@@ -750,24 +749,10 @@ const CreatePost = () => {
                 }
             };
 
-            const imgRp = await fetch(img.url);
-            const imgbuf = Buffer.concat([new Uint8Array(await imgRp.arrayBuffer())]);
-            const Jimp = (window as any).Jimp;
-            const imgf = await Jimp.read(imgbuf);
-
-            // Verify image size and handle oversized image
-            let bl = imgbuf.byteLength;
-            while (bl > 102400) {
-                imgf.scale(0.5);
-                const b = await imgf.getBufferAsync(Jimp.MIME_JPEG);
-                bl = b.byteLength;
-            };
-
-            // Get processed image in PNG
-            const bbf = await imgf.getBufferAsync(Jimp.MIME_JPEG);
-
-            // Append image data
-            formData.append('image', new Blob([new Uint8Array(bbf)], { type: Jimp.MIME_JPEG }));
+            const imgRes = await fetch(img.url);
+            const imgbuf = Buffer.concat([new Uint8Array(await imgRes.arrayBuffer())]);
+            
+            formData.append('image', new Blob([new Uint8Array(imgbuf)]));
             const resp = await axios.post(`/api/upload/cover/${postId}?requestInfo=${tkn}`, formData, config);
             tkn = resp.data?.updatedRequestInfoToken;
 
@@ -821,33 +806,11 @@ const CreatePost = () => {
 
                 // Prepare image data
                 try {
-                    const imgRp = await fetch(img.url);
-                    const imgbuf = Buffer.concat([new Uint8Array(await imgRp.arrayBuffer())]);
-                    const Jimp = (window as any).Jimp;
-                    const imgf = await Jimp.read(imgbuf);
-
-                    // Get image mime info
-                    let mme = imgf.getMIME();
-
-                    // Shirnk the image size
-                    if (960 < imgf.bitmap.width) {
-                        imgf.resize(960, Jimp.AUTO);
-                    }
-
-                    if (1200 < imgf.bitmap.width) {
-                        imgf.resize(Jimp.AUTO, 1600);
-                    }
-
-                    // Image quality control
-                    imgf.quality(768000 > imgbuf.byteLength ? 95 : 85); // threshold 750 KB
-
-                    const bbf = await imgf.getBufferAsync(mme);
-                    if (!['image/png', 'image/jpeg'].includes(mme)) {
-                        mme = Jimp.MIME_JPEG;
-                    }
+                    const imgRes = await fetch(img.url);
+                    const imgbuf = Buffer.concat([new Uint8Array(await imgRes.arrayBuffer())]);
 
                     // Append image data
-                    formData.append('image', new Blob([new Uint8Array(bbf)], { type: mme }));
+                    formData.append('image', new Blob([new Uint8Array(imgbuf)]));
                     const uploadResp = await axios.post(`/api/upload/image/${postId}?requestInfo=${tkn}`, formData, config);
 
                     const { imageFullname, updatedRequestInfoToken } = uploadResp.data;

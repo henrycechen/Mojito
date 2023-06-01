@@ -19,7 +19,7 @@ import ArticleIcon from '@mui/icons-material/Article';
 import CreateIcon from '@mui/icons-material/Create';
 import EmailIcon from '@mui/icons-material/Email';
 import NotificationsIcon from '@mui/icons-material/Notifications';
-import ReorderIcon from '@mui/icons-material/Reorder';
+import SearchIcon from '@mui/icons-material/Search';
 import SettingsIcon from '@mui/icons-material/Settings';
 
 import { LangConfigs } from '../lib/types';
@@ -35,10 +35,15 @@ const langConfigs: LangConfigs = {
         cn: '文章',
         en: 'Posts'
     },
-    followedMembers: {
+    follow: {
         tw: '關注',
         cn: '关注',
-        en: 'Followed'
+        en: 'Follow'
+    },
+    query: {
+        tw: '搜尋',
+        cn: '搜索',
+        en: 'Query'
     },
     messages: {
         tw: '訊息',
@@ -107,6 +112,10 @@ export default function SideMenu(props: TSideMenuProps) {
         router.push(`/follow`);
     };
 
+    const handleProceedToQuery = () => {
+        router.push(`/query`);
+    };
+
     const handleProceedToMessage = () => {
         router.push(`/message`);
     };
@@ -156,7 +165,17 @@ export default function SideMenu(props: TSideMenuProps) {
                             <NotificationsIcon />
                         </ListItemIcon>
                         <ListItemText>
-                            {langConfigs.followedMembers[lang]}
+                            {langConfigs.follow[lang]}
+                        </ListItemText>
+                    </MenuItem>
+
+                    {/* query */}
+                    <MenuItem sx={{ height: 56 }} onClick={handleProceedToQuery} >
+                        <ListItemIcon>
+                            <SearchIcon />
+                        </ListItemIcon>
+                        <ListItemText>
+                            {langConfigs.query[lang]}
                         </ListItemText>
                     </MenuItem>
 

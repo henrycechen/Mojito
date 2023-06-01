@@ -325,8 +325,16 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, authorInfo
             const viewerSession: any = { ...session };
             setViewerInfoStates({ ...viewerInfoStates, memberId: viewerSession?.user?.id ?? '' });
             restorePreferenceStatesFromCache(setPreferenceStates);
+            createHistory(postComprehensive_ss.postId);
         }
     }, [status]);
+
+    const createHistory = async (postId: string) => {
+        const resp = await fetch(`/api/member/browsinghistory/create?postId=${postId}`, { method: 'POST' });
+        if (200 !== resp.status) {
+            console.error('Create browsing history failed');
+        }
+    };
 
     const { postId, memberId: authorId, } = postComprehensive_ss;
 
@@ -1668,7 +1676,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, authorInfo
             </Grid>
 
             {/* bottom space */}
-            <Box pb={'10rem'} />
+            <Box pb={{ xs: '10rem', sm: '10rem', md: 0 }} />
 
             {/* pop up comment editor */}
             < Popover

@@ -16,7 +16,9 @@ import { MongoError } from 'mongodb';
 import { LangConfigs, TVerifyEmailAddressRequestInfo } from '../../../lib/types';
 import { composeVerifyEmailAddressEmailContent } from '../../../lib/email';
 import AzureBlobClient from '../../../modules/AzureBlobClient';
-import Jimp from 'jimp';
+
+import sharp from 'sharp';
+
 import { logWithDate } from '../../../lib/utils/general';
 import { ILoginJournal, IMemberComprehensive, IMinimumMemberComprehensive } from '../../../lib/interfaces/member';
 import { getRandomHexStr, getRandomIdStr, getTimeBySecond } from '../../../lib/utils/create';
@@ -210,19 +212,11 @@ export default NextAuth({
                         try {
                             const resp = await fetch(avatarImageUrl);
                             if (resp.status === 200) {
-                                const contentType = resp.headers.get('Content-Type');
-                                if ('string' === typeof contentType && ['image/jpeg', 'image/png'].includes(contentType)) {
-                                    const contianerClient = AzureBlobClient('avatar');
-                                    const blockClient = contianerClient.getBlockBlobClient(`${memberId}.png`);
-                                    if ('image/png' === contentType) {
-                                        await blockClient.uploadData(await resp.arrayBuffer());
-                                    } else {
-                                        const initialBuf = Buffer.concat([new Uint8Array(await resp.arrayBuffer())]);
-                                        const handledFile = await Jimp.read(initialBuf);
-                                        const convertedBuf = await handledFile.getBufferAsync(Jimp.MIME_PNG);
-                                        await blockClient.uploadData(convertedBuf);
-                                    }
-                                }
+                                const contianerClient = AzureBlobClient('avatar');
+                                const blockClient = contianerClient.getBlockBlobClient(`${memberId}.jpeg`);
+                                const initialBuf = Buffer.concat([new Uint8Array(await resp.arrayBuffer())]);
+                                const convertedBuf = await sharp(initialBuf).rotate().resize(100, 100, { fit: 'cover' }).jpeg().toBuffer();
+                                await blockClient.uploadData(convertedBuf);
                             }
                         } catch (e: any) {
                             logWithDate(`Attempt to fetch avatar image from login provider`, e, `SignIn Callback (${providerId})`);

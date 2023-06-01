@@ -40,6 +40,7 @@ import MarkEmailUnreadIcon from '@mui/icons-material/MarkEmailUnread';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import ReorderIcon from '@mui/icons-material/Reorder';
+import SearchIcon from '@mui/icons-material/Search';
 import SettingsIcon from '@mui/icons-material/Settings';
 import SvgIcon from '@mui/material/SvgIcon';
 
@@ -85,10 +86,15 @@ const langConfigs: LangConfigs = {
         cn: '文章',
         en: 'Posts'
     },
-    followedMembers: {
+    follow: {
         tw: '關注',
         cn: '关注',
         en: 'Followed'
+    },
+    query: {
+        tw: '搜尋',
+        cn: '搜索',
+        en: 'Query'
     },
     messages: {
         tw: '訊息',
@@ -198,9 +204,6 @@ const Home = () => {
             restorePreferenceStatesFromCache(setPreferenceStates);
         }
     }, [status]);
-
-    // Ref - masonry
-    const masonryWrapper = React.useRef<any>();
 
     // States - preference
     const [preferenceStates, setPreferenceStates] = React.useState<TPreferenceStates>({
@@ -386,6 +389,10 @@ const Home = () => {
         router.push(`/me/${memberId}`);
     };
 
+    const handleClickOnTopic = (topicId: string) => (event: React.MouseEvent) => {
+        router.push(`/query?topicId=${topicId}`);
+    };
+
     type TRightColumnStates = {
         topicInfoArr: IConciseTopicComprehensive[];
         todaysTrendPostInfoArr: IConcisePostComprehensive[];
@@ -445,6 +452,10 @@ const Home = () => {
 
     const handleProceedToFollowedMember = () => {
         router.push(`/follow`);
+    };
+
+    const handleProceedToQuery = () => {
+        router.push(`/query`);
     };
 
     const handleProceedToMessage = () => {
@@ -638,7 +649,7 @@ const Home = () => {
                     value={Math.abs(animationStates.scrollYPixels) < 50 && !animationStates.requireUpdate ? Math.abs(animationStates.scrollYPixels) * 2 : 100} />
             </Box>
 
-            <Navbar lang={preferenceStates.lang} unreadNotification={0 !== viewersNoticeStatistics} />
+            <Navbar lang={preferenceStates.lang} />
             <Grid container>
 
                 {/* left */}
@@ -679,7 +690,17 @@ const Home = () => {
                                             <NotificationsIcon />
                                         </ListItemIcon>
                                         <ListItemText>
-                                            {langConfigs.followedMembers[preferenceStates.lang]}
+                                            {langConfigs.follow[preferenceStates.lang]}
+                                        </ListItemText>
+                                    </MenuItem>
+
+                                    {/* query */}
+                                    <MenuItem sx={{ height: 56 }} onClick={handleProceedToQuery} >
+                                        <ListItemIcon>
+                                            <SearchIcon />
+                                        </ListItemIcon>
+                                        <ListItemText>
+                                            {langConfigs.query[lang]}
                                         </ListItemText>
                                     </MenuItem>
 
@@ -790,7 +811,7 @@ const Home = () => {
                     }
 
                     {/* mansoy */}
-                    <Box ref={masonryWrapper} maxWidth={{ md: 900, lg: 800 }}>
+                    <Box maxWidth={{ md: 900, lg: 800 }}>
                         <Masonry columns={2} sx={{ margin: 0 }}>
 
                             {/* posts */}
@@ -805,7 +826,8 @@ const Home = () => {
                                                 loading='lazy'
                                                 src={provideCoverImageUrl(p.postId, imageDomain)}
                                                 sx={{
-                                                    maxWidth: 450,
+                                                    maxWidth: 1,
+                                                    maxHeight: 1,
                                                     height: 'auto',
                                                     borderTopLeftRadius: 4,
                                                     borderTopRightRadius: 4
@@ -852,6 +874,9 @@ const Home = () => {
                         </Masonry>
                     </Box>
 
+                    {/* bottom space */}
+                    <Box pb={{ xs: '10rem', sm: '10rem', md: 0 }} />
+
                 </Grid>
 
                 {/* right */}
@@ -869,7 +894,7 @@ const Home = () => {
 
                                 {/* topics */}
                                 {0 !== rightColumnStates.topicInfoArr.length && rightColumnStates.topicInfoArr.map(t =>
-                                    <MenuItem key={getRandomHexStr()} sx={{ height: 64 }} >
+                                    <MenuItem key={getRandomHexStr()} sx={{ height: 64 }} onClick={handleClickOnTopic(t.topicId)}>
 
                                         {/* channel icon */}
                                         <ListItemIcon>
@@ -895,6 +920,7 @@ const Home = () => {
                                         </ListItemText>
                                     </MenuItem>
                                 )}
+
                             </MenuList>
 
                             {/* copyright */}
@@ -919,6 +945,7 @@ const Home = () => {
                         </Stack>
                     </Box>
                 </Grid>
+
             </Grid>
 
             {/* channel memu */}

@@ -6,17 +6,18 @@ import { MongoError } from 'mongodb';
 import AzureTableClient from '../../../modules/AzureTableClient';
 import AtlasDatabaseClient from '../../../modules/AtlasDatabaseClient';
 
-import { IMemberMemberMapping, IMemberPostMapping } from '../../../lib/interfaces/mapping';
-import { logWithDate, response405, response500 } from '../../../lib/utils/general';
-import { verifyId } from '../../../lib/utils/verify';
 import { IMemberComprehensive, IMemberStatistics } from '../../../lib/interfaces/member';
+import { IMemberMemberMapping, IMemberPostMapping } from '../../../lib/interfaces/mapping';
 import { IPostComprehensive } from '../../../lib/interfaces/post';
 import { IChannelStatistics } from '../../../lib/interfaces/channel';
 import { ITopicComprehensive } from '../../../lib/interfaces/topic';
-import { INoticeInfo, INotificationStatistics } from '../../../lib/interfaces/notification';
-import { createNoticeId, getTimeBySecond } from '../../../lib/utils/create';
+import { INotificationComprehensive, INotificationStatistics } from '../../../lib/interfaces/notification';
 
-const ffn = `${SaveOrUndoSavePostById.name} (API)`;
+import { createNoticeId, getTimeBySecond } from '../../../lib/utils/create';
+import { logWithDate, response405, response500 } from '../../../lib/utils/general';
+import { verifyId } from '../../../lib/utils/verify';
+
+const fnn = `${SaveOrUndoSavePostById.name} (API)`;
 
 /**
  * This interface accepts GET and POST method
@@ -28,6 +29,7 @@ const ffn = `${SaveOrUndoSavePostById.name} (API)`;
  * Last update: 
  * - 24/02/2023 v0.1.1
  * - 08/05/2023 v0.1.2
+ * - 31/05/2023 v0.1.3
  */
 
 export default async function SaveOrUndoSavePostById(req: NextApiRequest, res: NextApiResponse) {
@@ -79,7 +81,7 @@ export default async function SaveOrUndoSavePostById(req: NextApiRequest, res: N
             await atlasDbClient.close();
             return;
         }
-        const { memberId: authorId, title, channelId, topicInfoArr: topicIdsArr, status: postStatus } = postComprehensiveQueryResult;
+        const { memberId: authorId, nickname, title, channelId, topicInfoArr, status: postStatus } = postComprehensiveQueryResult;
         if (0 > postStatus) {
             res.status(403).send('Method not allowed due to post deleted');
             await atlasDbClient.close();
@@ -99,18 +101,22 @@ export default async function SaveOrUndoSavePostById(req: NextApiRequest, res: N
         }
 
         let isSaved: boolean;
-        // #1.1 look up record (of IMemberPostMapping) in [RL] SavedMapping
-        const savedMappingTableClient = AzureTableClient('SavedMapping');
-        const savedMappingQuery = savedMappingTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${memberId}' and RowKey eq '${postId}'` } });
-        //// [!] attemp to reterieve entity makes the probability of causing RestError ////
-        const savedMappingQueryResult = await savedMappingQuery.next();
-        // #1.2 verify if post has been saved
-        if (!savedMappingQueryResult.value) {
+
+        // #1.1 look up dcoument (of IMemberPostMapping) in [C] member-post-saved
+        const memberPostMappingCollectionClient = atlasDbClient.db('mapping').collection<IMemberPostMapping>('member-post-saved');
+        const mappingQueryResult = await memberPostMappingCollectionClient.findOne({ memberId, postId }, {
+            projection: {
+                _id: 0,
+                status: 1
+            }
+        });
+
+        if (mappingQueryResult && mappingQueryResult.status > 0) {
+            // Case [Undo save]
+            isSaved = true;
+        } else {
             // Case [Save]
             isSaved = false;
-        } else {
-            // Case [Depends]
-            isSaved = !!savedMappingQueryResult.value?.IsActive;
         }
 
         //// GET | verify if saved ////
@@ -126,13 +132,26 @@ export default async function SaveOrUndoSavePostById(req: NextApiRequest, res: N
 
         //// POST | do save or undo save ////
         if (isSaved) {
+
             // Case [Undo save]
-            // #2A.1 update record (of IMemberPostMapping) in [C] SavedMapping
-            await savedMappingTableClient.upsertEntity({
-                partitionKey: memberId,
-                rowKey: postId,
-                IsActive: false
-            }, 'Merge');
+            const updateResult = await memberPostMappingCollectionClient.updateOne({ memberId, postId }, {
+                $set: {
+                    memberId,
+                    postId,
+                    title,
+                    channelId,
+                    authorId,
+                    nickname,
+                    createdTimeBySecond: getTimeBySecond(),
+                    status: 0
+                }
+            }, { upsert: true });
+
+            if (!updateResult.acknowledged) {
+                res.status(500).send('Undo save post failed');
+                await atlasDbClient.close();
+                return;
+            }
 
             //// Response 200 ////
             res.status(200).send(`Undo save post success`);
@@ -140,48 +159,59 @@ export default async function SaveOrUndoSavePostById(req: NextApiRequest, res: N
             // #2A.2 update totalUndoSavedCount (of IMemberStatistics) in [C] memberStatistics
             const memberStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId }, { $inc: { totalUndoSavedCount: 1 } });
             if (!memberStatisticsUpdateResult.acknowledged) {
-                logWithDate(`Failed to update totalUndoSavedCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`, ffn);
+                logWithDate(`Failed to update totalUndoSavedCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`, fnn);
             }
+
             // #2A.3 update totalCreationUndoSavedCount (of IMemberStatistics) in [C] memberStatistics (post author)
             const authorStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId: authorId }, { $inc: { totalCreationUndoSavedCount: 1 } });
             if (!authorStatisticsUpdateResult.acknowledged) {
-                logWithDate(`Failed to update totalCreationUndoSavedCount (of IMemberStatistics, member id: ${authorId}) in [C] memberStatistics`, ffn);
+                logWithDate(`Failed to update totalCreationUndoSavedCount (of IMemberStatistics, member id: ${authorId}) in [C] memberStatistics`, fnn);
             }
+
             // #A2.4 update totalUndoSavedCount (of IPostComprehensive) in [C] postComprehensive
             const postComprehensiveUpdateResult = await postComprehensiveCollectionClient.updateOne({ postId }, { $inc: { totalUndoSavedCount: 1 } });
             if (!postComprehensiveUpdateResult.acknowledged) {
-                logWithDate(`Failed to update totalUndoSavedCount (of IPostComprehensive, post id: ${postId}) in [C] postComprehensive`, ffn);
+                logWithDate(`Failed to update totalUndoSavedCount (of IPostComprehensive, post id: ${postId}) in [C] postComprehensive`, fnn);
             }
+
             // #2A.5 update totalUndoSavedCount (of IChannelStatistics) in [C] channelStatistics
             const channelStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IChannelStatistics>('channel');
             const channelStatisticsUpdateResult = await channelStatisticsCollectionClient.updateOne({ channelId }, { $inc: { totalUndoSavedCount: 1 } });
             if (!channelStatisticsUpdateResult.acknowledged) {
-                logWithDate(`Failed to update totalUndoSavedCount (of IChannelStatistics, channel id: ${channelId}) in [C] channelStatistics`, ffn);
+                logWithDate(`Failed to update totalUndoSavedCount (of IChannelStatistics, channel id: ${channelId}) in [C] channelStatistics`, fnn);
             }
+
             // #2A.6 (cond.) update totalUndoSavedCount (of ITopicComprehensive) in [C] topicComprehensive
-            if (Array.isArray(topicIdsArr) && topicIdsArr.length !== 0) {
+            if (Array.isArray(topicInfoArr) && topicInfoArr.length !== 0) {
                 const topicComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<ITopicComprehensive>('topic');
-                for await (const topicId of topicIdsArr) {
+                for await (const topicId of topicInfoArr) {
                     const topicComprehensiveUpdateResult = await topicComprehensiveCollectionClient.updateOne({ topicId }, { $inc: { totalUndoSavedCount: 1 } });
                     if (!topicComprehensiveUpdateResult.acknowledged) {
-                        logWithDate(`Failed to update totalUndoSavedCount (of ITopicComprehensive, topic id: ${topicId}) in [C] topicComprehensive`, ffn);
+                        logWithDate(`Failed to update totalUndoSavedCount (of ITopicComprehensive, topic id: ${topicId}) in [C] topicComprehensive`, fnn);
                     }
                 }
             }
         } else {
+
             // Case [Do save]
-            // #2B.1 update record (of IMemberPostMapping) in [C] SavedMapping
-            await savedMappingTableClient.upsertEntity<IMemberPostMapping>({
-                partitionKey: memberId,
-                rowKey: postId,
-                AuthorId: authorId,
-                Nickname: authorName,
-                Title: title,
-                ChannelId: channelId,
-                CreatedTimeBySecond: getTimeBySecond(),
-                HasImages: false,
-                IsActive: true
-            }, 'Replace');
+            const updateResult = await memberPostMappingCollectionClient.updateOne({ memberId, postId }, {
+                $set: {
+                    memberId,
+                    postId,
+                    title,
+                    channelId,
+                    authorId,
+                    nickname,
+                    createdTimeBySecond: getTimeBySecond(),
+                    status: 200
+                }
+            }, { upsert: true });
+
+            if (!updateResult.acknowledged) {
+                res.status(500).send('Save post failed');
+                await atlasDbClient.close();
+                return;
+            }
 
             //// Response 200 ////
             res.status(200).send(`Save post success`);
@@ -189,31 +219,35 @@ export default async function SaveOrUndoSavePostById(req: NextApiRequest, res: N
             // #2B.2 update totalSavedCount (of IMemberStatistics) in [C] memberStatistics
             const memberStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId }, { $inc: { totalSavedCount: 1 } });
             if (!memberStatisticsUpdateResult.acknowledged) {
-                logWithDate(`Failed to update total totalSavedCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`, ffn);
+                logWithDate(`Failed to update total totalSavedCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`, fnn);
             }
+
             // #2B.3 update totalCreationSavedCount (of IMemberStatistics) in [C] memberStatistics (post author)
             const authorStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId: authorId }, { $inc: { totalCreationSavedCount: 1 } });
             if (!authorStatisticsUpdateResult.acknowledged) {
-                logWithDate(`Failed to update total totalCreationLikedCount (of IMemberStatistics, member id: ${authorId}) in [C] memberStatistics`, ffn);
+                logWithDate(`Failed to update total totalCreationLikedCount (of IMemberStatistics, member id: ${authorId}) in [C] memberStatistics`, fnn);
             }
+
             // #2B.4 update totalSavedCount (of IPostComprehensive) in [C] postComprehensive
             const postComprehensiveUpdateResult = await postComprehensiveCollectionClient.updateOne({ postId }, { $inc: { totalSavedCount: 1 } });
             if (!postComprehensiveUpdateResult.acknowledged) {
-                logWithDate(`Failed to update totalSavedCount (of IPostComprehensive, post id: ${postId}) in [C] postComprehensive`, ffn);
+                logWithDate(`Failed to update totalSavedCount (of IPostComprehensive, post id: ${postId}) in [C] postComprehensive`, fnn);
             }
+
             // #2B.5 update totalSavedCount (of IChannelStatistics) in [C] channelStatistics
             const channelStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IChannelStatistics>('channel');
             const channelStatisticsUpdateResult = await channelStatisticsCollectionClient.updateOne({ channelId }, { $inc: { totalSavedCount: 1 } });
             if (!channelStatisticsUpdateResult.acknowledged) {
-                logWithDate(`Failed to update totalSavedCount (of IChannelStatistics, channel id: ${channelId}) in [C] channelStatistics`, ffn);
+                logWithDate(`Failed to update totalSavedCount (of IChannelStatistics, channel id: ${channelId}) in [C] channelStatistics`, fnn);
             }
+
             // #2B.6 (cond.) update totalSavedCount (of ITopicComprehensive) in [C] topicComprehensive
-            if (Array.isArray(topicIdsArr) && topicIdsArr.length !== 0) {
+            if (Array.isArray(topicInfoArr) && topicInfoArr.length !== 0) {
                 const topicComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<ITopicComprehensive>('topic');
-                for await (const topicId of topicIdsArr) {
+                for await (const topicId of topicInfoArr) {
                     const topicComprehensiveUpdateResult = await topicComprehensiveCollectionClient.updateOne({ topicId }, { $inc: { totalSavedCount: 1 } });
                     if (!topicComprehensiveUpdateResult.acknowledged) {
-                        logWithDate(`Failed to update totalSavedCount (of ITopicComprehensive, topic id: ${topicId}) in [C] topicComprehensive`, ffn);
+                        logWithDate(`Failed to update totalSavedCount (of ITopicComprehensive, topic id: ${topicId}) in [C] topicComprehensive`, fnn);
                     }
                 }
             }
@@ -227,28 +261,33 @@ export default async function SaveOrUndoSavePostById(req: NextApiRequest, res: N
                 const blockingMemberMappingQueryResult = await blockingMemberMappingQuery.next();
                 if (!blockingMemberMappingQueryResult.value) {
                     //// [!] member saved post has not been blocked by post author ////
-                    // #2B.8 upsert record (of INoticeInfo.Save) in [PRL] Notice
-                    const noticeTableClient = AzureTableClient('Notice');
-                    await noticeTableClient.upsertEntity<INoticeInfo>({
-                        partitionKey: authorId, // notified member id, in this case, post author
-                        rowKey: createNoticeId('save', memberId, postId), // combined id
-                        Category: 'save',
-                        InitiateId: memberId,
-                        Nickname: memberName,
-                        PostTitle: title,
-                        CommentBrief: '', // [!] comment brief is not supplied in this case
-                        CreatedTimeBySecond: getTimeBySecond(),
-                    }, 'Replace');
+
+                    // #2B.8 upsert document (of notificationComprehensive) in [C] notificationComprehensive
+                    const notificationComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<INotificationComprehensive>('notification');
+                    const notificationComprehensiveUpdateResult = await notificationComprehensiveCollectionClient.updateOne({ noticeId: createNoticeId('save', memberId, postId) }, {
+                        noticeId: createNoticeId('save', memberId, postId),
+                        category: 'save',
+                        memberId: authorId,
+                        initiateId: memberId,
+                        nickname: memberComprehensiveQueryResult.nickname,
+                        postTitle: title,
+                        commentBrief: '',
+                        createdTimeBySecond: getTimeBySecond()
+                    }, { upsert: true });
+                    if (!notificationComprehensiveUpdateResult.acknowledged) {
+                        logWithDate(`Failed to upsert document (of INotificationComprehensive, member id: ${authorId}) in [C] notificationComprehensive`, fnn);
+                    }
+
                     // #B2.9 update save (of INotificationStatistics, of the post author) in [C] notificationStatistics
                     const notificationStatisticsCollectionClient = atlasDbClient.db('statistics').collection<INotificationStatistics>('notification');
                     const notificationStatisticsUpdateResult = await notificationStatisticsCollectionClient.updateOne({ memberId: authorId }, { $inc: { save: 1 } });
                     if (!notificationStatisticsUpdateResult.acknowledged) {
-                        logWithDate(`Failed to update save (of INotificationStatistics, member id: ${authorId}) in [C] notificationStatistics`, ffn);
+                        logWithDate(`Failed to update save (of INotificationStatistics, member id: ${authorId}) in [C] notificationStatistics`, fnn);
                     }
                 }
             }
         }
-        
+
         await atlasDbClient.close();
         return;
     }
@@ -264,7 +303,7 @@ export default async function SaveOrUndoSavePostById(req: NextApiRequest, res: N
         if (!res.headersSent) {
             response500(res, msg);
         }
-        logWithDate(msg, ffn, e);
+        logWithDate(msg, fnn, e);
         await atlasDbClient.close();
         return;
     }

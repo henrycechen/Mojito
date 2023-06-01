@@ -1,7 +1,7 @@
 import * as React from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import { signIn, useSession } from 'next-auth/react';
+import { signIn, useSession, signOut } from 'next-auth/react';
 
 import Box from '@mui/material/Box';
 import Grid from '@mui/material/Grid';
@@ -97,6 +97,16 @@ const langConfigs: LangConfigs = {
         cn: '软件使用许可及服务协议',
         en: 'Software license and service agreement'
     },
+    more: {
+        tw: '更多',
+        cn: '更多',
+        en: 'More'
+    },
+    signout: {
+        tw: '登出',
+        cn: '登出',
+        en: 'Sign Out'
+    },
 };
 
 /**
@@ -168,6 +178,10 @@ const SettingsIndex = () => {
         }
         if (13 === cat) {
             router.push('/terms');
+        }
+
+        if (99 === cat) {
+            signOut();
         }
     };
 
@@ -261,6 +275,16 @@ const SettingsIndex = () => {
                             {/* terms */}
                             <MenuItem sx={{ height: 48 }} onClick={handleMenuItemClick(13)}>
                                 <ListItemText>{langConfigs.terms[preferenceStates.lang]}</ListItemText>
+                            </MenuItem>
+                        </MenuList>
+
+                        {/* more */}
+                        <Typography sx={{ color: 'text.disabled' }}>{langConfigs.more[preferenceStates.lang]}</Typography>
+                        <MenuList>
+
+                            {/* about mojito */}
+                            <MenuItem sx={{ height: 48 }} onClick={handleMenuItemClick(99)}>
+                                <ListItemText>{langConfigs.signout[preferenceStates.lang]}</ListItemText>
                             </MenuItem>
                         </MenuList>
 

@@ -1,4 +1,4 @@
-import { INoticeInfoWithMemberInfo } from '../../interfaces/notification';
+import { INotificationComprehensive } from '../../interfaces/notification';
 import { verifyNoticeId } from '../verify';
 
 /** Utils for Notification Class v0.1.1
@@ -23,7 +23,7 @@ export function noticeIdToUrl(id: string) {
     return str;
 }
 
-export function noticeInfoToString(info: INoticeInfoWithMemberInfo, lang: string): string {
+export function noticeInfoToString(info: INotificationComprehensive, lang: string): string {
     let _lang = lang;
     if (!['tw', 'cn', 'en'].includes(lang)) {
         _lang = 'tw';
