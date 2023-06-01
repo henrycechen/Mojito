@@ -4,7 +4,7 @@ import { RestError } from '@azure/storage-blob';
 import CryptoJS from 'crypto-js';
 
 import busboy from 'busboy';
-import Jimp from 'jimp';
+import sharp from 'sharp';
 
 import AzureBlobClient from '../../../../modules/AzureBlobClient';
 import AtlasDatabaseClient from '../../../../modules/AtlasDatabaseClient';
@@ -49,30 +49,30 @@ export default async function UploadCoverImage(req: NextApiRequest, res: NextApi
         res.status(401).send('Unauthorized');
         return;
     }
-    
+
     //// Verify postId ////
     const { isValid, category, id: postId } = verifyId(req.query?.postId);
     if (!(isValid && 'post' === category)) {
         res.status(400).send('Invalid post id');
         return;
     }
-    
+
     //// Verify request info (token) ////
     const { requestInfo } = req.query;
     if ('string' !== typeof requestInfo) {
         res.status(403).send('Invalid request info');
         return;
     }
-    
+
     //// Declare DB client ////
     const atlasDbClient = AtlasDatabaseClient();
     try {
         await atlasDbClient.connect();
-        
+
         const tkn = CryptoJS.AES.decrypt(Buffer.from(requestInfo, 'base64').toString(), appSecret).toString(CryptoJS.enc.Utf8);
         // [!] attemp to parse JSON string makes the probability of causing SyntaxError
         const info = JSON.parse(tkn);
-        
+
         //// Match member id in token and the one in request ////
         const { sub: tokenId } = token;
         if (tokenId !== info.memberId) {
@@ -130,6 +130,7 @@ export default async function UploadCoverImage(req: NextApiRequest, res: NextApi
     }
 }
 
+
 const uploadAsync = (req: NextApiRequest, postId: string) => {
     return new Promise<void>((resolve, reject) => {
         let imageFullname = `${postId}.jpeg`;
@@ -143,22 +144,9 @@ const uploadAsync = (req: NextApiRequest, postId: string) => {
                 })
                 .on('close', async () => {
                     const initialBuf = Buffer.concat(arrBuf);
-                    
                     try {
-                        const image = await Jimp.read(initialBuf);
-                        
-                        // Resize the image to 200x???
-                        if (200 !== image.bitmap.width) {
-                            image.resize(200, Jimp.AUTO);
-                        }
-                        
-                        // Drop the quality
-                        if (initialBuf.byteLength > 102400) {
-                            image.quality(85);
-                        }
-                        
-                        // Output to buffer
-                        const convertedBuf = await image.getBufferAsync(Jimp.MIME_JPEG);
+
+                        const convertedBuf = await sharp(initialBuf).rotate().resize(300).jpeg().toBuffer();
                         const blockClient = contianerClient.getBlockBlobClient(imageFullname);
                         if (await blockClient.uploadData(convertedBuf)) {
                             resolve();

@@ -27,11 +27,13 @@ export default async function QueryMemberByNicknameBase64Fragment(req: NextApiRe
     }
 
     const { fragment } = req.query;
+
     //// Verify notice category ////
     if (!('string' === typeof fragment && new RegExp(/^[-A-Za-z0-9+/]*={0,3}$/).test(fragment))) {
         res.status(400).send('Invalid nickname (fragment) string');
         return;
     }
+    
     //// Declare DB client ////
     const atlasDbClient = AtlasDatabaseClient();
     try {

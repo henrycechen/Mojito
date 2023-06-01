@@ -56,9 +56,9 @@ export default function Forbidden() {
                     {{ tw: '权限不足', cn: '权限不足', en: 'Forbidden' }[processStates.lang]}
                 </title>
                 <meta
-                    name="description"
+                    name='description'
                     content={desc}
-                    key="desc"
+                    key='desc'
                 />
             </Head>
             <Navbar lang={processStates.lang} />

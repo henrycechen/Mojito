@@ -1,11 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { MongoError } from 'mongodb';
 
-import AtlasDatabaseClient from '../../../../../modules/AtlasDatabaseClient';
+import AtlasDatabaseClient from '../../../../modules/AtlasDatabaseClient';
 
-import { IPostComprehensive } from '../../../../../lib/interfaces/post';
-import { logWithDate, response405, response500 } from '../../../../../lib/utils/general';
-import { getTimeBySecond } from '../../../../../lib/utils/create';
+import { IPostComprehensive } from '../../../../lib/interfaces/post';
+import { logWithDate, response405, response500 } from '../../../../lib/utils/general';
 
 const fnn = `${PostsOf24HoursHot.name} (API)`;
 
@@ -37,10 +36,10 @@ export default async function PostsOf24HoursHot(req: NextApiRequest, res: NextAp
     try {
 
         const { channelId } = req.query;
-        const conditions = [{ status: { $gt: 0 }, createdTimeBySecond: { $gt: getTimeBySecond() - 24 * 60 * 60 } }, ('string' === typeof channelId &&  !['', 'all'].includes(channelId)) ? { channelId: channelId } : {}];
+        const conditions = [{ status: { $gt: 0 } }, ('string' === typeof channelId && !['', 'all'].includes(channelId)) ? { channelId: channelId } : {}];
         const pipeline = [
             { $match: { $and: conditions } },
-            { $limit: 30 },
+            { $limit: 1000 },
             { $sort: { totalHitCount: 1 } },
             {
                 $project: {

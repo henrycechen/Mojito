@@ -20,7 +20,7 @@ import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import { LangConfigs, TPreferenceStates } from '../../lib/types';
 import { restoreFromLocalStorage } from '../../lib/utils/general';
 
-import LegalInfo from '../../ui/LegalInfo';
+
 import SideMenu from '../../ui/SideMenu';
 import SideColumn from '../../ui/SideColumn';
 import Navbar from '../../ui/Navbar';
@@ -185,7 +185,6 @@ const PravicySettings = () => {
     React.useEffect(() => {
 
         if ('' !== processStates.memberId) {
-            console.log(123);
             getPrivacySettings();
             setProcessStates({ ...processStates, displayProgress: false });
         }
@@ -283,9 +282,9 @@ const PravicySettings = () => {
                     {{ tw: '隱私設定', cn: '隱私设置', en: 'Privacy Settings' }[preferenceStates.lang]}
                 </title>
                 <meta
-                    name="description"
+                    name='description'
                     content={desc}
-                    key="desc"
+                    key='desc'
                 />
             </Head>
             <Navbar lang={preferenceStates.lang} />
@@ -420,8 +419,6 @@ const PravicySettings = () => {
                             </FormGroup>
                         </Box >
 
-                        {/* legal info */}
-                        <LegalInfo lang={preferenceStates.lang} />
                     </Box>
                 </Grid>
 

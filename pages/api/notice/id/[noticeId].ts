@@ -1,14 +1,14 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getToken } from 'next-auth/jwt';
-import { RestError } from '@azure/data-tables';
 import { MongoError } from 'mongodb';
 
-import AzureTableClient from '../../../../../modules/AzureTableClient';
-import AtlasDatabaseClient from '../../../../../modules/AtlasDatabaseClient';
+import AtlasDatabaseClient from '../../../../modules/AtlasDatabaseClient';
 
-import { logWithDate, response405, response500 } from '../../../../../lib/utils/general';
-import { verifyId } from '../../../../../lib/utils/verify';
-import { IMemberComprehensive } from '../../../../../lib/interfaces/member';
+import { IMemberComprehensive } from '../../../../lib/interfaces/member';
+import { INotificationComprehensive } from '../../../../lib/interfaces/notification';
+
+import { logWithDate, response405, response500 } from '../../../../lib/utils/general';
+import { verifyId } from '../../../../lib/utils/verify';
 
 const fnn = `${DeleteNoticeById.name} (API)`;
 
@@ -21,6 +21,7 @@ const fnn = `${DeleteNoticeById.name} (API)`;
  * 
  * Last update:
  * - 13/05/2023 v0.1.1
+ * - 31/05/2023 v0.1.2
 */
 
 export default async function DeleteNoticeById(req: NextApiRequest, res: NextApiResponse) {
@@ -63,20 +64,21 @@ export default async function DeleteNoticeById(req: NextApiRequest, res: NextApi
             return;
         }
 
+        const notificationComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<INotificationComprehensive>('notification');
+        const notificationComprehensiveUpdateResult = await notificationComprehensiveCollectionClient.updateOne({ noticeId }, { $set: { status: 0 } });
+
+        if (!notificationComprehensiveUpdateResult.acknowledged) {
+            res.status(500).send('Delete notification failed');
+        } else {
+            //// Response ////
+            res.status(200).send('Delete notification success');
+        }
+
         await atlasDbClient.close();
-
-        // Delete record (of INotice) in [PRL] Notice
-        const noticeTableClient = AzureTableClient('Notice');
-        await noticeTableClient.upsertEntity({ partitionKey: memberId, rowKey: noticeId, IsActive: false }, 'Merge');
-
-        //// Response ////
-        res.status(200).send('Delete notice success');
         return;
     } catch (e: any) {
         let msg;
-        if (e instanceof RestError) {
-            msg = `Attempt to communicate with azure table storage.`;
-        } else if (e instanceof MongoError) {
+        if (e instanceof MongoError) {
             msg = `Attempt to communicate with atlas mongodb.`;
         } else {
             msg = `Uncategorized. ${e?.msg}`;

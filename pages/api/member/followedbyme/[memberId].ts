@@ -30,7 +30,7 @@ const fnn = `${GetMembersFollowedByMe.name} (API)`;
 */
 
 export default async function GetMembersFollowedByMe(req: NextApiRequest, res: NextApiResponse) {
-    
+
     const { method } = req;
     if ('GET' !== method) {
         response405(req, res);

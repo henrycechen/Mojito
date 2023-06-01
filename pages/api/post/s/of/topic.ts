@@ -5,39 +5,43 @@ import AtlasDatabaseClient from '../../../../../modules/AtlasDatabaseClient';
 
 import { IPostComprehensive } from '../../../../../lib/interfaces/post';
 import { logWithDate, response405, response500 } from '../../../../../lib/utils/general';
-import { getTimeBySecond } from '../../../../../lib/utils/create';
 
-const fnn = `${PostsOf24HoursHot.name} (API)`;
+const fnn = `${PostsOfTopic.name} (API)`;
 
 /**
  * This interface ONLY accepts GET requests
  * 
  * Info required for GET requests
- * -     channelId: string (query, optional)
+ * -     topicId: string (query)
  * 
  * Info will be returned
  * -     IConcisePostComprehensive[]
  * 
- * TODO:
- * - Accept requesting posts by browsing position (createdTimeById)
- * 
  * Last update:
- * - 10/05/2023 v0.1.1
+ * - 30/05/2023 v0.1.1
  */
 
-export default async function PostsOf24HoursHot(req: NextApiRequest, res: NextApiResponse) {
+export default async function PostsOfTopic(req: NextApiRequest, res: NextApiResponse) {
     const { method } = req;
     if ('GET' !== method) {
         response405(req, res);
         return;
     }
 
+    const { topicId } = req.query;
+
+    //// Verify notice category ////
+    if (!('string' === typeof topicId && new RegExp(/^[-A-Za-z0-9+/]*={0,3}$/).test(topicId))) {
+        res.status(400).send('Invalid topic id string');
+        return;
+    }
+
     //// Declare DB client ////
     const atlasDbClient = AtlasDatabaseClient();
     try {
+        await atlasDbClient.connect();
 
-        const { channelId } = req.query;
-        const conditions = [{ status: { $gt: 0 } }, ('string' === typeof channelId && !['', 'all'].includes(channelId)) ? { channelId: channelId } : {}];
+        const conditions: any = [{ status: { $gt: 0 } }, {topicId: {$eq: topicId}}];
         const pipeline = [
             { $match: { $and: conditions } },
             { $limit: 30 },
@@ -60,8 +64,8 @@ export default async function PostsOf24HoursHot(req: NextApiRequest, res: NextAp
             }
         ];
 
-        const collectionClient = atlasDbClient.db('comprehensive').collection<IPostComprehensive>('post');
-        const query = collectionClient.aggregate(pipeline);
+        const topicPostMappingCollectionClient = atlasDbClient.db('mapping').collection<IPostComprehensive>('topic-post');
+        const query = topicPostMappingCollectionClient.aggregate(pipeline);
 
         //// Response 200 ////
         res.status(200).send(await query.toArray());

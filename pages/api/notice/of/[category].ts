@@ -1,14 +1,12 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getToken } from 'next-auth/jwt';
-import { RestError } from '@azure/data-tables';
 import { MongoError } from 'mongodb';
 
-import AzureTableClient from '../../../../../modules/AzureTableClient';
-import AtlasDatabaseClient from '../../../../../modules/AtlasDatabaseClient';
+import AtlasDatabaseClient from '../../../../modules/AtlasDatabaseClient';
 
-import { logWithDate, response405, response500 } from '../../../../../lib/utils/general';
-import { IMemberComprehensive } from '../../../../../lib/interfaces/member';
-import { INoticeInfo, INoticeInfoWithMemberInfo } from '../../../../../lib/interfaces/notification';
+import { logWithDate, response405, response500 } from '../../../../lib/utils/general';
+import { IMemberComprehensive } from '../../../../lib/interfaces/member';
+import { INotificationComprehensive } from '../../../../lib/interfaces/notification';
 
 const fnn = `${GetNoticeByCategory.name} (API)`;
 
@@ -19,8 +17,12 @@ const fnn = `${GetNoticeByCategory.name} (API)`;
  * -     token: JWT
  * -     category: string (query, notice category)
  * 
+ * Info will be returned
+ * -     arr: INotificationComprehensive[]
+ * 
  * Last update:
  * - 13/05/2023 v0.1.1
+ * - 31/05/2023 v0.1.2
 */
 
 export default async function GetNoticeByCategory(req: NextApiRequest, res: NextApiResponse) {
@@ -65,34 +67,36 @@ export default async function GetNoticeByCategory(req: NextApiRequest, res: Next
             return;
         }
 
-        await atlasDbClient.close();
-
-        const noticeTableClient = AzureTableClient('Notice');
-        const noticeQuery = noticeTableClient.listEntities<INoticeInfo>({ queryOptions: { filter: `PartitionKey eq '${memberId}' and Category eq '${category}' and IsActive eq true` } });
-
-        let arr: INoticeInfoWithMemberInfo[] = [];
-        let noticeQueryResult = await noticeQuery.next();
-        while (!noticeQueryResult.done) {
-            arr.push({
-                noticeId: noticeQueryResult.value.rowKey,
-                category: noticeQueryResult.value.Category,
-                initiateId: noticeQueryResult.value.InitiateId,
-                nickname: noticeQueryResult.value.Nickname,
-                postTitle: noticeQueryResult.value.PostTitle,
-                commentBrief: noticeQueryResult.value.CommentBrief,
-                createdTimeBySecond: noticeQueryResult.value.CreatedTimeBySecond
-            });
-            noticeQueryResult = await noticeQuery.next();
-        }
+        const conditions: any = [{ status: { $gt: 0 } }, { memberId: { $eq: memberId } }, { category: { $eq: category } }];
+        const pipeline = [
+            { $match: { $and: conditions } },
+            { $limit: 30 },
+            { $sort: { createdTimeBySecond: 1 } },
+            {
+                $project: {
+                    _id: 0,
+                    noticeId: 1,
+                    category: 1,
+                    memberId: 1,
+                    initiateId: 1,
+                    nickname: 1,
+                    postTitle: 1,
+                    commentBrief: 1,
+                    createdTimeBySecond: 1
+                }
+            }
+        ];
+        const notificationComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<INotificationComprehensive>('notification');
+        const query = notificationComprehensiveCollectionClient.aggregate(pipeline);
 
         //// Response 200 ////
-        res.status(200).send(arr);
+        res.status(200).send(await query.toArray());
+
+        await atlasDbClient.close();
         return;
     } catch (e: any) {
         let msg;
-        if (e instanceof RestError) {
-            msg = `Attempt to communicate with azure table storage.`;
-        } else if (e instanceof MongoError) {
+        if (e instanceof MongoError) {
             msg = `Attempt to communicate with atlas mongodb.`;
         } else {
             msg = `Uncategorized. ${e?.msg}`;

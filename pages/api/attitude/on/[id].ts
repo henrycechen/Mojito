@@ -6,18 +6,18 @@ import { MongoError } from 'mongodb';
 import AzureTableClient from '../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from "../../../../modules/AtlasDatabaseClient";
 
-import { getContentBrief, logWithDate, response405, response500 } from '../../../../lib/utils/general';
-import { verifyId } from '../../../../lib/utils/verify';
 import { IMemberComprehensive, IMemberStatistics } from '../../../../lib/interfaces/member';
-import { IAttitudeComprehensive } from '../../../../lib/interfaces/attitude';
-import { createAttitudeComprehensive, getMappingFromAttitudeComprehensive, provideAttitudeComprehensiveUpdate } from '../../../../lib/utils/for/attitude';
-import { ICommentComprehensive } from '../../../../lib/interfaces/comment';
 import { IPostComprehensive } from '../../../../lib/interfaces/post';
 import { IChannelStatistics } from '../../../../lib/interfaces/channel';
 import { ITopicComprehensive } from '../../../../lib/interfaces/topic';
-import { INoticeInfo, INotificationStatistics } from '../../../../lib/interfaces/notification';
+import { IAttitudeComprehensive } from '../../../../lib/interfaces/attitude';
+import { ICommentComprehensive } from '../../../../lib/interfaces/comment';
+import { INotificationComprehensive, INotificationStatistics } from '../../../../lib/interfaces/notification';
+
 import { createNoticeId, getTimeBySecond } from '../../../../lib/utils/create';
-import { getNicknameFromToken } from '../../../../lib/utils/for/member';
+import { getContentBrief, logWithDate, response405, response500 } from '../../../../lib/utils/general';
+import { verifyId } from '../../../../lib/utils/verify';
+import { createAttitudeComprehensive, getMappingFromAttitudeComprehensive, provideAttitudeComprehensiveUpdate } from '../../../../lib/utils/for/attitude';
 
 const fnn = `${GetOrPostAttitudeOnPostOrCommentById.name} (API)`;
 
@@ -46,6 +46,7 @@ const fnn = `${GetOrPostAttitudeOnPostOrCommentById.name} (API)`;
  * Last update:
  * - 26/02/2023 v0.1.1
  * - 09/05/2023 v0.1.2
+ * - 31/05/2023 v0.1.3
  */
 
 export default async function GetOrPostAttitudeOnPostOrCommentById(req: NextApiRequest, res: NextApiResponse) {
@@ -413,18 +414,23 @@ export default async function GetOrPostAttitudeOnPostOrCommentById(req: NextApiR
                 const blockingMemberMappingQueryResult = await blockingMemberMappingQuery.next();
                 if (!blockingMemberMappingQueryResult.value) {
                     //// [!] member who has expressed attitude has not been blocked by comment author ////
-                    // Upsert record (of INoticeInfo.Liked) in [PRL] Notice
-                    const noticeTableClient = AzureTableClient('Notice');
-                    await noticeTableClient.upsertEntity<INoticeInfo>({
-                        partitionKey: authorId, // notified member id, in this case, comment author
-                        rowKey: createNoticeId('like', memberId, postId, id), // combined id
-                        Category: 'like',
-                        InitiateId: memberId,
-                        Nickname: getNicknameFromToken(token),
-                        PostTitle: postTitle,
-                        CommentBrief: commentBrief,
-                        CreatedTimeBySecond: getTimeBySecond(),
-                    }, 'Replace');
+
+                    // Upsert document (of notificationComprehensive) in [C] notificationComprehensive
+                    const notificationComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<INotificationComprehensive>('notification');
+                    const notificationComprehensiveUpdateResult = await notificationComprehensiveCollectionClient.updateOne({ noticeId: createNoticeId('like', memberId, postId, id) }, {
+                        noticeId: createNoticeId('like', memberId, postId, id),
+                        category: 'like',
+                        memberId: authorId,
+                        initiateId: memberId,
+                        nickname: memberComprehensiveQueryResult.nickname,
+                        postTitle: postTitle,
+                        commentBrief: commentBrief,
+                        createdTimeBySecond: getTimeBySecond()
+                    }, { upsert: true });
+                    if (!notificationComprehensiveUpdateResult.acknowledged) {
+                        logWithDate(`Failed to upsert document (of INotificationComprehensive, member id: ${authorId}) in [C] notificationComprehensive`, fnn);
+                    }
+
                     // Update like (of INotificationStatistics, of post or comment author) in [C] notificationStatistics
                     const notificationStatisticsCollectionClient = atlasDbClient.db('statistics').collection<INotificationStatistics>('notification');
                     const notificationStatisticsUpdateResult = await notificationStatisticsCollectionClient.updateOne({ memberId: authorId }, { $inc: { like: 1 } });

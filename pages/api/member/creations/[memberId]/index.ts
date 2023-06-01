@@ -2,12 +2,11 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { RestError } from '@azure/data-tables';
 import { MongoError } from 'mongodb';
 
-import AzureTableClient from '../../../../../modules/AzureTableClient';
+import AtlasDatabaseClient from '../../../../../modules/AtlasDatabaseClient';
 
 import { logWithDate, response405, response500 } from '../../../../../lib/utils/general';
 import { verifyId } from '../../../../../lib/utils/verify';
 import { IConcisePostComprehensive } from '../../../../../lib/interfaces/post';
-import { IMemberPostMapping } from '../../../../../lib/interfaces/mapping';
 
 const fnn = `${GetCreationsByMemberId.name} (API)`;
 
@@ -44,46 +43,41 @@ export default async function GetCreationsByMemberId(req: NextApiRequest, res: N
         return;
     }
 
+    //// Declare DB client ////
+    const atlasDbClient = AtlasDatabaseClient();
+
     try {
-        let q: number = 20;
-        if ('string' === typeof quantity && 0 < parseInt(quantity)) {
-            q = parseInt(quantity);
-        }
-        
-        let str = `PartitionKey eq '${authorId}' and IsActive eq true`;
-
         const { channelId } = req.query;
-        if ('string' === typeof channelId && '' !== channelId && 'all' !== channelId) {
-            str += ` and ChannelId eq '${channelId}'`;
-        }
+        const conditions = [{ memberId: { $eq: authorId } }, { status: { $gt: 0 } }, ('string' === typeof channelId && !['', 'all'].includes(channelId)) ? { channelId: channelId } : {}];
+        const pipeline = [
+            { $match: { $and: conditions } },
+            { $limit: 30 },
+            { $sort: { createdTimeBySecond: -1 } },
+            {
+                $project: {
+                    _id: 0,
+                    postId: 1,
+                    memberId: 1,
+                    nickname: 1,
+                    createdTimeBySecond: 1,
+                    title: 1,
+                    channelId: 1,
+                    hasImages: 1,
+                    totalCommentCount: 1,
+                    totalHitCount: 1,
+                    totalLikedCount: 1,
+                    totalDislikedCount: 1,
+                }
+            }
+        ];
 
-        let arr: IConcisePostComprehensive[] = [];
-        const creationsMappingTableClient = AzureTableClient('CreationsMapping');
-        const creationsMappingQuery = creationsMappingTableClient.listEntities<IMemberPostMapping>({ queryOptions: { filter: str } });
-
-        let a: number = 0;
-        let creationsMappingQueryResult = await creationsMappingQuery.next();
-        // [!] attemp to reterieve entity makes the probability of causing RestError
-        while (!creationsMappingQueryResult.done && a < q) {
-            arr.push({
-                postId: creationsMappingQueryResult.value.rowKey,
-                memberId: authorId,
-                nickname: creationsMappingQueryResult.value.Nickname ?? '',
-                createdTimeBySecond: creationsMappingQueryResult.value.CreatedTimeBySecond,
-                title: creationsMappingQueryResult.value.Title,
-                channelId: creationsMappingQueryResult.value.ChannelId,
-                hasImages: creationsMappingQueryResult.value.HasImages,
-                totalCommentCount: 0, // not supported
-                totalHitCount: 0, // not supported
-                totalLikedCount: 0, // not supported
-                totalDislikedCount: 0 // not supported
-            });
-            creationsMappingQueryResult = await creationsMappingQuery.next();
-            a++;
-        }
+        const collectionClient = atlasDbClient.db('comprehensive').collection<IConcisePostComprehensive>('post');
+        const query = collectionClient.aggregate(pipeline);
 
         //// Response 200 ////
-        res.status(200).send(arr);
+        res.status(200).send(await query.toArray());
+        
+        await atlasDbClient.close();
         return;
     } catch (e: any) {
         let msg;

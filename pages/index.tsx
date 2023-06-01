@@ -3,16 +3,19 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { signIn, useSession } from 'next-auth/react';
 import useTheme from '@mui/material/styles/useTheme';
+import useScrollTrigger from '@mui/material/useScrollTrigger';
 
 import Avatar from '@mui/material/Avatar';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import CircularProgress from '@mui/material/CircularProgress';
 import Divider from '@mui/material/Divider';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Grid from '@mui/material/Grid';
 import Link from '@mui/material/Link';
 import Stack from '@mui/material/Stack';
 import Paper from '@mui/material/Paper';
+import Slide from '@mui/material/Slide';
 import Typography from '@mui/material/Typography';
 
 import Menu from '@mui/material/Menu';
@@ -35,8 +38,9 @@ import IconButton from '@mui/material/IconButton';
 import ListAltIcon from '@mui/icons-material/ListAlt';
 import MarkEmailUnreadIcon from '@mui/icons-material/MarkEmailUnread';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
-import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
+import NotificationsIcon from '@mui/icons-material/Notifications';
 import ReorderIcon from '@mui/icons-material/Reorder';
+import SearchIcon from '@mui/icons-material/Search';
 import SettingsIcon from '@mui/icons-material/Settings';
 import SvgIcon from '@mui/material/SvgIcon';
 
@@ -67,7 +71,6 @@ const storageName = 'HomePageProcessStates';
 const updateProcessStatesCache = updateLocalStorage(storageName);
 const restoreProcessStatesFromCache = restoreFromLocalStorage(storageName);
 
-const appDomain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? '';
 const imageDomain = process.env.NEXT_PUBLIC_IMAGE_DOMAIN ?? '';
 const desc = process.env.NEXT_PUBLIC_APP_DESCRIPTION ?? '';
 const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
@@ -83,10 +86,15 @@ const langConfigs: LangConfigs = {
         cn: '文章',
         en: 'Posts'
     },
-    followedMembers: {
+    follow: {
         tw: '關注',
         cn: '关注',
         en: 'Followed'
+    },
+    query: {
+        tw: '搜尋',
+        cn: '搜索',
+        en: 'Query'
     },
     messages: {
         tw: '訊息',
@@ -196,11 +204,6 @@ const Home = () => {
             restorePreferenceStatesFromCache(setPreferenceStates);
         }
     }, [status]);
-
-    // Ref - masonry
-    const masonryWrapper = React.useRef<any>();
-    const [width, setWidth] = React.useState(375); // default change from 636 to 375 (width of iPhone SE2)
-    React.useEffect(() => { setWidth(masonryWrapper?.current?.offsetWidth); }, []);
 
     // States - preference
     const [preferenceStates, setPreferenceStates] = React.useState<TPreferenceStates>({
@@ -386,56 +389,39 @@ const Home = () => {
         router.push(`/me/${memberId}`);
     };
 
+    const handleClickOnTopic = (topicId: string) => (event: React.MouseEvent) => {
+        router.push(`/query?topicId=${topicId}`);
+    };
+
     type TRightColumnStates = {
         topicInfoArr: IConciseTopicComprehensive[];
-        todaysTrendPostInfoArr: IConcisePostComprehensive[];
-        weeksTrendPostInfoArr: IConcisePostComprehensive[];
     };
 
     // States - right column
     const [rightColumnStates, setRightColumnStates] = React.useState<TRightColumnStates>({
         topicInfoArr: [],
-        todaysTrendPostInfoArr: [],
-        weeksTrendPostInfoArr: []
     });
 
     React.useEffect(() => { updateRightColumnStates(); }, []);
 
     const updateRightColumnStates = async () => {
-        let a0: IConciseTopicComprehensive[] = [];
-        let a1: IConcisePostComprehensive[] = [];
-        let a2: IConcisePostComprehensive[] = [];
-
-        const r0 = await fetch(`/api/topic/trend`);
-        const r1 = await fetch(`/api/post/s/trend/24h`);
-        const r2 = await fetch(`/api/post/s/trend/7d`);
 
         try {
-            if (200 !== r0.status) {
+            const resp = await fetch(`/api/topic/trend`);
+            if (200 !== resp.status) {
                 console.error(`Attempt to GET topic info array of trending`);
             }
-            const _a0 = await r0.json();
-            a0.push(..._a0);
+            const arr = await resp.json();
 
-            if (200 !== r1.status) {
-                console.error(`Attempt to GET post info array of trending today`);
-            }
-            const _a1 = await r1.json();
-            a1.push(..._a1);
+            setRightColumnStates({ topicInfoArr: arr });
 
-            if (200 !== r2.status) {
-                console.error(`Attempt to GET post info array of trending this week`);
-            }
-            const _a2 = await r2.json();
-            a2.push(..._a2);
         } catch (e: any) {
             if (e instanceof SyntaxError) {
-                console.error(`Attempt to parse info array (JSON string) from response. ${e}`);
+                console.error(`Attempt to parse topic info array (JSON string) from response. ${e}`);
             } else {
                 console.error(e?.msg);
             }
         }
-        setRightColumnStates({ topicInfoArr: [...a0], todaysTrendPostInfoArr: [...a1], weeksTrendPostInfoArr: [...a2] });
     };
 
     const handleSignIn = (event: React.MouseEvent<HTMLElement>) => {
@@ -445,6 +431,10 @@ const Home = () => {
 
     const handleProceedToFollowedMember = () => {
         router.push(`/follow`);
+    };
+
+    const handleProceedToQuery = () => {
+        router.push(`/query`);
     };
 
     const handleProceedToMessage = () => {
@@ -533,18 +523,111 @@ const Home = () => {
 
     const theme = useTheme();
 
+    type TChannelBarProps = {
+        children: React.ReactElement;
+        sx?: any;
+    };
+
+    const HideOnScroll = (props: TChannelBarProps) => {
+        const { children } = props;
+        const trigger = useScrollTrigger();
+        return (
+            <Slide appear={false} direction="down" in={!trigger} {...props}>
+                {children}
+            </Slide>
+        );
+    };
+
+    type TAnimationStates = {
+        scrollYPixels: number;
+        requireUpdate: boolean;
+    };
+
+    // States - animation
+    const [animationStates, setAnimationStates] = React.useState<TAnimationStates>({
+        scrollYPixels: 0,
+        requireUpdate: false,
+    });
+
+    // Register animation listener
+    React.useEffect(() => {
+        const handleScroll = () => {
+
+            if (0 > window.scrollY) {
+                setAnimationStates({
+                    ...animationStates,
+                    scrollYPixels: window.scrollY,
+                });
+                if (Math.abs(window.scrollY) > 50) {
+
+                    setAnimationStates({
+                        ...animationStates,
+                        requireUpdate: true
+                    });
+
+                    window.removeEventListener('scroll', handleScroll);
+
+                    setTimeout(() => {
+                        setAnimationStates({
+                            ...animationStates,
+                            requireUpdate: false
+                        });
+
+                        window.addEventListener('scroll', handleScroll);
+                    }, 5000);
+                }
+            }
+
+        };
+
+        window.addEventListener('scroll', handleScroll);
+
+        return () => {
+            window.removeEventListener('scroll', handleScroll);
+        };
+    }, []);
+
+    React.useEffect(() => { refreshPostsArr(); }, [animationStates.requireUpdate]);
+
+    const refreshPostsArr = async () => {
+        const resp = await fetch(`/api/post/s/${processStates.selectedHotPosts ? 'trend' : 'new'}?channelId=${processStates.selectedChannelId}`);
+        if (200 === resp.status) {
+            try {
+                setMasonryPostInfoArr(await resp.json());
+                setAnimationStates({ scrollYPixels: 0, requireUpdate: false });
+            } catch (e) {
+                console.log(`Attempt to GET posts of ${processStates.selectedHotPosts ? 'trend' : 'new'}. ${e}`);
+            }
+        }
+    };
+
     return (
         <>
             <Head>
                 <title>
-                    莫希托新西蘭 Mojito New Zealand
+                    莫希托
                 </title>
                 <meta
-                    name="description"
+                    name='description'
                     content={desc}
-                    key="desc"
+                    key='desc'
                 />
             </Head>
+
+            {/* pull-to-refresh */}
+            <Box
+                sx={{
+                    display: 'flex',
+                    flexDirection: 'row',
+                    justifyContent: 'center',
+                    opacity: animationStates.requireUpdate ? 1 : Math.abs(animationStates.scrollYPixels) / 25
+                }}>
+                <CircularProgress
+                    variant={animationStates.requireUpdate ? 'indeterminate' : 'determinate'}
+                    size={Math.abs(animationStates.scrollYPixels) * 1.8 < 24 && !animationStates.requireUpdate ? Math.abs(animationStates.scrollYPixels) * 1.8 : 24}
+                    value={Math.abs(animationStates.scrollYPixels) < 50 && !animationStates.requireUpdate ? Math.abs(animationStates.scrollYPixels) * 2 : 100} />
+            </Box>
+
             <Navbar lang={preferenceStates.lang} />
             <Grid container>
 
@@ -555,7 +638,7 @@ const Home = () => {
 
                             {/* logo */}
                             <Link href='/' pt={5} px={2}>
-                                <Box component={'img'} src={`${appDomain}/logo${'dark' === theme.palette.mode ? '-dark' : ''}.png`} sx={{ height: { md: '3rem', lg: '3.5rem' } }} />
+                                <Box component={'img'} src={`/logo${'dark' === theme.palette.mode ? '-dark' : '-blue'}.png`} sx={{ height: { md: '3rem', lg: '3.5rem' } }} />
                             </Link>
 
                             {/* unauthenticated - login*/}
@@ -570,7 +653,7 @@ const Home = () => {
                                     {/* posts */}
                                     <MenuItem sx={{ height: 56 }} >
                                         <ListItemIcon>
-                                            <ReorderIcon />
+                                            <ArticleIcon />
                                         </ListItemIcon>
                                         <ListItemText>
                                             {langConfigs.posts[preferenceStates.lang]}
@@ -583,10 +666,20 @@ const Home = () => {
                                     {/* followed members */}
                                     <MenuItem sx={{ height: 56 }} onClick={handleProceedToFollowedMember} >
                                         <ListItemIcon>
-                                            <NotificationsActiveIcon />
+                                            <NotificationsIcon />
                                         </ListItemIcon>
                                         <ListItemText>
-                                            {langConfigs.followedMembers[preferenceStates.lang]}
+                                            {langConfigs.follow[preferenceStates.lang]}
+                                        </ListItemText>
+                                    </MenuItem>
+
+                                    {/* query */}
+                                    <MenuItem sx={{ height: 56 }} onClick={handleProceedToQuery} >
+                                        <ListItemIcon>
+                                            <SearchIcon />
+                                        </ListItemIcon>
+                                        <ListItemText>
+                                            {langConfigs.query[lang]}
                                         </ListItemText>
                                     </MenuItem>
 
@@ -644,46 +737,48 @@ const Home = () => {
                 <Grid item xs={12} sm={12} md={9} lg={6} xl={4} >
 
                     {/* channel bar (mobile mode) */}
-                    <Stack direction={'row'} id='channel-bar' sx={{ display: { sm: 'flex', md: 'none' }, padding: 1, overflow: 'auto' }}>
+                    <HideOnScroll >
+                        <Stack direction={'row'} id='channel-bar' sx={{ position: 'sticky', top: 0, zIndex: 9999, backgroundColor: 'dark' === colorMode.mode ? '#424242 ' : '#fff', display: { sm: 'flex', md: 'none' }, padding: 1, overflow: 'auto' }}>
 
-                        {/* trend / new switch */}
-                        <Box minWidth={110}>
-                            <FormControlLabel
-                                control={<StyledSwitch sx={{ ml: 1 }} checked={processStates.selectedHotPosts} />}
-                                label={processStates.selectedHotPosts ? langConfigs.hotPosts[preferenceStates.lang] : langConfigs.newPosts[preferenceStates.lang]}
-                                onChange={handleToggleSwitch}
-                            />
-                        </Box>
+                            {/* trend / new switch */}
+                            <Box minWidth={110}>
+                                <FormControlLabel
+                                    control={<StyledSwitch sx={{ ml: 1 }} checked={processStates.selectedHotPosts} />}
+                                    label={processStates.selectedHotPosts ? langConfigs.hotPosts[preferenceStates.lang] : langConfigs.newPosts[preferenceStates.lang]}
+                                    onChange={handleToggleSwitch}
+                                />
+                            </Box>
 
-                        {/* the 'all' button */}
-                        <Button variant={'all' === processStates.selectedChannelId ? 'contained' : 'text'} size='small' onClick={handleChannelSelect('all')}>
-                            <Typography variant='body2' color={'all' === processStates.selectedChannelId ? 'white' : 'text.secondary'} sx={{ backgroundColor: 'primary' }}>
-                                {langConfigs.all[preferenceStates.lang]}
-                            </Typography>
-                        </Button>
+                            {/* the 'all' button */}
+                            <Button variant={'all' === processStates.selectedChannelId ? 'contained' : 'text'} size='small' onClick={handleChannelSelect('all')}>
+                                <Typography variant='body2' color={'all' === processStates.selectedChannelId ? 'white' : 'text.secondary'} sx={{ backgroundColor: 'primary' }}>
+                                    {langConfigs.all[preferenceStates.lang]}
+                                </Typography>
+                            </Button>
 
-                        {/* other channels */}
-                        {Object.keys(channeMenuStates.channelInfo).map(id => {
-                            const { channelId, name } = channeMenuStates.channelInfo[id];
-                            return (
-                                <Button
-                                    variant={channelId === processStates.selectedChannelId ? 'contained' : 'text'}
-                                    key={`button-${channelId}`}
-                                    size='small'
-                                    onClick={handleChannelSelect(channelId)}
-                                >
-                                    <Typography
-                                        variant={'body2'}
-                                        color={channelId === processStates.selectedChannelId ? 'white' : 'text.secondary'}
-                                        sx={{ backgroundColor: 'primary' }}
-                                        noWrap
+                            {/* other channels */}
+                            {Object.keys(channeMenuStates.channelInfo).map(id => {
+                                const { channelId, name } = channeMenuStates.channelInfo[id];
+                                return (
+                                    <Button
+                                        variant={channelId === processStates.selectedChannelId ? 'contained' : 'text'}
+                                        key={`button-${channelId}`}
+                                        size='small'
+                                        onClick={handleChannelSelect(channelId)}
                                     >
-                                        {name[preferenceStates.lang]}
-                                    </Typography>
-                                </Button>
-                            );
-                        })}
-                    </Stack>
+                                        <Typography
+                                            variant={'body2'}
+                                            color={channelId === processStates.selectedChannelId ? 'white' : 'text.secondary'}
+                                            sx={{ backgroundColor: 'primary' }}
+                                            noWrap
+                                        >
+                                            {name[preferenceStates.lang]}
+                                        </Typography>
+                                    </Button>
+                                );
+                            })}
+                        </Stack>
+                    </HideOnScroll>
 
                     {/* empty alert */}
                     {0 === masonryPostInfoArr.length &&
@@ -695,8 +790,8 @@ const Home = () => {
                     }
 
                     {/* mansoy */}
-                    <Box ref={masonryWrapper} maxWidth={{ md: 900, lg: 800 }}>
-                        <Masonry columns={2}>
+                    <Box maxWidth={{ md: 900, lg: 800 }}>
+                        <Masonry columns={2} sx={{ margin: 0 }}>
 
                             {/* posts */}
                             {0 !== masonryPostInfoArr.length && masonryPostInfoArr.map(p => {
@@ -709,12 +804,18 @@ const Home = () => {
                                                 component={'img'}
                                                 loading='lazy'
                                                 src={provideCoverImageUrl(p.postId, imageDomain)}
-                                                sx={{ maxWidth: { xs: width / 2, sm: 450 }, height: 'auto', borderTopLeftRadius: 4, borderTopRightRadius: 4 }}
+                                                sx={{
+                                                    maxWidth: 1,
+                                                    maxHeight: 1,
+                                                    height: 'auto',
+                                                    borderTopLeftRadius: 4,
+                                                    borderTopRightRadius: 4
+                                                }}
                                                 onClick={handleClickOnPost(p.postId)}
                                             ></Box>
 
                                             {/* title */}
-                                            <Box paddingTop={2} paddingX={2} onClick={handleClickOnPost(p.postId)}>
+                                            <Box pt={2} px={2} onClick={handleClickOnPost(p.postId)}>
                                                 <Typography variant={'body1'}>{p.title}</Typography>
                                             </Box>
 
@@ -736,7 +837,12 @@ const Home = () => {
 
                                                     {/* member behaviour / placeholder */}
                                                     <Grid item >
-                                                        <IconButton onClick={handleOpenPopUpMenu(p.memberId, p.nickname ?? '', p.postId)}><MoreVertIcon /></IconButton>
+                                                        <IconButton
+                                                            sx={{ width: { xs: 34, sm: 34, md: 40 }, height: { xs: 34, sm: 34, md: 40 }, }}
+                                                            onClick={handleOpenPopUpMenu(p.memberId, p.nickname ?? '', p.postId)}
+                                                        >
+                                                            <MoreVertIcon />
+                                                        </IconButton>
                                                     </Grid>
                                                 </Grid>
                                             </Box>
@@ -746,6 +852,9 @@ const Home = () => {
                             })}
                         </Masonry>
                     </Box>
+
+                    {/* bottom space */}
+                    <Box pb={{ xs: '10rem', sm: '10rem', md: 0 }} />
 
                 </Grid>
 
@@ -764,7 +873,7 @@ const Home = () => {
 
                                 {/* topics */}
                                 {0 !== rightColumnStates.topicInfoArr.length && rightColumnStates.topicInfoArr.map(t =>
-                                    <MenuItem key={getRandomHexStr()} sx={{ height: 64 }} >
+                                    <MenuItem key={getRandomHexStr()} sx={{ height: 64 }} onClick={handleClickOnTopic(t.topicId)}>
 
                                         {/* channel icon */}
                                         <ListItemIcon>
@@ -790,6 +899,7 @@ const Home = () => {
                                         </ListItemText>
                                     </MenuItem>
                                 )}
+
                             </MenuList>
 
                             {/* copyright */}
@@ -814,6 +924,7 @@ const Home = () => {
                         </Stack>
                     </Box>
                 </Grid>
+
             </Grid>
 
             {/* channel memu */}
@@ -835,7 +946,7 @@ const Home = () => {
                         selected={processStates.selectedChannelId === 'all'}
                     >
                         <ListItemIcon>
-                            <ListAltIcon />
+                            <ArticleIcon />
                         </ListItemIcon>
                         <ListItemText>
                             <Typography>{langConfigs.all[preferenceStates.lang]}</Typography>

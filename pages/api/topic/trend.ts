@@ -37,7 +37,7 @@ export default async function GetTopicsByHits(req: NextApiRequest, res: NextApiR
         const pipeline = [
             { $match: { $and: conditions } },
             { $limit: 10 },
-            { $sort: { totalHitCount: 1 } },
+            { $sort: { totalHitCount: -1 } },
             {
                 $project: {
                     _id: 0,

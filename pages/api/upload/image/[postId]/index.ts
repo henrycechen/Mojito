@@ -4,7 +4,7 @@ import { RestError } from '@azure/storage-blob';
 import CryptoJS from 'crypto-js';
 
 import busboy from 'busboy';
-import Jimp from 'jimp';
+import sharp from 'sharp';
 
 import AzureBlobClient from '../../../../../modules/AzureBlobClient';
 import AtlasDatabaseClient from '../../../../../modules/AtlasDatabaseClient';
@@ -21,7 +21,7 @@ export const config = {
 };
 
 const appSecret = process.env.APP_AES_SECRET ?? '';
-const fnn = `${ImageUpload.name} (API)`;
+const fnn = `${UploadImage.name} (API)`;
 
 /**
  * This interface ONLY accepts POST requests
@@ -35,7 +35,7 @@ const fnn = `${ImageUpload.name} (API)`;
  * - 03/03/2023 v0.1.1
  */
 
-export default async function ImageUpload(req: NextApiRequest, res: NextApiResponse) {
+export default async function UploadImage(req: NextApiRequest, res: NextApiResponse) {
 
     const { method } = req;
     if ('POST' !== method) {
@@ -143,44 +143,22 @@ export default async function ImageUpload(req: NextApiRequest, res: NextApiRespo
 const uploadAsync = (req: NextApiRequest, postId: string) => {
     return new Promise<string>((resolve, reject) => {
 
-        let imageFullname = getRandomIdStr(true);
+        // let imageFullname = getRandomIdStr(true);
+        let imageFullname = `${postId}_${getRandomIdStr(true)}.jpeg`;
         const bb = busboy({ headers: req.headers });
         const contianerClient = AzureBlobClient('image'); // [!] image
         bb.on('file', async (name, file, info) => {
             let arrBuf = Array<any>();
-            const { mimeType } = info;
+            // const { mimeType } = info;
             file
                 .on('data', (data) => {
                     arrBuf.push(data);
                 })
                 .on('close', async () => {
                     const initialBuf = Buffer.concat(arrBuf);
-
+                    // imageFullname = `${postId}_${imageFullname}.${mimeType.split('/')[1]}`;
                     try {
-                        const image = await Jimp.read(initialBuf);
-
-                        // Rename the image
-                        if (mimeType === image._originalMime) {
-                            imageFullname = `${postId}_${imageFullname}.${mimeType.split('/')[1]}`;
-                        } else {
-                            imageFullname = `${postId}_${imageFullname}.${image._originalMime.split('/')[1]}`;
-                        }
-
-                        // Shirnk the image size
-                        if (960 < image.bitmap.width) {
-                            image.resize(960, Jimp.AUTO);
-                        }
-
-                        if (1200 < image.bitmap.width) {
-                            image.resize(Jimp.AUTO, 1600);
-                        }
-
-                        // Image quality control
-                        image.quality(768000 > initialBuf.byteLength ? 85 : 75); // threshold 750 KB
-
-                        // Output to buffer
-                        const convertedBuf = await image.getBufferAsync(mimeType);
-
+                        const convertedBuf = await sharp(initialBuf).rotate().resize(960, 1200, { fit: 'cover' }).jpeg().toBuffer();
                         const blockClient = contianerClient.getBlockBlobClient(imageFullname);
                         if (await blockClient.uploadData(convertedBuf)) {
                             resolve(imageFullname);

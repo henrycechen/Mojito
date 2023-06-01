@@ -4,7 +4,7 @@ import { RestError } from '@azure/storage-blob';
 import { MongoError } from 'mongodb';
 
 import busboy from 'busboy';
-import Jimp from 'jimp';
+import sharp from 'sharp';
 
 import AzureBlobClient from '../../../../modules/AzureBlobClient';
 import AtlasDatabaseClient from '../../../../modules/AtlasDatabaseClient';
@@ -46,14 +46,14 @@ export default async function UploadAvatarImage(req: NextApiRequest, res: NextAp
         res.status(401).send('Unauthorized');
         return;
     }
-    
+
     //// Verify member id ////
     const { isValid, category, id: memberId } = verifyId(req.query?.memberId);
     if (!(isValid && 'member' === category)) {
         res.status(400).send('Invalid member id');
         return;
     }
-    
+
     //// Match member id in token and the one in request ////
     const { sub: tokenId } = token;
     if (tokenId !== memberId) {
@@ -128,33 +128,7 @@ const uploadAsync = (req: NextApiRequest, memberId: string) => {
                     const initialBuf = Buffer.concat(arrBuf);
 
                     try {
-                        const image = await Jimp.read(initialBuf);
-
-                        // Corp and resize the image
-                        if (!(100 === image.bitmap.width && 100 === image.bitmap.height)) {
-                            let size, cropX, cropY; // v0.1.2 Add sizing function
-
-                            if (image.bitmap.width > image.bitmap.height) {
-                                size = image.bitmap.height;
-                                cropX = Math.round((image.bitmap.width - image.bitmap.height) / 2);
-                                cropY = 0;
-                            } else {
-                                size = image.bitmap.width;
-                                cropX = 0;
-                                cropY = Math.round((image.bitmap.height - image.bitmap.width) / 2);
-                            }
-
-                            image.crop(cropX, cropY, size, size);
-                            image.resize(100, 100);
-                        }
-
-                        // Drop the quality
-                        if (102400 < initialBuf.byteLength) {
-                            image.quality(85);
-                        }
-
-                        // Output to buffer
-                        const convertedBuf = await image.getBufferAsync(Jimp.MIME_JPEG);
+                        const convertedBuf = await sharp(initialBuf).rotate().resize(100, 100, { fit: 'cover' }).jpeg().toBuffer();
                         const blockClient = contianerClient.getBlockBlobClient(imageFullName);
                         if (await blockClient.uploadData(convertedBuf)) {
                             resolve();

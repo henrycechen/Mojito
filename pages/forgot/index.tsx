@@ -201,9 +201,9 @@ const Forgot = () => {
                     {{ tw: '重新設定密碼', cn: '重新设置密码', en: 'Reset Password' }[processStates.lang]}
                 </title>
                 <meta
-                    name="description"
+                    name='description'
                     content={desc}
-                    key="desc"
+                    key='desc'
                 />
             </Head>
             <Container component='main' maxWidth={'xs'} >
@@ -212,7 +212,7 @@ const Forgot = () => {
                 <Stack sx={{ mt: '5rem', display: 'resetpasswordrequestform' === processStates.componentOnDisplay ? 'block' : 'none' }}>
                     <Box sx={{ display: 'flex', justifyContent: 'center' }}>
                         <Link href='/'>
-                            <Avatar src={`/favicon.ico`} sx={{ width: 56, height: 56 }} />
+                            <Avatar src={`/logo.png`} sx={{ width: 56, height: 56 }} />
                         </Link>
                     </Box>
                     <Typography component='h1' variant='h5' sx={{ mt: 2, textAlign: 'center' }}>

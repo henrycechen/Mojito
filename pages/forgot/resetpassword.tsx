@@ -265,9 +265,9 @@ const ResetPassword = () => {
                     {{ tw: '設定新密碼', cn: '设定新密码', en: 'Set New Password' }[processStates.lang]}
                 </title>
                 <meta
-                    name="description"
+                    name='description'
                     content={desc}
-                    key="desc"
+                    key='desc'
                 />
             </Head>
             <Container component='main' maxWidth={'xs'} >
@@ -287,7 +287,7 @@ const ResetPassword = () => {
                 <Stack sx={{ mt: '5rem', display: 'resetpasswordform' === processStates.componentOnDisplay ? 'block' : 'none' }}>
                     <Box sx={{ display: 'flex', justifyContent: 'center' }}>
                         <Link href='/'>
-                            <Avatar src={`/favicon.ico`} sx={{ width: 56, height: 56 }} />
+                            <Avatar src={`/logo.png`} sx={{ width: 56, height: 56 }} />
                         </Link>
                     </Box>
                     <Typography component='h1' variant='h5' sx={{ textAlign: 'center', mt: 2 }}>

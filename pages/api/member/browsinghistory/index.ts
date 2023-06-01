@@ -1,14 +1,11 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getToken } from 'next-auth/jwt';
-import { RestError } from '@azure/data-tables';
 import { MongoError } from 'mongodb';
 
-import AzureTableClient from '../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from '../../../../modules/AtlasDatabaseClient';
 
 import { IMemberComprehensive } from '../../../../lib/interfaces/member';
 import { logWithDate, response405, response500 } from '../../../../lib/utils/general';
-import { IConcisePostComprehensive } from '../../../../lib/interfaces/post';
 import { IMemberPostMapping } from '../../../../lib/interfaces/mapping';
 import { verifyId } from '../../../../lib/utils/verify';
 
@@ -68,10 +65,8 @@ export default async function GetOrDeleteBrowsingHistory(req: NextApiRequest, re
             return;
         }
 
-        await atlasDbClient.close();
-        const historyMappingTableClient = AzureTableClient('HistoryMapping');
+        const memberPostMappingCollectionClient = atlasDbClient.db('mapping').collection<IMemberPostMapping>('member-post-history');
 
-        //// DELETE ////
         if ('DELETE' === method) {
             //// Verify post id ////
             const { isValid, category, id: postId } = verifyId(req.query?.postId);
@@ -80,55 +75,49 @@ export default async function GetOrDeleteBrowsingHistory(req: NextApiRequest, re
                 return;
             }
 
-            await historyMappingTableClient.updateEntity({
-                partitionKey: memberId,
-                rowKey: postId,
-                IsActive: false
-            }, 'Merge');
+            const deleteResult = await memberPostMappingCollectionClient.findOneAndUpdate({ memberId, postId }, { $set: { status: 0 } });
+            if (deleteResult.value) {
+                //// Response 200 ////
+                res.status(200).send('Delete browsing history success');
+            } else {
+                res.status(500).send('Delete browsing history failed');
+            }
 
-            //// Response 200 ////
-            res.status(200).send('Delete browsing history success');
+            await atlasDbClient.close();
             return;
         }
 
         //// GET ////
-        let str = `PartitionKey eq '${memberId}' and IsActive eq true`;
-
         const { channelId } = req.query;
-        if ('string' === typeof channelId && '' !== channelId && 'all' !== channelId) {
-            str += ` and ChannelId eq '${channelId}'`;
-        }
+        const conditions = [{ memberId: { $eq: memberId } }, { status: { $gt: 0 } }, ('string' === typeof channelId && !['', 'all'].includes(channelId)) ? { channelId: channelId } : {}];
+        const pipeline = [
+            { $match: { $and: conditions } },
+            { $limit: 30 },
+            { $sort: { createdTimeBySecond: -1 } },
+            {
+                $project: {
+                    _id: 0,
+                    memberId: 1,
+                    postId: 1,
+                    title: 1,
+                    channelId: 1,
+                    authorId: 1,
+                    nickname: 1,
+                    createdTimeBySecond: 1,
+                }
+            }
+        ];
 
-        let arr: IConcisePostComprehensive[] = [];
-        const historyMappingQuery = historyMappingTableClient.listEntities<IMemberPostMapping>({ queryOptions: { filter: str } });
-
-        // [!] attemp to reterieve entity makes the probability of causing RestError
-        let historyMappingQueryResult = await historyMappingQuery.next();
-        while (historyMappingQueryResult.value) {
-            arr.push({
-                postId: historyMappingQueryResult.value.rowKey,
-                memberId: historyMappingQueryResult.value.AuthorId,
-                nickname: historyMappingQueryResult.value.Nickname ?? '',
-                createdTimeBySecond: historyMappingQueryResult.value.CreatedTimeBySecond,
-                title: historyMappingQueryResult.value.Title,
-                channelId: historyMappingQueryResult.value.ChannelId,
-                hasImages: historyMappingQueryResult.value.HasImages,
-                totalCommentCount: 0,
-                totalHitCount: 0,
-                totalLikedCount: 0,
-                totalDislikedCount: 0
-            });
-            historyMappingQueryResult = await historyMappingQuery.next();
-        }
+        const query = memberPostMappingCollectionClient.aggregate(pipeline);
 
         //// Response 200 ////
-        res.status(200).send(arr);
+        res.status(200).send(await query.toArray());
+
+        await atlasDbClient.close();
         return;
     } catch (e: any) {
         let msg;
-        if (e instanceof RestError) {
-            msg = `Attempt to communicate with azure table storage.`;
-        } else if (e instanceof MongoError) {
+        if (e instanceof MongoError) {
             msg = `Attempt to communicate with atlas mongodb.`;
         } else {
             msg = `Uncategorized. ${e?.msg}`;

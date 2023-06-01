@@ -39,8 +39,8 @@ export default async function PostsOf24HoursNew(req: NextApiRequest, res: NextAp
         const conditions = [{ status: { $gt: 0 } }, ('string' === typeof channelId && !['', 'all'].includes(channelId)) ? { channelId: channelId } : {}];
         const pipeline = [
             { $match: { $and: conditions } },
-            { $limit: 30 },
-            { $sort: { totalHitCount: 1 } },
+            { $limit: 1000 },
+            { $sort: { createdTimeBySecond: -1 } },
             {
                 $project: {
                     _id: 0,

@@ -23,7 +23,7 @@ import { LangConfigs, TPreferenceStates } from '../../lib/types';
 import { restoreFromLocalStorage } from '../../lib/utils/general';
 import { provideAvatarImageUrl, getNicknameBrief } from '../../lib/utils/for/member';
 
-import LegalInfo from '../../ui/LegalInfo';
+
 import Navbar from '../../ui/Navbar';
 import SideMenu from '../../ui/SideMenu';
 import SideColumn from '../../ui/SideColumn';
@@ -144,9 +144,9 @@ const Blacklist = () => {
                     {{ tw: '屏蔽列表', cn: '黑名单', en: 'Blacklist' }[preferenceStates.lang]}
                 </title>
                 <meta
-                    name="description"
+                    name='description'
                     content={desc}
-                    key="desc"
+                    key='desc'
                 />
             </Head>
             <Navbar lang={preferenceStates.lang} />
@@ -207,6 +207,9 @@ const Blacklist = () => {
                         </Box>}
 
                     </Box>
+
+                    {/* bottom space */}
+                    <Box pb={{ xs: '10rem', sm: '10rem', md: 0 }} />
                 </Grid>
 
                 {/* right */}
@@ -218,8 +221,8 @@ const Blacklist = () => {
 
             </Grid>
 
-            {/* legal info */}
-            <LegalInfo lang={preferenceStates.lang} />
+            {/* bottom space */}
+            <Box pb={'10rem'} />
         </>
     );
 };

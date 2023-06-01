@@ -37,6 +37,7 @@ import BarChartIcon from '@mui/icons-material/BarChart';
 import AlternateEmailIcon from '@mui/icons-material/AlternateEmail';
 
 import { Swiper, SwiperSlide } from 'swiper/react';
+import { Controller } from 'swiper';
 import { Navigation } from 'swiper';
 import { Pagination } from 'swiper';
 import 'swiper/css';
@@ -49,7 +50,6 @@ import BlockIcon from '@mui/icons-material/Block';
 import FlagIcon from '@mui/icons-material/Flag';
 
 import { TextButton } from '../../ui/Styled';
-import LegalInfo from '../../ui/LegalInfo';
 import Copyright from '../../ui/Copyright';
 import Guidelines from '../../ui/Guidelines';
 import Navbar from '../../ui/Navbar';
@@ -325,8 +325,16 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, authorInfo
             const viewerSession: any = { ...session };
             setViewerInfoStates({ ...viewerInfoStates, memberId: viewerSession?.user?.id ?? '' });
             restorePreferenceStatesFromCache(setPreferenceStates);
+            createHistory(postComprehensive_ss.postId);
         }
     }, [status]);
+
+    const createHistory = async (postId: string) => {
+        const resp = await fetch(`/api/member/browsinghistory/create?postId=${postId}`, { method: 'POST' });
+        if (200 !== resp.status) {
+            console.error('Create browsing history failed');
+        }
+    };
 
     const { postId, memberId: authorId, } = postComprehensive_ss;
 
@@ -341,23 +349,6 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, authorInfo
         if ('cn' === preferenceStates.lang) { setPreferenceStates({ ...preferenceStates, lang: 'en' }); }
         if ('en' === preferenceStates.lang) { setPreferenceStates({ ...preferenceStates, lang: 'tw' }); }
     };
-
-    // States - swipper (dimensions)
-    // Logic:
-    // swiperWrapperHeight is designed for adjust Box (swiperslide wrapper) height
-    // Initial value set to 1 leads to Box-height having been set to 100% on initializing
-    // If there is ultra-high photo in the swiperslide array
-    // Then adujust all the Box-height to the swiper (top-level) wrapper height
-    // Which makes all the photo aligned center (horizontally)
-    const [swiperWrapperDimensions, setSwiperWrapperDimensions] = React.useState({ width: 1, height: 1 });
-
-    React.useEffect(() => {
-        const wrapper: HTMLElement | null = document.getElementById('swiper-wrapper');
-        setSwiperWrapperDimensions({
-            width: wrapper?.offsetWidth ?? 1,
-            height: wrapper?.offsetHeight ?? 500
-        });
-    }, []);
 
     type TCombinedStatistics = {
         // Member statistics
@@ -899,7 +890,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, authorInfo
             }
             setRestrictedCommentComprehensiveDict({ ...restrictedCommentComprehensiveDict, ...update });
         } catch (e) {
-            console.error(`Attemp to fetch comments. ${e}`);
+            console.error(`Attemp to update comment comprehensive dictionary. ${e}`);
         }
     };
 
@@ -1170,6 +1161,83 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, authorInfo
         );
     };
 
+    type TAnimationStates = {
+        scrollYPixels: number;
+        requireUpdate: boolean;
+    };
+
+    // States - animation
+    const [animationStates, setAnimationStates] = React.useState<TAnimationStates>({
+        scrollYPixels: 0,
+        requireUpdate: false,
+    });
+
+    // Register animation listener
+    React.useEffect(() => {
+        const handleScroll = () => {
+
+            if (0 > window.scrollY) {
+                setAnimationStates({
+                    ...animationStates,
+                    scrollYPixels: window.scrollY,
+                });
+                if (Math.abs(window.scrollY) > 50) {
+
+                    setAnimationStates({
+                        ...animationStates,
+                        requireUpdate: true
+                    });
+
+                    window.removeEventListener('scroll', handleScroll);
+
+                    setTimeout(() => {
+                        setAnimationStates({
+                            ...animationStates,
+                            requireUpdate: false
+                        });
+
+                        window.addEventListener('scroll', handleScroll);
+                    }, 5000);
+                }
+            }
+
+        };
+
+        window.addEventListener('scroll', handleScroll);
+
+        return () => {
+            window.removeEventListener('scroll', handleScroll);
+        };
+    }, []);
+
+    React.useEffect(() => { refreshRestrictedCommentComprehensiveDict(); }, [animationStates.requireUpdate]);
+
+    const refreshRestrictedCommentComprehensiveDict = async () => {
+
+        const resp = await fetch(`/api/comment/s/of/${postId}`);
+        if (200 !== resp.status) {
+            console.error(`Attempt to GET comment comprehensive array`);
+            return;
+        }
+
+        try {
+            const restrictedCommentComprehensiveArr = await resp.json();
+            const update: TRestrictedCommentComprehensiveDict = {};
+            if (Array.isArray(restrictedCommentComprehensiveArr)) {
+                restrictedCommentComprehensiveArr.forEach(restrictedCommentComprehensive => {
+                    update[restrictedCommentComprehensive.commentId] = {
+                        ...restrictedCommentComprehensive,
+                        isExpended: false
+                    };
+                });
+            }
+            setRestrictedCommentComprehensiveDict({ ...restrictedCommentComprehensiveDict, ...update });
+            setAnimationStates({ scrollYPixels: 0, requireUpdate: false });
+        } catch (e) {
+            console.error(`Attemp to refresh comment comprehensive dictionary. ${e}`);
+        }
+    };
+
     return (
         <>
             <Head>
@@ -1182,7 +1250,9 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, authorInfo
                     key="desc"
                 />
             </Head>
+
             <Navbar lang={preferenceStates.lang} />
+
             <Grid container>
 
                 {/* left */}
@@ -1253,8 +1323,8 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, authorInfo
                                             {/* swiper slide wrapper */}
                                             <Box sx={{
                                                 display: 'flex', justifyContent: 'center', alignContent: 'center',
-                                                width: swiperWrapperDimensions.width,
-                                                height: swiperWrapperDimensions.height
+                                                width: 1,
+                                                height: 500
                                             }} >
                                                 <Box component={'img'} src={provideImageUrl(fullname, imageDomain)}
                                                     width={1}
@@ -1605,8 +1675,8 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, authorInfo
                 </Grid>
             </Grid>
 
-            {/* legal info */}
-            <LegalInfo lang={preferenceStates.lang} />
+            {/* bottom space */}
+            <Box pb={{ xs: '10rem', sm: '10rem', md: 0 }} />
 
             {/* pop up comment editor */}
             < Popover

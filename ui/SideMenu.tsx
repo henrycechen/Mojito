@@ -15,15 +15,15 @@ import ListItemText from '@mui/material/ListItemText';
 import ListItemIcon from '@mui/material/ListItemIcon';
 
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import ArticleIcon from '@mui/icons-material/Article';
 import CreateIcon from '@mui/icons-material/Create';
 import EmailIcon from '@mui/icons-material/Email';
-import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
-import ReorderIcon from '@mui/icons-material/Reorder';
+import NotificationsIcon from '@mui/icons-material/Notifications';
+import SearchIcon from '@mui/icons-material/Search';
 import SettingsIcon from '@mui/icons-material/Settings';
 
 import { LangConfigs } from '../lib/types';
 
-const appDomain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? '';
 const langConfigs: LangConfigs = {
     signIn: {
         tw: '登入',
@@ -35,10 +35,15 @@ const langConfigs: LangConfigs = {
         cn: '文章',
         en: 'Posts'
     },
-    followedMembers: {
+    follow: {
         tw: '關注',
         cn: '关注',
-        en: 'Followed'
+        en: 'Follow'
+    },
+    query: {
+        tw: '搜尋',
+        cn: '搜索',
+        en: 'Query'
     },
     messages: {
         tw: '訊息',
@@ -107,6 +112,10 @@ export default function SideMenu(props: TSideMenuProps) {
         router.push(`/follow`);
     };
 
+    const handleProceedToQuery = () => {
+        router.push(`/query`);
+    };
+
     const handleProceedToMessage = () => {
         router.push(`/message`);
     };
@@ -128,7 +137,7 @@ export default function SideMenu(props: TSideMenuProps) {
 
             {/* logo */}
             <Link href='/' pt={5} px={2}>
-                <Box component={'img'} src={`${appDomain}/logo${'dark' === theme.palette.mode ? '-dark' : ''}.png`} sx={{ height: { md: '3rem', lg: '3.5rem' } }} />
+                <Box component={'img'} src={`/logo${'dark' === theme.palette.mode ? '-dark' : '-blue'}.png`} sx={{ height: { md: '3rem', lg: '3.5rem' } }} />
             </Link>
 
             {/* unauthenticated - login*/}
@@ -143,7 +152,7 @@ export default function SideMenu(props: TSideMenuProps) {
                     {/* posts */}
                     <MenuItem sx={{ height: 56 }} onClick={handleProceedToHome} >
                         <ListItemIcon>
-                            <ReorderIcon />
+                            <ArticleIcon />
                         </ListItemIcon>
                         <ListItemText>
                             {langConfigs.posts[lang]}
@@ -153,10 +162,20 @@ export default function SideMenu(props: TSideMenuProps) {
                     {/* followed members */}
                     <MenuItem sx={{ height: 56 }} onClick={handleProceedToFollowedMember} >
                         <ListItemIcon>
-                            <NotificationsActiveIcon />
+                            <NotificationsIcon />
                         </ListItemIcon>
                         <ListItemText>
-                            {langConfigs.followedMembers[lang]}
+                            {langConfigs.follow[lang]}
+                        </ListItemText>
+                    </MenuItem>
+
+                    {/* query */}
+                    <MenuItem sx={{ height: 56 }} onClick={handleProceedToQuery} >
+                        <ListItemIcon>
+                            <SearchIcon />
+                        </ListItemIcon>
+                        <ListItemText>
+                            {langConfigs.query[lang]}
                         </ListItemText>
                     </MenuItem>
 

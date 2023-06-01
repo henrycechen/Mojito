@@ -39,7 +39,6 @@ import { DragDropContext } from 'react-beautiful-dnd';
 import { Droppable, Draggable } from 'react-beautiful-dnd';
 
 import axios from 'axios';
-import 'jimp';
 
 import { IConciseTopicComprehensive, ITopicInfo } from '../../lib/interfaces/topic';
 import { LangConfigs, TPreferenceStates } from '../../lib/types';
@@ -50,7 +49,7 @@ import { getRandomHexStr } from '../../lib/utils/create';
 import { restoreFromLocalStorage } from '../../lib/utils/general';
 import { contentToParagraphsArray, cuedMemberInfoDictionaryToArray, fakeRestrictedPostComprehensive, provideImageUrl } from '../../lib/utils/for/post';
 
-import LegalInfo from '../../ui/LegalInfo';
+
 import SideMenu from '../../ui/SideMenu';
 import SideColumn from '../../ui/SideColumn';
 import Navbar from '../../ui/Navbar';
@@ -893,24 +892,11 @@ const EditPost = ({ restrictedPostComprehensive_ss, redirect404, redirect500 }: 
                 }
             };
 
-            const imgRp = await fetch(img.url);
-            const imgbuf = Buffer.concat([new Uint8Array(await imgRp.arrayBuffer())]);
-            const Jimp = (window as any).Jimp;
-            const imgf = await Jimp.read(imgbuf);
-
-            // Verify image size and handle oversized image
-            let bl = imgbuf.byteLength;
-            while (bl > 102400) {
-                imgf.scale(0.5);
-                const b = await imgf.getBufferAsync(Jimp.MIME_JPEG);
-                bl = b.byteLength;
-            };
-
-            // Get processed image in PNG
-            const bbf = await imgf.getBufferAsync(Jimp.MIME_JPEG);
+            const imgRes = await fetch(img.url);
+            const imgbuf = Buffer.concat([new Uint8Array(await imgRes.arrayBuffer())]);
 
             // Append image data
-            formData.append('image', new Blob([new Uint8Array(bbf)], { type: Jimp.MIME_JPEG }));
+            formData.append('image', new Blob([new Uint8Array(imgbuf)]));
             const resp = await axios.post(`/api/upload/cover/${postId}?requestInfo=${tkn}`, formData, config);
             tkn = resp.data?.updatedRequestInfoToken;
 
@@ -964,33 +950,11 @@ const EditPost = ({ restrictedPostComprehensive_ss, redirect404, redirect500 }: 
 
                 // Prepare image data
                 try {
-                    const imgRp = await fetch(img.url);
-                    const imgbuf = Buffer.concat([new Uint8Array(await imgRp.arrayBuffer())]);
-                    const Jimp = (window as any).Jimp;
-                    const imgf = await Jimp.read(imgbuf);
-
-                    // Get image mime info
-                    let mme = imgf.getMIME();
-
-                    // Shirnk the image size
-                    if (960 < imgf.bitmap.width) {
-                        imgf.resize(960, Jimp.AUTO);
-                    }
-
-                    if (1200 < imgf.bitmap.width) {
-                        imgf.resize(Jimp.AUTO, 1600);
-                    }
-
-                    // Image quality control
-                    imgf.quality(768000 > imgbuf.byteLength ? 95 : 85); // threshold 750 KB
-
-                    const bbf = await imgf.getBufferAsync(mme);
-                    if (!['image/png', 'image/jpeg'].includes(mme)) {
-                        mme = Jimp.MIME_JPEG;
-                    }
+                    const imgRes = await fetch(img.url);
+                    const imgbuf = Buffer.concat([new Uint8Array(await imgRes.arrayBuffer())]);
 
                     // Append image data
-                    formData.append('image', new Blob([new Uint8Array(bbf)], { type: mme }));
+                    formData.append('image', new Blob([new Uint8Array(imgbuf)]));
                     const uploadResp = await axios.post(`/api/upload/image/${postId}?requestInfo=${tkn}`, formData, config);
 
                     const { imageFullname, updatedRequestInfoToken } = uploadResp.data;
@@ -1019,7 +983,7 @@ const EditPost = ({ restrictedPostComprehensive_ss, redirect404, redirect500 }: 
         }
 
         // #4 update image fullnames array
-        const respUpdate = await fetch('/api/create/updateimagefullnamesarray', {
+        const respUpdate = await fetch(`/api/creation/${postId}/updateimagefullnamesarray`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -1324,8 +1288,8 @@ const EditPost = ({ restrictedPostComprehensive_ss, redirect404, redirect500 }: 
                 </Grid>
             </Grid>
 
-            {/* legal info */}
-            <LegalInfo lang={preferenceStates.lang} />
+            {/* bottom space */}
+            <Box pb={'10rem'} />
 
             {/* topic helper */}
             <Modal

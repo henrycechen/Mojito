@@ -24,7 +24,10 @@ import Typography from '@mui/material/Typography';
 import CreateIcon from '@mui/icons-material/Create';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
+import EmailIcon from '@mui/icons-material/Email';
 import PhotoCamera from '@mui/icons-material/PhotoCamera';
+import MarkEmailUnreadIcon from '@mui/icons-material/MarkEmailUnread';
+import SettingsIcon from '@mui/icons-material/Settings';
 import StarIcon from '@mui/icons-material/Star';
 
 import grey from '@mui/material/colors/grey';
@@ -32,7 +35,6 @@ import grey from '@mui/material/colors/grey';
 import { Global } from '@emotion/react';
 import Masonry from '@mui/lab/Masonry';
 import axios, { AxiosError, AxiosResponse } from 'axios';
-import 'jimp';
 
 import { IConciseMemberStatistics, IRestrictedMemberComprehensive } from '../../lib/interfaces/member';
 import { IConcisePostComprehensive } from '../../lib/interfaces/post';
@@ -60,11 +62,20 @@ const appDomain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? '';
 const imageDomain = process.env.NEXT_PUBLIC_IMAGE_DOMAIN ?? '';
 const defaultLang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
-
     editProfile: {
         tw: '資料設定',
         cn: '更改信息',
         en: 'Edit profile',
+    },
+    message: {
+        tw: '訊息',
+        cn: '消息',
+        en: 'Message',
+    },
+    settings: {
+        tw: '其他設定',
+        cn: '设置',
+        en: 'Settings',
     },
     followAuthor: {
         tw: '關注作者',
@@ -311,6 +322,10 @@ type TMemberPageProps = {
     redirect500: boolean;
 };
 
+/**
+ * Last update:
+ * - 31/05/2023 v0.1.2 Removed Image process unit
+ */
 export async function getServerSideProps(context: NextPageContext): Promise<{ props: TMemberPageProps; }> {
     const { memberId } = context.query;
     const { isValid, category } = verifyId(memberId);
@@ -331,7 +346,14 @@ export async function getServerSideProps(context: NextPageContext): Promise<{ pr
         // GET member info by id
         const info_resp = await fetch(`${appDomain}/api/member/info/${memberId}`);
         if (200 !== info_resp.status) {
-            throw new Error('Attempt to GET member info');
+            return {
+                props: {
+                    memberInfo_ss: fakeRestrictedMemberInfo(),
+                    memberStatistics_ss: fakeConciseMemberStatistics(),
+                    redirect404: true,
+                    redirect500: false,
+                }
+            };
         }
         const memberInfo_ss = await info_resp.json();
 
@@ -387,11 +409,6 @@ const Member = ({ memberInfo_ss: memberComprehensive_ss, memberStatistics_ss, re
             restorePreferenceStatesFromCache(setPreferenceStates);
         }
     }, [status]);
-
-    // Ref - masonry
-    const masonryWrapper = React.useRef<any>();
-    const [width, setWidth] = React.useState(375); // default 636, now use the width of iphonse se3
-    React.useEffect(() => { setWidth(masonryWrapper?.current?.offsetWidth); }, []);
 
     // States - preference
     const [preferenceStates, setPreferenceStates] = React.useState<TPreferenceStates>({
@@ -453,6 +470,23 @@ const Member = ({ memberInfo_ss: memberComprehensive_ss, memberStatistics_ss, re
         updateProcessStatesCache(states);
         // #3 reset helper
         setBrowsingHelper({ ...browsingHelper, memorizeViewPortPositionY: undefined });
+    };
+
+    // States - notice statistics
+    const [noticeStatistics, setNoticeStatistics] = React.useState<number>(0);
+
+    React.useEffect(() => { if ('' === processStates.viewerId) { updateNoticeStatistics(); } }, [processStates.viewerId]);
+
+    const updateNoticeStatistics = async () => {
+        const resp = await fetch(`/api/notice/statistics`);
+        if (200 === resp.status) {
+            try {
+                const { cue, reply } = await resp.json();
+                setNoticeStatistics(cue + reply);
+            } catch (e) {
+                console.log(`Attempt to GET notice statistics. ${e}`);
+            }
+        }
     };
 
     // States - browsing helper
@@ -593,7 +627,7 @@ const Member = ({ memberInfo_ss: memberComprehensive_ss, memberStatistics_ss, re
         undoSavedPostIdArr: []
     });
 
-    React.useEffect(() => { if ('' !== processStates.viewerId) { initializeBehaviourStates(); } }, [processStates.viewerId]);
+    React.useEffect(() => { if (authorId === processStates.viewerId) { initializeBehaviourStates(); } }, [processStates.viewerId]);
 
     const initializeBehaviourStates = async () => {
         try {
@@ -878,37 +912,8 @@ const Member = ({ memberInfo_ss: memberComprehensive_ss, memberStatistics_ss, re
                     });
                     return;
                 }
-                const { Jimp } = window as any;
-                const image = await Jimp.read(initialBuf);
 
-                // Crop and resize the image
-                if (!(100 === image.bitmap.width && 100 === image.bitmap.height)) {
-                    let size, cropX, cropY; // v0.1.2 Add sizing function
-
-                    if (image.bitmap.width > image.bitmap.height) {
-                        size = image.bitmap.height;
-                        cropX = Math.round((image.bitmap.width - image.bitmap.height) / 2);
-                        cropY = 0;
-                    } else {
-                        size = image.bitmap.width;
-                        cropX = 0;
-                        cropY = Math.round((image.bitmap.height - image.bitmap.width) / 2);
-                    }
-
-                    image.crop(cropX, cropY, size, size);
-                    image.resize(100, 100);
-                }
-
-                // Drop the quality
-                if (102400 < initialBuf.byteLength) { // ideally image file size no larger than 100 KB
-                    image.quality(85);
-                }
-
-                // Output and append to form data
-                const convertedBuf = await image.getBufferAsync(Jimp.MIME_JPEG);
-                const uintArray = new Uint8Array(convertedBuf);
-                formData.append('image', new Blob([uintArray]));
-
+                formData.append('image', new Blob([new Uint8Array(initialBuf)]));
                 await axios.post(`/api/upload/avatar/${authorId}`, formData, config)
                     .then((response: AxiosResponse) => {
                         // Succeed
@@ -1046,6 +1051,89 @@ const Member = ({ memberInfo_ss: memberComprehensive_ss, memberStatistics_ss, re
         left: 'calc(50% - 15px)',
     }));
 
+    const handleProceedToMessagePage = () => {
+        router.push(`/message`);
+    };
+    const handleProceedToSettingsPage = () => {
+        router.push(`/settings`);
+    };
+
+    type TAnimationStates = {
+        scrollYPixels: number;
+        requireUpdate: boolean;
+    };
+
+    // States - animation
+    const [animationStates, setAnimationStates] = React.useState<TAnimationStates>({
+        scrollYPixels: 0,
+        requireUpdate: false,
+    });
+
+    // Register animation listener
+    React.useEffect(() => {
+        const handleScroll = () => {
+
+            if (0 > window.scrollY) {
+                setAnimationStates({
+                    ...animationStates,
+                    scrollYPixels: window.scrollY,
+                });
+                if (Math.abs(window.scrollY) > 50) {
+
+                    setAnimationStates({
+                        ...animationStates,
+                        requireUpdate: true
+                    });
+
+                    window.removeEventListener('scroll', handleScroll);
+
+                    setTimeout(() => {
+                        setAnimationStates({
+                            ...animationStates,
+                            requireUpdate: false
+                        });
+
+                        window.addEventListener('scroll', handleScroll);
+                    }, 5000);
+                }
+            }
+
+        };
+
+        window.addEventListener('scroll', handleScroll);
+
+        return () => {
+            window.removeEventListener('scroll', handleScroll);
+        };
+    }, []);
+
+    React.useEffect(() => { refreshMemberPage(); }, [animationStates.requireUpdate]);
+
+    const refreshMemberPage = async () => {
+        let url = '';
+
+        if ('creations' === processStates.selectedCategory) {
+            url = `/api/member/creations/${authorId}`;
+        }
+
+        if ('savedposts' === processStates.selectedCategory) {
+            url = `/api/member/savedposts/${authorId}`;
+        }
+
+        if ('browsinghistory' === processStates.selectedCategory) {
+            url = `/api/member/browsinghistory`;
+        }
+
+        const resp = await fetch(`${url}?channelId=${processStates.selectedChannelId}`);
+        if (200 === resp.status) {
+            try {
+                setMasonryPostInfoArr(await resp.json());
+                setAnimationStates({ scrollYPixels: 0, requireUpdate: false });
+            } catch (e) {
+                console.error(`Attempt to GET posts of ${processStates.selectedCategory}. ${e}`);
+            }
+        }
+    };
 
     return (
         <>
@@ -1095,6 +1183,20 @@ const Member = ({ memberInfo_ss: memberComprehensive_ss, memberStatistics_ss, re
                 }}
             />
 
+            {/* pull-to-refresh */}
+            <Box
+                sx={{
+                    display: 'flex',
+                    flexDirection: 'row',
+                    justifyContent: 'center',
+                    opacity: animationStates.requireUpdate ? 1 : Math.abs(animationStates.scrollYPixels) / 25
+                }}>
+                <CircularProgress
+                    variant={animationStates.requireUpdate ? 'indeterminate' : 'determinate'}
+                    size={Math.abs(animationStates.scrollYPixels) * 1.8 < 24 && !animationStates.requireUpdate ? Math.abs(animationStates.scrollYPixels) * 1.8 : 24}
+                    value={Math.abs(animationStates.scrollYPixels) < 50 && !animationStates.requireUpdate ? Math.abs(animationStates.scrollYPixels) * 2 : 100} />
+            </Box>
+
             <Navbar lang={preferenceStates.lang} />
             <Grid container >
 
@@ -1113,9 +1215,18 @@ const Member = ({ memberInfo_ss: memberComprehensive_ss, memberStatistics_ss, re
                         <Grid container sx={{ pt: { xs: 2, sm: 2, md: 0 }, px: 1 }}>
 
                             {/* avatar image */}
-                            <Grid item flexGrow={1}>
+                            <Grid item >
                                 <Avatar src={memberInfoStates.avatarImageUrl} sx={{ height: 64, width: 64 }}>{memberInfoStates.nickname?.charAt(0).toUpperCase()}</Avatar>
                             </Grid>
+
+                            {/* 'edit' button */}
+                            {'authenticated' === status && processStates.viewerId === authorId && <Grid item pt={2} pl={1}>
+                                <Tooltip title={langConfigs.editProfile[preferenceStates.lang]}>
+                                    <IconButton onClick={handleToggleEditor(true)} ><EditIcon sx={{ height: { xs: 20, sm: 24 }, width: { xs: 20, sm: 24 }, }} /></IconButton>
+                                </Tooltip>
+                            </Grid>}
+
+                            <Grid item flexGrow={1} />
 
                             {/* 'follow' button */}
                             {'authenticated' !== status && <Grid item sx={{ mt: 2 }} pl={1}>
@@ -1124,10 +1235,22 @@ const Member = ({ memberInfo_ss: memberComprehensive_ss, memberStatistics_ss, re
                                 </Tooltip>
                             </Grid>}
 
-                            {/* 'edit' button */}
+                            {/* 'message' button */}
                             {'authenticated' === status && processStates.viewerId === authorId && <Grid item pt={2}>
-                                <Tooltip title={langConfigs.editProfile[preferenceStates.lang]}>
-                                    <IconButton onClick={handleToggleEditor(true)} ><EditIcon sx={{ height: { xs: 20, sm: 24 }, width: { xs: 20, sm: 24 }, }} /></IconButton>
+                                <Tooltip title={langConfigs.message[preferenceStates.lang]}>
+                                    <IconButton onClick={handleProceedToMessagePage} >
+                                        {0 !== noticeStatistics ?
+                                            <MarkEmailUnreadIcon sx={{ height: { xs: 20, sm: 24 }, width: { xs: 20, sm: 24 }, }} /> :
+                                            <EmailIcon sx={{ height: { xs: 20, sm: 24 }, width: { xs: 20, sm: 24 }, }} />
+                                        }
+                                    </IconButton>
+                                </Tooltip>
+                            </Grid>}
+
+                            {/* 'settings' button */}
+                            {'authenticated' === status && processStates.viewerId === authorId && <Grid item pt={2} sx={{ display: { sm: 'block', md: 'none' } }}>
+                                <Tooltip title={langConfigs.settings[preferenceStates.lang]}>
+                                    <IconButton onClick={handleProceedToSettingsPage} ><SettingsIcon sx={{ height: { xs: 20, sm: 24 }, width: { xs: 20, sm: 24 }, }} /></IconButton>
                                 </Tooltip>
                             </Grid>}
 
@@ -1247,21 +1370,22 @@ const Member = ({ memberInfo_ss: memberComprehensive_ss, memberStatistics_ss, re
                         }
 
                         {/* masonry */}
-                        <Box ref={masonryWrapper}>
-                            <Masonry columns={2}>
+                        <Box>
+                            <Masonry columns={2} sx={{ margin: 0 }}>
 
                                 {/* posts */}
                                 {0 !== masonryPostInfoArr.length && masonryPostInfoArr.map(info =>
                                     <Paper key={info.postId} id={info.postId} sx={{ maxWidth: 450, '&:hover': { cursor: 'pointer' } }}>
                                         <Stack>
+
                                             {/* image */}
                                             <Box
                                                 component={'img'}
                                                 loading='lazy'
                                                 src={provideCoverImageUrl(info.postId, imageDomain)}
                                                 sx={{
-                                                    maxWidth: { xs: width / 2, sm: 450 },
-                                                    maxHeight: 'max-content',
+                                                    maxWidth: 1,
+                                                    maxHeight: 1,
                                                     borderTopLeftRadius: 4,
                                                     borderTopRightRadius: 4
                                                 }}
@@ -1310,9 +1434,10 @@ const Member = ({ memberInfo_ss: memberComprehensive_ss, memberStatistics_ss, re
                             </Masonry>
                         </Box>
 
-
-
                     </Stack>
+
+                    {/* bottom space */}
+                    <Box pb={{ xs: '10rem', sm: '10rem', md: 0 }} />
                 </Grid>
 
                 {/* right */}

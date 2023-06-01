@@ -133,9 +133,9 @@ const VerifyEmailAddress = () => {
                     {{ tw: '驗證郵件地址', cn: '验证邮箱', en: 'Verify Email Address' }[processStates.lang]}
                 </title>
                 <meta
-                    name="description"
+                    name='description'
                     content={desc}
-                    key="desc"
+                    key='desc'
                 />
             </Head>
             <Container component='main' maxWidth={'xs'} >

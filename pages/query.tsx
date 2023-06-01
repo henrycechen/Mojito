@@ -1,6 +1,7 @@
 import * as React from 'react';
 import Head from 'next/head';
 import { signIn, useSession, } from 'next-auth/react';
+import { NextPageContext } from 'next/types';
 import { useRouter } from 'next/router';
 
 import Alert from '@mui/material/Alert';
@@ -14,8 +15,16 @@ import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
+import Autocomplete from '@mui/material/Autocomplete';
+
+import FormControl from '@mui/material/FormControl';
+import Input from '@mui/material/Input';
+import InputLabel from '@mui/material/InputLabel';
+import TextField from '@mui/material/TextField';
+
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
+import MenuList from '@mui/material/MenuList';
 import ListItemText from '@mui/material/ListItemText';
 import ListItemIcon from '@mui/material/ListItemIcon';
 
@@ -37,11 +46,12 @@ import SideColumn from '../ui/SideColumn';
 import { getRandomHexStr } from '../lib/utils/create';
 import { IConcisePostComprehensive } from '../lib/interfaces/post';
 import { provideCoverImageUrl } from '../lib/utils/for/post';
+import { IConciseTopicComprehensive } from '../lib/interfaces/topic';
 
 const storageName0 = 'PreferenceStates';
 const restorePreferenceStatesFromCache = restoreFromLocalStorage(storageName0);
 
-const storageName = 'FollowPageProcessStates';
+const storageName = 'QueryPageProcessStates';
 const updateProcessStatesCache = updateLocalStorage(storageName);
 const restoreProcessStatesFromCache = restoreFromLocalStorage(storageName);
 
@@ -49,6 +59,16 @@ const imageDomain = process.env.NEXT_PUBLIC_IMAGE_DOMAIN ?? '';
 const desc = process.env.NEXT_PUBLIC_APP_DESCRIPTION ?? '';
 const lang = process.env.NEXT_PUBLIC_APP_LANG ?? 'tw';
 const langConfigs: LangConfigs = {
+    queryATopic: {
+        tw: `What's on your mind?`,
+        cn: `'What's on your mind?`,
+        en: `What's on your mind?`,
+    },
+    query: {
+        tw: '搜尋',
+        cn: '搜索',
+        en: 'Query',
+    },
     alertContent: {
         tw: '出錯了，刷新頁面以重新獲取數據',
         cn: '出错了，刷新页面以重新获取数据',
@@ -60,9 +80,9 @@ const langConfigs: LangConfigs = {
         en: 'You have not followed any members'
     },
     noPosts: {
-        tw: '作者未曾發佈過文章',
-        cn: '作者未曾发布过文章',
-        en: 'Author has not posted any articles'
+        tw: '未能搜尋到相關文章',
+        cn: '未能搜索到相关文章',
+        en: 'No related posts were found'
     },
     report: {
         tw: '檢舉',
@@ -71,15 +91,28 @@ const langConfigs: LangConfigs = {
     },
 };
 
+type TQueryPageProps = {
+    topicId?: string;
+    topicPlainText?: string;
+};
+
+export async function getServerSideProps(context: NextPageContext): Promise<{ props: TQueryPageProps; }> {
+    const { topicId } = context.query;
+    if (!('string' === typeof topicId && new RegExp(/^[-A-Za-z0-9+/]*={0,3}$/).test(topicId))) {
+        return { props: {} };
+    }
+    return { props: { topicId, topicPlainText: Buffer.from(topicId, 'base64').toString() } };
+}
+
 /**
  * Last update:
- * - 24/05/2023 v0.1.1
+ * - 31/05/2023 v0.1.1
  */
-const Follow = () => {
+const Query = ({ topicId, topicPlainText }: TQueryPageProps) => {
 
     const router = useRouter();
 
-    const { data: session, status } = useSession({ required: true, onUnauthenticated() { signIn(); } });
+    const { data: session, status } = useSession();
 
     React.useEffect(() => {
         if ('authenticated' === status) {
@@ -97,132 +130,99 @@ const Follow = () => {
 
     type TProcessStates = {
         memberId: string;
-        selectedAuthorId: string;
-        memorizeChannelBarPositionX: number | undefined;
-        memorizeViewPortPositionY: number | undefined;
-        memorizeLastViewedPostId: string | undefined;
-        wasRedirected: boolean;
     };
 
     // States - process
     const [processStates, setProcessStates] = React.useState<TProcessStates>({
         memberId: '',
-        selectedAuthorId: '',
-        memorizeChannelBarPositionX: undefined,
-        memorizeViewPortPositionY: undefined,
-        memorizeLastViewedPostId: undefined,
-        wasRedirected: false,
     });
 
-    React.useEffect(() => { restoreProcessStatesFromCache(setProcessStates); }, []);
 
-    // States - followed member info arr
-    const [followedMemberInfoArr, setFollowedMemberInfoArr] = React.useState<IMemberInfo[]>([]);
+    type TQueryHelper = {
+        inputStr: string; // plain text
+        queryStr: string; // base64 text
+    };
 
-    React.useEffect(() => {
-        if ('' !== processStates.memberId) {
-            getFollowedMemberInfoArray();
-        }
-    }, [processStates.memberId]);
+    // States - query helper
+    const [queryHelperStates, setQueryHelperStates] = React.useState<TQueryHelper>({
+        inputStr: topicPlainText ?? '',
+        queryStr: topicPlainText ?? '',
+    });
 
-    const getFollowedMemberInfoArray = async () => {
-        const resp = await fetch(`/api/member/followedbyme/${processStates.memberId}`);
-        try {
-            if (200 !== resp.status) {
-                throw new Error(`Bad fetch response`);
+    const handleInput = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        setQueryHelperStates({
+            ...queryHelperStates,
+            inputStr: event.target.value,
+        });
+    };
+
+    // States - suggestion array
+    const [suggestionsArr, setSuggestionArr] = React.useState<IConciseTopicComprehensive[]>([]);
+
+    React.useEffect(() => { provideSuggestions(); }, [queryHelperStates.inputStr]);
+
+    const provideSuggestions = async () => {
+        const inputStr = queryHelperStates.inputStr;
+        if ('' !== inputStr) {
+            const queryStr = Buffer.from(inputStr).toString('base64');
+            const resp = await fetch(`/api/topic/query?fragment=${queryStr}`);
+            if (200 === resp.status) {
+                try {
+                    const update = await resp.json();
+                    if (!(Array.isArray(update) && 0 !== update.length)) {
+                        setSuggestionArr([]);
+                        return;
+                    }
+                    setSuggestionArr(update);
+                } catch (e) {
+                    console.error(`Attempt to GET concise topic comprehensive array by fragment. ${e}`);
+                }
             }
-            const arr = await resp.json();
-            setFollowedMemberInfoArr(arr);
-        } catch (e) {
-            console.error(`Attempt to get followed member info array of from resp. ${e}`);
         }
     };
 
-    const handleSelectedAuthor = (authorId: string) => (event: React.MouseEvent<HTMLElement>) => {
-        let states: TProcessStates = { ...processStates };
-        if (states.selectedAuthorId === authorId) {
-            states.selectedAuthorId = '';
-        } else {
-            states.selectedAuthorId = authorId;
+    const handleChooseSuggestion = (event: React.SyntheticEvent, value: string | null) => {
+        if ('string' === typeof value && '' !== value) {
+            setQueryHelperStates({
+                ...queryHelperStates,
+                queryStr: value
+            });
         }
-        states.memorizeChannelBarPositionX = document.getElementById('author-bar')?.scrollLeft;
-        // #1 update process states
-        setProcessStates(states);
-        // #2 presist process states to cache
-        updateProcessStatesCache(states);
-        // #3 reset browsing helper
-        setBrowsingHelper({ ...browsingHelper, memorizeViewPortPositionY: undefined });
     };
-
-    // States - browsing helper
-    const [browsingHelper, setBrowsingHelper] = React.useState<TBrowsingHelper>({
-        memorizeViewPortPositionY: undefined, // reset scroll-help on handleChannelSelect, handleSwitchChange, ~~handlePostCardClick~~
-    });
 
     // States - posts (masonry)
     const [masonryPostInfoArr, setMasonryPostInfoArr] = React.useState<IConcisePostComprehensive[]>([]);
 
-    React.useEffect(() => { updatePostsArr(); }, [processStates.selectedAuthorId]);
-
-    // Handle restore browsing position after reload
-    React.useEffect(() => {
-        if (processStates.wasRedirected) {
-            const postId = processStates.memorizeLastViewedPostId;
-            // #1 restore browsing position
-            if (!postId) {
-                return;
-            } else if (600 > window.innerWidth) { // 0 ~ 599
-                setBrowsingHelper({ ...browsingHelper, memorizeViewPortPositionY: (document.getElementById(postId)?.offsetTop ?? 0) / 2 - 200 });
-            } else { // 600 ~ ∞
-                setBrowsingHelper({ ...browsingHelper, memorizeViewPortPositionY: processStates.memorizeViewPortPositionY });
-            }
-            let states: TProcessStates = { ...processStates, memorizeLastViewedPostId: undefined, memorizeViewPortPositionY: undefined, wasRedirected: false };
-            // #2 update process states
-            setProcessStates(states);
-            // #3 update process state cache
-            updateProcessStatesCache(states);
-        }
-    }, [masonryPostInfoArr]);
-
-    if (!!browsingHelper.memorizeViewPortPositionY) {
-        window.scrollTo(0, browsingHelper.memorizeViewPortPositionY ?? 0);
-    }
+    React.useEffect(() => { if ('' !== topicId) { updatePostsArr(); } }, []);
 
     const updatePostsArr = async () => {
-        let url = '';
+        let queryStr;
+        const states: TQueryHelper = queryHelperStates;
+        queryStr = states.inputStr === states.queryStr ? states.queryStr : states.inputStr;
 
-        if ('' !== processStates.selectedAuthorId) {
-            url = `/api/member/creations/${processStates.selectedAuthorId}`;
-        } else {
-            url = `/api/post/s/of/followedmembers`;
-        }
+        if ('string' === typeof queryStr && '' !== queryStr) {
+            const resp = await fetch(`/api/post/s/of/topic?topicId=${Buffer.from(queryStr).toString('base64')}`);
+            if (200 === resp.status) {
+                try {
+                    const arr = await resp.json();
+                    if (Array.isArray(arr) && 0 !== arr.length) {
+                        setMasonryPostInfoArr(arr);
 
-        const resp = await fetch(url);
-        if (200 === resp.status) {
-            try {
-                setMasonryPostInfoArr(await resp.json());
-            } catch (e) {
-                console.error(`Attempt to GET posts. ${e}`);
+                    } else {
+
+                    }
+                } catch (e) {
+                    console.error(`Attempt to GET posts. ${e}`);
+                }
             }
-        }
+        };
     };
 
     const handleClickOnPost = (postId: string) => (event: React.MouseEvent) => {
-        updateProcessStatesCache({
-            ...processStates,
-            memorizeLastViewedPostId: postId,
-            memorizeViewPortPositionY: window.scrollY,
-            wasRedirected: true
-        });
         router.push(`/post/${postId}`);
     };
 
     const handleClickOnMemberInfo = (memberId: string, postId: string) => (event: React.MouseEvent) => {
-        updateProcessStatesCache({
-            ...processStates, memorizeLastViewedPostId: postId,
-            memorizeViewPortPositionY: window.scrollY,
-            wasRedirected: true
-        });
         router.push(`/me/${memberId}`);
     };
 
@@ -252,90 +252,15 @@ const Follow = () => {
     const handleReport = () => {
         const memberId = popUpMenuStates.memberId;
         const referenceId = popUpMenuStates.referenceId;
-
         setPopUpMenuStates({ anchorEl: null, memberId: '', nickname: '', referenceId: '', });
-
         router.push(`/report?memberId=${memberId}&referenceId=${referenceId}`);
     };
-
-    type TAnimationStates = {
-        scrollYPixels: number;
-        requireUpdate: boolean;
-    };
-
-    // States - animation
-    const [animationStates, setAnimationStates] = React.useState<TAnimationStates>({
-        scrollYPixels: 0,
-        requireUpdate: false,
-    });
-
-    // Register animation listener
-    React.useEffect(() => {
-        const handleScroll = () => {
-
-            if (0 > window.scrollY) {
-                setAnimationStates({
-                    ...animationStates,
-                    scrollYPixels: window.scrollY,
-                });
-                if (Math.abs(window.scrollY) > 50) {
-
-                    setAnimationStates({
-                        ...animationStates,
-                        requireUpdate: true
-                    });
-
-                    window.removeEventListener('scroll', handleScroll);
-
-                    setTimeout(() => {
-                        setAnimationStates({
-                            ...animationStates,
-                            requireUpdate: false
-                        });
-
-                        window.addEventListener('scroll', handleScroll);
-                    }, 5000);
-                }
-            }
-
-        };
-
-        window.addEventListener('scroll', handleScroll);
-
-        return () => {
-            window.removeEventListener('scroll', handleScroll);
-        };
-    }, []);
-
-    React.useEffect(() => { refreshPostsArr(); }, [animationStates.requireUpdate]);
-
-    const refreshPostsArr = async () => {
-        let url = '';
-
-        if ('' !== processStates.selectedAuthorId) {
-            url = `/api/member/creations/${processStates.selectedAuthorId}`;
-        } else {
-            url = `/api/post/s/of/followedmembers`;
-        }
-
-        const resp = await fetch(url);
-        if (200 === resp.status) {
-            try {
-                setMasonryPostInfoArr(await resp.json());
-                setAnimationStates({ scrollYPixels: 0, requireUpdate: false });
-            } catch (e) {
-                console.error(`Attempt to GET posts. ${e}`);
-            }
-        }
-    };
-
-    const colorMode = React.useContext(ColorModeContext);
 
     return (
         <>
             <Head>
                 <title>
-                    {{ tw: '關注', cn: '關注', en: 'Follow' }[preferenceStates.lang]}
+                    {{ tw: '搜尋', cn: '搜索', en: 'Query', }[preferenceStates.lang]}
                 </title>
                 <meta
                     name="description"
@@ -343,20 +268,6 @@ const Follow = () => {
                     key="desc"
                 />
             </Head>
-
-            {/* pull-to-refresh */}
-            <Box
-                sx={{
-                    display: 'flex',
-                    flexDirection: 'row',
-                    justifyContent: 'center',
-                    opacity: animationStates.requireUpdate ? 1 : Math.abs(animationStates.scrollYPixels) / 25
-                }}>
-                <CircularProgress
-                    variant={animationStates.requireUpdate ? 'indeterminate' : 'determinate'}
-                    size={Math.abs(animationStates.scrollYPixels) * 1.8 < 24 && !animationStates.requireUpdate ? Math.abs(animationStates.scrollYPixels) * 1.8 : 24}
-                    value={Math.abs(animationStates.scrollYPixels) < 50 && !animationStates.requireUpdate ? Math.abs(animationStates.scrollYPixels) * 2 : 100} />
-            </Box>
 
             <Navbar lang={preferenceStates.lang} />
             <Grid container>
@@ -372,33 +283,36 @@ const Follow = () => {
                 <Grid item xs={12} sm={12} md={6} lg={6} xl={4}>
                     <Box pt={{ xs: 2, sm: 2, md: 10 }} px={1} >
 
-                        {/* no followed member alert */}
-                        {0 === followedMemberInfoArr.length && <Box py={5}>
-                            <Typography color={'text.secondary'} align={'center'}>{langConfigs.noRecordOfFollowedMembers[preferenceStates.lang]}</Typography>
-                        </Box>}
+                        <FormControl fullWidth >
+                            <Grid container columnSpacing={1}>
 
-                        {/* followed member array */}
-                        <Stack direction={'row'} id='author-bar' sx={{ position: 'sticky', top: 0, zIndex: 9999, backgroundColor: 'dark' === colorMode.mode ? '#424242 ' : '#fff', px: { xs: 0, sm: 1 }, pt: { xs: 1, sm: 2 }, overflow: 'auto', }} >
-                            {followedMemberInfoArr.map(m => {
-                                return (
-                                    <Button key={getRandomHexStr()} size={'small'} sx={{ minWidth: 72, minHeight: 86 }} onClick={handleSelectedAuthor(m.memberId)}>
-                                        <Stack >
-                                            <Grid container>
-                                                <Grid item flexGrow={1}></Grid>
-                                                <Grid item>
-                                                    <Avatar src={provideAvatarImageUrl(m.memberId, imageDomain)} sx={{ width: 34, height: 34 }}>{m.nickname?.charAt(0).toUpperCase()}</Avatar>
-                                                </Grid>
-                                                <Grid item flexGrow={1}></Grid>
-                                            </Grid>
-                                            <Typography mt={1} sx={{ minHeight: 33, fontSize: 11, color: processStates.selectedAuthorId === m.memberId ? 'inherit' : 'text.secondary' }}>{getNicknameBrief(m.nickname)}</Typography>
-                                        </Stack>
-                                    </Button>
-                                );
-                            })}
-                        </Stack>
+                                {/* input */}
+                                <Grid item flexGrow={1} mx={1}>
+                                    <Autocomplete
+                                        disablePortal
+                                        options={suggestionsArr.map(s => s.content)}
+                                        onChange={handleChooseSuggestion}
+                                        defaultValue={topicPlainText}
+                                        freeSolo={true}
+                                        fullWidth
+                                        renderInput={(params) => <TextField
+                                            {...params}
+                                            variant={'standard'}
+                                            value={queryHelperStates.inputStr}
+                                            onChange={handleInput}
+                                        />}
+                                    />
+                                </Grid>
+
+                                {/* 'query' button */}
+                                <Grid item>
+                                    <Button variant='contained' onClick={async () => { await updatePostsArr(); }}>{langConfigs.query[preferenceStates.lang]}</Button>
+                                </Grid>
+                            </Grid>
+                        </FormControl>
 
                         {/* empty alert */}
-                        {0 === masonryPostInfoArr.length &&
+                        {'' !== queryHelperStates.inputStr && 0 === masonryPostInfoArr.length &&
                             <Box minHeight={200} mt={10}>
                                 <Typography color={'text.secondary'} align={'center'}>
                                     {langConfigs.noPosts[preferenceStates.lang]}
@@ -406,7 +320,7 @@ const Follow = () => {
                             </Box>
                         }
 
-                        {/* masonry */}
+                        {/* mansoy */}
                         <Box maxWidth={{ md: 900, lg: 800 }}>
                             <Masonry columns={2} sx={{ margin: 0 }}>
 
@@ -469,7 +383,6 @@ const Follow = () => {
                                 })}
                             </Masonry>
                         </Box>
-
                     </Box>
 
                     {/* bottom space */}
@@ -506,4 +419,4 @@ const Follow = () => {
     );
 };
 
-export default Follow;
+export default Query;

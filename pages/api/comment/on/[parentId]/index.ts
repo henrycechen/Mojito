@@ -6,18 +6,19 @@ import { MongoError } from 'mongodb';
 import AzureTableClient from '../../../../../modules/AzureTableClient';
 import AtlasDatabaseClient from '../../../../../modules/AtlasDatabaseClient';
 
-import { response405, response500, logWithDate, getContentBrief } from '../../../../../lib/utils/general';
-import { createId, createNoticeId, getTimeBySecond } from '../../../../../lib/utils/create';
-import { verifyId } from '../../../../../lib/utils/verify';
 import { IMemberComprehensive, IMemberStatistics } from '../../../../../lib/interfaces/member';
-import { ICommentComprehensive } from '../../../../../lib/interfaces/comment';
 import { IPostComprehensive } from '../../../../../lib/interfaces/post';
+import { ICommentComprehensive } from '../../../../../lib/interfaces/comment';
 import { IChannelStatistics } from '../../../../../lib/interfaces/channel';
 import { ITopicComprehensive } from '../../../../../lib/interfaces/topic';
-import { INoticeInfo, INotificationStatistics } from '../../../../../lib/interfaces/notification';
+import { INotificationComprehensive, INotificationStatistics } from '../../../../../lib/interfaces/notification';
+
+import { verifyId } from '../../../../../lib/utils/verify';
+import { response405, response500, logWithDate, getContentBrief } from '../../../../../lib/utils/general';
+import { createId, createNoticeId, getTimeBySecond } from '../../../../../lib/utils/create';
 import { createCommentComprehensive } from '../../../../../lib/utils/for/comment';
 
-const ffn = `${CreateCommentOnParentById.name} (API)`;
+const fnn = `${CreateCommentOnParentById.name} (API)`;
 
 /**
  * This interface accepts POST requests
@@ -31,6 +32,7 @@ const ffn = `${CreateCommentOnParentById.name} (API)`;
  * 
  * Last update: 21/02/2023 v0.1.1
  * Last update: 08/05/2023 v0.1.2
+ * Last update: 31/05/2023 v0.1.3
  */
 
 export default async function CreateCommentOnParentById(req: NextApiRequest, res: NextApiResponse) {
@@ -65,11 +67,11 @@ export default async function CreateCommentOnParentById(req: NextApiRequest, res
     //// Declare DB client ////
     const atlasDbClient = AtlasDatabaseClient();
     try {
-        const { sub: memberId } = token;
+        const { sub: initiateId } = token;
         await atlasDbClient.connect();
         // #1.1 look up document (of IMemberComprehensive) in [C] memberComprehensive
         const memberComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<IMemberComprehensive>('member');
-        const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne({ memberId }, {
+        const memberComprehensiveQueryResult = await memberComprehensiveCollectionClient.findOne({ memberId: initiateId }, {
             projection: {
                 _id: 0,
                 nickname: 1,
@@ -78,7 +80,7 @@ export default async function CreateCommentOnParentById(req: NextApiRequest, res
             }
         });
         if (null === memberComprehensiveQueryResult) {
-            throw new Error(`Member Attempt to creating comment but have no document (of IMemberComprehensive, member id: ${memberId}) in [C] memberComprehensive`);
+            throw new Error(`Member Attempt to creating comment but have no document (of IMemberComprehensive, member id: ${initiateId}) in [C] memberComprehensive`);
         }
         // #1.2 verify member status (of IMemberComprehensive)
         const { status: memberStatus, allowCommenting } = memberComprehensiveQueryResult;
@@ -136,9 +138,9 @@ export default async function CreateCommentOnParentById(req: NextApiRequest, res
         // #3.1 create a new comment id
         const commentId = createId('post' === category ? 'comment' : 'subcomment');
         // #3.2 insert a new document (of ICommentComprehensive) in [C] commentComprehensive
-        const commentComprehensiveInsertResult = await commentComprehensiveCollectionClient.insertOne(createCommentComprehensive(commentId, parentId, postId, memberId, nickname, content, req.body?.cuedMemberInfoArr));
+        const commentComprehensiveInsertResult = await commentComprehensiveCollectionClient.insertOne(createCommentComprehensive(commentId, parentId, postId, initiateId, nickname, content, req.body?.cuedMemberInfoArr));
         if (!commentComprehensiveInsertResult.acknowledged) {
-            throw new Error(`Failed to insert document (of ICommentComprehensive, member id: ${memberId}, parent id: ${parentId}, post id: ${postId}) in [C] commentComprehensive`);
+            throw new Error(`Failed to insert document (of ICommentComprehensive, member id: ${initiateId}, parent id: ${parentId}, post id: ${postId}) in [C] commentComprehensive`);
         }
 
         //// Response 200 ////
@@ -147,13 +149,13 @@ export default async function CreateCommentOnParentById(req: NextApiRequest, res
         //// Update statistics ////
         // #5.1 update totalCommentCount (of IMemberStatistics) in [C] memberStatistics
         const memberStatisticsCollectionClient = atlasDbClient.db('statistics').collection<IMemberStatistics>('member');
-        const memberStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId }, {
+        const memberStatisticsUpdateResult = await memberStatisticsCollectionClient.updateOne({ memberId: initiateId }, {
             $inc: {
                 totalCommentCount: 1
             }
         });
         if (!memberStatisticsUpdateResult.acknowledged) {
-            logWithDate(`Document (ICommentComprehensive, comment id: ${commentId}) inserted in [C] commentComprehensive successfully but failed to update totalCommentCount (of IMemberStatistics, member id: ${memberId}) in [C] memberStatistics`, ffn);
+            logWithDate(`Document (ICommentComprehensive, comment id: ${commentId}) inserted in [C] commentComprehensive successfully but failed to update totalCommentCount (of IMemberStatistics, member id: ${initiateId}) in [C] memberStatistics`, fnn);
         }
         // #5.2 (cond.) totalSubcommentCount (of ICommentComprehensive) in [C] commentComprehensive (parent comment)
         if ('C' === parentId.slice(0, 1)) {
@@ -163,7 +165,7 @@ export default async function CreateCommentOnParentById(req: NextApiRequest, res
                 }
             });
             if (!commentComprehensiveUpdateResult.acknowledged) {
-                logWithDate(`Document (ICommentComprehensive, comment id: ${commentId}) was inserted in [C] commentComprehensive successfully but failed to update totalSubcommentCount (of ICommentComprehensive, comment id: ${parentId}) in [C] commentComprehensive`, ffn);
+                logWithDate(`Document (ICommentComprehensive, comment id: ${commentId}) was inserted in [C] commentComprehensive successfully but failed to update totalSubcommentCount (of ICommentComprehensive, comment id: ${parentId}) in [C] commentComprehensive`, fnn);
             }
         }
         // #5.3 update totalCommentCount (of IPostComprehensive) in [C] postComprehensive
@@ -173,7 +175,7 @@ export default async function CreateCommentOnParentById(req: NextApiRequest, res
             }
         });
         if (!postComprehensiveUpdateResult.acknowledged) {
-            logWithDate(`Document (ICommentComprehensive, comment id: ${commentId}) was inserted in [C] commentComprehensive successfully but failed to update totalCommentCount (of IPostComprehensive, post id: ${postId}) in [C] postComprehensive`, ffn);
+            logWithDate(`Document (ICommentComprehensive, comment id: ${commentId}) was inserted in [C] commentComprehensive successfully but failed to update totalCommentCount (of IPostComprehensive, post id: ${postId}) in [C] postComprehensive`, fnn);
         }
         // #5.4 update total comment count (of IChannelStatistics) in [C] channelStatistics
         const { channelId } = postComprehensiveQueryResult;
@@ -184,7 +186,7 @@ export default async function CreateCommentOnParentById(req: NextApiRequest, res
             }
         });
         if (!channelStatisticsUpdateResult.acknowledged) {
-            logWithDate(`Document (ICommentComprehensive, comment id: ${commentId}) inserted in [C] commentComprehensive successfully but failed to update totalCommentCount (of IChannelStatistics, channel id: ${channelId}) in [C] channelStatistics`, ffn);
+            logWithDate(`Document (ICommentComprehensive, comment id: ${commentId}) inserted in [C] commentComprehensive successfully but failed to update totalCommentCount (of IChannelStatistics, channel id: ${channelId}) in [C] channelStatistics`, fnn);
         }
         // #5.5 (cond.) update totalCommentCount (of ITopicComprehensive) in [C] topicComprehensive
         const { topicInfoArr } = postComprehensiveQueryResult;
@@ -197,71 +199,83 @@ export default async function CreateCommentOnParentById(req: NextApiRequest, res
                     }
                 });
                 if (!topicComprehensiveUpdateResult.acknowledged) {
-                    logWithDate(`Document (ICommentComprehensive, comment id: ${commentId}) inserted in [C] commentComprehensive successfully but failed to update totalCommentCount (of ITopicComprehensive, topic id: ${topicId}) in [C] topicComprehensive`, ffn);
+                    logWithDate(`Document (ICommentComprehensive, comment id: ${commentId}) inserted in [C] commentComprehensive successfully but failed to update totalCommentCount (of ITopicComprehensive, topic id: ${topicId}) in [C] topicComprehensive`, fnn);
                 }
             }
         }
-        if (memberId !== notifiedMemberId) {
+        if (initiateId !== notifiedMemberId) {
             //// Handle reply (cond.) ////
             const { title } = postComprehensiveQueryResult;
             // #6.1 look up record (of IMemberMemberMapping) in [RL] BlockingMemberMapping
             const blockingMemberMappingTableClient = AzureTableClient('BlockingMemberMapping');
-            const blockingMemberMappingQuery = blockingMemberMappingTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${notifiedMemberId}' and RowKey eq '${memberId}'` } });
+            const blockingMemberMappingQuery = blockingMemberMappingTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${notifiedMemberId}' and RowKey eq '${initiateId}'` } });
             //// [!] attemp to reterieve entity makes the probability of causing RestError ////
             const blockingMemberMappingQueryResult = await blockingMemberMappingQuery.next();
             if (!blockingMemberMappingQueryResult.value) {
                 //// [!] comment author has not been blocked by post / comment author ////
-                // #6.2 upsert record (INoticeInfo.Replied) in [PRL] Notice
-                const noticeTableClient = AzureTableClient('Notice');
-                const a = await noticeTableClient.upsertEntity<INoticeInfo>({
-                    partitionKey: notifiedMemberId,
-                    rowKey: createNoticeId('reply', memberId, postId, commentId),
-                    Category: 'reply',
-                    InitiateId: memberId,
-                    Nickname: nickname,
-                    PostTitle: title,
-                    CommentBrief: getContentBrief(content),
-                    CreatedTimeBySecond: getTimeBySecond()
-                }, 'Replace');
+
+                // #6.2 upsert document (of notificationComprehensive) in [C] notificationComprehensive
+                const notificationComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<INotificationComprehensive>('notification');
+                const notificationComprehensiveUpdateResult = await notificationComprehensiveCollectionClient.updateOne({ noticeId: createNoticeId('reply', initiateId, postId, commentId) }, {
+                    noticeId: createNoticeId('reply', initiateId, postId, commentId),
+                    category: 'reply',
+                    memberId: notifiedMemberId,
+                    initiateId,
+                    nickname: memberComprehensiveQueryResult.nickname,
+                    postTitle: title,
+                    commentBrief: getContentBrief(content),
+                    createdTimeBySecond: getTimeBySecond()
+                }, { upsert: true });
+                if (!notificationComprehensiveUpdateResult.acknowledged) {
+                    logWithDate(`Failed to upsert document (of INotificationComprehensive, member id: ${notifiedMemberId}) in [C] notificationComprehensive`, fnn);
+                }
 
                 // #6.3 update reply (INotificationStatistics) (of post author) in [C] notificationStatistics
                 const notificationStatisticsCollectionClient = atlasDbClient.db('statistics').collection<INotificationStatistics>('notification');
                 const notificationStatisticsUpdateResult = await notificationStatisticsCollectionClient.updateOne({ memberId: notifiedMemberId }, { $inc: { reply: 1 } });
                 if (!notificationStatisticsUpdateResult.acknowledged) {
-                    logWithDate(`Document (ICommentComprehensive, comment id: ${commentId}) inserted in [C] commentComprehensive successfully but failed to reply (of INotificationStatistics, member id: ${notifiedMemberId}) in [C] notificationStatistics`, ffn);
+                    logWithDate(`Document (ICommentComprehensive, comment id: ${commentId}) inserted in [C] commentComprehensive successfully but failed to reply (of INotificationStatistics, member id: ${notifiedMemberId}) in [C] notificationStatistics`, fnn);
                 }
             }
             //// Handle notice.cue (cond.) ////
             // #7.1 verify cued member ids array
             const { cuedMemberInfoArr } = req.body;
             if (Array.isArray(cuedMemberInfoArr) && cuedMemberInfoArr.length !== 0) {
+                const notificationComprehensiveCollectionClient = atlasDbClient.db('comprehensive').collection<INotificationComprehensive>('notification');
                 const notificationStatisticsCollectionClient = atlasDbClient.db('statistics').collection<INotificationStatistics>('notification');
-                // #7.2 maximum 9 members are allowed to cued at one time (in one comment)
-                const cuedMemberInfoArrSliced = cuedMemberInfoArr.slice(0, 9);
+                
+                // #7.2 maximum 12 members are allowed to cued at one time (in one comment)
+                const cuedMemberInfoArrSliced = cuedMemberInfoArr.slice(0, 12);
+                
                 for await (const cuedMemberInfo of cuedMemberInfoArrSliced) {
                     const { memberId: memberId_cued } = cuedMemberInfo;
+                    
                     // look up record (of IMemberMemberMapping) in [RL] BlockingMemberMapping
-                    const _blockingMemberMappingQuery = blockingMemberMappingTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${memberId_cued}' and RowKey eq '${memberId}'` } });
+                    const _blockingMemberMappingQuery = blockingMemberMappingTableClient.listEntities({ queryOptions: { filter: `PartitionKey eq '${memberId_cued}' and RowKey eq '${initiateId}'` } });
                     //// [!] attemp to reterieve entity makes the probability of causing RestError ////
                     const _blockingMemberMappingQueryResult = await _blockingMemberMappingQuery.next();
                     if (!_blockingMemberMappingQueryResult.value) {
                         //// [!] comment author has not been blocked by cued member ////
-                        // #7.3 upsert record (of INoticeInfo.Cued) in [PRL] Notice
-                        const noticeTableClient = AzureTableClient('Notice');
-                        noticeTableClient.upsertEntity<INoticeInfo>({
-                            partitionKey: memberId_cued,
-                            rowKey: createNoticeId('cue', memberId, postId, commentId), // entity id
-                            Category: 'cue',
-                            InitiateId: memberId,
-                            Nickname: nickname,
-                            PostTitle: title,
-                            CommentBrief: getContentBrief(content),
-                            CreatedTimeBySecond: getTimeBySecond()
-                        }, 'Replace');
+
+                        // #7.3 upsert document (of notificationComprehensive) in [C] notificationComprehensive
+                        const notificationComprehensiveUpdateResult = await notificationComprehensiveCollectionClient.updateOne({ noticeId: createNoticeId('cue', initiateId, postId, commentId) }, {
+                            noticeId: createNoticeId('cue', initiateId, postId, commentId),
+                            category: 'cue',
+                            memberId: notifiedMemberId,
+                            initiateId,
+                            nickname: memberComprehensiveQueryResult.nickname,
+                            postTitle: title,
+                            commentBrief: getContentBrief(content),
+                            createdTimeBySecond: getTimeBySecond()
+                        }, { upsert: true });
+                        if (!notificationComprehensiveUpdateResult.acknowledged) {
+                            logWithDate(`Failed to upsert document (of INotificationComprehensive, member id: ${notifiedMemberId}) in [C] notificationComprehensive`, fnn);
+                        }
+
                         // #7.4 update cued count (INotificationStatistics) (of cued member) in [C] notificationStatistics
                         const notificationStatisticsUpdateResult = await notificationStatisticsCollectionClient.updateOne({ memberId: memberId_cued }, { $inc: { cue: 1 } });
                         if (!notificationStatisticsUpdateResult.acknowledged) {
-                            logWithDate(`Document (ICommentComprehensive, comment id: ${commentId}) inserted in [C] commentComprehensive successfully but failed to update cuedCount (of INotificationStatistics, member id: ${memberId_cued}) in [C] notificationStatistics`, ffn);
+                            logWithDate(`Document (ICommentComprehensive, comment id: ${commentId}) inserted in [C] commentComprehensive successfully but failed to update cuedCount (of INotificationStatistics, member id: ${memberId_cued}) in [C] notificationStatistics`, fnn);
                         }
                     }
                 }
@@ -284,7 +298,7 @@ export default async function CreateCommentOnParentById(req: NextApiRequest, res
         if (!res.headersSent) {
             response500(res, msg);
         }
-        logWithDate(msg, ffn, e);
+        logWithDate(msg, fnn, e);
         await atlasDbClient.close();
         return;
     }
