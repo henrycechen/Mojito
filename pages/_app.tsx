@@ -1,5 +1,6 @@
 import * as React from 'react';
 import Head from 'next/head';
+import Script from 'next/script';
 
 import type { AppProps } from 'next/app';
 
@@ -63,6 +64,7 @@ const App = ({ Component, pageProps: { session, ...pageProps } }: AppProps<{ ses
             <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5" />
             <meta name="msapplication-TileColor" content="#da532c" />
             <meta name="theme-color" content="#ffffff" />
+            <Script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1498706619182029" crossOrigin="anonymous"></Script>
           </Head>
           <Component {...pageProps} />
           <style jsx global>

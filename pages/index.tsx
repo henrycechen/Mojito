@@ -395,54 +395,33 @@ const Home = () => {
 
     type TRightColumnStates = {
         topicInfoArr: IConciseTopicComprehensive[];
-        todaysTrendPostInfoArr: IConcisePostComprehensive[];
-        weeksTrendPostInfoArr: IConcisePostComprehensive[];
     };
 
     // States - right column
     const [rightColumnStates, setRightColumnStates] = React.useState<TRightColumnStates>({
         topicInfoArr: [],
-        todaysTrendPostInfoArr: [],
-        weeksTrendPostInfoArr: []
     });
 
     React.useEffect(() => { updateRightColumnStates(); }, []);
 
     const updateRightColumnStates = async () => {
-        let a0: IConciseTopicComprehensive[] = [];
-        let a1: IConcisePostComprehensive[] = [];
-        let a2: IConcisePostComprehensive[] = [];
-
-        const r0 = await fetch(`/api/topic/trend`);
-        const r1 = await fetch(`/api/post/s/trend/24h`);
-        const r2 = await fetch(`/api/post/s/trend/7d`);
 
         try {
-            if (200 !== r0.status) {
+            const resp = await fetch(`/api/topic/trend`);
+            if (200 !== resp.status) {
                 console.error(`Attempt to GET topic info array of trending`);
             }
-            const _a0 = await r0.json();
-            a0.push(..._a0);
+            const arr = await resp.json();
 
-            if (200 !== r1.status) {
-                console.error(`Attempt to GET post info array of trending today`);
-            }
-            const _a1 = await r1.json();
-            a1.push(..._a1);
+            setRightColumnStates({ topicInfoArr: arr });
 
-            if (200 !== r2.status) {
-                console.error(`Attempt to GET post info array of trending this week`);
-            }
-            const _a2 = await r2.json();
-            a2.push(..._a2);
         } catch (e: any) {
             if (e instanceof SyntaxError) {
-                console.error(`Attempt to parse info array (JSON string) from response. ${e}`);
+                console.error(`Attempt to parse topic info array (JSON string) from response. ${e}`);
             } else {
                 console.error(e?.msg);
             }
         }
-        setRightColumnStates({ topicInfoArr: [...a0], todaysTrendPostInfoArr: [...a1], weeksTrendPostInfoArr: [...a2] });
     };
 
     const handleSignIn = (event: React.MouseEvent<HTMLElement>) => {
