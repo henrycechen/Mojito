@@ -1,5 +1,5 @@
 import NextAuth from 'next-auth';
-import GithubProvider from 'next-auth/providers/github';
+// import GithubProvider from 'next-auth/providers/github';
 import GoogleProvide from 'next-auth/providers/google';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import CryptoJS from 'crypto-js';
