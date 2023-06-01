@@ -18,6 +18,8 @@ const App = ({ Component, pageProps: { session, ...pageProps } }: AppProps<{ ses
   // Update 24/11/2022
   // Due to _app.tsx does not have the access to request.cookie
   // The flashing issue can not be fixed on dark mode (os/user-choice)
+  // Update 1/06/2023
+  // Introduced pull-to-refresh animation
   const [mode, setMode] = React.useState<PaletteMode>('light');
   // #1 get user choice on color mode
   let preferredDarkMode: boolean = Cookie.get('PreferredColorMode') === 'dark';
