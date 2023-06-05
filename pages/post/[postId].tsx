@@ -4,6 +4,8 @@ import { signOut, useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
 import { NextPageContext } from 'next/types';
 import { MongoError } from 'mongodb';
+import { styled } from '@mui/material/styles';
+import useTheme from '@mui/material/styles/useTheme';
 
 import AtlasDatabaseClient from "../../modules/AtlasDatabaseClient";
 
@@ -18,14 +20,19 @@ import Grid from '@mui/material/Grid';
 import IconButton from '@mui/material/IconButton';
 import Popover from '@mui/material/Popover';
 import Stack from '@mui/material/Stack';
+import SwipeableDrawer from '@mui/material/SwipeableDrawer';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
+
+import grey from '@mui/material/colors/grey';
 
 import Menu from '@mui/material/Menu';
 import MenuList from '@mui/material/MenuList';
 import MenuItem from '@mui/material/MenuItem';
 import ListItemText from '@mui/material/ListItemText';
 import ListItemIcon from '@mui/material/ListItemIcon';
+
+import { Global } from '@emotion/react';
 
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import ThumbDownIcon from '@mui/icons-material/ThumbDown';
@@ -106,6 +113,11 @@ const langConfigs: LangConfigs = {
         tw: (nickname: string) => `撰寫評論回復@${nickname}`,
         cn: (nickname: string) => `撰写评论回复@${nickname}`,
         en: (nickname: string) => `Create comment and reply to @${nickname}`
+    },
+    requirement: {
+        tw: '請發表符合我們社區規範的評論',
+        cn: '请发表符合我们社区规范的评论',
+        en: 'Comments should comply our community guidelines'
     },
 
     // Right column
@@ -740,6 +752,10 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, authorInfo
         setProcessStates({ ...processStates, displayEditor: false });
     };
 
+    const handleToggleEditor = (display: boolean) => () => {
+        setProcessStates({ ...processStates, displayEditor: display });
+    };
+
     const handleCueHelperOpenAndClose = () => {
         if ('authenticated' !== status) {
             return;
@@ -1238,6 +1254,18 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, authorInfo
         }
     };
 
+    const theme = useTheme();
+
+    const Puller = styled(Box)(({ theme }) => ({
+        width: 30,
+        height: 6,
+        backgroundColor: theme.palette.mode === 'light' ? grey[300] : grey[600],
+        borderRadius: 3,
+        position: 'absolute',
+        top: 8,
+        left: 'calc(50% - 15px)',
+    }));
+
     return (
         <>
             <Head>
@@ -1250,6 +1278,41 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, authorInfo
                     key="desc"
                 />
             </Head>
+
+            {/* styles for info editor */}
+            <Global
+                styles={{
+                    '@media (max-width: 600px)': {
+
+                        '.MuiDrawer-root > .MuiPaper-root': {
+                            height: `calc(50%)`,
+                            borderTopLeftRadius: 8,
+                            borderTopRightRadius: 8,
+                            // overflow: 'visible',
+                        },
+                    },
+                    '@media (min-width: 600px)': {
+
+                        '.MuiDrawer-root > .MuiPaper-root': {
+                            height: `calc(30%)`,
+                            borderTopLeftRadius: 8,
+                            borderTopRightRadius: 8,
+                            maxWidth: 500,
+                            left: `calc(50% - 250px);`,
+                        },
+                    },
+                    '@media (min-width: 900px)': {
+
+                        '.MuiDrawer-root > .MuiPaper-root': {
+                            height: `calc(30%)`,
+                            borderTopLeftRadius: 8,
+                            borderTopRightRadius: 8,
+                            maxWidth: 600,
+                            left: `calc(50% - 300px);`,
+                        },
+                    }
+                }}
+            />
 
             <Navbar lang={preferenceStates.lang} />
 
@@ -1678,17 +1741,23 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, authorInfo
             {/* bottom space */}
             <Box pb={{ xs: '10rem', sm: '10rem', md: 0 }} />
 
-            {/* pop up comment editor */}
-            < Popover
+            {/* comment editor */}
+            <SwipeableDrawer
+                anchor='bottom'
                 open={processStates.displayEditor}
-                anchorReference='anchorPosition'
-                onClose={handleEditorClose}
-                anchorPosition={{ top: 1000, left: 1000 }}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'center', }}
+                onClose={handleToggleEditor(false)}
+                onOpen={handleToggleEditor(true)}
+                swipeAreaWidth={50}
+                disableSwipeToOpen={false}
+                ModalProps={{ keepMounted: true }}
             >
-                <Box sx={{ minWidth: 340, maxWidth: 360, minHeight: 200, borderRadius: 2, padding: 2 }}>
+                <Box sx={{ px: { xs: 2, sm: 2, md: 4 }, pt: { xs: 2, sm: 2, md: 4 }, height: '100%', overflow: 'auto', backgroundColor: theme.palette.mode === 'light' ? '#fff' : grey[800], }}>
+
+                    {/* puller (for mobile) */}
+                    <Puller />
+
                     <Typography color={editorStates.disableEditor ? 'text.disabled' : 'text.primary'}>{langConfigs.createComment[preferenceStates.lang]}</Typography>
-                    {/* content input */}
+
                     <TextField
                         id='outlined-basic'
                         variant='outlined'
@@ -1702,10 +1771,12 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, authorInfo
                         disabled={editorStates.disableEditor}
                         sx={{ marginTop: 1 }}
                     />
+
                     {/* blank content alert */}
                     <Box mt={1} sx={{ display: editorStates.displayAlert ? 'block' : 'none' }}>
                         <Alert severity='error'>{editorStates.alertContent}</Alert>
                     </Box>
+
                     {/* cue & submit button */}
                     <Grid container mt={2} mb={1}>
                         <Grid item>
@@ -1720,6 +1791,7 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, authorInfo
                             </Box>
                         </Grid>
                     </Grid>
+
                     {editorStates.displayCueHelper && <>
                         <Divider />
                         {/* no followed member alert */}
@@ -1748,8 +1820,15 @@ const Post = ({ restrictedPostComprehensive_ss: postComprehensive_ss, authorInfo
                             </Stack>
                         </Box>
                     </>}
+
+                    {/* requirenment */}
+                    <Box sx={{ mt: 1, display: 'flex', flexDirection: 'row', justifyContent: 'center' }}>
+                        <Typography color={'grey'} variant={'body2'} align={'center'}>{langConfigs.requirement[preferenceStates.lang]}</Typography>
+                    </Box>
+
+
                 </Box>
-            </Popover >
+            </SwipeableDrawer>
 
             {/* backdrop - full screen image viewer */}
             <Backdrop
